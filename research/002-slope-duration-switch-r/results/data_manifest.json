@@ -1,0 +1,17 @@
+{
+  "tiingo_IEF_daily.csv": {
+    "downloaded_at_utc": "2026-10-21T23:18:29Z",
+    "first_bar": "2002-07-26",
+    "last_bar": "2026-10-21",
+    "params": {
+      "format": "json",
+      "resampleFreq": "daily",
+      "startDate": "2002-07-22"
+    },
+    "rows": 6099,
+    "sha256": "a15abb3dfb242ff5e08c0724a4df82c35269d6541dbc451b9cd0a7230f58cc06",
+    "source": "Tiingo end-of-day prices (licensed, not redistributed); adjClose = split- and distribution-adjusted close",
+    "symbol": "IEF",
+    "url": "https://api.tiingo.com/tiingo/daily/ief/prices"
+  }
+}

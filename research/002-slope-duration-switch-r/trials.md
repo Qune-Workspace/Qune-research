@@ -15,7 +15,8 @@ Every trial is logged here before it is run (§7). The deflated Sharpe ratio use
 | Step | Date | Outcome |
 |---|---|---|
 | Pre-registration committed (§14 step 1) | 2026-10-21 | this commit; no validation run, no return computed |
-| Window-2 data decision (§5.3.4 steps 1–2; §14 step 2) | — | not yet done |
+| Window-2 vendor fetch (§5.3.4 step 1) | 2026-10-22 00:18 London (2026-10-21T23:18Z) | Tiingo IEF daily prices fetched with the desk's existing credential (token read from the environment, sent as a header, never logged; no credential created): 6,099 rows, 2002-07-26 to 2026-10-21, SHA-256 in `results/data_manifest.json`. Starts before 2003-01-02, so window 2 is **not** excluded for unavailability. Tiingo's first row is 2002-07-26, four days after the fund's 2002-07-22 inception; irrelevant to window 2. No return computed. |
+| Window-2 overlap check (§5.3.4 step 2) | — | `src/overlap_check.py` written and committed with this entry, before running; not yet run |
 | `reproduce.sh --validate`, single run (§14 step 4) | — | not yet run |
 
 No return of any rule or benchmark has been computed on real data as of 2026-10-21, under this study or Study 001.

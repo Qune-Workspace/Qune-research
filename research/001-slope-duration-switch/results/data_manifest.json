@@ -1,4 +1,40 @@
 {
+  "alpaca_BIL_1Day_all.csv": {
+    "downloaded_at_utc": "2026-10-21T20:22:32Z",
+    "first_bar": "2016-01-04",
+    "last_bar": "2026-10-21",
+    "params": {
+      "adjustment": "all",
+      "end": "2026-10-21T20:07:32Z",
+      "feed": "sip",
+      "limit": 10000,
+      "start": "2016-01-04",
+      "timeframe": "1Day"
+    },
+    "rows": 2716,
+    "sha256": "56f5058022079bb01a29e00a5a80f79122d4e0b9722de4291b91b9182a17f5dd",
+    "source": "Alpaca market data (licensed, not redistributed)",
+    "symbol": "BIL",
+    "url": "https://data.alpaca.markets/v2/stocks/BIL/bars"
+  },
+  "alpaca_IEF_1Day_all.csv": {
+    "downloaded_at_utc": "2026-10-21T20:22:32Z",
+    "first_bar": "2016-01-04",
+    "last_bar": "2026-10-21",
+    "params": {
+      "adjustment": "all",
+      "end": "2026-10-21T20:07:32Z",
+      "feed": "sip",
+      "limit": 10000,
+      "start": "2016-01-04",
+      "timeframe": "1Day"
+    },
+    "rows": 2716,
+    "sha256": "c8b27e189c7b4215c3c0d03ad9bba09bb767a680eb12fabbed52a7d224c1af81",
+    "source": "Alpaca market data (licensed, not redistributed)",
+    "symbol": "IEF",
+    "url": "https://data.alpaca.markets/v2/stocks/IEF/bars"
+  },
   "fred_DGS10.csv": {
     "downloaded_at_utc": "2026-10-21T11:16:57Z",
     "first_valid": "1962-01-02",

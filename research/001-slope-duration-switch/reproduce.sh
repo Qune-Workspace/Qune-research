@@ -42,8 +42,18 @@ fi
 echo "[1/2] data: FRED"
 "$PYTHON" -m src.fred DGS10 DTB3 DGS7
 if [ "$mode" != "--insample" ]; then
-  echo "[1/2] data: Alpaca bars (adjustment=all)"
-  "$PYTHON" -m src.alpaca_bars IEF BIL
+  if [ -n "${APCA_API_KEY_ID:-}" ] && [ -n "${APCA_API_SECRET_KEY:-}" ]; then
+    echo "[1/2] data: Alpaca bars (adjustment=all)"
+    "$PYTHON" -m src.alpaca_bars IEF BIL
+  elif [ -s data/raw/alpaca_IEF_1Day_all.csv ] && [ -s data/raw/alpaca_BIL_1Day_all.csv ]; then
+    # §16 amendment of 2026-10-21: without credentials the bars already in
+    # data/raw/ are reused; their provenance is the manifest entry written
+    # when they were fetched.
+    echo "[1/2] data: Alpaca credentials not set; reusing bars in data/raw/ (see results/data_manifest.json)"
+  else
+    echo "refused: no Alpaca credentials and no bars in data/raw/." >&2
+    exit 1
+  fi
 fi
 
 echo "[2/2] run $mode"

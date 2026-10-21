@@ -64,9 +64,14 @@ def test_alpaca_end_timestamp_is_in_the_past():
 
 
 @pytest.mark.parametrize("flag", ["--validate", "--insample", "--oos"])
-def test_reproduce_refuses_without_approval(flag):
-    assert not (STUDY_DIR / "APPROVED").exists(), "an APPROVED file exists; this suite must not create or rely on it"
-    proc = subprocess.run(["bash", str(STUDY_DIR / "reproduce.sh"), flag], cwd=STUDY_DIR,
+def test_reproduce_refuses_without_approval(flag, tmp_path):
+    """In a copy of the script with no APPROVED file every mode must refuse
+    (the study folder itself carries the owner's approval since 2026-10-21,
+    so the test runs on a copy and never touches that file)."""
+    copy = tmp_path / "study"
+    copy.mkdir()
+    (copy / "reproduce.sh").write_text((STUDY_DIR / "reproduce.sh").read_text())
+    proc = subprocess.run(["bash", "reproduce.sh", flag], cwd=copy,
                           capture_output=True, text=True, env={**os.environ, "PATH": os.environ["PATH"]})
     assert proc.returncode != 0
     assert "APPROVED" in proc.stdout + proc.stderr

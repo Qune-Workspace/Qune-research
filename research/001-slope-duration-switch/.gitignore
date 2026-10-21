@@ -1,0 +1,6 @@
+# Raw data is re-fetched by the scripts and never committed (§5.1: Alpaca bars
+# are licensed; FRED files are reproducible from the manifest).  The root
+# .gitignore pattern "data/raw/" is anchored to the repository root, so it is
+# repeated here for this folder.
+data/raw/
+.pytest_cache/

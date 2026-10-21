@@ -1,12 +1,42 @@
 # Study 001 — Term-spread duration switch (IEF vs BIL)
 
-**Status: built.** The code in `src/` and `tests/` implements [PREREGISTRATION.md](PREREGISTRATION.md) and its tests pass. **No result exists.** No return of any rule or benchmark has been computed on real data; the owner's approval (§14 step 1) is pending and `reproduce.sh` refuses to run until it is recorded. This file will become the study note, including "What did not work" (§9.7), only after the runs in §14.
+**Status: halted at the data validation (§5.3), 2026-10-21. No rule has been tested.** The owner approved the pre-registration and the symbols IEF and BIL on 2026-10-21 (`APPROVED`, [trials.md](trials.md)). The first step after approval, `./reproduce.sh --validate`, failed two of the six pre-registered thresholds for the synthetic instrument series, so under §5.3 the study stopped before `--insample` or `--oos` was run. **No return of T1, T2, T3 or any benchmark has been computed.** `results/insample/` and `results/oos/` do not exist. A dated amendment proposal with a corrected construction is in §16 of [PREREGISTRATION.md](PREREGISTRATION.md) and waits for the owner's decision; nothing further runs until that decision is recorded there.
 
-The question, hypothesis, data, exact rule, trials, sample split, benchmarks, metrics and decision criteria are all fixed in PREREGISTRATION.md and are not repeated here. The trial log is [trials.md](trials.md).
+The question, hypothesis, data, exact rule, trials, sample split, benchmarks, metrics and decision criteria are all fixed in PREREGISTRATION.md and are not repeated here.
 
-## What has been done so far (dates only, no returns)
+## Validation result (backtest data check, §5.3; not a performance test)
 
-- FRED series DGS10, DTB3 and DGS7 downloaded into `data/raw/` (git-ignored); provenance (URL, UTC timestamp, rows, SHA-256, first and last valid date) in `results/data_manifest.json`. Row and missing counts match §5.4.
+Window 2016-01-04 to 2018-12-31, 753 NYSE trading days, instrument returns only, no rule applied. Source: `results/validation/validation.json` and `validation.md`; plot `results/validation/validation.png` (a backtest data comparison, not a strategy).
+
+| Check | Statistic | Value | Threshold | Result |
+|---|---|---|---|---|
+| A1 | Correlation of daily returns, IEF vs synthetic 10-year | 0.966 | ≥ 0.95 | pass |
+| A2 | OLS slope of IEF on synthetic | 0.821 | in [0.80, 1.05] | pass (at the bottom of the band) |
+| A3 | Annualised tracking error, IEF vs synthetic | 1.540% p.a. | ≤ 1.5% p.a. | **fail** |
+| A4 | Annualised mean difference, IEF − synthetic | +0.455% p.a. | within ±0.40% p.a. | **fail** |
+| B1 | Annualised mean difference, BIL − synthetic cash | −0.110% p.a. | within ±0.30% p.a. | pass |
+| B2 | Annualised tracking error, BIL vs synthetic cash | 0.288% p.a. | ≤ 0.50% p.a. | pass |
+
+The duration/convexity cross-check of the exact repricing (§5.2) agrees to 0.0000 bp per day on average (1.6 × 10⁻⁸ in return units; acceptance 0.5 bp), so the synthetic arithmetic is not the problem.
+
+What the numbers say: the ETF's daily return moves about 0.82 for every 1.00 of a 10-year par bond repriced from DGS10. That is the ETF-versus-index mismatch §5.3 anticipated (a 7–10-year index has less duration than a 10-year bond), and it is larger than the thresholds allowed for. Yields rose over the window, so the longer synthetic lost more than the ETF; that shows up as the ETF beating the synthetic by 45 bp a year (A4) and as residual day-to-day variance (A3, 4 bp over the limit). The cash leg tracks well. Both failures are small in size and both point the same way: the synthetic duration leg is too long.
+
+What this means for the study: the in-sample period (1962–2018) would have been scored on a synthetic series that is systematically more volatile than, and over rising-yield stretches lower-returning than, the instrument actually traded. §5.3 says that is not acceptable without a dated correction, so the correction is proposed in §16 (an equal-weight 7-year/10-year par-bond blend from DGS7 and DGS10, the example §5.3 itself gave) and the study waits. One correction only; if the re-run fails, the study halts for good.
+
+## What did not work (so far)
+
+- **A3 and A4 of the validation failed**, as above. The thresholds were set before any data were looked at, and the duration mismatch between a 7–10-year ETF and a 10-year par bond turned out larger than the ±0.40% p.a. and 1.5% p.a. allowances. A2 passed by 0.02.
+- **Three tests failed after approval.** `test_reproduce_refuses_without_approval` asserted that no `APPROVED` file exists, so recording the approval broke it. It now runs on a copy of the script without that file (§16, first post-approval entry). 98 tests pass again.
+- **`reproduce.sh` could not run as written.** It re-fetched the Alpaca bars on every run and required an API key pair that the run environment does not have; and on the day of the run the FRED site was in a maintenance window and returned an HTML page in place of the CSV for over twenty minutes. The script now reuses the files already in `data/raw/` in either case and says so; their provenance is in `results/data_manifest.json`. Both changes are recorded in §16. No return had been computed when they were made.
+- **Cosmetic:** the date labels on the lower axes of `validation.png` overlap. Not fixed, since the figure is a committed result file.
+
+## Paper trading
+
+Not started. §8.4 and §11 start paper trading from the publication date of a study note with results; there is no such note. Nothing is backdated.
+
+## Earlier preparation (dates only, no returns)
+
+- FRED series DGS10, DTB3 and DGS7 downloaded into `data/raw/` (git-ignored); provenance (URL, UTC timestamp, rows, SHA-256, first and last valid date) in `results/data_manifest.json`. Row and missing counts match §5.4. Alpaca bars for IEF and BIL (`adjustment='all'`, 2016-01-04 to 2026-10-21) fetched the same day; only row counts and hashes are in the manifest.
 - The signal-to-execution date mapping (§6.3) on the real FRED calendar gives 683 in-sample and 93 out-of-sample holding periods, as §8 anticipates, with no month lacking a signal. `python -m src.calendar` writes the mapping to `results/execution_calendar.csv`.
 
 ## How to run (after approval)
@@ -20,11 +50,11 @@ python -m pytest -q          # unit tests on synthetic data; no network, no real
 ./reproduce.sh --oos         # §8.2 out-of-sample, exactly once -> results/oos/
 ```
 
-`reproduce.sh` requires a file named `APPROVED` in this folder containing the owner's approval date, re-fetches the data on every run, and refuses `--oos` if `results/oos/` already exists. The main chart (`main_chart.png`: spread with the holding shaded, drawdown of T1 versus B1) is produced by `src/report.py` through `reproduce.sh`.
+`reproduce.sh` requires a file named `APPROVED` in this folder containing the owner's approval date, re-fetches the data on every run (falling back to the files already in `data/raw/` if FRED is unreachable or the Alpaca credentials are not set; §16), and refuses `--oos` if `results/oos/` already exists. The main chart (`main_chart.png`: spread with the holding shaded, drawdown of T1 versus B1) is produced by `src/report.py` through `reproduce.sh`.
 
 ### Credentials
 
-Alpaca market data (ETF bars, `adjustment='all'`, SIP feed) is fetched by `src/alpaca_bars.py`, which reads the API key pair from the environment variables `APCA_API_KEY_ID` and `APCA_API_SECRET_KEY` and from nowhere else. Export them in the shell that runs `reproduce.sh --validate` or `--oos`; `--insample` needs no credentials (FRED only). Bars are licensed and are never committed; only their row count and hash enter the manifest. FRED needs no key.
+Alpaca market data (ETF bars, `adjustment='all'`, SIP feed) is fetched by `src/alpaca_bars.py`, which reads the API key pair from the environment variables `APCA_API_KEY_ID` and `APCA_API_SECRET_KEY` and from nowhere else. Export them in the shell that runs `reproduce.sh --validate` or `--oos` to re-fetch; without them the script reuses bars already in `data/raw/`. `--insample` needs no credentials (FRED only). Bars are licensed and are never committed; only their row count and hash enter the manifest. FRED needs no key.
 
 ## Layout
 

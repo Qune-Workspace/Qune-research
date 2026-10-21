@@ -40,7 +40,15 @@ if [ "$mode" = "--oos" ] && [ -e results/oos ]; then
 fi
 
 echo "[1/2] data: FRED"
-"$PYTHON" -m src.fred DGS10 DTB3 DGS7
+if ! "$PYTHON" -m src.fred DGS10 DTB3 DGS7; then
+  # §16 amendment of 2026-10-21: FRED was in a maintenance window when the
+  # validation was first run.  A failed fetch never overwrites data/raw/
+  # (parsing precedes writing), so the files already there are reused.
+  for s in DGS10 DTB3 DGS7; do
+    [ -s "data/raw/fred_$s.csv" ] || { echo "refused: FRED fetch failed and no data/raw/fred_$s.csv" >&2; exit 1; }
+  done
+  echo "[1/2] data: FRED fetch failed; reusing data/raw/fred_*.csv (provenance in results/data_manifest.json)"
+fi
 if [ "$mode" != "--insample" ]; then
   if [ -n "${APCA_API_KEY_ID:-}" ] && [ -n "${APCA_API_SECRET_KEY:-}" ]; then
     echo "[1/2] data: Alpaca bars (adjustment=all)"

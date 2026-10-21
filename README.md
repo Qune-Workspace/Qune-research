@@ -28,9 +28,9 @@ All of it is traded only through liquid ETFs (treasury ETFs, dollar and currency
 
 | Study | Question | Status |
 |---|---|---|
-| [001 Term-spread duration switch](research/001-slope-duration-switch/PREREGISTRATION.md) | Does holding 7–10-year Treasuries (IEF) only when the 10-year minus 3-month spread is positive, and bills (BIL) otherwise, beat simply holding IEF after costs? | designed (pre-registered 2026-10-21; awaiting approval; no test run) |
+| [001 Term-spread duration switch](research/001-slope-duration-switch/PREREGISTRATION.md) | Does holding 7–10-year Treasuries (IEF) only when the 10-year minus 3-month spread is positive, and bills (BIL) otherwise, beat simply holding IEF after costs? | designed (pre-registered and approved 2026-10-21; build complete; tests running) |
 
-Study 001's symbols (IEF, BIL) are not yet on the approved paper-trading list; the approval will be recorded here before any test runs.
+Study 001's symbols (IEF, BIL) were approved for paper trading on 2026-10-21, after pre-registration and before any test.
 
 ### Earlier desk work (private workspace, summarised)
 

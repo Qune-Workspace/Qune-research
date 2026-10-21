@@ -1,6 +1,6 @@
 # Trial log: Study 001, term-spread duration switch
 
-Owner approval of the symbol list (IEF, BIL) and of PREREGISTRATION.md v1.0: **pending** (date to be recorded here when given, §14 step 1).
+Owner approval of the symbol list (IEF, BIL) and of PREREGISTRATION.md v1.0: **given 2026-10-21** (§14 step 1; recorded in `APPROVED`).
 
 Every trial is logged here before it is run (§7). The deflated Sharpe ratio uses the number of rows in this table, N = 3 at registration. Any further rule, parameter or sub-sample choice is appended with a date before it is run and N increases.
 

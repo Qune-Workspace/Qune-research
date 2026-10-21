@@ -29,6 +29,7 @@ All of it is traded only through liquid ETFs (treasury ETFs, dollar and currency
 | Study | Question | Status |
 |---|---|---|
 | [001 Term-spread duration switch](research/001-slope-duration-switch/README.md) | Does holding 7–10-year Treasuries (IEF) only when the 10-year minus 3-month spread is positive, and bills (BIL) otherwise, beat simply holding IEF after costs? | **halted at validation** (2026-10-21). Verdict: inconclusive. The synthetic pre-ETF bond series failed its pre-registered fidelity check twice (mean return gap +0.45% p.a. against a ±0.40% limit), so no rule was ever tested. Nothing is known about the hypothesis from this study. |
+| [002 Term-spread duration switch, re-tested](research/002-slope-duration-switch-r/PREREGISTRATION.md) | The same question as 001, with the synthetic bond series rebuilt so that it ages and earns roll-down, and with its bias against the ETF estimated per component before the check. | **designed** (2026-10-21). Pre-registered; no validation run, no return computed. One validation attempt, zero corrections; a second window never seen under any construction (2003–2015) is the strong test if its data can be obtained. |
 
 Study 001's symbols (IEF, BIL) were approved for paper trading on 2026-10-21, after pre-registration and before any test. The study halted the same day at its data-validation step; the halt note explains the failure, retains both validation runs, and lists what a successor study would need.
 

@@ -56,4 +56,34 @@ These are readings of the pre-registration made while implementing; none changes
 4. **NYSE calendar.** No NYSE calendar source is named in §5; `src/calendar.py` is rule-based (regular holidays with their observance rules and the exchange's unscheduled closures since 1962). Out-of-sample execution dates are additionally resolved against the bars actually present (§6.5), so a calendar error there would appear as logged slippage. The closure list should be checked against the exchange's published history before the in-sample run.
 5. **T2 start.** T2 needs 21 valid daily spreads; if that leaves the first signal date undefined, T2 simply starts at the first month where it is defined. T3 starts at the 1969-07 signal month (§7). Comparisons with B1 and B3 use the trial's own holding periods.
 6. **Ledoit–Wolf standard errors** use a Bartlett kernel with 6 lags (the Newey–West bandwidth of §9.3) in the sample and in every resample; Sharpe ratios inside the test use population moments as in the paper.
-7. **Literature DOIs** (§3) have not yet been verified; they will be recorded here with the results.
+7. **Literature DOIs** (§3) were checked against the Crossref API on 2026-10-21; see the table below. Nothing in §3 was changed: two citations carry a different year in the registry (online-first against print) and one could not be verified from an automated reader.
+
+## Literature verification (2026-10-21)
+
+Each §3 citation was looked up by title and authors in the Crossref registry. "Confirmed" means the registry entry matches the journal, volume, issue and pages in §3. Years are the print year used in §3; where the registry lists an earlier online-first year it is noted.
+
+| §3 citation | DOI | Result |
+|---|---|---|
+| Fama and Bliss (1987), AER 77(4) | none registered | Not verified: the 1987 AER volume is not in Crossref and the JSTOR record cannot be read by an automated client. Left as cited. |
+| Campbell and Shiller (1991), RES 58(3) | 10.2307/2298008 | Confirmed |
+| Cochrane and Piazzesi (2005), AER 95(1) | 10.1257/0002828053828581 | Confirmed |
+| Koijen, Moskowitz, Pedersen and Vrugt (2018), JFE 127(2) | 10.1016/j.jfineco.2017.11.002 | Confirmed |
+| Moskowitz, Ooi and Pedersen (2012), JFE 104(2) | 10.1016/j.jfineco.2011.11.003 | Confirmed |
+| Asness, Moskowitz and Pedersen (2013), JF 68(3) | 10.1111/jofi.12021 | Confirmed |
+| Brooks and Moskowitz (2017), SSRN working paper | 10.2139/ssrn.2956411 | Confirmed (working paper, 2017) |
+| Ilmanen (2011), *Expected Returns*, Wiley | book, no DOI checked | Not checked (book) |
+| Bauer and Hamilton (2018), RFS 31(2) | 10.1093/rfs/hhx096 | Confirmed; registry year 2017 (online first), print 2018 |
+| Stambaugh (1999), JFE 54(3) | 10.1016/s0304-405x(99)00041-0 | Confirmed |
+| Welch and Goyal (2008), RFS 21(4) | 10.1093/rfs/hhm014 | Confirmed; registry year 2007 (online first), print 2008 |
+| Estrella and Mishkin (1998), REStat 80(1) | 10.1162/003465398557320 | Confirmed |
+| McLean and Pontiff (2016), JF 71(1) | 10.1111/jofi.12365 | Confirmed |
+| Harvey, Liu and Zhu (2016), RFS 29(1) | 10.1093/rfs/hhv059 | Confirmed; registry year 2015 (online first), print 2016 |
+| Bailey and López de Prado (2014), JPM 40(5) | 10.3905/jpm.2014.40.5.094 | Confirmed |
+| Ledoit and Wolf (2008), JEF 15(5) | 10.1016/j.jempfin.2008.03.002 | Confirmed |
+| Newey and West (1987), Econometrica 55(3) | 10.2307/1913610 | Confirmed (registry lists first page 703 only) |
+| Politis and Romano (1994), JASA 89(428) | 10.1080/01621459.1994.10476870 | Confirmed |
+| Henriksson and Merton (1981), JB 54(4) | 10.1086/296144 | Confirmed (registry lists first page 513 only) |
+| Swinkels (2019), *Data* 4(3), 91 | 10.3390/data4030091 | Confirmed |
+| Federal Reserve H.15 release notes | web page | Checked 2026-10-21 as stated in §3 |
+
+Page numbers and journal details were not changed. The two "online first" years are registry conventions, not citation errors.

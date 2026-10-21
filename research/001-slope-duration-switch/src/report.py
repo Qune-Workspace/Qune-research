@@ -195,6 +195,8 @@ def main_chart(spread: pd.Series, schedule: pd.DataFrame, t1_result: pd.DataFram
         bottom.plot(periods["period_end"].values, dd.values, label=label, color=colour, linewidth=0.9)
     bottom.set_ylabel("drawdown (%)")
     bottom.legend(frameon=False)
+    bottom.set_xlabel("backtest; synthetic instruments in-sample, actual ETFs out-of-sample")
+    fig.autofmt_xdate()
     fig.tight_layout()
     fig.savefig(out_path, dpi=150)
     plt.close(fig)
@@ -294,7 +296,7 @@ def provenance() -> dict:
 def run_insample(out_dir: Path = RESULTS_DIR / "insample") -> None:
     fred = load_fred()
     schedule = build_schedule(fred["DGS10"], fred["DTB3"], INSAMPLE_FIRST_SIGNAL_MONTH, INSAMPLE_LAST_SIGNAL_MONTH)
-    indices = synthetic_indices(fred["DGS10"], fred["DTB3"])
+    indices = synthetic_indices(fred["DGS10"], fred["DTB3"], fred["DGS7"])
     summary = run_window("in-sample, synthetic instruments", indices, fred, schedule, None, out_dir,
                          with_subperiods=True, with_daily=False)
     base, stress = summary["cost_cases"]["base"], summary["cost_cases"]["stress"]
@@ -321,7 +323,7 @@ def run_oos(out_dir: Path = RESULTS_DIR / "oos") -> None:
     summary = {"actual": run_window("out-of-sample, actual ETFs", actual, fred, resolved, weight_b3,
                                     out_dir / "actual", with_subperiods=False, with_daily=True),
                "synthetic": run_window("out-of-sample, synthetic instruments",
-                                       synthetic_indices(fred["DGS10"], fred["DTB3"]), fred, schedule,
+                                       synthetic_indices(fred["DGS10"], fred["DTB3"], fred["DGS7"]), fred, schedule,
                                        weight_b3, out_dir / "synthetic", with_subperiods=False, with_daily=False)}
     base = summary["actual"]["cost_cases"]["base"]
     o = oos_criteria(base["descriptive"], base["inference"])

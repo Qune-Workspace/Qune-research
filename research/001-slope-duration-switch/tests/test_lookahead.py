@@ -22,7 +22,7 @@ FIRST, LAST = "2000-02", "2005-10"
 def world():
     fred = toy_yields()
     schedule = build_schedule(fred["DGS10"], fred["DTB3"], FIRST, LAST)
-    indices = synthetic_indices(fred["DGS10"], fred["DTB3"])
+    indices = synthetic_indices(fred["DGS10"], fred["DTB3"], fred["DGS7"])
     returns = backtest.instrument_returns(indices, schedule)
     return fred, schedule, indices, returns
 
@@ -46,8 +46,9 @@ def test_shifting_the_world_by_one_day_moves_trade_dates_by_one_day_only():
         assert ((b["signal_date"] - a["signal_date"]) == pd.Timedelta(days=1)).all()
         assert a["value"].to_numpy() == pytest.approx(b["value"].to_numpy(), abs=0)
         assert a["target"].tolist() == b["target"].tolist()
-    ra = backtest.instrument_returns(synthetic_indices(fred["DGS10"], fred["DTB3"]), schedule)
-    rb = backtest.instrument_returns(synthetic_indices(shifted["DGS10"], shifted["DTB3"]), schedule_shifted)
+    ra = backtest.instrument_returns(synthetic_indices(fred["DGS10"], fred["DTB3"], fred["DGS7"]), schedule)
+    rb = backtest.instrument_returns(synthetic_indices(shifted["DGS10"], shifted["DTB3"], shifted["DGS7"]),
+                                     schedule_shifted)
     assert ra.to_numpy() == pytest.approx(rb.to_numpy(), abs=0)
 
 

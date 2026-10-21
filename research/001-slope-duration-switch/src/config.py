@@ -26,6 +26,18 @@ FRED_SERIES = ("DGS10", "DTB3", "DGS7")
 IEF_EXPENSE_RATIO = 0.0015
 BIL_EXPENSE_RATIO = 0.001356
 
+# --- Synthetic duration leg (§5.2 as amended in §16, decision of 2026-10-21):
+# an equal-weight blend of a 7-year (14 semi-annual periods, DGS7) and a
+# 10-year (20 periods, DGS10) par bond from the first DGS7 observation; each
+# leg is repriced exactly, earns its own carry at the purchase yield and
+# bears half the expense ratio.  Before BLEND_START the 10-year par bond
+# alone, which no window uses since the in-sample start moved to 1969-08.
+# The weight is fixed by the index's 7-10-year maturity range, not fitted.
+BLEND_START = "1969-07-01"
+BLEND_WEIGHT_SEVEN_YEAR = 0.5
+SEVEN_YEAR_PERIODS = 14
+TEN_YEAR_PERIODS = 20
+
 # --- Synthetic-series cross-check tolerance (§5.2): 0.5 bp per day on average ---
 DC_CROSSCHECK_TOLERANCE = 0.5e-4
 
@@ -48,15 +60,21 @@ VALIDATION_THRESHOLDS = {
 # --- Sample split (§8): signal months, inclusive.  The holding period that
 # starts at a month's execution date ends at the next month's execution date,
 # so the last signal month of each window produces no holding period inside it.
-INSAMPLE_FIRST_SIGNAL_MONTH = "1962-01"
+# §16 decision of 2026-10-21: the in-sample period for every trial and
+# benchmark starts with the first execution date of August 1969 (first signal
+# date the last FRED business day of July 1969, the first month with DGS7),
+# so that one instrument construction is used throughout.  §8.1's 1962-01
+# start is superseded.
+INSAMPLE_FIRST_SIGNAL_MONTH = "1969-07"
 INSAMPLE_LAST_SIGNAL_MONTH = "2018-12"
 OOS_FIRST_SIGNAL_MONTH = "2018-12"
 OOS_LAST_SIGNAL_MONTH = "2026-09"
 T3_FIRST_SIGNAL_MONTH = "1969-07"  # DGS7 starts 1969-07-01 (§7)
 
-# --- Sub-periods (§9.6), by the calendar month of the holding period's start ---
+# --- Sub-periods (§9.6, first one as amended in §16), by the calendar month
+# of the holding period's start ---
 SUBPERIODS = {
-    "1962-02 to 1981-12 (rising rates)": ("1962-02", "1981-12"),
+    "1969-08 to 1981-12 (rising rates)": ("1969-08", "1981-12"),
     "1982-01 to 2008-12 (disinflation)": ("1982-01", "2008-12"),
     "2009-01 to 2018-12 (zero lower bound and QE)": ("2009-01", "2018-12"),
 }

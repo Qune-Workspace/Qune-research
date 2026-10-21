@@ -78,14 +78,17 @@ def test_schedule_on_toy_data_is_consistent():
 @pytest.mark.skipif(not (raw_path("DGS10").exists() and raw_path("DTB3").exists()),
                     reason="FRED files not downloaded")
 def test_real_calendar_counts_match_preregistration():
-    """§8.1: about 683 in-sample holding periods; §8.2: about 93 out-of-sample."""
+    """§8.1 as amended in §16 (2026-10-21): in-sample from the first execution
+    date of August 1969, about 593 holding periods; §8.2: about 93
+    out-of-sample."""
     dgs10, dtb3 = load_series("DGS10", RAW_DIR), load_series("DTB3", RAW_DIR)
     insample = cal.build_schedule(dgs10, dtb3, INSAMPLE_FIRST_SIGNAL_MONTH, INSAMPLE_LAST_SIGNAL_MONTH)
     oos = cal.build_schedule(dgs10, dtb3, OOS_FIRST_SIGNAL_MONTH, OOS_LAST_SIGNAL_MONTH)
     assert insample.attrs["months_without_signal"] == 0 and oos.attrs["months_without_signal"] == 0
-    assert len(cal.holding_periods(insample)) == 683
+    assert len(cal.holding_periods(insample)) == 593
     assert len(cal.holding_periods(oos)) == 93
-    assert insample["execution_date"].iloc[0].to_period("M") == pd.Period("1962-02", "M")
+    assert insample["signal_date"].iloc[0].to_period("M") == pd.Period("1969-07", "M")
+    assert insample["execution_date"].iloc[0].to_period("M") == pd.Period("1969-08", "M")
     assert insample["period_end"].iloc[-2].to_period("M") == pd.Period("2019-01", "M")
     assert oos["execution_date"].iloc[0].to_period("M") == pd.Period("2019-01", "M")
     assert oos["period_end"].iloc[-2].to_period("M") == pd.Period("2026-10", "M")

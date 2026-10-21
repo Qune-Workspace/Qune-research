@@ -5,6 +5,8 @@ applied.  Window 2016-01-04 to 2018-12-31 (inside the in-sample period; the
 out-of-sample window is not touched).  Daily comparison on the NYSE trading
 days present in the ETF bars, with the synthetic index compounded onto the
 same calendar intervals.  If any threshold fails the study halts (§5.3).
+The duration leg is the 7/10-year blend of §16 (decision of 2026-10-21);
+the thresholds are unchanged.
 
 Run only through ``reproduce.sh --validate`` after approval.
 """
@@ -24,10 +26,11 @@ from .alpaca_bars import total_return_index as etf_total_return_index
 from .config import (CASH_LEG, DURATION_LEG, RESULTS_DIR, VALIDATION_END, VALIDATION_START,
                      VALIDATION_THRESHOLDS)
 from .fred import load_series
-from .synthetic import crosscheck_mean_abs_error, synthetic_indices, ten_year_returns
+from .synthetic import blend_returns, crosscheck_mean_abs_error, synthetic_indices
 
 matplotlib.use("Agg")
-import matplotlib.pyplot as plt  # noqa: E402  (backend must be chosen first)
+import matplotlib.dates as mdates  # noqa: E402  (backend must be chosen first)
+import matplotlib.pyplot as plt  # noqa: E402
 
 TRADING_DAYS_PER_YEAR = 252
 
@@ -75,14 +78,16 @@ def plot(etf_ten: pd.Series, syn_ten: pd.Series, etf_cash: pd.Series, syn_cash: 
          out_dir: Path) -> None:
     fig, axes = plt.subplots(1, 3, figsize=(15, 4.5))
     axes[0].scatter(syn_ten * 1e4, etf_ten * 1e4, s=6, alpha=0.5, color="#1f4e79")
-    axes[0].set_xlabel("synthetic 10-year daily return (bp)")
-    axes[0].set_ylabel("IEF daily return (bp)")
-    axes[0].set_title("A1-A2: daily returns")
+    axes[0].set_xlabel("synthetic 7/10-year blend daily return (bp)")
+    axes[0].set_ylabel(f"{DURATION_LEG} daily return (bp)")
+    axes[0].set_title("A1-A2: daily returns (backtest data check)")
     for ax, (a, b, label) in zip(axes[1:], [(etf_ten, syn_ten, DURATION_LEG), (etf_cash, syn_cash, CASH_LEG)]):
         ax.plot((1 + a).cumprod(), label=label, color="#1f4e79")
         ax.plot((1 + b).cumprod(), label="synthetic", color="#c0504d", linestyle="--")
         ax.set_title(f"cumulative: {label} vs synthetic")
         ax.legend(frameon=False)
+        ax.xaxis.set_major_locator(mdates.YearLocator())
+        ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y"))
     fig.tight_layout()
     fig.savefig(out_dir / "validation.png", dpi=150)
     plt.close(fig)
@@ -91,9 +96,9 @@ def plot(etf_ten: pd.Series, syn_ten: pd.Series, etf_cash: pd.Series, syn_cash: 
 def run(start: str = VALIDATION_START, end: str = VALIDATION_END,
         out_dir: Path = RESULTS_DIR / "validation") -> bool:
     out_dir.mkdir(parents=True, exist_ok=True)
-    dgs10, dtb3 = load_series("DGS10"), load_series("DTB3")
-    synthetic = synthetic_indices(dgs10, dtb3)
-    crosscheck = crosscheck_mean_abs_error(ten_year_returns(dgs10).loc[start:end])
+    dgs10, dtb3, dgs7 = load_series("DGS10"), load_series("DTB3"), load_series("DGS7")
+    synthetic = synthetic_indices(dgs10, dtb3, dgs7)
+    crosscheck = crosscheck_mean_abs_error(blend_returns(dgs10, dgs7).loc[start:end])
     results = {}
     series = {}
     for name in (DURATION_LEG, CASH_LEG):

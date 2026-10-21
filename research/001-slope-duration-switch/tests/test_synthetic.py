@@ -69,6 +69,64 @@ def test_exact_repricing_agrees_with_duration_convexity_on_toy_yields():
     assert (ten["r_exact"] - ten["r_dc"]).abs().max() < 1e-5
 
 
+def test_blend_with_flat_yields_earns_average_carry_minus_expense():
+    """§16 blend: with unchanged yields each leg earns its own carry at the
+    purchase yield and the blend pays the whole expense ratio once."""
+    dates = pd.to_datetime(["2001-01-02", "2001-01-03", "2001-01-08"])
+    dgs10 = pd.Series([5.0, 5.0, 5.0], index=dates)
+    dgs7 = pd.Series([4.6, 4.6, 4.6], index=dates)
+    blend = synthetic.blend_returns(dgs10, dgs7, blend_start="2000-01-01")
+    expected = (0.5 * 0.046 + 0.5 * 0.05 - IEF_EXPENSE_RATIO) * np.array([1, 5]) / 365
+    assert blend["r_exact"].to_numpy() == pytest.approx(expected, abs=1e-15)
+    assert blend["r_dc"].to_numpy() == pytest.approx(expected, abs=1e-15)
+    assert blend["blended"].all()
+
+
+def test_blend_is_the_equal_weight_average_of_exactly_repriced_legs():
+    toy = toy_yields()
+    blend = synthetic.blend_returns(toy["DGS10"], toy["DGS7"], blend_start="2000-01-01")
+    both = pd.concat([toy["DGS10"], toy["DGS7"]], axis=1).dropna()
+    seven = synthetic.par_bond_returns(both["DGS7"], 14, IEF_EXPENSE_RATIO)
+    ten = synthetic.par_bond_returns(both["DGS10"], 20, IEF_EXPENSE_RATIO)
+    assert blend["r_exact"].to_numpy() == pytest.approx(
+        (0.5 * seven["r_exact"] + 0.5 * ten["r_exact"]).to_numpy(), abs=1e-15)
+    assert list(blend.index) == list(both.index[1:])
+    assert synthetic.crosscheck_passes(blend)
+    # a 7-year par bond has less duration than a 10-year one, so for the same
+    # parallel yield rise the blend loses less than the 10-year leg alone
+    dates = pd.to_datetime(["2001-01-02", "2001-01-03"])
+    up10 = synthetic.blend_returns(pd.Series([5.0, 5.5], index=dates), pd.Series([5.0, 5.5], index=dates),
+                                   blend_start="2000-01-01")["r_exact"].iloc[0]
+    only10 = synthetic.ten_year_returns(pd.Series([5.0, 5.5], index=dates))["r_exact"].iloc[0]
+    assert only10 < up10 < 0
+
+
+def test_blend_uses_the_ten_year_alone_before_dgs7_starts():
+    """Before BLEND_START the 10-year par bond alone; the return into the
+    first blend-era observation is the bridge (10-year alone); every later
+    return is the blend.  No date is covered twice and none is dropped."""
+    dates = pd.bdate_range("2001-01-01", periods=8)
+    rng = np.random.default_rng(3)
+    dgs10 = pd.Series(5.0 + np.cumsum(rng.normal(0, 0.05, 8)), index=dates)
+    dgs7 = pd.Series(np.nan, index=dates)
+    dgs7.iloc[4:] = dgs10.iloc[4:] - 0.2
+    start = str(dates[4].date())
+    blend = synthetic.blend_returns(dgs10, dgs7, blend_start=start)
+    ten = synthetic.ten_year_returns(dgs10)
+    assert list(blend.index) == list(dates[1:])
+    assert blend["blended"].tolist() == [False] * 4 + [True] * 3
+    assert blend.loc[dates[1:5], "r_exact"].to_numpy() == pytest.approx(ten.loc[dates[1:5], "r_exact"].to_numpy(), abs=1e-15)
+    assert (blend.loc[dates[5:], "r_exact"].to_numpy() != ten.loc[dates[5:], "r_exact"].to_numpy()).all()
+    tri = synthetic.total_return_index(blend["r_exact"], dates[0])
+    assert tri.index[0] == dates[0] and tri.iloc[0] == 1.0
+    assert tri.iloc[-1] == pytest.approx(np.prod(1 + blend["r_exact"]))
+    # with the default BLEND_START (1969) every toy date is in the blend era
+    indices = synthetic.synthetic_indices(dgs10, pd.Series(4.0, index=dates), dgs7.ffill().bfill())
+    full = synthetic.blend_returns(dgs10, dgs7.ffill().bfill())
+    assert full["blended"].all()
+    assert indices["IEF"].iloc[-1] == pytest.approx(np.prod(1 + full["r_exact"]))
+
+
 def test_total_return_index_starts_at_one_on_the_base_date():
     r = pd.Series([0.01, -0.02], index=pd.to_datetime(["2001-01-03", "2001-01-04"]))
     tri = synthetic.total_return_index(r, pd.Timestamp("2001-01-02"))

@@ -19,7 +19,7 @@ from tests.toy import toy_yields
 def toy_run(tmp_path_factory):
     fred = toy_yields()
     schedule = build_schedule(fred["DGS10"], fred["DTB3"], "2000-02", "2005-10")
-    indices = synthetic_indices(fred["DGS10"], fred["DTB3"])
+    indices = synthetic_indices(fred["DGS10"], fred["DTB3"], fred["DGS7"])
     out = tmp_path_factory.mktemp("insample")
     summary = report.run_window("toy", indices, fred, schedule, None, out,
                                 with_subperiods=False, with_daily=True)
@@ -86,7 +86,7 @@ def test_validate_on_toy_bars(monkeypatch, tmp_path):
     """The §5.3 statistics on a toy ETF built from the synthetic index with
     noise: the plumbing runs and the thresholds are evaluated."""
     fred = toy_yields()
-    indices = synthetic_indices(fred["DGS10"], fred["DTB3"])
+    indices = synthetic_indices(fred["DGS10"], fred["DTB3"], fred["DGS7"])
     rng = np.random.default_rng(7)
     nyse = pd.bdate_range("2001-01-02", "2003-12-31").drop(pd.Timestamp("2002-07-04"))
 

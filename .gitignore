@@ -3,5 +3,5 @@ __pycache__/
 *.pyc
 .ipynb_checkpoints/
 # Raw downloaded data is re-fetched by the scripts, never committed.
-data/raw/
+**/data/raw/
 .env

@@ -1,0 +1,98 @@
+# Architecture
+
+Qune is a small organisation of AI agents with one human owner, built so that no single agent can approve its own work, loosen its own limits or spend anything.
+
+This document covers who does what, who may decide what, how a research idea becomes a paper trade, how independence is enforced, the one shared resource that shapes the whole operation, and what the structure cannot guarantee.
+
+## Roles
+
+| Role | Owns | Does not do |
+|---|---|---|
+| Owner (human) | The mission, the hard lines, every irreversible or external decision, every loosening of a limit | Day-to-day direction; the owner is not required to reply between tasks |
+| Orchestrator (Qune) | Direction within the mission, the task queue, delegation, verification of every handover, the outcome | Accept its own work as a desk result; write to protected files without a recorded approval |
+| Strategy | The ranked list of what would move the organisation most; the weekly strategy review | Operate the desk |
+| Tech Lead | Tooling, reliability, the controller that runs unattended work | Review desk output |
+| Tester | Independent review of desk output: re-computes claims from the result files, runs the test suite, accepts or returns each task with a named defect | Place orders; read credentials; re-run research scripts that overwrite their own outputs |
+| Trading desk | Hypotheses, pre-declarations, backtests, the written strategy specifications, the post-trade reviews | Accept its own work; change limits; place an order by hand |
+| Independent Risk | Review of risk parameters, review of every strategy that reaches the bar, clearance before anything trades | Write the strategy or the risk proposal it reviews |
+
+The orchestrator, Strategy, Tech Lead and Tester are separate agents with separate instructions. The desk runs as its own agent with its own memory. Independent Risk runs as a separate lane; the reviewer of a proposal is never its author.
+
+```
+                 Owner (human)
+                 mission, hard lines, irreversible decisions, loosening
+                        |
+                        v
+                 Orchestrator (Qune)
+                 queue, delegation, verification, outcomes
+          ______________|_______________________
+         |              |              |        |
+     Strategy       Tech Lead       Tester   Trading desk  <---- reviewed by ---- Independent Risk
+     direction      tooling,        reviews  research,                            limits, clearance
+                    controller      desk     backtests,
+                                    output   paper runner
+
+     Hard lines on every box: paper only, no spending, no external contact, no self-expansion of permissions.
+```
+
+## Decision rights
+
+The default rule: reversible, within budget and inside the hard lines means the orchestrator decides. Money, credentials, permissions, anything external and anything irreversible means ask the owner first. "Reversible" means the undo command can be named before acting and works without the owner.
+
+| Decide and act (log only) | Decide, act and inform | Ask the owner first |
+|---|---|---|
+| Create, reorder, merge or kill tasks | Reversible configuration changes that are backed up and are not a permission, billing, model or credential change | Any purchase or subscription |
+| Accept or return reviewed work on the Tester's findings | Lifting a guard hold whose cause is documented and the orchestrator's own | New keys, tokens, logins, sign-ups |
+| Pre-declare and run research within the mandate; log trials | Starting or stopping a lane | Widening what any agent can do |
+| Tighten a research or risk rule | A new Tester, Strategy or Security slice | Messages or posts in the organisation's name; off-host copies; contacting anyone |
+| Fix bugs in own tooling | | Looser trading limits, live trading, new instruments, options orders |
+
+Why it is drawn this way: the expensive failures of an autonomous organisation are the ones that cannot be undone. Everything that can be undone is cheaper to do and report than to queue for a human. Everything that cannot be undone, or that changes who may do what, is cheap to wait for. The tie-breaker is explicit: if the undo cannot be named, it is ask-first.
+
+## Research lifecycle
+
+Every study passes the same gates in order. A gate is a check that produces a dated artefact; the artefact is committed before the next gate opens.
+
+1. **Question.** One question and a plain-English hypothesis with an economic reason, written before any data is examined for the test.
+2. **Pre-registration.** Universe, entry, exit, sizing, switch-off conditions, benchmarks (buy-and-hold of each traded asset, and cash), the out-of-sample split, the cost assumptions, the pass bar and the trial count. Committed in its own commit so the history shows the parameters existed before the result. Trials are logged in an append-only, hash-chained registry before they run; the registry row records the hash of the pre-registration file.
+3. **Approval to test.** The owner sees the pre-registration before any test runs. New symbols need an approval recorded before they can paper trade.
+4. **Build.** Backtest code with tests that pass. The backtest and the paper runner call the same strategy module, so what was tested is what trades.
+5. **Test, once.** The backtest runs one time against the declared bar. The out-of-sample period is touched once; if it is used to choose anything, it is burned and the report says so. Reports show zero, base and raised costs. Failure is reported with its numbers. An ambiguous result is reported as ambiguous; the original numbers are the headline.
+6. **Independent review.** The Tester re-computes the claims from the result files and checks that the pre-registration preceded the run. A pass goes to Independent Risk as a review task; a pass is not an approval.
+7. **Clearance.** Independent Risk clears the strategy for the paper account under the limits in force, or returns it.
+8. **Paper trading forward.** The runner executes the cleared rule with the risk engine and journal enforced. Paper trading starts at publication and is never backdated. Fills, slippage against the backtest assumption and no-trade decisions are logged.
+9. **Post-trade review.** Every exit record carries the rule's behaviour, the exit reason, slippage, the attribution (market move, rule timing, costs) and one lesson.
+
+A rule that fails at gate 5 is retired as that version. Retuning on the out-of-sample window is a new trial, logged as such, and counts against the deflated Sharpe of every later result in the same family.
+
+## How independence is enforced
+
+- **Different agents, different lanes.** The desk and its reviewers are separate agents with separate instructions and separate task lanes. A desk worker cannot claim a review task.
+- **The desk never accepts its own work.** Every desk handover waits in review until the Tester accepts it or returns it with a named defect. When more than five tasks are waiting in review, the next review batch is created before any new research task.
+- **Independent Risk did not write what it reviews.** The risk-limit file records who set each value, who reviewed it and when; the review note states that the reviewer wrote neither the proposal nor the strategy.
+- **Protected files.** The mandate, the limits file, the risk engine, the broker client, the journal library and the runner cannot be changed by a research task. A change guard, which makes no model call, checks every commit within about ten minutes: writes outside a task's allowed paths are restored, a change to a sensitive file is held as a patch for the orchestrator's recorded approval, and a failing test suite or leak scan restores the code. Changes to the organisation's automations or configuration without a recorded approval pause every lane.
+- **Code enforces the limits.** The risk engine refuses any order that breaches a limit, cites no written strategy, has no journal entry, or has no stop. No strategy can override it.
+- **Tightening is free, loosening is not.** Any role may propose a tighter limit through a risk task. A looser value is written as a proposal with backtest evidence and Independent Risk's opinion, and goes to the owner.
+
+## The shared-allowance constraint
+
+Every agent in the organisation, and every interactive session, draws on a single model-usage allowance measured over a rolling five-hour window. This is the binding resource, more than compute or data.
+
+- A usage guard, which makes no model call, tallies the allowance hourly and pauses the research lanes at 80% of the estimated limit. Its pause has been tested to actually block new work.
+- Heavy reading runs at night, one reader at a time. Running fourteen readers in parallel during the day once exhausted the allowance and blocked both worker lanes for about ninety minutes (see BUILD_LOG.md, 2026-10-19).
+- The day path (data, signals, risk checks, orders, journal) is built to run with zero model calls, so paper trading does not stop when research pauses.
+- Reviews and plans are sized to the allowance: a lite version runs when the window is above a stated threshold, and a second concurrent model-backed worker is not started until the guard has run clean for a week.
+
+## Evidence labels
+
+Every claim in a desk document carries one of five labels. **Observed**: the author opened or ran it in that session. **Reported**: a source says so and the author did not verify it against the full text. **Inferred**: the author's reasoning from observed or reported facts. **Proposed**: a design choice awaiting review. **Unknown**: stated as not known. A number without a label is treated as unverified.
+
+## Limitations
+
+- **One human owner.** Every irreversible decision waits for one person. If the owner is unavailable the organisation keeps doing reversible work and stops at the first ask-first boundary.
+- **AI agents can be wrong, and confidently so.** The structure assumes it: every desk result is re-computed by a different agent, every limit is enforced by code rather than by instruction, and every automated check that matters makes no model call. None of this makes a wrong conclusion impossible; it makes an unreviewed one unlikely to be published.
+- **Pre-declaration is only as strong as the gap it proves.** A hash chain proves that the declaration preceded the run; it does not prove that the parameters were chosen blind. Where the declaration and the run happened seconds apart, the review says so.
+- **Deflated Sharpe depends on an honest trial count.** The registry was incomplete for the first week; results from that period are marked, and the organisation reports the deflated Sharpe at the family count and at the full registry count.
+- **Small samples.** Most results so far rest on one out-of-sample split and on four highly correlated ETFs, which are far fewer than four independent bets. The desk says this in each report; readers should keep it.
+- **Paper fills are not real fills.** The paper broker ignores market impact, queue position and some fees. Paper performance is treated as evidence that the rule executed as specified, never as evidence of edge.
+- **Reliability is young.** The organisation's history begins on 2026-10-09. Unattended operation has failed in ways listed in BUILD_LOG.md: budget exhaustion, a 37-hour login outage, lanes stalled by an empty queue, a guard that paused everything over a self-deleting job. Each has a fix; none has yet run clean for long.

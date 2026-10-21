@@ -1,0 +1,35 @@
+{
+  "fred_DGS10.csv": {
+    "downloaded_at_utc": "2026-10-21T11:16:57Z",
+    "first_valid": "1962-01-02",
+    "last_valid": "2026-10-19",
+    "missing": 721,
+    "rows": 16905,
+    "series_id": "DGS10",
+    "sha256": "ffc712cda8ff329de0f07ea6d5d9b97a094fe40da0486319ae12bbbe19d7381d",
+    "source": "FRED",
+    "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=DGS10"
+  },
+  "fred_DGS7.csv": {
+    "downloaded_at_utc": "2026-10-21T11:16:57Z",
+    "first_valid": "1969-07-01",
+    "last_valid": "2026-10-19",
+    "missing": 636,
+    "rows": 14950,
+    "series_id": "DGS7",
+    "sha256": "15e58680bd6283eba25615c69091640f21b292b1e6dade7b6701cff271c2e2fc",
+    "source": "FRED",
+    "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=DGS7"
+  },
+  "fred_DTB3.csv": {
+    "downloaded_at_utc": "2026-10-21T11:16:57Z",
+    "first_valid": "1954-01-04",
+    "last_valid": "2026-10-19",
+    "missing": 801,
+    "rows": 18991,
+    "series_id": "DTB3",
+    "sha256": "0ba63bf126e01aa6d6f0d54dde125e9d7b6125d835b26f2608c95b3f7d943892",
+    "source": "FRED",
+    "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=DTB3"
+  }
+}

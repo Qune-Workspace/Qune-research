@@ -5,3 +5,4 @@ __pycache__/
 # Raw downloaded data is re-fetched by the scripts, never committed.
 **/data/raw/
 .env
+.worklock

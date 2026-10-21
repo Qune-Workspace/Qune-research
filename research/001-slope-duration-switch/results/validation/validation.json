@@ -6,10 +6,10 @@
   "statistics": {
     "IEF": {
       "days": 753,
-      "correlation": 0.9656746313634901,
-      "ols_slope": 0.8205501915126827,
-      "tracking_error_annual": 0.01540375618989169,
-      "mean_diff_annual": 0.004548148754788812
+      "correlation": 0.9700990695781834,
+      "ols_slope": 0.946102599491478,
+      "tracking_error_annual": 0.011453524409499614,
+      "mean_diff_annual": 0.004508518381373151
     },
     "BIL": {
       "days": 753,
@@ -21,22 +21,22 @@
   },
   "checks": {
     "A1": {
-      "value": 0.9656746313634901,
+      "value": 0.9700990695781834,
       "threshold": ">= 0.95",
       "pass": true
     },
     "A2": {
-      "value": 0.8205501915126827,
+      "value": 0.946102599491478,
       "threshold": "in [0.8, 1.05]",
       "pass": true
     },
     "A3": {
-      "value": 0.01540375618989169,
+      "value": 0.011453524409499614,
       "threshold": "<= 0.015",
-      "pass": false
+      "pass": true
     },
     "A4": {
-      "value": 0.004548148754788812,
+      "value": 0.004508518381373151,
       "threshold": "within +/-0.004",
       "pass": false
     },
@@ -51,6 +51,6 @@
       "pass": true
     }
   },
-  "duration_convexity_crosscheck_mean_abs_error": 1.60443453792679e-08,
+  "duration_convexity_crosscheck_mean_abs_error": 1.1533795824365558e-08,
   "all_pass": false
 }

@@ -28,9 +28,9 @@ All of it is traded only through liquid ETFs (treasury ETFs, dollar and currency
 
 | Study | Question | Status |
 |---|---|---|
-| [001 Term-spread duration switch](research/001-slope-duration-switch/PREREGISTRATION.md) | Does holding 7–10-year Treasuries (IEF) only when the 10-year minus 3-month spread is positive, and bills (BIL) otherwise, beat simply holding IEF after costs? | designed (pre-registered and approved 2026-10-21; build complete; tests running) |
+| [001 Term-spread duration switch](research/001-slope-duration-switch/README.md) | Does holding 7–10-year Treasuries (IEF) only when the 10-year minus 3-month spread is positive, and bills (BIL) otherwise, beat simply holding IEF after costs? | **halted at validation** (2026-10-21). Verdict: inconclusive. The synthetic pre-ETF bond series failed its pre-registered fidelity check twice (mean return gap +0.45% p.a. against a ±0.40% limit), so no rule was ever tested. Nothing is known about the hypothesis from this study. |
 
-Study 001's symbols (IEF, BIL) were approved for paper trading on 2026-10-21, after pre-registration and before any test.
+Study 001's symbols (IEF, BIL) were approved for paper trading on 2026-10-21, after pre-registration and before any test. The study halted the same day at its data-validation step; the halt note explains the failure, retains both validation runs, and lists what a successor study would need.
 
 ### Earlier desk work (private workspace, summarised)
 
@@ -52,6 +52,7 @@ These results were produced before this repository existed. They are backtests a
 | designed | Question, hypothesis, benchmarks and limits written and dated. No data examined for the test. |
 | built | Code exists and its tests pass. No result yet. |
 | tested | Backtest run once against the pre-declared bar; result published, pass or fail, with trial count and deflated Sharpe. |
+| halted at validation | A pre-registered data check failed before any rule was tested; the failure is published in full, no rule result exists, and the study is closed. A successor needs a new pre-registration. |
 | paper-trading | Cleared by Independent Risk and running forward on the paper account from the publication date. |
 
 A result is never upgraded to "tested" by re-running with changed parameters; a changed rule is a new trial and a new entry.

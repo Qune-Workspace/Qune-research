@@ -480,4 +480,6 @@ No step may be reordered. Steps 3 and 5 are the only times the author sees any r
 
 ## 16. Amendments
 
-None. (Append dated entries here; each must state what changed, why, which results had already been seen at the time, and the new trial count N.)
+(Append dated entries here; each must state what changed, why, which results had already been seen at the time, and the new trial count N.)
+
+- **2026-10-21, clarification before approval, no results seen, N unchanged (3).** §9.5 verdict precedence: the "supported" conditions and the "not supported" clause on out-of-sample drawdown can both hold. Precedence is fixed as: **not supported** wins over **inconclusive**, which wins over **supported**. Found while implementing the criteria in code, before any return had been computed.

@@ -1,0 +1,60 @@
+{
+  "run_at_utc": "2026-10-21T23:18:59Z",
+  "vendor": {
+    "source": "Tiingo end-of-day prices (licensed, not redistributed); adjClose = split- and distribution-adjusted close",
+    "rows": 6099,
+    "first_bar": "2002-07-26",
+    "last_bar": "2026-10-21",
+    "sha256": "a15abb3dfb242ff5e08c0724a4df82c35269d6541dbc451b9cd0a7230f58cc06",
+    "downloaded_at_utc": "2026-10-21T23:18:29Z"
+  },
+  "alpaca": {
+    "source": "Alpaca market data (licensed, not redistributed)",
+    "rows": 2716,
+    "first_bar": "2016-01-04",
+    "last_bar": "2026-10-21",
+    "sha256": "c8b27e189c7b4215c3c0d03ad9bba09bb767a680eb12fabbed52a7d224c1af81",
+    "downloaded_at_utc": "2026-10-21T20:22:32Z"
+  },
+  "overlap": {
+    "window": {
+      "start": "2016-01-04",
+      "end": "2018-12-31"
+    },
+    "common_return_days": 753,
+    "first_common_return_date": "2016-01-05",
+    "last_common_return_date": "2018-12-31",
+    "days_only_in_vendor": [
+      "2016-01-04"
+    ],
+    "days_only_in_alpaca": [],
+    "correlation": 0.9995905914170927,
+    "mean_diff_annual_vendor_minus_alpaca": 0.0004942119487127113,
+    "tracking_error_annual": 0.0013168048932391276,
+    "max_abs_daily_diff": 0.0013673499465400862,
+    "days_abs_diff_over_10bp": 1,
+    "mean_diff_annual_by_year": {
+      "2016": 0.0014232790691042483,
+      "2017": 2.8092499885458315e-05,
+      "2018": 3.1264277148427354e-05
+    },
+    "checks": {
+      "correlation": {
+        "value": 0.9995905914170927,
+        "threshold": ">= 0.999",
+        "pass": true
+      },
+      "mean_diff_annual": {
+        "value": 0.0004942119487127113,
+        "threshold": "within +/-0.0005",
+        "pass": true
+      }
+    }
+  },
+  "decision": {
+    "window2": "accepted",
+    "reason": "vendor series starts in time and both overlap checks pass",
+    "vendor_first_bar": "2002-07-26",
+    "required_start": "2003-01-02"
+  }
+}

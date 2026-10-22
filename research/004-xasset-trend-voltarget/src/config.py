@@ -84,3 +84,26 @@ COST_STRESS_MULTIPLE = 2.0
 # --- Trials (§7) ---
 TRIAL_IDS = ("T1", "T2", "T3", "T4")
 N_TRIALS_REGISTERED = 4
+
+# --- Decision criteria (§9.5) and the §9.6 descriptives ---
+C1_SHARPE_MARGIN = 0.10                    # §9.5 C1: against B4 and B3
+C2_T_MIN = 2.0                             # §9.5 C2: Newey–West t of mean(T1 − B4)
+C3_DSR_MIN = 0.95                          # §9.5 C3 at N = 4
+NOT_SUPPORTED_T_MAX = -1.0                 # §9.5: O1 fails with t ≤ −1.0 → not supported
+N_TRIALS_SENSITIVITY = 10                  # §7, §9.4
+POWER_MIN_SWITCHES = 40                    # §9.6: fewer on/off switches in-sample → "low-powered"
+COST_MULTIPLES_BREAKEVEN = (0.0, 0.5, 1.0, 2.0, 3.0, 5.0)   # §9.6 breakeven cost curve
+SUBPERIODS = {"2004-01..2008-12": ("2004-01", "2008-12"),    # §9.6, by holding-period start month
+              "2009-01..2015-12": ("2009-01", "2015-12"),
+              "2016-01..2018-12": ("2016-01", "2018-12")}
+CRISIS_WINDOWS = {"GFC 2008-09-01..2009-02-28": ("2008-09-01", "2009-02-28", "insample"),      # §9.6 [HRvH16]
+                  "COVID 2020-02-19..2020-03-23": ("2020-02-19", "2020-03-23", "oos"),
+                  "COVID 2020-02-19..2020-08-31": ("2020-02-19", "2020-08-31", "oos"),
+                  "2022 2022-01-01..2022-10-31": ("2022-01-01", "2022-10-31", "oos")}
+B2_WEIGHTS = {"SPY": 0.60, "IEF": 0.40}    # §9.1 B2 (SPY = the pre-registered vendor series, §16 2026-10-22 consequence 2)
+REFERENCE_SYMBOLS = ("SPY", "IEF")         # §9.6 crisis table and correlations
+VOL_REALISED_WINDOW_MONTHS = 12            # §9.6 forecast vs realised
+VOL_EXCEEDANCE_FACTOR = 1.5                # §9.6: "realised exceeded forecast by more than half"
+# The pre-registration fixes no bootstrap seed; Study 003's (20261021) is inherited so that
+# every resample is reproducible.  Recorded in §16 at the in-sample run.
+SEED = 20261021

@@ -5,6 +5,7 @@ and the ``reproduce.sh`` gates."""
 import json
 import os
 import subprocess
+import sys
 
 import numpy as np
 import pandas as pd
@@ -158,7 +159,7 @@ def test_reproduce_refuses_without_approval(flag, tmp_path):
     assert proc.returncode != 0 and "APPROVED" in proc.stdout + proc.stderr
 
 
-def test_reproduce_refuses_a_second_oos_run_and_unbuilt_modes(tmp_path):
+def test_reproduce_refuses_a_second_oos_run_and_runs_nothing_without_checks(tmp_path):
     copy = tmp_path / "study"
     copy.mkdir()
     (copy / "reproduce.sh").write_text((STUDY_DIR / "reproduce.sh").read_text())
@@ -166,5 +167,12 @@ def test_reproduce_refuses_a_second_oos_run_and_unbuilt_modes(tmp_path):
     (copy / "results" / "oos").mkdir(parents=True)
     proc = subprocess.run(["bash", "reproduce.sh", "--oos"], cwd=copy, capture_output=True, text=True)
     assert proc.returncode != 0 and "results/oos" in proc.stdout + proc.stderr
-    proc = subprocess.run(["bash", "reproduce.sh", "--insample"], cwd=copy, capture_output=True, text=True)
-    assert proc.returncode != 0 and "not built" in proc.stdout + proc.stderr
+    # --insample is built but must not compute anything without the data-check evaluation
+    # (the universe comes only from results/checks/data_checks.json)
+    (copy / "src").mkdir()
+    for name in ("__init__.py", "config.py", "data.py", "cash.py", "run.py"):
+        (copy / "src" / name).write_text((STUDY_DIR / "src" / name).read_text())
+    proc = subprocess.run(["bash", "reproduce.sh", "--insample"], cwd=copy, capture_output=True, text=True,
+                          env={**os.environ, "PYTHON": sys.executable, "PYTHONPATH": str(STUDY_DIR.parent.parent)})
+    assert proc.returncode != 0 and "data_checks.json" in proc.stdout + proc.stderr
+    assert not (copy / "results" / "insample").exists()

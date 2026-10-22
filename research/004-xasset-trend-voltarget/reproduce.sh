@@ -2,8 +2,8 @@
 # Study 004 reproduction script (PREREGISTRATION.md §13, §14; layout as Studies 001–003).
 #
 #   ./reproduce.sh --check      §5.3 data checks D0 then D1, one run -> results/checks/
-#   ./reproduce.sh --insample   §8.1 in-sample run                   -> results/insample/   (not built yet)
-#   ./reproduce.sh --oos        §8.2 out-of-sample, once             -> results/oos/        (not built yet)
+#   ./reproduce.sh --insample   §8.1 in-sample run (ten assets and nine without IEF, k frozen) -> results/insample/
+#   ./reproduce.sh --oos        §8.2 out-of-sample, once, k read from results/insample/        -> results/oos/
 #
 # Every mode refuses to run unless a file named APPROVED exists in this folder
 # (§14 step 3).  --oos refuses if results/oos/ already exists (§8.2: executed
@@ -49,7 +49,10 @@ case "$mode" in
     "$PYTHON" -m src.checks d0
     echo "[2/2] D1: per-symbol overlap against the broker's bars, then the §5.3.5 evaluation"
     "$PYTHON" -m src.checks d1 ;;
-  --insample|--oos)
-    echo "refused: $mode is not built yet (§14 step 2 remainder: the study's run.py)." >&2
-    exit 1 ;;
+  --insample)
+    echo "[1/1] in-sample run (§8.1, §9): T1-T4, B0-B4, base and stress costs, every §9.6 item"
+    "$PYTHON" -m src.run --insample ;;
+  --oos)
+    echo "[1/1] out-of-sample run (§8.2), executed exactly once"
+    "$PYTHON" -m src.run --oos ;;
 esac

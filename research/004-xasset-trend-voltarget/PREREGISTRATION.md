@@ -415,3 +415,14 @@ No short positions, no leverage, no currency ETFs, no single stocks, no futures.
 5. The disclosure of §2.4 and §8.3 stands: one of the ten (IEF) is not blind.
 
 What this costs the study, said plainly: the equity class loses its largest and most liquid instrument and the real-asset class loses its only broad commodity index, so the portfolio tested is less representative of the published cross-asset universe than the one pre-registered. The gate was set at ±0.20% because the author expected dividend-booking differences of under 0.10%; two symbols exceeded that by a wide margin and the pre-registered consequence is applied without exception. N = 4.
+
+### 2026-10-22 (22:3x London): in-sample run executed once (§14 step 6); C1 and C2 fail; seed and two procedural notes; N = 4 unchanged
+
+**What was seen at the time of writing:** `results/insample/` (commit 02eb987): every in-sample table for T1–T4 and B0–B4, ten and nine assets, base and stress. **No out-of-sample return has been computed.**
+
+- **Result:** T1 Sharpe 0.886 against 0.880 (B3) and 0.880 (B4); Newey–West t of mean(T1 − B4) 0.65; DSR 0.998 at N = 4; sign unchanged under stress. **C1 and C2 fail, C3 and C4 pass**, for T1 and for T2–T4 alike; the nine-asset run without IEF gives the same four outcomes. Under §9.5 the verdict is already "not supported"; step 8 (the single out-of-sample run) proceeds as registered. k frozen: 0.8018 (ten), 0.7764 (nine). Power: 167 switches, "as registered".
+- **Bootstrap seed (procedural gap):** this document fixed no seed for the stationary bootstrap and the Ledoit–Wolf test (§9.3 refers to Study 001's items, whose seed lived in that study's §13). The run uses Study 003's seed 20261021, set in `src/config.py` before the run (commit bff736c), so that every resample is reproducible. No result was seen before the seed was fixed.
+- **Trial-log time (correction):** the run dates for T1–T4 were entered in `trials.md` before the run (step 5, commit bff736c) as "22:5x London", an estimate of when the run would start; it started at 22:26. The rows were corrected to the actual time in the results commit (02eb987) and say so. Nothing else in the rows changed.
+- **Cash leg data:** DTB3 was re-fetched from FRED at run time, as §5.1 allows ("re-fetched if reachable"), and recorded in the manifest; it is the same series Study 003's file holds, extended to 2026-10-21.
+- **Observation on the design, recorded for the note and for successors, not acted on:** B3 and B4 have the same Sharpe ratio by construction (B4 is B3 scaled with the remainder in cash and costs scale with it), so C1's two conditions are one bar. B4's distinct role is in C2 and O1 (the mean difference). The criteria are applied exactly as written.
+- **N = 4**, unchanged. No parameter, threshold, window or universe changed.

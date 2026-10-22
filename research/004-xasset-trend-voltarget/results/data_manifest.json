@@ -217,6 +217,17 @@
     "symbol": "VNQ",
     "url": "https://data.alpaca.markets/v2/stocks/VNQ/bars"
   },
+  "fred_DTB3.csv": {
+    "downloaded_at_utc": "2026-10-22T21:26:01Z",
+    "first_bar": "1954-01-04",
+    "last_bar": "2026-10-21",
+    "last_valid": "2026-10-21",
+    "rows": 18993,
+    "series_id": "DTB3",
+    "sha256": "bb321adf1c9df8b7aab9c5051a2b5bf88a36d2fa41affd46d24440443e83bc6b",
+    "source": "FRED (fredgraph.csv)",
+    "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=DTB3"
+  },
   "tiingo_BIL_daily.csv": {
     "downloaded_at_utc": "2026-10-22T05:26:59Z",
     "first_bar": "2007-05-30",

@@ -10,7 +10,7 @@ What happened, in order (every step is a dated commit; times are London):
 
 1. 2026-10-22, 06:2x: pre-registration committed (`b7f7b63`): question, hypothesis, the three trials, the ex-ante estimate for the one modelled series (the cash accrual), every data-check branch. No fetch, no check, no return.
 2. 2026-10-22, 06:27: BIL vendor decision (§5.3.2): second-vendor BIL fetched (`521e033`), overlap against Alpaca 2016–2018 passed on the single pre-registered threshold (mean difference −0.0001% p.a. against ±0.05%), vendor accepted (`e03064d`).
-3. 2026-10-22, 08:30: engine and 92 tests committed (`987b161`), including the six engine checks of §5.3.4; `APPROVED` and the pre-run trial-log row (`8076ecc`).
+3. 2026-10-22, 08:30: engine and 94 tests committed (`987b161`; 92 in CI, where the two real-calendar tests skip without raw data), including the six engine checks of §5.3.4; `APPROVED` and the pre-run trial-log row (`8076ecc`).
 4. 2026-10-22, 08:31: data checks D0 and D2, the single run: **both passed** (`5dfe8cf`). D0: the vendor IEF file covers all 4,134 NYSE trading days of the in-sample period. D2: BIL minus the cash accrual over 2007-06 to 2018-12 is +0.037% p.a. against a ±0.30% gate and an ex-ante estimate of 0.00 ± 0.20.
 5. 2026-10-22, 08:32: T1–T3 run dates logged (`106696e`), then `reproduce.sh --insample`, the single in-sample run. Results below.
 6. 2026-10-22, 08:37: the in-sample section of this note committed (`7e44a4c`), then `reproduce.sh --oos`, the single out-of-sample run. Results below. The window had never been touched by any study.
@@ -96,6 +96,8 @@ T1 trailed B1 and B3 in all three sub-periods. The normalisation, the regime in 
 
 18 switches (prior 10–20); 30.8% of months in cash (prior 20–35%); 9 cash episodes. The in-sample test is labelled **as registered**, not low-powered: the signal changed sign often enough for C2 to have been reachable, and the prior in §2.4 was accurate. The failure of C1 and C2 is therefore a result, not an artefact of too few switches.
 
+*Addendum after the independent review (2026-10-22; wording, no number changed).* The reviewer's point stands: switch count is the pre-registered proxy for power, but the detectable effect is what a reader needs. The Newey–West standard error of mean(T1 − B3) is 0.051% per month, so C2 at t ≥ 2.0 needed a timing contribution of about 1.2% p.a. on these 185 months; a rule with a true edge of 0.5% p.a. would have failed C2 on this sample however often it switched. "The question was answerable" means that the pre-registered bar was reachable and the signal changed sign often enough to reach it, not that a small edge could have been resolved. The verdict is unaffected: the bar is the bar, and it was set before any result.
+
 ## What did not work
 
 - **The hypothesis, on this sample.** The sign of IEF's past 12-month excess return did not predict the sign of its next month's excess return well enough to beat holding the average exposure without timing: +0.23% p.a. against B3 with a t-statistic of 0.37, and −0.85% p.a. against buy-and-hold. Huang, Li, Wang and Zhou's (2020) objection in §2.3, that time-series momentum on a single asset is mostly the asset's drift, is what the exposure-matched benchmark was built to test, and on 2003–2018 it is what the data say.
@@ -176,10 +178,29 @@ The whole of T1's out-of-sample advantage is one decision: the signal turned neg
 - The out-of-sample result rests on one episode, and the author knew before designing the study that the window contained it (§2.4, §8.3). The window was inherited from Study 001, fixed on 2026-10-21 for a different hypothesis, and never touched before this run; that is the protection, and it is disclosed rather than claimed to be complete.
 - "Not supported" is a statement about the pre-registered claim (a Sharpe margin of 0.10 over an exposure-matched benchmark on 2003–2018, confirmed in sign on 2019–2026). It is not a statement that the rule is worthless: on the one sell-off in its history it did what it is meant to do. Both halves of that sentence are in the tables above.
 
+## Independent review (§14 step 10)
+
+Reviewed on 2026-10-22 by a separate agent session that did not write the code, the pre-registration or this note: [REVIEW.md](REVIEW.md). Headline: **confirmed with findings**. The reviewer reran the test suite (94 passed), recomputed 171 statistics from the committed monthly files and the raw daily files with its own code (`review_recompute.py`; all 171 match to the printed precision, including the signal values for all 278 months, the daily drawdowns and the deflated Sharpe ratio), checked that every results file has exactly one commit and that each pre-registration or pre-run commit precedes the result it governs, and applied the §9.5 table independently to the same verdict. The limits the reviewer states are real: one machine clock, unsigned commits, and git cannot show that no uncommitted run preceded a committed one.
+
+The author's response to the findings, in the reviewer's order:
+
+1. **Stale sentences in `trials.md`** ("T1, T2 and T3 have not been run"; "never been touched"): true at registration, wrong after the runs. A dated correction is appended to the log; the original lines are left as written.
+2. **"92 tests"**: the suite has 94; CI runs 92 because two tests that need the raw files skip without them. Corrected above and in the trial log.
+3. **The power sentence overstated what the sample could resolve**: accepted; addendum under the power statement.
+4. The first in-sample month's purchase of IEF is counted as a switch (the engine starts every window in BIL, §6.6), so changes of holding number 17 in-sample and 10 out-of-sample; the published counts are 18 and 10. Effect on T1 about 0.3 bp p.a.; the power label does not change at 17.
+5. C1's two legs are the same test, because a constant mix has buy-and-hold's excess-return Sharpe ratio; B3 bites in C2, C4 and O1. Said above under the inference table; repeated here.
+6. The out-of-sample hit rate of 0.20 for T1 counts the 50 months of exactly zero excess as misses; on the 43 non-zero months it is 0.44. Same cause as the undefined intervals.
+7. O1 compares T1 with B3 at the in-sample weight 0.692, as pre-registered, while T1 held IEF in 41% of out-of-sample months; against a mix at that exposure the timing contribution is +1.39% p.a. instead of +1.93% (reviewer's descriptive number, not a criterion). The sign and the reading do not change.
+8. The pre-registration header still says "no data check run, no return computed": left as written by the document's immutability rule; §16 holds the current status and now says so.
+9. `results/oos/` holds two post-hoc files written in the same commit as the run outputs; they are labelled descriptive and `summary.json` is unchanged, but the folder is not "written exactly once" by `reproduce.sh --oos` alone. Accepted as a wording limit of §13.
+10. The run outputs follow their governing commits by seconds on one clock. Accepted; see the reviewer's §5.
+
+Not checked by the reviewer, and still unchecked: the bootstrap intervals and p-values (random resampling), the `results/checks/` statistics, the stress table beyond C4, the charts, the citations and the NYSE closure list.
+
 ## Paper trading (§11, §8.4)
 
 The verdict does not switch off the paper-trading plan: §11 starts it at the first scheduled signal date after publication, and the forward record is the only test that no one has seen. It begins only after Independent Risk clearance is recorded in `RISK_CLEARANCE.md` in this folder (§12). The next signal date is the last NYSE trading day of October 2026, with execution on the first NYSE trading day of November; the starting position is BIL. Every decision record and fill goes to `paper-log/`, never backdated. Nothing is traded with real money.
 
 ## Reproduce
 
-From this folder, with the repository's virtual environment (`requirements.txt`) and an `APPROVED` file present: `./reproduce.sh --check`, `./reproduce.sh --insample`, `./reproduce.sh --oos` (refuses if `results/oos/` exists). Vendor data are not redistributed; the script re-fetches DTB3 from FRED and reuses the ETF files by hash when the vendor credentials are absent. `python -m pytest` runs the 92 engine tests on constructed data only.
+From this folder, with the repository's virtual environment (`requirements.txt`) and an `APPROVED` file present: `./reproduce.sh --check`, `./reproduce.sh --insample`, `./reproduce.sh --oos` (refuses if `results/oos/` exists). Vendor data are not redistributed; the script re-fetches DTB3 from FRED and reuses the ETF files by hash when the vendor credentials are absent. `python -m pytest` runs the 94 engine tests (92 in CI: two real-calendar tests skip when the raw files are absent); the tests use constructed data only. `python review_recompute.py` (written by the independent reviewer, not the author) recomputes every headline statistic from the committed monthly files in `results/` with numpy, pandas and scipy alone and prints the comparison; the monthly rows need no vendor data, credentials or approval file.

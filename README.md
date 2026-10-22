@@ -24,15 +24,39 @@ In order:
 
 All of it is traded only through liquid ETFs (treasury ETFs, dollar and currency ETFs, index ETFs) on the paper account. Each study has one question, a plain-English hypothesis, benchmarks and limits dated before testing, a held-back out-of-sample period, realistic costs, paper trading forward from publication (never backdated), results that include what did not work, and reproducible Python with one script for the main chart.
 
+## Results at a glance
+
+Three studies, one verdict, no edge found. Every number below is a backtest on historical prices after costs; none is a track record.
+
+| Study | What was tested | Where it stopped | Headline numbers | Trials |
+|---|---|---|---|---|
+| 001 | IEF when the 10y–3m spread is positive, else BIL, on a synthetic pre-2002 bond series | Data validation, run 1 and the one pre-decided re-run | Synthetic series vs IEF 2016–18: tracking error 1.54% (limit 1.5%), mean gap +0.455% then +0.451% p.a. (limit ±0.40%). No rule tested. | 3 registered, 0 run |
+| 002 | Same rule, synthetic series rebuilt to age and earn roll-down, bias estimated per component first | Data validation, single run | 2016–18: all six checks pass (mean gap +0.10% vs +0.05% estimate). 2003–15: level gap −0.01% vs −0.05% estimate passes; tracking error 2.02% vs 1.5% fails. No rule tested. | 3 registered, 0 run |
+| 003 | IEF when its 12-month return beats bills, else BIL; actual ETF history only | Finished: in-sample, then out-of-sample once; independently reviewed | In-sample 2003–18 (185 months): Sharpe 0.45 vs 0.55 buy-and-hold and 0.55 exposure-matched; t = 0.37; deflated Sharpe 0.95 at N = 3. Out-of-sample 2019–26 (93 months): Sharpe 0.16 vs −0.26; daily drawdown −6.5% vs −23.9%; t = 1.31, one episode. **Verdict: not supported.** | 3 registered, 3 run |
+
+What a reader should take from this: the two halts are the programme working as designed (a fidelity limit was set before the check and the check failed, twice, once narrowly), and the one finished study says that 12-month momentum on intermediate Treasuries did not beat holding them over 2003–2018, while the held-back window went its way on a single 2021–2024 exit. The pre-registered verdict table decides, and it says "not supported". Each study's note starts with its verdict and lists what did not work.
+
+### Reproduce in three commands
+
+```
+git clone <this repository> && cd qune-research
+python3 -m venv .venv && .venv/bin/pip install -r research/003-bond-tsmom-ief/requirements.txt
+cd research/003-bond-tsmom-ief && ../../.venv/bin/python -m pytest -q && ../../.venv/bin/python review_recompute.py
+```
+
+The third command runs the 94 engine tests on constructed data (92 when the raw files are absent), then recomputes every headline statistic of Study 003 from the committed monthly return files (`results/*/monthly_base.csv`) with code written by the independent reviewer, not the author, and prints the comparison with the published values. No vendor data, credentials or approval file are needed for that.
+
+Re-running the backtest itself (`reproduce.sh --check | --insample | --oos`) needs the raw vendor files, which are not redistributed: DTB3 is re-fetched from FRED without a key, the IEF and BIL daily series need a data-vendor token and the broker bars need paper-account keys (see each study's §5.1 and §13). A re-fetched vendor series is re-based on every download, so its bytes will not match the hashes in `results/data_manifest.json` and the hash-checked reuse will refuse; a reader with their own vendor access reproduces the result from their fetch and compares against the committed CSVs rather than against the hashes. `--oos` refuses whenever `results/oos/` exists: the out-of-sample window is touched once.
+
 ## Research index
 
 | Study | Question | Status |
 |---|---|---|
 | [001 Term-spread duration switch](research/001-slope-duration-switch/README.md) | Does holding 7–10-year Treasuries (IEF) only when the 10-year minus 3-month spread is positive, and bills (BIL) otherwise, beat simply holding IEF after costs? | **halted at validation** (2026-10-21). Verdict: inconclusive. The synthetic pre-ETF bond series failed its pre-registered fidelity check twice (mean return gap +0.45% p.a. against a ±0.40% limit), so no rule was ever tested. Nothing is known about the hypothesis from this study. |
 | [002 Term-spread duration switch, re-tested](research/002-slope-duration-switch-r/README.md) | The same question as 001, with the synthetic bond series rebuilt so that it ages and earns roll-down, and with its bias against the ETF estimated per component before the check. | **halted at validation** (2026-10-22). Verdict: inconclusive. The rebuilt series passed every check on 2016–2018 and the level check on 2003–2015 (gap −0.01% p.a. against an estimate of −0.05%), then failed the tracking-error check on 2003–2015 (2.02% against 1.5% p.a.), a limit set for a calmer window and carried over unchanged. One run, no correction, no rule tested. |
-| [003 Time-series momentum in intermediate Treasuries](research/003-bond-tsmom-ief/README.md) | Does holding IEF only when its trailing 12-month return beats bills, and BIL otherwise, beat holding IEF after costs? Actual ETF history only (2003–2018 in-sample), no synthetic series; the same untouched out-of-sample window. | **finished** (2026-10-22). Verdict: **not supported**. In-sample the rule trailed both buy-and-hold IEF and the exposure-matched mix (Sharpe 0.45 vs 0.55) with 18 switches, so the test was not low-powered; C1 and C2 failed. Out-of-sample, run once, both sign conditions held (Sharpe 0.16 vs −0.26; drawdown −6.5% vs −23.9%) on one decision, the exit of February 2021 that sat out 2022. The pre-registered precedence rule decides. Paper trading from the first month-end after Independent Risk clearance. |
+| [003 Time-series momentum in intermediate Treasuries](research/003-bond-tsmom-ief/README.md) | Does holding IEF only when its trailing 12-month return beats bills, and BIL otherwise, beat holding IEF after costs? Actual ETF history only (2003–2018 in-sample), no synthetic series; the same untouched out-of-sample window. | **finished** (2026-10-22). Verdict: **not supported**. In-sample the rule trailed both buy-and-hold IEF and the exposure-matched mix (Sharpe 0.45 vs 0.55) with 18 switches, so the test was not low-powered; C1 and C2 failed. Out-of-sample, run once, both sign conditions held (Sharpe 0.16 vs −0.26; drawdown −6.5% vs −23.9%) on one decision, the exit of February 2021 that sat out 2022. The pre-registered precedence rule decides. **Independently reviewed** the same day (confirmed with findings; 171 of 171 recomputed statistics match; see the study's REVIEW.md). Paper trading from the first month-end after Independent Risk clearance. |
 
-Study 001's symbols (IEF, BIL) were approved for paper trading on 2026-10-21, after pre-registration and before any test. Studies 001 and 002 halted at their data-validation step before any rule was tested; each halt note explains the failure, keeps every validation run, and lists what a successor would need. Study 003 is the first study to reach a verdict: its data checks passed, its in-sample test failed two of four criteria, and its out-of-sample window (2019-01 to 2026-09, shared by all three studies and touched exactly once, on 2026-10-22) went the rule's way on a single episode; the pre-registered table makes that "not supported" and the note says why. An independent review of all three studies is the next step.
+Study 001's symbols (IEF, BIL) were approved for paper trading on 2026-10-21, after pre-registration and before any test. Studies 001 and 002 halted at their data-validation step before any rule was tested; each halt note explains the failure, keeps every validation run, and lists what a successor would need. Study 003 is the first study to reach a verdict: its data checks passed, its in-sample test failed two of four criteria, and its out-of-sample window (2019-01 to 2026-09, shared by all three studies and touched exactly once, on 2026-10-22) went the rule's way on a single episode; the pre-registered table makes that "not supported" and the note says why. Study 003 has been independently reviewed by a separate agent that did not write the code (every recomputed number matched; three wording findings, answered in the note by dated additions). The same review of the two halts is the next step.
 
 ### Earlier desk work (private workspace, summarised)
 
@@ -63,18 +87,23 @@ A result is never upgraded to "tested" by re-running with changed parameters; a 
 
 Five minutes: this file, then [RISK_FRAMEWORK.md](RISK_FRAMEWORK.md). Twenty minutes: add [BUILD_LOG.md](BUILD_LOG.md) and the latest study folder. The rest: [ARCHITECTURE.md](ARCHITECTURE.md) for how the organisation is wired.
 
-Layout (folders marked "planned" do not exist yet):
+Layout:
 
 ```
 README.md               this file
 ARCHITECTURE.md         roles, decision rights, research lifecycle, limitations
 BUILD_LOG.md            dated decisions and mistakes, oldest first
 RISK_FRAMEWORK.md       the desk's rules and the current paper limits
-research/NNN-slug/      one study per folder (planned)
-  PREREGISTRATION.md    question, hypothesis, benchmarks, limits, dated
-  RESULTS.md            what happened, including what failed
-  src/                  Python, one reproduce script for the main chart
-  paper/                forward paper-trading log from publication
+research/NNN-slug/      one study per folder
+  PREREGISTRATION.md    question, hypothesis, benchmarks, limits, order of operations, dated; amendments in §16
+  trials.md             every trial logged before it runs; data-check log
+  APPROVED              the approval record the reproduce script requires
+  README.md             the study note: verdict first, what happened in order, what did not work
+  REVIEW.md             independent review by a separate agent that did not write the code (once done)
+  reproduce.sh          --check | --validate | --insample | --oos, each gated; --oos runs once
+  src/, tests/          Python and its unit tests (constructed data only)
+  results/              outputs written once and never edited; data_manifest.json with file hashes
+  paper-log/            forward paper-trading record from publication (once a study trades)
 tools/scan.sh           leak scan run before every commit and push
 .github/workflows/      the unit tests of every study, run on each push (no data, no secrets)
 LICENSE                 MIT for the code and documents; vendor data excluded; not advice

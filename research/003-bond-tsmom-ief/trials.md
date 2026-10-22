@@ -28,3 +28,7 @@ Every trial is logged here before it is run (§7). The deflated Sharpe ratio use
 | Post-hoc (descriptive) | 2026-10-22 08:4x London | `posthoc_bootstrap_nan.py`: why two intervals are NaN and their values on finite resamples. No decision weight; nothing in `results/oos/summary.json` changed. |
 
 In-sample returns were first computed on 2026-10-22 at 08:33 London (step 6); the out-of-sample window was touched once, at 08:37 London (step 8), and will not be run again under this study. N = 3; no further trial will be added. T1, T2 and T3 have not been run. The out-of-sample window (2019-01 to 2026-09) has never been touched by any study.
+
+## Correction after the independent review (2026-10-22, §14 step 10)
+
+The reviewer found two stale statements in this file, left as written above so that the log is not edited after the fact: (1) the last paragraph's sentences "T1, T2 and T3 have not been run" and "The out-of-sample window (2019-01 to 2026-09) has never been touched by any study", and the T1 row's "OOS not yet run", were true when written at registration and are wrong after the runs recorded in the same table: T1–T3 were run in-sample once (08:33 London) and out-of-sample once (08:37 London), and the window has now been touched exactly once, by this study. (2) "92 tests pass" in the step-3 row: the suite has 94 tests; 92 is the count CI sees because two real-calendar tests skip without the raw files, and the author's own run executed all 94. N = 3 is unchanged; no further trial will be added.

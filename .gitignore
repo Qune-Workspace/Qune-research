@@ -6,3 +6,5 @@ __pycache__/
 **/data/raw/
 .env
 .worklock
+# Paper-trading fetches are provenance-hashed in paper-log/manifest.json, never committed.
+**/paper-log/raw/

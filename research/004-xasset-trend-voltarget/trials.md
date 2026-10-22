@@ -16,3 +16,4 @@ Every trial is logged here before it is run (§7). The deflated Sharpe ratio use
 | Step | Date | Outcome |
 |---|---|---|
 | Pre-registration committed (§14 step 1) | 2026-10-22 | this commit; no fetch, no check, no return computed; ten of the twelve instruments have never been fetched from any source |
+| Shared library piece 1 (§14 step 2, in progress) | 2026-10-22 20:3x London | `qune_research/` dates, sizing, engine with tests for §5.3.4 (i), (ii), (iii), (v), (vi), (viii): 9 pass on constructed data; in CI. Check (ii) reworded (§16). No data fetched, no check run, no return computed. Remaining for step 2: data adapters, statistics (incl. check vii), report, the study's `src/` and `reproduce.sh`. |

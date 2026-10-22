@@ -1,0 +1,5 @@
+# Direct dependencies of the shared library (Study 004 PREREGISTRATION.md §13),
+# pinned to the versions its tests were run with.
+numpy==2.5.4
+pandas==3.0.6
+pytest==9.1.1

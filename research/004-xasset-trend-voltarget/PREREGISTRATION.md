@@ -389,3 +389,9 @@ No short positions, no leverage, no currency ETFs, no single stocks, no futures.
 ## 16. Amendments
 
 (Append dated entries here; each must state what changed, why, which results had already been seen at the time, and the trial count N.)
+
+### 2026-10-22: engine check (ii) made testable; library piece 1 built (§14 step 2, in progress); no data fetched, nothing seen
+
+- **What changed:** the wording of engine check §5.3.4 (ii). As written ("shifting every series forward by one trading day moves every signal and execution date by one day and changes no weight") it cannot hold in general: a one-trading-day shift changes which bar is the last of a calendar month, so the month-end signal dates and the 12-month lookback bars are not the same bars shifted. The test implements the check's purpose (no date is hard-coded; every signal, execution date and weight follows the data) with a shift that preserves each bar's calendar month and ordering, one calendar year, and asserts that every signal date, execution date, weight and period return moves with it unchanged. The design (§6) is untouched.
+- **Built:** `qune_research/` piece 1: `dates` (month-end signal dates, next-bar execution dates, the lookback bar with the entry rule of §8.1), `sizing` (excess momentum, long/flat signal, 63-day close-to-close volatility, the capped inverse-volatility weights with the proportional scale-down), `engine` (multi-asset monthly backtest with drift and per-asset costs, the exposure ratio k for B4). Tests for §5.3.4 (i), (ii), (iii), (v), (vi), (viii) on constructed data: 9 pass; added to CI. Not yet built: the data adapters with hashing, the statistics module with the degenerate-resample rule (check vii), the report, the study's own `src/` and `reproduce.sh`.
+- **What had been seen when this was written:** nothing of this study's data; no file for the ten unfetched ETFs exists on disk. **N = 4**, unchanged.

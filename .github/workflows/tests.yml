@@ -23,6 +23,7 @@ jobs:
           - research/001-slope-duration-switch
           - research/002-slope-duration-switch-r
           - research/003-bond-tsmom-ief
+          - qune_research
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5

@@ -76,7 +76,11 @@ research/NNN-slug/      one study per folder (planned)
   src/                  Python, one reproduce script for the main chart
   paper/                forward paper-trading log from publication
 tools/scan.sh           leak scan run before every commit and push
+.github/workflows/      the unit tests of every study, run on each push (no data, no secrets)
+LICENSE                 MIT for the code and documents; vendor data excluded; not advice
 ```
+
+The workflow's status for every commit is on the repository's Actions tab. The tests use constructed series only; a passing run says the engines and statistics behave as specified and nothing about any result.
 
 Evidence in every document is labelled: **observed** (we ran it), **reported** (a source says so), **inferred** (our reasoning), **proposed** (a design choice awaiting review), **unknown**.
 

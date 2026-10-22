@@ -1,0 +1,36 @@
+# Runs every study's unit tests on push and pull request.  No secrets, no
+# vendor data: the tests use constructed series only, and every reproduce
+# script refuses to touch returns without an APPROVED file and raw data that
+# this workflow never has.  A green badge means the engines and statistics
+# behave as specified; it says nothing about any result.
+name: tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        study:
+          - research/001-slope-duration-switch
+          - research/002-slope-duration-switch-r
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: ${{ matrix.study }}/requirements.txt
+      - name: Install pinned dependencies
+        run: python -m pip install --quiet -r "${{ matrix.study }}/requirements.txt"
+      - name: Run the study's tests
+        working-directory: ${{ matrix.study }}
+        run: python -m pytest -q

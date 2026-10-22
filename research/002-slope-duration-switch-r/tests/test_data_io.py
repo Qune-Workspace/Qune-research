@@ -71,9 +71,21 @@ def _fake_study_001(root: Path, content: bytes, recorded_sha: str) -> Path:
     (source / "data" / "raw").mkdir(parents=True)
     (source / "results").mkdir()
     (source / "data" / "raw" / "alpaca_IEF_1Day_all.csv").write_bytes(content)
+    (source / "data" / "raw" / "fred_DGS7.csv").write_bytes(content)
     (source / "results" / "data_manifest.json").write_text(json.dumps(
-        {"alpaca_IEF_1Day_all.csv": {"sha256": recorded_sha, "rows": 1, "source": "test"}}))
+        {"alpaca_IEF_1Day_all.csv": {"sha256": recorded_sha, "rows": 1, "source": "test"},
+         "fred_DGS7.csv": {"sha256": recorded_sha, "rows": 1, "source": "test"}}))
     return source
+
+
+def test_reuse_fred_file_from_study_001(tmp_path):
+    content = b"observation_date,DGS7\n2024-01-02,3.9\n"
+    probe = _fake_study_001(tmp_path / "probe", content, "x")
+    good = fred.sha256_of(probe / "data" / "raw" / "fred_DGS7.csv")
+    source = _fake_study_001(tmp_path, content, good)
+    target = reuse_bars.reuse_study_001_fred("DGS7", tmp_path / "raw", tmp_path / "m.json", source)
+    assert target.name == "fred_DGS7.csv" and target.read_bytes() == content
+    assert json.loads((tmp_path / "m.json").read_text())["fred_DGS7.csv"]["sha256"] == good
 
 
 def test_reuse_copies_only_when_the_hash_matches_study_001_manifest(tmp_path):

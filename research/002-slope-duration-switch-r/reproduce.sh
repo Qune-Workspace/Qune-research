@@ -45,12 +45,18 @@ fi
 
 echo "[1/2] data: FRED"
 if ! "$PYTHON" -m src.fred DGS10 DTB3 DGS7; then
-  # A failed fetch never overwrites data/raw/ (parsing precedes writing), so
-  # files already there are reused, with their manifest entry as provenance.
-  for s in DGS10 DTB3 DGS7; do
-    [ -s "data/raw/fred_$s.csv" ] || { echo "refused: FRED fetch failed and no data/raw/fred_$s.csv" >&2; exit 1; }
-  done
-  echo "[1/2] data: FRED fetch failed; reusing data/raw/fred_*.csv (provenance in results/data_manifest.json)"
+  # A failed fetch (FRED serves an HTML maintenance page at times) never
+  # overwrites data/raw/ (parsing precedes writing).  Files already there are
+  # reused; failing that, Study 001's files are copied after a SHA-256 check
+  # against its manifest.  Either way the provenance is in the manifest.
+  if [ -s data/raw/fred_DGS10.csv ] && [ -s data/raw/fred_DTB3.csv ] && [ -s data/raw/fred_DGS7.csv ]; then
+    echo "[1/2] data: FRED fetch failed; reusing data/raw/fred_*.csv (provenance in results/data_manifest.json)"
+  elif "$PYTHON" -m src.reuse_bars --fred DGS10 DTB3 DGS7; then
+    echo "[1/2] data: FRED fetch failed; Study 001's FRED files copied after a SHA-256 check"
+  else
+    echo "refused: FRED fetch failed, no data/raw/fred_*.csv, and Study 001's files unavailable." >&2
+    exit 1
+  fi
 fi
 if [ "$mode" != "--insample" ]; then
   if [ -n "${APCA_API_KEY_ID:-}" ] && [ -n "${APCA_API_SECRET_KEY:-}" ]; then

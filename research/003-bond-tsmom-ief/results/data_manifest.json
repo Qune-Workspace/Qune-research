@@ -1,0 +1,17 @@
+{
+  "tiingo_BIL_daily.csv": {
+    "downloaded_at_utc": "2026-10-22T05:26:59Z",
+    "first_bar": "2007-05-30",
+    "last_bar": "2026-10-21",
+    "params": {
+      "format": "json",
+      "resampleFreq": "daily",
+      "startDate": "2007-05-01"
+    },
+    "rows": 4881,
+    "sha256": "3701cdcf6294fd7a70556a141cee1b2fabdd878e691481cf44291fc5ee062869",
+    "source": "Tiingo end-of-day prices (licensed, not redistributed); adjClose = split- and distribution-adjusted close",
+    "symbol": "BIL",
+    "url": "https://api.tiingo.com/tiingo/daily/bil/prices"
+  }
+}

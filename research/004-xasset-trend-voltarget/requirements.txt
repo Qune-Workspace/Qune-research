@@ -1,0 +1,9 @@
+# Direct dependencies of Study 004 (PREREGISTRATION.md §13), pinned to the
+# versions the tests were run with; the shared library qune_research/ is
+# imported from the repository root (conftest.py, reproduce.sh).
+numpy==2.5.4
+pandas==3.0.6
+scipy==1.18.1
+statsmodels==0.15.0
+requests==2.34.2
+pytest==9.1.1

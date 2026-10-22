@@ -12,6 +12,11 @@ sizing    time-series trend signals, close-to-close volatility, capped
 engine    multi-asset monthly backtest with drift and per-asset costs (§6.3–§6.4)
 stats     metrics and inference (§9.3–§9.4), ported from Study 003 by attribution,
           with the degenerate-resample rule for the bootstrap interval (§2.5)
+nyse      rule-based NYSE trading calendar (ported from Study 003 by attribution)
+data      vendor adapters with provenance hashing (Tiingo, Alpaca, FRED) and the
+          hash-checked reuse of an earlier study's file; every path a parameter
+datacheck coverage against the NYSE calendar and two-vendor overlap statistics,
+          with no threshold of any study (§5.3.1–§5.3.2)
 """
 
 __version__ = "0.1.0"

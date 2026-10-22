@@ -305,3 +305,11 @@ No synthetic duration series and no pre-2002 history. No volatility scaling, no 
 ## 16. Amendments
 
 (Append dated entries here; each must state what changed, why, which results had already been seen at the time, and the trial count N.)
+
+### 2026-10-22: BIL vendor decision (§5.3.2 steps 1–2; §14 step 2): **vendor accepted**
+
+- **What changed:** nothing in the design. This entry records the outcome of the pre-committed procedure.
+- **Step 1 (fetch):** Tiingo daily BIL prices fetched 2026-10-22T05:27Z with the desk's existing credential (token read from the environment, sent as a header, never logged; no credential created): 4,881 rows, 2007-05-30 to 2026-10-21, provenance in `results/data_manifest.json`. The series starts before 2007-06-01, so the full cash-check window is available. Committed (521e033) before step 2 ran. Correction to §4: the vendor's first bar is 2007-05-30, so the fund's inception date of 2007-05-25 is not confirmed by this file and stays unverified; nothing depends on it.
+- **Step 2 (overlap check, pre-registered pass/fail):** on 753 common return days 2016-01-05 to 2018-12-31, Tiingo `adjClose` returns against Alpaca `adjustment='all'` returns: annualised mean difference vendor − Alpaca **−0.0001% p.a.** (within ±0.05%: pass). Descriptive, no decision weight: correlation 0.9507, tracking error 0.088% p.a., largest daily gap 3.0 bp, no day over 10 bp; by year +0.006%, −0.000%, −0.006%. The correlation is low while the largest gap is three basis points, which is the quantisation effect §5.3.2 described in advance and the reason correlation was not a threshold. Full statistics in `results/checks/bil_vendor_decision.{json,md}`.
+- **Consequence:** §5.3.3 (D2, the cash-leg level check) runs over **2007-06-01 to 2018-12-31** on the vendor series. Branch F does not apply.
+- **What had been seen when this was written:** BIL returns inside 2016–2018 from both vendors (already seen under Studies 001 and 002 for Alpaca) and the BIL file's row count and first/last dates. No cash-leg series was built, no return before 2016 was read, no rule was run. **N = 3**, unchanged.

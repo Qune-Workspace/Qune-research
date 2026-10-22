@@ -1,4 +1,24 @@
 {
+  "alpaca_BIL_1Day_all.csv": {
+    "downloaded_at_utc": "2026-10-21T20:22:32Z",
+    "first_bar": "2016-01-04",
+    "last_bar": "2026-10-21",
+    "params": {
+      "adjustment": "all",
+      "end": "2026-10-21T20:07:32Z",
+      "feed": "sip",
+      "limit": 10000,
+      "start": "2016-01-04",
+      "timeframe": "1Day"
+    },
+    "reused_at_utc": "2026-10-22T05:27:20Z",
+    "reused_from": "Study 001 data/raw (same bytes; SHA-256 verified against Study 001 results/data_manifest.json)",
+    "rows": 2716,
+    "sha256": "56f5058022079bb01a29e00a5a80f79122d4e0b9722de4291b91b9182a17f5dd",
+    "source": "Alpaca market data (licensed, not redistributed)",
+    "symbol": "BIL",
+    "url": "https://data.alpaca.markets/v2/stocks/BIL/bars"
+  },
   "tiingo_BIL_daily.csv": {
     "downloaded_at_utc": "2026-10-22T05:26:59Z",
     "first_bar": "2007-05-30",

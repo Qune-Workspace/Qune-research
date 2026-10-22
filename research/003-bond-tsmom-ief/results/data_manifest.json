@@ -39,6 +39,17 @@
     "symbol": "IEF",
     "url": "https://data.alpaca.markets/v2/stocks/IEF/bars"
   },
+  "fred_DTB3.csv": {
+    "downloaded_at_utc": "2026-10-22T07:30:53Z",
+    "first_valid": "1954-01-04",
+    "last_valid": "2026-10-20",
+    "missing": 801,
+    "rows": 18992,
+    "series_id": "DTB3",
+    "sha256": "0cba14db6f47f5ac132af45880aaf3e25df8aa002dc39bb6b28c20835fe75422",
+    "source": "FRED",
+    "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=DTB3"
+  },
   "tiingo_BIL_daily.csv": {
     "downloaded_at_utc": "2026-10-22T05:26:59Z",
     "first_bar": "2007-05-30",

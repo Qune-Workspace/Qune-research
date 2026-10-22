@@ -1,0 +1,87 @@
+{
+  "window": {
+    "name": "window1",
+    "start": "2016-01-04",
+    "end": "2018-12-31",
+    "etf_source": "Alpaca bars, adjustment='all' (Study 001 fetch, reused)"
+  },
+  "statistics": {
+    "IEF": {
+      "days": 753,
+      "first_return_date": "2016-01-05",
+      "last_return_date": "2018-12-31",
+      "correlation": 0.9697532802266929,
+      "ols_slope": 0.939854290542996,
+      "tracking_error_annual": 0.011588404148525163,
+      "mean_diff_annual": 0.0009997714210304748,
+      "mean_diff_annual_by_year": {
+        "2016": -0.0006287981749626175,
+        "2017": 0.0014617656301798413,
+        "2018": 0.0021663468078742007
+      }
+    },
+    "BIL": {
+      "days": 753,
+      "first_return_date": "2016-01-05",
+      "last_return_date": "2018-12-31",
+      "correlation": 0.055185086177939456,
+      "ols_slope": 0.24308287099310594,
+      "tracking_error_annual": 0.0028775472084717345,
+      "mean_diff_annual": -0.0010955625081714047,
+      "mean_diff_annual_by_year": {
+        "2016": -0.0009913144529910788,
+        "2017": -0.0011883175891490567,
+        "2018": -0.001107055482374079
+      }
+    }
+  },
+  "checks": {
+    "A1": {
+      "value": 0.9697532802266929,
+      "threshold": ">= 0.95",
+      "pass": true
+    },
+    "A2": {
+      "value": 0.939854290542996,
+      "threshold": "in [0.8, 1.05]",
+      "pass": true
+    },
+    "A3": {
+      "value": 0.011588404148525163,
+      "threshold": "<= 0.015",
+      "pass": true
+    },
+    "A4": {
+      "value": 0.0009997714210304748,
+      "threshold": "in [-0.0025, 0.0035]",
+      "pass": true,
+      "exante_central_estimate": 0.0005
+    },
+    "B1": {
+      "value": -0.0010955625081714047,
+      "threshold": "within +/-0.003",
+      "pass": true
+    },
+    "B2": {
+      "value": 0.0028775472084717345,
+      "threshold": "<= 0.005",
+      "pass": true
+    }
+  },
+  "D1_by_year_descriptive": {
+    "2016": {
+      "observed_mean_diff_annual": -0.0006287981749626175,
+      "rolldown_estimate_annual": 0.00533
+    },
+    "2017": {
+      "observed_mean_diff_annual": 0.0014617656301798413,
+      "rolldown_estimate_annual": 0.00438
+    },
+    "2018": {
+      "observed_mean_diff_annual": 0.0021663468078742007,
+      "rolldown_estimate_annual": 0.00147
+    }
+  },
+  "duration_convexity_crosscheck_mean_abs_error": 9.769466000268736e-07,
+  "all_pass": true
+}

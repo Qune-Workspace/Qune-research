@@ -1,0 +1,66 @@
+{
+  "window1": {
+    "all_pass": true,
+    "checks": {
+      "A1": {
+        "value": 0.9697532802266929,
+        "threshold": ">= 0.95",
+        "pass": true
+      },
+      "A2": {
+        "value": 0.939854290542996,
+        "threshold": "in [0.8, 1.05]",
+        "pass": true
+      },
+      "A3": {
+        "value": 0.011588404148525163,
+        "threshold": "<= 0.015",
+        "pass": true
+      },
+      "A4": {
+        "value": 0.0009997714210304748,
+        "threshold": "in [-0.0025, 0.0035]",
+        "pass": true,
+        "exante_central_estimate": 0.0005
+      },
+      "B1": {
+        "value": -0.0010955625081714047,
+        "threshold": "within +/-0.003",
+        "pass": true
+      },
+      "B2": {
+        "value": 0.0028775472084717345,
+        "threshold": "<= 0.005",
+        "pass": true
+      }
+    }
+  },
+  "window2": {
+    "included": true,
+    "all_pass": false,
+    "checks": {
+      "A1": {
+        "value": 0.9597174340911926,
+        "threshold": ">= 0.95",
+        "pass": true
+      },
+      "A2": {
+        "value": 0.9263341989745213,
+        "threshold": "in [0.8, 1.05]",
+        "pass": true
+      },
+      "A3": {
+        "value": 0.020164724108645244,
+        "threshold": "<= 0.015",
+        "pass": false
+      },
+      "A4": {
+        "value": -8.411946282997198e-05,
+        "threshold": "in [-0.0045, 0.0035]",
+        "pass": true,
+        "exante_central_estimate": -0.0005
+      }
+    }
+  },
+  "all_pass": false
+}

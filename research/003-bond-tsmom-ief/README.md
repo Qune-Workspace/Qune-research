@@ -1,8 +1,8 @@
 # Study 003 — Time-series momentum in intermediate Treasuries (IEF vs BIL)
 
-**In-sample result (2003-08 to 2018-12, 185 monthly holding periods): the rule did not beat its benchmarks.** Holding IEF only when its trailing 12-month return exceeded bills (T1) earned an annualised Sharpe ratio of 0.45 after costs, against 0.55 for buy-and-hold IEF (B1) and 0.55 for the constant mix with the same average IEF exposure (B3). Of the four pre-registered in-sample criteria (Study 001 §9.5, inherited), **C1 and C2 fail**, C3 passes by 0.001 and C4 passes. Under the pre-registered verdict table, a failure of any in-sample criterion makes the final verdict for T1 **not supported**, whatever the out-of-sample window shows. The out-of-sample run (§8.2) still goes ahead exactly once, as §14 requires, and its results are reported below once it has run.
+**Verdict: not supported** (pre-registered table, Study 001 §9.5, inherited; published 2026-10-22). **In-sample (2003-08 to 2018-12, 185 monthly holding periods) the rule did not beat its benchmarks:** holding IEF only when its trailing 12-month return exceeded bills (T1) earned an annualised Sharpe ratio of 0.45 after costs, against 0.55 for buy-and-hold IEF (B1) and 0.55 for the constant mix with the same average IEF exposure (B3); criteria **C1 and C2 fail**, C3 passes by 0.001, C4 passes. **Out-of-sample (2019-01 to 2026-09, 93 months, run once) both sign conditions hold:** T1's Sharpe ratio was 0.16 against −0.26 for B1 and B3, its daily maximum drawdown −6.5% against −23.9%, because it held bills for the 42 months from February 2021 to July 2024 and sat out the 2022 sell-off. Under the pre-registered table a failure of any in-sample criterion is "not supported", and the precedence rule fixed before any result (not supported > inconclusive > supported) decides. The out-of-sample window went the rule's way on the one episode it exists for, with a t-statistic of 1.3; the table was written so that the author could not re-weight the criteria after seeing that, and this note does not.
 
-The in-sample test was **not** low-powered by the pre-registered standard (§9.6): T1 switched 18 times (the author's prior was 10–20) and was in cash in 31% of months (prior 20–35%). The question was answerable on this sample, and the answer on this sample is no.
+The in-sample test was **not** low-powered by the pre-registered standard (§9.6): T1 switched 18 times (the author's prior was 10–20) and was in cash in 31% of months (prior 20–35%). The question was answerable on that sample, and the answer on that sample is no. The forward paper-trading record (§11) is the only clean test left, and it starts after Independent Risk clearance.
 
 Everything on this page is a backtest on historical ETF prices and bill yields. Nothing here is a track record, a forecast or investment advice. The question, hypothesis, benchmarks, costs, criteria and order of operations are fixed in [PREREGISTRATION.md](PREREGISTRATION.md) (and, for the sections it inherits, in [Study 001's](../001-slope-duration-switch/PREREGISTRATION.md)); they are not repeated here. The trial log is [trials.md](trials.md).
 
@@ -13,7 +13,7 @@ What happened, in order (every step is a dated commit; times are London):
 3. 2026-10-22, 08:30: engine and 92 tests committed (`987b161`), including the six engine checks of §5.3.4; `APPROVED` and the pre-run trial-log row (`8076ecc`).
 4. 2026-10-22, 08:31: data checks D0 and D2, the single run: **both passed** (`5dfe8cf`). D0: the vendor IEF file covers all 4,134 NYSE trading days of the in-sample period. D2: BIL minus the cash accrual over 2007-06 to 2018-12 is +0.037% p.a. against a ±0.30% gate and an ex-ante estimate of 0.00 ± 0.20.
 5. 2026-10-22, 08:32: T1–T3 run dates logged (`106696e`), then `reproduce.sh --insample`, the single in-sample run. Results below.
-6. Out-of-sample: not yet run at the time of this section's commit. §14 step 8 follows the commit of this section.
+6. 2026-10-22, 08:37: the in-sample section of this note committed (`7e44a4c`), then `reproduce.sh --oos`, the single out-of-sample run. Results below. The window had never been touched by any study.
 
 ## Data checks (§5.3; backtest data check, not a performance test)
 
@@ -112,6 +112,74 @@ T1 trailed B1 and B3 in all three sub-periods. The normalisation, the regime in 
 - The vendor's adjusted close carries a known +0.05% p.a. offset against Alpaca's convention (Study 002 §5.3.4); it is immaterial to a sign rule and applies equally to T1 and B1.
 - The author knew the broad history of US rates before designing the study (§2.4). The rule has no parameter, so that knowledge could not be used to tune it; it could have been used to choose the question, and the pre-registered power statement exists so that the reader can judge whether the sample was adequate (it was).
 
-## Out-of-sample (§8.2; 2019-01 to 2026-09)
+## Out-of-sample results (§8.2; 2019-01-02 to 2026-10-01, 93 holding periods; run once; base costs)
 
-Not yet run at the time of this section's commit. It runs exactly once, after this section is committed, by `reproduce.sh --oos`, with the B3 weight frozen at 0.692; the results, O1 and O2, and the final verdict are appended below when it has run. Per the pre-registered verdict table the final verdict for T1 cannot be better than **not supported**, because C1 and C2 failed in-sample; the out-of-sample run is reported for the record and because it is the one window that holds the episode (2022) a trend rule exists for.
+Instruments and signal entirely from Alpaca `adjustment='all'` bars (Study 001's fetch, SHA-256 verified); B3 weight frozen at 0.692 from in-sample. Every execution date fell on a bar. The in-sample section above was committed before this run (`7e44a4c`); `results/oos/` was written once and `reproduce.sh --oos` now refuses.
+
+| | Ann. return | Ann. vol. | Sharpe | Max DD (monthly) | Max DD (daily) | Hit rate (excess > 0) | Switches | Share in IEF |
+|---|---|---|---|---|---|---|---|---|
+| **T1** 12-month excess return sign | 3.21% | 3.89% | **0.157** | −5.5% | **−6.5%** | 0.20 | 10 | 0.41 |
+| T2 12-1 | 2.58% | 4.20% | 0.002 | −11.3% | −11.6% | 0.19 | 12 | 0.42 |
+| T3 10-month moving average | 1.36% | 4.80% | −0.241 | −14.4% | −15.2% | 0.24 | 16 | 0.62 |
+| B0 cash (actual BIL) | 2.66% | 0.59% | — | −0.2% | | | | 0 |
+| B1 buy-and-hold IEF | 0.45% | 7.39% | **−0.259** | −22.2% | **−23.9%** | 0.44 | 0 | 1 |
+| B2 50/50 rebalanced | 1.61% | 3.74% | −0.259 | −10.8% | | 0.44 | | 0.5 |
+| B3 constant mix, w = 0.692 | 1.18% | 5.14% | **−0.259** | −14.9% | | 0.44 | | 0.69 |
+
+Cumulative over the 93 months: T1 +27.7%, cash +22.5%, B3 +9.5%, B1 +3.5%. Source: `results/oos/metrics_base.csv`, `summary.json`.
+
+| T1 | vs B1 | vs B3 |
+|---|---|---|
+| Mean monthly return difference, annualised | +2.51% p.a. | **+1.93% p.a.** |
+| Newey–West t (6 lags) | 1.29 | **1.31** |
+| Ledoit–Wolf Sharpe difference (annualised), bootstrap p | +0.42, p = 0.33 | +0.42, p = 0.33 |
+
+| Criterion | Requirement | Observed | Result |
+|---|---|---|---|
+| O1 | mean(T1 − B3) > 0 | +1.93% p.a. (t = 1.31) | holds |
+| O2 | Sharpe(T1) > Sharpe(B1) | 0.157 > −0.259 | holds |
+| Drawdown clause ("not supported" if T1's out-of-sample maximum drawdown exceeds B1's) | | −6.5% vs −23.9% | not triggered |
+| **Verdict for T1** | supported needs C1–C4 and O1–O2 all to hold | C1, C2 failed in-sample | **not supported** |
+
+O1 and O2 also hold for T2 and T3. The deflated Sharpe ratio of T1 on this window is 0.52 at N = 3 (descriptive; it is not an out-of-sample criterion). Stress costs change nothing (`metrics_stress.csv`). Two reported intervals for T1 came out NaN (the stationary-bootstrap Sharpe interval and the Ledoit–Wolf interval): T1's excess return over cash is exactly zero in 50 of 93 months because it held the cash benchmark itself, and a bootstrap resample drawn only from those months has no Sharpe ratio. The point estimates, t-statistics and p-values are unaffected. Dropping the degenerate resamples (1 of 10,000 and 4 of 10,000) gives [−0.70, 0.95] for T1's annualised Sharpe and [−0.46, 1.43] for the Sharpe difference against B3; computed post hoc by `posthoc_bootstrap_nan.py` into `results/oos/posthoc_bootstrap_nan.md`, with the published files untouched.
+
+![Out-of-sample: 12-month excess return of IEF over cash at each month-end, shaded where T1 holds IEF; drawdown of T1 versus B1](results/oos/main_chart.png)
+
+### Mechanism (§9.6, descriptive)
+
+55 cash months in 6 episodes (mean length 9.2 months). In those months IEF returned −0.1% per month on average and cash +0.2%; cash beat IEF in 60% of them. Episode by episode (IEF total return minus cash over the episode; T1's own return over the episode):
+
+| Holding | Signal months | Length | IEF − cash | T1 |
+|---|---|---|---|---|
+| IEF | 2019-01 to 2021-01 | 25 | +12.3% | +14.5% |
+| **BIL** | **2021-02 to 2024-07** | **42** | **−19.0%** | **+10.1%** |
+| IEF | 2024-08 to 2024-11 | 4 | −5.4% | −3.9% |
+| BIL | 2024-12 to 2025-03 | 4 | +3.0% | +1.3% |
+| IEF | 2025-04 to 2025-06 | 3 | +0.3% | +1.3% |
+| BIL | 2025-07 to 2025-09 | 3 | +0.8% | +1.0% |
+| IEF | 2025-10 to 2026-02 | 5 | −1.5% | 0.0% |
+| BIL | 2026-03 to 2026-04 | 2 | −0.9% | +0.6% |
+| IEF | 2026-05 | 1 | −0.1% | +0.1% |
+| BIL | 2026-06 to 2026-08 | 3 | −4.9% | +0.9% |
+
+The whole of T1's out-of-sample advantage is one decision: the signal turned negative at the January 2021 month-end, the rule went to bills on 2021-02-01 and stayed there until 2024-08-01, through a 19-percentage-point shortfall of IEF against cash. Outside that episode the rule was whipsawed (it re-entered IEF in August 2024 and lost 3.9% in four months; it missed a 3-point rally in bills in early 2025) and ended roughly level with cash. The 10 switches and 59% of months in cash are outside the in-sample prior (10–20 switches; 20–35% in cash), as the window's composition (a rally, then the largest sell-off in IEF's history, then a range) would lead one to expect; §8.3 said in advance that this window would be decided by one episode, and it was. At the September 2026 month-end the signal was −7.4% and all three trials were in bills for October 2026.
+
+## What did not work (continued, out-of-sample)
+
+- **The out-of-sample window went the rule's way and the verdict is still "not supported".** That is the pre-registration working as designed, not a failure of the data: C1 and C2 were in-sample conditions on a sample that had enough switches to answer them, and they were not met. A reader who weights 93 months with one decisive episode above 185 months with 18 switches would call this inconclusive or better. The author wrote the table so as not to be able to become that reader after seeing the numbers.
+- **One episode.** T1's edge out-of-sample is the single exit of February 2021. A t-statistic of 1.3 on 93 months cannot distinguish the rule from a lucky exit, and a 42-month stretch in cash is also what a rule with no information would have produced if it had happened to exit then. Study 001 §9.5 says what this window can and cannot establish; it is the reason "inconclusive" exists in the table, and in this study it did not get the chance to apply.
+- **Whipsaw outside the episode.** The August 2024 re-entry cost 3.9% in four months; the early-2025 exit missed a 3-point rally. Net of the big episode the rule did about as well as cash and worse than it would have by staying in bills throughout the range.
+- **Two confidence intervals were undefined** for a reason the inherited statistic did not anticipate (a strategy that holds the cash benchmark for most of a window). Disclosed above with the post-hoc values; a successor should define the Sharpe ratio of a zero-variance resample before running.
+
+## Limitations of what can be concluded (continued)
+
+- The out-of-sample result rests on one episode, and the author knew before designing the study that the window contained it (§2.4, §8.3). The window was inherited from Study 001, fixed on 2026-10-21 for a different hypothesis, and never touched before this run; that is the protection, and it is disclosed rather than claimed to be complete.
+- "Not supported" is a statement about the pre-registered claim (a Sharpe margin of 0.10 over an exposure-matched benchmark on 2003–2018, confirmed in sign on 2019–2026). It is not a statement that the rule is worthless: on the one sell-off in its history it did what it is meant to do. Both halves of that sentence are in the tables above.
+
+## Paper trading (§11, §8.4)
+
+The verdict does not switch off the paper-trading plan: §11 starts it at the first scheduled signal date after publication, and the forward record is the only test that no one has seen. It begins only after Independent Risk clearance is recorded in `RISK_CLEARANCE.md` in this folder (§12). The next signal date is the last NYSE trading day of October 2026, with execution on the first NYSE trading day of November; the starting position is BIL. Every decision record and fill goes to `paper-log/`, never backdated. Nothing is traded with real money.
+
+## Reproduce
+
+From this folder, with the repository's virtual environment (`requirements.txt`) and an `APPROVED` file present: `./reproduce.sh --check`, `./reproduce.sh --insample`, `./reproduce.sh --oos` (refuses if `results/oos/` exists). Vendor data are not redistributed; the script re-fetches DTB3 from FRED and reuses the ETF files by hash when the vendor credentials are absent. `python -m pytest` runs the 92 engine tests on constructed data only.

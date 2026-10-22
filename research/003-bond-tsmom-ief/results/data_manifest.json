@@ -40,7 +40,7 @@
     "url": "https://data.alpaca.markets/v2/stocks/IEF/bars"
   },
   "fred_DTB3.csv": {
-    "downloaded_at_utc": "2026-10-22T07:32:10Z",
+    "downloaded_at_utc": "2026-10-22T07:36:27Z",
     "first_valid": "1954-01-04",
     "last_valid": "2026-10-20",
     "missing": 801,

@@ -1,8 +1,8 @@
 # Study 004: cross-asset time-series momentum with volatility targeting, ten liquid ETFs, long-only or flat
 
-**Verdict: not supported** (pre-registered table, §9.5; published 2026-10-22; independent review pending, §14 step 10). **Status: finished (§14 step 9); out-of-sample run once on 2026-10-22, never to be re-run.** Pre-registration: [PREREGISTRATION.md](PREREGISTRATION.md) (committed before any data were fetched); trial log: [trials.md](trials.md); data checks: [results/checks/data_checks.md](results/checks/data_checks.md); in-sample outputs: `results/insample/`; out-of-sample outputs: `results/oos/`.
+**Verdict: not supported** (pre-registered table, §9.5; published 2026-10-22; independently reviewed 2026-10-23, confirmed with findings: [REVIEW.md](REVIEW.md)). **Status: finished (§14 step 9); out-of-sample run once on 2026-10-22, never to be re-run.** Pre-registration: [PREREGISTRATION.md](PREREGISTRATION.md) (committed before any data were fetched); trial log: [trials.md](trials.md); data checks: [results/checks/data_checks.md](results/checks/data_checks.md); in-sample outputs: `results/insample/`; out-of-sample outputs: `results/oos/`.
 
-**Out-of-sample headline (2019-01-02 to 2026-09-30, 93 monthly holding periods, run once, base costs): both pre-registered sign conditions held, and the verdict is still "not supported".** T1 earned a Sharpe ratio of 0.336 against 0.200 for the always-long volatility-scaled portfolio (B3) and for the exposure-matched one (B4), so **O2 passes**; the mean monthly difference T1 − B4 was +0.00027 with a Newey–West t of 0.35, so **O1 passes** (a sign condition, as registered: 93 months cannot establish a difference of this size); T1's monthly maximum drawdown was −4.1% against −11.1% for B4, so the drawdown clause is not triggered. **The verdict is fixed by the in-sample failures of C1 and C2 under the precedence rule written before any result** (not supported > inconclusive > supported), and this note does not re-weight the criteria after seeing the window go the rule's way. What the window shows, descriptively: the trend signal kept the book out of most of the 2022 sell-off (−3.1% from January to October 2022 against −13.4% for B3, −19.3% for equal weight and −18.2% for SPY), and that one episode is where its whole out-of-sample advantage sits; the 2020 crash it only softened (−8.5% against −11.8% for B3 over 2020-02-19 to 2020-03-23) and it then missed the recovery (−3.8% to 2020-08-31 against +3.3% for equal weight). T2 and T4 pass both sign conditions; T3 fails both. The nine-asset run without IEF passes both (Sharpe 0.340 against 0.273, t of the difference 0.03). Over the same window, plain equal weight (Sharpe 0.43) and 60/40 (0.74, vendor SPY) beat every volatility-scaled variant: the window rewarded equity beta, and 10%-per-asset volatility targeting with no leverage gave it up.
+**Out-of-sample headline (2019-01-02 to 2026-09-30, 93 monthly holding periods, run once, base costs): both pre-registered sign conditions held, and the verdict is still "not supported".** T1 earned a Sharpe ratio of 0.336 against 0.199 for the always-long volatility-scaled portfolio (B3) and for the exposure-matched one (B4), so **O2 passes**; the mean monthly difference T1 − B4 was +0.00027 with a Newey–West t of 0.35, so **O1 passes** (a sign condition, as registered: 93 months cannot establish a difference of this size); T1's monthly maximum drawdown was −4.1% against −11.1% for B4, so the drawdown clause is not triggered. **The verdict is fixed by the in-sample failures of C1 and C2 under the precedence rule written before any result** (not supported > inconclusive > supported), and this note does not re-weight the criteria after seeing the window go the rule's way. What the window shows, descriptively: the trend signal kept the book out of most of the 2022 sell-off (−3.1% from January to October 2022 against −13.4% for B3, −19.3% for equal weight and −18.2% for SPY), and that one episode is where its whole out-of-sample advantage sits; the 2020 crash it only softened (−8.5% against −11.8% for B3 over 2020-02-19 to 2020-03-23) and it then missed the recovery (−3.8% to 2020-08-31 against +3.3% for equal weight). T2 and T4 pass both sign conditions; T3 fails both. The nine-asset run without IEF passes both (Sharpe 0.340 against 0.273, t of the difference 0.03). Over the same window, plain equal weight (Sharpe 0.43) and 60/40 (0.74, vendor SPY) beat every volatility-scaled variant: the window rewarded equity beta, and 10%-per-asset volatility targeting with no leverage gave it up.
 
 **In-sample headline (2004-01 to 2018-12, 180 monthly holding periods, base costs): the trend signal added nothing measurable on top of volatility scaling.** T1 (hold each asset only when its 12-month excess return over cash is positive, each position sized to a 10% volatility target with a 25% cap) earned a Sharpe ratio of 0.886 against 0.880 for the always-long volatility-scaled portfolio (B3) and 0.880 for the same portfolio at T1's own average exposure (B4). **C1 fails** (the pre-registered margin is 0.10) and **C2 fails** (Newey–West t of the monthly difference T1 − B4 is 0.65 against the 2.0 required). C3 (deflated Sharpe 0.998 at N = 4) and C4 (the sign of T1 − B4 holds under doubled costs) pass. T2, T3 and T4 fail C1 and C2 on the same criteria. Because C1 and C2 fail, **the §9.5 table already fixes the verdict as "not supported" whatever the out-of-sample window shows**; the out-of-sample run still happens, once, as pre-registered, because the window's result is informative and the programme runs every step it registered. The test is not low-powered: T1 switched 167 times across the ten assets (the pre-registered floor was 40).
 
@@ -38,7 +38,7 @@ Reading: volatility scaling, not trend, did the work. B3 lifts the Sharpe ratio 
 |---|---|---|---|---|---|---|
 | T1 | 0.44 to 1.37 | −0.00030 / −0.48 | +0.005 / 0.98 | **+0.00033 / 0.65** | +0.005 / 0.98 | +0.00031 / 0.59 |
 | T2 | 0.24 to 1.25 | −0.00102 / −1.68 | −0.158 / 0.49 | −0.00040 / −0.78 | −0.158 / 0.48 | −0.00043 / −0.85 |
-| T3 | 0.30 to 1.28 | −0.00090 / −1.53 | −0.114 / 0.54 | −0.00027 / −0.56 | −0.114 / 0.54 | −0.00032 / −0.68 |
+| T3 | 0.29 to 1.27 | −0.00090 / −1.53 | −0.114 / 0.54 | −0.00027 / −0.56 | −0.114 / 0.54 | −0.00032 / −0.68 |
 | T4 | 0.37 to 1.37 | −0.00068 / −1.27 | −0.038 / 0.85 | −0.00005 / −0.12 | −0.038 / 0.84 | −0.00009 / −0.20 |
 
 No bootstrap resample was degenerate (0 dropped in every interval). Deflated Sharpe ratio (§9.4; variance of the four trials' monthly Sharpe ratios 0.000337, floor not applied): T1 PSR 0.999, **DSR 0.998 at N = 4**, 0.998 at N = 10; T2 0.991 / 0.988; T3 0.994 / 0.992; T4 0.997 / 0.996. These say the portfolios' Sharpe ratios are far from zero, which is the volatility-scaled long-only portfolio's merit, not the signal's.
@@ -56,7 +56,7 @@ T2, T3 and T4: C1 FAIL, C2 FAIL, C3 pass, C4 pass, each.
 
 | | Ann. return | Ann. vol | Sharpe | Max DD (monthly) | Turnover p.a. | Gross exposure |
 |---|---|---|---|---|---|---|
-| B1 | 6.87% | 10.84% | 0.563 | −30.1% | 0.46 | 1.00 |
+| B1 | 6.87% | 10.84% | 0.563 | −30.0% | 0.46 | 1.00 |
 | B3 | 5.09% | 4.72% | 0.838 | −9.5% | 0.89 | 0.93 |
 | B4 = B3 × 0.7764 | 4.22% | 3.68% | 0.838 | −7.3% | 0.69 | 0.72 |
 | **T1** | **4.70%** | **4.05%** | **0.879** | **−5.4%** | **1.86** | **0.72** |
@@ -66,7 +66,7 @@ T1 vs B4: NW mean +0.00040, t = 0.74; LW Sharpe difference +0.041, p = 0.85; DSR
 
 ## Pre-registered descriptives (§9.6; no decision weight)
 
-**Per-asset attribution, T1 (ten assets).** Contribution to the arithmetic annual return (the ten legs sum to 4.2% a year; the remainder of the 4.6% is the cash leg) and share of the gross return's variance; asset-months on out of months present: IWM 0.45% / 10% / 139 of 180; EFA 0.53% / 12% / 123; EEM 0.48% / 10% / 122 of 176; SHY 0.28% / 2% / 124; IEF 0.46% / 11% / 123; TLT 0.31% / 12% / 123; LQD 0.50% / 15% / 124; HYG 0.38% / 8% / 97 of 128; GLD 0.40% / 8% / 98 of 157; VNQ 0.41% / 12% / 119 of 159. No asset dominates; the risk is spread as the sizing intends. Each asset's own long/flat position against its own always-on position (annualised Sharpe of the weighted excess return): the signal helped in EFA (0.56 vs 0.43), EEM (0.54 vs 0.46), SHY (0.89 vs 0.67), HYG (0.66 vs 0.41) and hurt in IEF (0.38 vs 0.50), TLT (0.25 vs 0.49), LQD (0.45 vs 0.52), VNQ (0.49 vs 0.53); IWM and GLD were a wash. **Timing the Treasury legs cost the most**, the same reading Study 003 reached for IEF alone.
+**Per-asset attribution, T1 (ten assets).** Contribution to the arithmetic annual return (the ten legs sum to 4.2% a year; the remainder of the 4.6% is the cash leg) and share of the gross return's variance; asset-months on out of months present: IWM 0.45% / 10% / 139 of 180; EFA 0.53% / 12% / 123; EEM 0.48% / 10% / 122 of 176; SHY 0.28% / 2% / 124; IEF 0.46% / 11% / 123; TLT 0.31% / 11% / 123; LQD 0.50% / 15% / 124; HYG 0.38% / 8% / 97 of 128; GLD 0.40% / 8% / 98 of 157; VNQ 0.41% / 12% / 119 of 159. No asset dominates; the risk is spread as the sizing intends. Each asset's own long/flat position against its own always-on position (annualised Sharpe of the weighted excess return): the signal helped in EFA (0.55 vs 0.43), EEM (0.54 vs 0.46), SHY (0.88 vs 0.67), HYG (0.66 vs 0.41) and hurt in IEF (0.38 vs 0.50), TLT (0.25 vs 0.49), LQD (0.45 vs 0.52), VNQ (0.49 vs 0.53); IWM and GLD were a wash. **Timing the Treasury legs cost the most**, the same reading Study 003 reached for IEF alone.
 
 **Crisis table (in-sample window, §9.6).** 2008-09-01 to 2009-02-28, cumulative: T1 **+2.4%**, B1 −20.7%, B2 −24.4%, B3 −5.3%, B4 −4.2%, SPY −41.4%, IEF +6.4%. This is the episode the design exists for and the signal did what it should: by September 2008 the equity, credit and real-asset legs were flat and the book sat in Treasuries and cash. It is one episode, as the 2022 exit was for Study 003. Nine-asset run: T1 +1.9%, B3 −6.5%, B4 −5.1%.
 
@@ -80,9 +80,9 @@ T1 vs B4: NW mean +0.00040, t = 0.74; LW Sharpe difference +0.041, p = 0.85; DSR
 
 | Period | B1 | B3 | B4 | T1 | T2 | T3 | T4 |
 |---|---|---|---|---|---|---|---|
-| 2004-01..2008-12 | 0.34, 6.4%, −26.0% | 0.62, 5.8%, −8.3% | 0.62, 5.2%, −6.6% | **1.01, 7.0%, −4.1%** | 0.59, 5.0%, −4.2% | 0.69, 5.4%, −4.0% | 0.83, 5.9%, −4.1% |
+| 2004-01..2008-12 | 0.34, 6.3%, −26.0% | 0.62, 5.8%, −8.3% | 0.62, 5.2%, −6.6% | **1.01, 7.0%, −4.1%** | 0.59, 5.0%, −4.1% | 0.69, 5.4%, −4.0% | 0.83, 5.9%, −4.1% |
 | 2009-01..2015-12 | 0.82, 7.7%, −8.5% | 1.16, 4.9%, −5.5% | 1.16, 3.9%, −4.4% | 1.13, 4.2%, −4.0% | 0.94, 3.3%, −6.1% | 0.90, 3.3%, −5.6% | 1.06, 3.7%, −5.1% |
-| 2016-01..2018-12 | 0.70, 4.7%, −5.3% | 0.68, 3.7%, −4.6% | 0.68, 3.1%, −3.7% | **0.17, 1.6%, −5.2%** | 0.45, 2.6%, −4.1% | 0.54, 2.5%, −3.2% | 0.36, 2.2%, −4.2% |
+| 2016-01..2018-12 | 0.70, 4.7%, −5.3% | 0.68, 3.7%, −4.6% | 0.68, 3.1%, −3.7% | **0.17, 1.6%, −5.2%** | 0.45, 2.6%, −4.1% | 0.53, 2.5%, −3.2% | 0.36, 2.2%, −4.2% |
 
 The whole of T1's in-sample advantage sits in 2004–2008, which contains the one crisis; in 2009–2015 it matched B3 and in 2016–2018 it lost clearly (Sharpe 0.17 against 0.68), the pattern the agenda called trend's 2010s decay.
 
@@ -92,7 +92,7 @@ Plots: `results/insample/exposure_drawdown_10assets.png` (T1 gross exposure and 
 
 ## What did not work (§9.7; in-sample)
 
-- **C1 and C2 for every trial.** T1's Sharpe advantage over B3 and B4 is 0.006; the margin was 0.10. The monthly difference against B4 has t = 0.65. T2 (6-month), T3 (3-month) and T4 (blend) are worse than T1 and worse than B3 on Sharpe (0.72, 0.77, 0.84 against 0.88), with two to three and a half times B3's turnover.
+- **C1 and C2 for every trial.** T1's Sharpe advantage over B3 and B4 is 0.005; the margin was 0.10. The monthly difference against B4 has t = 0.65. T2 (6-month), T3 (3-month) and T4 (blend) are worse than T1 and worse than B3 on Sharpe (0.72, 0.77, 0.84 against 0.88), with two to three and a half times B3's turnover.
 - **The shorter lookbacks lose to the long-only book.** T2's NW t against B3 is −1.68 and its Ledoit–Wolf Sharpe difference −0.16 a year; T3's −1.53 and −0.11. The horizon that practitioners blend in did not help here.
 - **2016–2018.** T1's Sharpe 0.17 against B3's 0.68: three years of whipsaw in which being flat cost return without avoiding a drawdown (T1's monthly max DD −5.2% was *larger* than B3's −4.6% in that sub-period).
 - **Timing Treasuries.** IEF's and TLT's own long/flat positions had lower Sharpe ratios than their always-on positions (0.38 vs 0.50; 0.25 vs 0.49), and LQD's too. The signal added value in the equity and credit legs and in SHY only.
@@ -122,10 +122,10 @@ Run once by `reproduce.sh --oos` on code 1697e9d (2026-10-22 23:20–23:23 Londo
 | B0 cash (BIL) | 2.65% | 0.58% | — | −0.1% | −0.2% | — | 0 | 0 | — |
 | B1 equal weight | 6.61% | 10.10% | 0.426 | −19.6% | −22.4% | 0.581 | 0.41 | 1.00 | −0.50 / 4.6 |
 | B2 60/40 (vendor SPY) | 10.62% | 10.92% | 0.742 | −18.8% | −21.2% | 0.645 | 0.36 | 1.00 | −0.45 / 4.0 |
-| B3 vol-scaled, always long | 3.75% | 6.43% | 0.200 | −13.8% | −15.5% | 0.548 | 1.01 | 0.95 | −0.62 / 4.7 |
-| B4 = B3 × 0.8018 | 3.57% | 5.17% | 0.200 | −11.1% | −12.4% | 0.548 | 0.81 | 0.76 | −0.62 / 4.7 |
+| B3 vol-scaled, always long | 3.75% | 6.43% | 0.199 | −13.8% | −15.5% | 0.548 | 1.01 | 0.95 | −0.62 / 4.7 |
+| B4 = B3 × 0.8018 | 3.57% | 5.17% | 0.199 | −11.1% | −12.4% | 0.548 | 0.81 | 0.76 | −0.62 / 4.7 |
 | **T1 12-month, long/flat** | **3.95%** | **4.04%** | **0.336** | **−4.1%** | **−11.4%** | **0.538** | **2.16** | **0.63** | **−0.76 / 4.6** |
-| T2 6-month | 3.74% | 3.85% | 0.294 | −4.2% | −11.1% | 0.527 | 3.20 | 0.62 | −0.33 / 4.8 |
+| T2 6-month | 3.74% | 3.85% | 0.293 | −4.2% | −11.1% | 0.527 | 3.20 | 0.62 | −0.33 / 4.8 |
 | T3 3-month | 3.33% | 3.68% | 0.197 | −6.7% | −7.2% | 0.505 | 4.39 | 0.59 | −0.40 / 4.8 |
 | T4 blend | 3.80% | 3.67% | 0.322 | −4.6% | −10.1% | 0.559 | 2.81 | 0.63 | −0.40 / 3.9 |
 
@@ -148,7 +148,7 @@ No resample was degenerate. T1's Sharpe interval includes zero: the window canno
 |---|---|---|---|
 | C1–C4 (in-sample) | all four | C1 FAIL, C2 FAIL, C3 pass, C4 pass | **FAIL** |
 | O1 | mean(T1 − B4) > 0 | +0.00027 per month (t 0.35) | pass |
-| O2 | Sharpe(T1) > Sharpe(B3) | 0.336 > 0.200 | pass |
+| O2 | Sharpe(T1) > Sharpe(B3) | 0.336 > 0.199 | pass |
 | Drawdown clause | monthly max DD of T1 not worse than B4's | −4.1% vs −11.1% | not triggered |
 | **Verdict for T1** | §9.5 table, precedence not supported > inconclusive > supported | any of C1–C4 fails | **not supported** |
 
@@ -158,7 +158,7 @@ T2–T4 do not affect the verdict; they are reported in full above. Had C1–C4 
 
 | | Ann. return | Ann. vol | Sharpe | Max DD (monthly) | Max DD (daily) | Mean gross exposure |
 |---|---|---|---|---|---|---|
-| B1 equal weight | 7.26% | 10.85% | 0.461 | −20.1% | −23.0% | 1.00 |
+| B1 equal weight | 7.26% | 10.85% | 0.460 | −20.1% | −23.0% | 1.00 |
 | B3 vol-scaled, always long | 4.36% | 6.96% | 0.273 | −13.3% | −16.8% | 0.93 |
 | B4 = B3 × 0.7764 | 4.02% | 5.42% | 0.273 | −10.3% | −13.0% | 0.72 |
 | **T1** | **4.09%** | **4.43%** | **0.340** | **−6.0%** | **−13.3%** | **0.62** |
@@ -188,7 +188,7 @@ T1: O1 pass (mean T1 − B4 +0.00002 per month, t 0.03; against B3 −0.00033, t
 
 ## What did not work (§9.7; out-of-sample)
 
-- The 3-month lookback (T3) failed both sign conditions: Sharpe 0.197 against 0.200 for B3, at 4.4× turnover; monthly trend with a one-quarter window is noise at these costs.
+- The 3-month lookback (T3) failed both sign conditions: Sharpe 0.197 against 0.199 for B3, at 4.4× turnover; monthly trend with a one-quarter window is noise at these costs.
 - Volatility targeting without leverage gave up the window's return: every vol-scaled variant (B3, B4, T1–T4) earned between 3.3% and 4.0% a year against 6.6% for equal weight and 10.6% for 60/40, and lost to both on Sharpe. The design choice §15 fixed (no leverage, 10% per asset) is the reason, and it was the right choice for a paper account that cannot borrow; it is also why this rule, even if it had been supported, would not have been worth trading over this window.
 - The daily drawdown did not improve (−11.4% against −12.4% for B4): a monthly rule cannot act inside a month, and the one month that mattered (March 2020) fell inside a period.
 - The 2020 exit cost more than it saved: −8.5% into the trough, then −3.8% by August while equal weight was up 3.3%.
@@ -204,3 +204,11 @@ No paper order. The shadow record starts at the first month-end after this note'
 ## Reproduce
 
 Tests (no data needed): `pip install -r requirements.txt` then `python -m pytest -q` here and in `qune_research/`. The run itself needs the vendor files (licensed, not committed) and the `APPROVED` file; `./reproduce.sh --check` then `--insample` reproduce `results/checks/` and `results/insample/` from the manifest's data (the vendor re-bases adjusted closes on each fetch, so file hashes will differ while every return ratio is unchanged); `--oos` refuses while `results/oos/` exists, as §8.2 requires (move it aside to reproduce the window; the committed output is the one that counts). Every statistic in this note is in `results/insample/summary.json` and `results/oos/summary.json`.
+
+## Independent review (§14 step 10)
+
+Reviewed on 2026-10-23 by a separate agent session that did not write the code, the pre-registration or this note: [REVIEW.md](REVIEW.md). Headline: **confirmed with findings.** The reviewer reran both test suites (18 study, 71 library, all passed), rebuilt every signal, weight, monthly return and daily index from the raw vendor files with its own engine (agreement to machine precision), recomputed 1,961 rows against `summary.json`, the CSVs and this note's text with `review_recompute.py` (1,937 match, 14 mismatch, 10 informational; no value in any results file mismatches), verified the 26 manifest hashes, applied the §9.5 table itself to its own numbers (same verdict for every trial and both universes), and checked from the commit times that every governing commit precedes the result it governs, including the end-bar amendment `1697e9d` before the out-of-sample results `784f6ed`. No must-fix findings; two should-fix; five notes.
+
+Author's response, 2026-10-23, in the reviewer's order. (1) **Confirmed and corrected in place** (unlike Study 002's prose margin, which was a single phrase left with a note, these are table and text digits that a reader would copy): the fourteen figures had been rounded twice, first to one extra digit and then half-up, and each is now rounded once from the stored value. The changes, old → new: out-of-sample B3 and B4 Sharpe 0.200 → 0.199 (opening paragraph, the out-of-sample table, the O2 row and the T3 line of "What did not work"); out-of-sample T2 Sharpe 0.294 → 0.293; nine-asset in-sample B1 monthly drawdown −30.1% → −30.0%; nine-asset out-of-sample B1 Sharpe 0.461 → 0.460; in-sample T3 bootstrap interval 0.30 to 1.28 → 0.29 to 1.27; "advantage over B3 and B4 is 0.006" → 0.005; TLT variance share 12% → 11%; EFA and SHY long/flat Sharpe 0.56 → 0.55 and 0.89 → 0.88; sub-period 2004–2008 B1 return 6.4% → 6.3% and T2 drawdown −4.2% → −4.1%; sub-period 2016–2018 T3 Sharpe 0.54 → 0.53. The pre-correction text is in commit `4bd9187`; the trial log's O2 row and the root README's rows carried the same 0.200 and are corrected by a dated row and in place respectively. None of the fourteen is a criterion input; O2 is 0.336 against 0.199 either way. (2) **Confirmed**: five time labels in `trials.md` and one §16 heading were entered as estimates (20:3x, 20:4x, 21:3x, 22:4x, 23:3x) and never corrected; a dated correction row in `trials.md` and a dated §16 entry now give the committer times (20:27, 20:29, 21:25, 22:25, 23:20). The order of events is unchanged, as the reviewer's §5 shows. (3) Agreed: "any of C1–C4 fails" fixes the verdict on its own; the precedence rule is mentioned because §9.5 states it, not because it is needed. (4) Agreed; `fraction_asset_months_on` is a results-file column not used on this page and is left as computed, with this note as its errata. (5), (6), (7): no change.
+
+Author's rerun of the reviewer's script before and after the corrections: 1,937 match, 14 mismatch, the same fourteen rows, because the script types the note's figures as they stood at `4bd9187` and keeps them as the record of what was found; its recomputed column is what the note now prints. `pytest`: 18 and 71 passed. Nothing re-run, no results file changed.

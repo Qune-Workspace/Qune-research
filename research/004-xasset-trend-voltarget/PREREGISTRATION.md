@@ -437,3 +437,10 @@ What this costs the study, said plainly: the equity class loses its largest and 
 - **Implementation:** `qune_research.dates.schedule` gains `end_at_last_bar` (default off; the in-sample path is untouched and the library's earlier behaviour is unchanged when the bars reach the next execution date), which only applies when the *last* signal has no later bar; `src/run.py` cuts the out-of-sample bar index at the common last bar of the universe and the cash ETF and records `common_last_bar` and `last_period_ends_at_last_bar` in `results/oos/summary.json`. Two tests (library and study) cover the cut, the unchanged case and the refusal when more than the last signal lacks a bar.
 - **What this costs the study:** one trading day of the last period (2026-10-01), nothing else. Study 003's out-of-sample window did end at 2026-10-01 because its broker bars held that date, so the two studies' windows differ by that one day; recorded here so that nobody reads the difference as a choice.
 - **N = 4**, unchanged. No parameter, threshold or universe changed; no out-of-sample return seen.
+
+### 2026-10-23 (00:4x London): independent review done; corrections of record, no run, N = 4 unchanged
+
+- The study was reviewed by a separate agent session (REVIEW.md): confirmed with findings, no must-fix. Two should-fix items are answered here and in the note.
+- **Time labels.** The heading of the 2026-10-22 entry above reads "(23:3x London)"; the commit that carries it, `1697e9d`, was made at 23:20:12 London. Five trial-log rows carry the same kind of estimate (20:3x, 20:4x, 21:3x, 22:4x, 23:3x against committer times 20:27, 20:29, 21:25, 22:25, 23:20). Corrected by this entry and a dated row in `trials.md`; the earlier text is left as written. The order of events is unchanged.
+- **Fourteen README figures** were rounded twice and are one unit off in their last digit (the largest: B3 and B4's out-of-sample Sharpe, 0.200 for a stored 0.19947). Corrected in place in the note, with every change listed in its review section. No criterion input is affected; no results file changed.
+- No parameter, threshold, universe or result changed. Nothing was run.

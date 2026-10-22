@@ -1,0 +1,212 @@
+{
+  "tiingo_BIL_daily.csv": {
+    "downloaded_at_utc": "2026-10-22T05:26:59Z",
+    "first_bar": "2007-05-30",
+    "last_bar": "2026-10-21",
+    "params": {
+      "format": "json",
+      "resampleFreq": "daily",
+      "startDate": "2007-05-01"
+    },
+    "reused_at_utc": "2026-10-22T20:25:44Z",
+    "reused_from": "Study 003 data/raw (same bytes; SHA-256 verified against Study 003 results/data_manifest.json)",
+    "rows": 4881,
+    "sha256": "3701cdcf6294fd7a70556a141cee1b2fabdd878e691481cf44291fc5ee062869",
+    "source": "Tiingo end-of-day prices (licensed, not redistributed); adjClose = split- and distribution-adjusted close",
+    "symbol": "BIL",
+    "url": "https://api.tiingo.com/tiingo/daily/bil/prices"
+  },
+  "tiingo_DBC_daily.csv": {
+    "downloaded_at_utc": "2026-10-22T20:25:42Z",
+    "first_bar": "2006-02-03",
+    "last_bar": "2026-09-30",
+    "params": {
+      "endDate": "2026-09-30",
+      "format": "json",
+      "resampleFreq": "daily",
+      "startDate": "2002-07-01"
+    },
+    "rows": 5196,
+    "sha256": "4d0327a9c6eff65f5c3535c424042f8b210ee89bbd0d3b8ee2936792db6deb19",
+    "source": "Tiingo end-of-day prices (licensed, not redistributed); adjClose = split- and distribution-adjusted close",
+    "symbol": "DBC",
+    "url": "https://api.tiingo.com/tiingo/daily/dbc/prices"
+  },
+  "tiingo_EEM_daily.csv": {
+    "downloaded_at_utc": "2026-10-22T20:25:34Z",
+    "first_bar": "2003-04-11",
+    "last_bar": "2026-09-30",
+    "params": {
+      "endDate": "2026-09-30",
+      "format": "json",
+      "resampleFreq": "daily",
+      "startDate": "2002-07-01"
+    },
+    "rows": 5905,
+    "sha256": "8fdc3ac90320a784b4e2b951d80ff3445e682b1d9c0b024c579bb10956f0f6d8",
+    "source": "Tiingo end-of-day prices (licensed, not redistributed); adjClose = split- and distribution-adjusted close",
+    "symbol": "EEM",
+    "url": "https://api.tiingo.com/tiingo/daily/eem/prices"
+  },
+  "tiingo_EFA_daily.csv": {
+    "downloaded_at_utc": "2026-10-22T20:25:33Z",
+    "first_bar": "2002-07-01",
+    "last_bar": "2026-09-30",
+    "params": {
+      "endDate": "2026-09-30",
+      "format": "json",
+      "resampleFreq": "daily",
+      "startDate": "2002-07-01"
+    },
+    "rows": 6102,
+    "sha256": "bb45a3348e7af010c0cc60791d3abcfe53809115f3318a465b844b6c9ccd37ce",
+    "source": "Tiingo end-of-day prices (licensed, not redistributed); adjClose = split- and distribution-adjusted close",
+    "symbol": "EFA",
+    "url": "https://api.tiingo.com/tiingo/daily/efa/prices"
+  },
+  "tiingo_GLD_daily.csv": {
+    "downloaded_at_utc": "2026-10-22T20:25:41Z",
+    "first_bar": "2004-11-18",
+    "last_bar": "2026-09-30",
+    "params": {
+      "endDate": "2026-09-30",
+      "format": "json",
+      "resampleFreq": "daily",
+      "startDate": "2002-07-01"
+    },
+    "rows": 5500,
+    "sha256": "f78bd958a51ca478cb792a984a6aa072976bda658ddec8cb6adf2e1599c33ca7",
+    "source": "Tiingo end-of-day prices (licensed, not redistributed); adjClose = split- and distribution-adjusted close",
+    "symbol": "GLD",
+    "url": "https://api.tiingo.com/tiingo/daily/gld/prices"
+  },
+  "tiingo_HYG_daily.csv": {
+    "downloaded_at_utc": "2026-10-22T20:25:39Z",
+    "first_bar": "2007-04-11",
+    "last_bar": "2026-09-30",
+    "params": {
+      "endDate": "2026-09-30",
+      "format": "json",
+      "resampleFreq": "daily",
+      "startDate": "2002-07-01"
+    },
+    "rows": 4900,
+    "sha256": "baea100ca0568a028bc80243417222aa5505d8073b9bfd24f42649c0a653b36b",
+    "source": "Tiingo end-of-day prices (licensed, not redistributed); adjClose = split- and distribution-adjusted close",
+    "symbol": "HYG",
+    "url": "https://api.tiingo.com/tiingo/daily/hyg/prices"
+  },
+  "tiingo_IEF_daily.csv": {
+    "downloaded_at_utc": "2026-10-21T23:18:29Z",
+    "first_bar": "2002-07-26",
+    "last_bar": "2026-10-21",
+    "params": {
+      "format": "json",
+      "resampleFreq": "daily",
+      "startDate": "2002-07-22"
+    },
+    "reused_at_utc": "2026-10-22T20:25:37Z",
+    "reused_from": "Study 002 data/raw (same bytes; SHA-256 verified against Study 002 results/data_manifest.json)",
+    "rows": 6099,
+    "sha256": "a15abb3dfb242ff5e08c0724a4df82c35269d6541dbc451b9cd0a7230f58cc06",
+    "source": "Tiingo end-of-day prices (licensed, not redistributed); adjClose = split- and distribution-adjusted close",
+    "symbol": "IEF",
+    "url": "https://api.tiingo.com/tiingo/daily/ief/prices"
+  },
+  "tiingo_IWM_daily.csv": {
+    "downloaded_at_utc": "2026-10-22T20:25:32Z",
+    "first_bar": "2002-07-01",
+    "last_bar": "2026-09-30",
+    "params": {
+      "endDate": "2026-09-30",
+      "format": "json",
+      "resampleFreq": "daily",
+      "startDate": "2002-07-01"
+    },
+    "rows": 6102,
+    "sha256": "2300d7b1e6e26c95c08b4080b6ce7c56c51b80d6fa442e00fcbe6f5bbc732dce",
+    "source": "Tiingo end-of-day prices (licensed, not redistributed); adjClose = split- and distribution-adjusted close",
+    "symbol": "IWM",
+    "url": "https://api.tiingo.com/tiingo/daily/iwm/prices"
+  },
+  "tiingo_LQD_daily.csv": {
+    "downloaded_at_utc": "2026-10-22T20:25:38Z",
+    "first_bar": "2002-07-26",
+    "last_bar": "2026-09-30",
+    "params": {
+      "endDate": "2026-09-30",
+      "format": "json",
+      "resampleFreq": "daily",
+      "startDate": "2002-07-01"
+    },
+    "rows": 6084,
+    "sha256": "ffa657999b6ab55f30cec7c3b681c1fe95bade12e1b664a2ee0e255e2995b5be",
+    "source": "Tiingo end-of-day prices (licensed, not redistributed); adjClose = split- and distribution-adjusted close",
+    "symbol": "LQD",
+    "url": "https://api.tiingo.com/tiingo/daily/lqd/prices"
+  },
+  "tiingo_SHY_daily.csv": {
+    "downloaded_at_utc": "2026-10-22T20:25:35Z",
+    "first_bar": "2002-07-26",
+    "last_bar": "2026-09-30",
+    "params": {
+      "endDate": "2026-09-30",
+      "format": "json",
+      "resampleFreq": "daily",
+      "startDate": "2002-07-01"
+    },
+    "rows": 6084,
+    "sha256": "71466341392bde6cc823d4e70f86fac7d9fcc6e1fb4083f33b9408dd2a3988f9",
+    "source": "Tiingo end-of-day prices (licensed, not redistributed); adjClose = split- and distribution-adjusted close",
+    "symbol": "SHY",
+    "url": "https://api.tiingo.com/tiingo/daily/shy/prices"
+  },
+  "tiingo_SPY_daily.csv": {
+    "downloaded_at_utc": "2026-10-22T20:25:31Z",
+    "first_bar": "2002-07-01",
+    "last_bar": "2026-09-30",
+    "params": {
+      "endDate": "2026-09-30",
+      "format": "json",
+      "resampleFreq": "daily",
+      "startDate": "2002-07-01"
+    },
+    "rows": 6102,
+    "sha256": "1b0995bd6f5a05ba2995d779259c54225d897ccf8f82aa4faba61f062ab7f3fc",
+    "source": "Tiingo end-of-day prices (licensed, not redistributed); adjClose = split- and distribution-adjusted close",
+    "symbol": "SPY",
+    "url": "https://api.tiingo.com/tiingo/daily/spy/prices"
+  },
+  "tiingo_TLT_daily.csv": {
+    "downloaded_at_utc": "2026-10-22T20:25:37Z",
+    "first_bar": "2002-07-26",
+    "last_bar": "2026-09-30",
+    "params": {
+      "endDate": "2026-09-30",
+      "format": "json",
+      "resampleFreq": "daily",
+      "startDate": "2002-07-01"
+    },
+    "rows": 6084,
+    "sha256": "8a02961a930c04c99a1ad4209039a11084ea484faa8fac3afcb21796e74ac469",
+    "source": "Tiingo end-of-day prices (licensed, not redistributed); adjClose = split- and distribution-adjusted close",
+    "symbol": "TLT",
+    "url": "https://api.tiingo.com/tiingo/daily/tlt/prices"
+  },
+  "tiingo_VNQ_daily.csv": {
+    "downloaded_at_utc": "2026-10-22T20:25:43Z",
+    "first_bar": "2004-09-29",
+    "last_bar": "2026-09-30",
+    "params": {
+      "endDate": "2026-09-30",
+      "format": "json",
+      "resampleFreq": "daily",
+      "startDate": "2002-07-01"
+    },
+    "rows": 5536,
+    "sha256": "8933e5327e7c78e12e15f1d2f4d5406fcb7b020751d24249b69ceb48cc3dd0a5",
+    "source": "Tiingo end-of-day prices (licensed, not redistributed); adjClose = split- and distribution-adjusted close",
+    "symbol": "VNQ",
+    "url": "https://api.tiingo.com/tiingo/daily/vnq/prices"
+  }
+}

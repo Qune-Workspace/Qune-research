@@ -1,0 +1,478 @@
+{
+  "run_at_utc": "2026-10-22T20:25:31Z",
+  "coverage_end": "2026-09-30",
+  "max_consecutive_missing": 3,
+  "symbols": {
+    "SPY": {
+      "symbol": "SPY",
+      "class": "equities",
+      "attempts": [
+        {
+          "attempt": 1,
+          "outcome": "coverage pass"
+        }
+      ],
+      "coverage": {
+        "window": {
+          "start": "2002-07-01",
+          "end": "2026-09-30"
+        },
+        "nyse_trading_days": 6102,
+        "bars_present": 6102,
+        "missing_days": [],
+        "max_consecutive_missing_days": 0,
+        "max_consecutive_missing_allowed": 3,
+        "extra_bars_on_rule_calendar_closures": [],
+        "pass": true
+      },
+      "status": "pass",
+      "rows": 6102,
+      "first_bar": "2002-07-01",
+      "last_bar": "2026-09-30",
+      "inception": {
+        "expected": "1993-01",
+        "first_bar_month": "2002-07",
+        "verdict": "file starts at the fetch start, inception earlier (not testable here)"
+      },
+      "entry": {
+        "expected_signal_date": "2003-12-31",
+        "signal_date": "2003-12-31",
+        "as_expected": true
+      }
+    },
+    "IWM": {
+      "symbol": "IWM",
+      "class": "equities",
+      "attempts": [
+        {
+          "attempt": 1,
+          "outcome": "coverage pass"
+        }
+      ],
+      "coverage": {
+        "window": {
+          "start": "2002-07-01",
+          "end": "2026-09-30"
+        },
+        "nyse_trading_days": 6102,
+        "bars_present": 6102,
+        "missing_days": [],
+        "max_consecutive_missing_days": 0,
+        "max_consecutive_missing_allowed": 3,
+        "extra_bars_on_rule_calendar_closures": [],
+        "pass": true
+      },
+      "status": "pass",
+      "rows": 6102,
+      "first_bar": "2002-07-01",
+      "last_bar": "2026-09-30",
+      "inception": {
+        "expected": "2000-05",
+        "first_bar_month": "2002-07",
+        "verdict": "file starts at the fetch start, inception earlier (not testable here)"
+      },
+      "entry": {
+        "expected_signal_date": "2003-12-31",
+        "signal_date": "2003-12-31",
+        "as_expected": true
+      }
+    },
+    "EFA": {
+      "symbol": "EFA",
+      "class": "equities",
+      "attempts": [
+        {
+          "attempt": 1,
+          "outcome": "coverage pass"
+        }
+      ],
+      "coverage": {
+        "window": {
+          "start": "2002-07-01",
+          "end": "2026-09-30"
+        },
+        "nyse_trading_days": 6102,
+        "bars_present": 6102,
+        "missing_days": [],
+        "max_consecutive_missing_days": 0,
+        "max_consecutive_missing_allowed": 3,
+        "extra_bars_on_rule_calendar_closures": [],
+        "pass": true
+      },
+      "status": "pass",
+      "rows": 6102,
+      "first_bar": "2002-07-01",
+      "last_bar": "2026-09-30",
+      "inception": {
+        "expected": "2001-08",
+        "first_bar_month": "2002-07",
+        "verdict": "file starts at the fetch start, inception earlier (not testable here)"
+      },
+      "entry": {
+        "expected_signal_date": "2003-12-31",
+        "signal_date": "2003-12-31",
+        "as_expected": true
+      }
+    },
+    "EEM": {
+      "symbol": "EEM",
+      "class": "equities",
+      "attempts": [
+        {
+          "attempt": 1,
+          "outcome": "coverage pass"
+        }
+      ],
+      "coverage": {
+        "window": {
+          "start": "2003-04-11",
+          "end": "2026-09-30"
+        },
+        "nyse_trading_days": 5905,
+        "bars_present": 5905,
+        "missing_days": [],
+        "max_consecutive_missing_days": 0,
+        "max_consecutive_missing_allowed": 3,
+        "extra_bars_on_rule_calendar_closures": [],
+        "pass": true
+      },
+      "status": "pass",
+      "rows": 5905,
+      "first_bar": "2003-04-11",
+      "last_bar": "2026-09-30",
+      "inception": {
+        "expected": "2003-04",
+        "first_bar_month": "2003-04",
+        "verdict": "confirmed"
+      },
+      "entry": {
+        "expected_signal_date": "2004-04-30",
+        "signal_date": "2004-04-30",
+        "as_expected": true
+      }
+    },
+    "SHY": {
+      "symbol": "SHY",
+      "class": "treasuries",
+      "attempts": [
+        {
+          "attempt": 1,
+          "outcome": "coverage pass"
+        }
+      ],
+      "coverage": {
+        "window": {
+          "start": "2002-07-26",
+          "end": "2026-09-30"
+        },
+        "nyse_trading_days": 6084,
+        "bars_present": 6084,
+        "missing_days": [],
+        "max_consecutive_missing_days": 0,
+        "max_consecutive_missing_allowed": 3,
+        "extra_bars_on_rule_calendar_closures": [],
+        "pass": true
+      },
+      "status": "pass",
+      "rows": 6084,
+      "first_bar": "2002-07-26",
+      "last_bar": "2026-09-30",
+      "inception": {
+        "expected": "2002-07",
+        "first_bar_month": "2002-07",
+        "verdict": "confirmed"
+      },
+      "entry": {
+        "expected_signal_date": "2003-12-31",
+        "signal_date": "2003-12-31",
+        "as_expected": true
+      }
+    },
+    "IEF": {
+      "symbol": "IEF",
+      "class": "treasuries",
+      "attempts": [
+        {
+          "attempt": 1,
+          "outcome": "coverage pass"
+        }
+      ],
+      "coverage": {
+        "window": {
+          "start": "2002-07-26",
+          "end": "2026-09-30"
+        },
+        "nyse_trading_days": 6084,
+        "bars_present": 6084,
+        "missing_days": [],
+        "max_consecutive_missing_days": 0,
+        "max_consecutive_missing_allowed": 3,
+        "extra_bars_on_rule_calendar_closures": [],
+        "pass": true
+      },
+      "status": "pass",
+      "rows": 6099,
+      "first_bar": "2002-07-26",
+      "last_bar": "2026-10-21",
+      "inception": {
+        "expected": "2002-07",
+        "first_bar_month": "2002-07",
+        "verdict": "confirmed"
+      },
+      "entry": {
+        "expected_signal_date": "2003-12-31",
+        "signal_date": "2003-12-31",
+        "as_expected": true
+      }
+    },
+    "TLT": {
+      "symbol": "TLT",
+      "class": "treasuries",
+      "attempts": [
+        {
+          "attempt": 1,
+          "outcome": "coverage pass"
+        }
+      ],
+      "coverage": {
+        "window": {
+          "start": "2002-07-26",
+          "end": "2026-09-30"
+        },
+        "nyse_trading_days": 6084,
+        "bars_present": 6084,
+        "missing_days": [],
+        "max_consecutive_missing_days": 0,
+        "max_consecutive_missing_allowed": 3,
+        "extra_bars_on_rule_calendar_closures": [],
+        "pass": true
+      },
+      "status": "pass",
+      "rows": 6084,
+      "first_bar": "2002-07-26",
+      "last_bar": "2026-09-30",
+      "inception": {
+        "expected": "2002-07",
+        "first_bar_month": "2002-07",
+        "verdict": "confirmed"
+      },
+      "entry": {
+        "expected_signal_date": "2003-12-31",
+        "signal_date": "2003-12-31",
+        "as_expected": true
+      }
+    },
+    "LQD": {
+      "symbol": "LQD",
+      "class": "credit",
+      "attempts": [
+        {
+          "attempt": 1,
+          "outcome": "coverage pass"
+        }
+      ],
+      "coverage": {
+        "window": {
+          "start": "2002-07-26",
+          "end": "2026-09-30"
+        },
+        "nyse_trading_days": 6084,
+        "bars_present": 6084,
+        "missing_days": [],
+        "max_consecutive_missing_days": 0,
+        "max_consecutive_missing_allowed": 3,
+        "extra_bars_on_rule_calendar_closures": [],
+        "pass": true
+      },
+      "status": "pass",
+      "rows": 6084,
+      "first_bar": "2002-07-26",
+      "last_bar": "2026-09-30",
+      "inception": {
+        "expected": "2002-07",
+        "first_bar_month": "2002-07",
+        "verdict": "confirmed"
+      },
+      "entry": {
+        "expected_signal_date": "2003-12-31",
+        "signal_date": "2003-12-31",
+        "as_expected": true
+      }
+    },
+    "HYG": {
+      "symbol": "HYG",
+      "class": "credit",
+      "attempts": [
+        {
+          "attempt": 1,
+          "outcome": "coverage pass"
+        }
+      ],
+      "coverage": {
+        "window": {
+          "start": "2007-04-11",
+          "end": "2026-09-30"
+        },
+        "nyse_trading_days": 4900,
+        "bars_present": 4900,
+        "missing_days": [],
+        "max_consecutive_missing_days": 0,
+        "max_consecutive_missing_allowed": 3,
+        "extra_bars_on_rule_calendar_closures": [],
+        "pass": true
+      },
+      "status": "pass",
+      "rows": 4900,
+      "first_bar": "2007-04-11",
+      "last_bar": "2026-09-30",
+      "inception": {
+        "expected": "2007-04",
+        "first_bar_month": "2007-04",
+        "verdict": "confirmed"
+      },
+      "entry": {
+        "expected_signal_date": "2008-04-30",
+        "signal_date": "2008-04-30",
+        "as_expected": true
+      }
+    },
+    "GLD": {
+      "symbol": "GLD",
+      "class": "real_assets",
+      "attempts": [
+        {
+          "attempt": 1,
+          "outcome": "coverage pass"
+        }
+      ],
+      "coverage": {
+        "window": {
+          "start": "2004-11-18",
+          "end": "2026-09-30"
+        },
+        "nyse_trading_days": 5500,
+        "bars_present": 5500,
+        "missing_days": [],
+        "max_consecutive_missing_days": 0,
+        "max_consecutive_missing_allowed": 3,
+        "extra_bars_on_rule_calendar_closures": [],
+        "pass": true
+      },
+      "status": "pass",
+      "rows": 5500,
+      "first_bar": "2004-11-18",
+      "last_bar": "2026-09-30",
+      "inception": {
+        "expected": "2004-11",
+        "first_bar_month": "2004-11",
+        "verdict": "confirmed"
+      },
+      "entry": {
+        "expected_signal_date": "2005-11-30",
+        "signal_date": "2005-11-30",
+        "as_expected": true
+      }
+    },
+    "DBC": {
+      "symbol": "DBC",
+      "class": "real_assets",
+      "attempts": [
+        {
+          "attempt": 1,
+          "outcome": "coverage pass"
+        }
+      ],
+      "coverage": {
+        "window": {
+          "start": "2006-02-03",
+          "end": "2026-09-30"
+        },
+        "nyse_trading_days": 5196,
+        "bars_present": 5196,
+        "missing_days": [],
+        "max_consecutive_missing_days": 0,
+        "max_consecutive_missing_allowed": 3,
+        "extra_bars_on_rule_calendar_closures": [],
+        "pass": true
+      },
+      "status": "pass",
+      "rows": 5196,
+      "first_bar": "2006-02-03",
+      "last_bar": "2026-09-30",
+      "inception": {
+        "expected": "2006-02",
+        "first_bar_month": "2006-02",
+        "verdict": "confirmed"
+      },
+      "entry": {
+        "expected_signal_date": "2007-02-28",
+        "signal_date": "2007-02-28",
+        "as_expected": true
+      }
+    },
+    "VNQ": {
+      "symbol": "VNQ",
+      "class": "real_assets",
+      "attempts": [
+        {
+          "attempt": 1,
+          "outcome": "coverage pass"
+        }
+      ],
+      "coverage": {
+        "window": {
+          "start": "2004-09-29",
+          "end": "2026-09-30"
+        },
+        "nyse_trading_days": 5536,
+        "bars_present": 5536,
+        "missing_days": [],
+        "max_consecutive_missing_days": 0,
+        "max_consecutive_missing_allowed": 3,
+        "extra_bars_on_rule_calendar_closures": [],
+        "pass": true
+      },
+      "status": "pass",
+      "rows": 5536,
+      "first_bar": "2004-09-29",
+      "last_bar": "2026-09-30",
+      "inception": {
+        "expected": "2004-09",
+        "first_bar_month": "2004-09",
+        "verdict": "confirmed"
+      },
+      "entry": {
+        "expected_signal_date": "2005-09-30",
+        "signal_date": "2005-09-30",
+        "as_expected": true
+      }
+    },
+    "BIL": {
+      "symbol": "BIL",
+      "class": "cash",
+      "attempts": [
+        {
+          "attempt": 1,
+          "outcome": "coverage pass"
+        }
+      ],
+      "coverage": {
+        "window": {
+          "start": "2007-05-30",
+          "end": "2026-09-30"
+        },
+        "nyse_trading_days": 4866,
+        "bars_present": 4866,
+        "missing_days": [],
+        "max_consecutive_missing_days": 0,
+        "max_consecutive_missing_allowed": 3,
+        "extra_bars_on_rule_calendar_closures": [],
+        "pass": true
+      },
+      "status": "pass",
+      "rows": 4881,
+      "first_bar": "2007-05-30",
+      "last_bar": "2026-10-21"
+    }
+  }
+}

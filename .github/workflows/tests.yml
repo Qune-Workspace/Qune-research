@@ -22,6 +22,7 @@ jobs:
         study:
           - research/001-slope-duration-switch
           - research/002-slope-duration-switch-r
+          - research/003-bond-tsmom-ief
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5

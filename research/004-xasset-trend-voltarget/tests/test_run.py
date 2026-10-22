@@ -92,3 +92,25 @@ def test_b4_is_b3_scaled_by_k():
     for a in universe:
         assert np.allclose(results["B4"][f"w_{a}"], k * results["B3"][f"w_{a}"])
     assert k == pytest.approx(engine.exposure_ratio(results["T1"], results["B3"]))
+
+
+def test_oos_schedule_ends_at_the_common_last_bar_for_every_instrument():
+    # §16 (2026-10-22): two reused files reach past 2026-09-30, the fetched ten stop there.
+    long_bars = pd.bdate_range("2018-11-01", "2026-10-21")
+    short_bars = pd.bdate_range("2018-11-01", "2026-09-30")
+    prices = pd.DataFrame({"IEF": pd.Series(100.0, index=long_bars),
+                           "TLT": pd.Series(100.0, index=short_bars)}).sort_index()
+    last = run.common_last_bar(prices, ["IEF", "TLT"])
+    assert last == pd.Timestamp("2026-09-30")
+    bars = prices.dropna(how="all").index
+    bars = bars[bars <= last]
+    sched = run.oos_schedule(bars)
+    assert sched["signal_date"].iloc[0] == pd.Timestamp("2018-12-31")
+    assert sched["execution_date"].iloc[0] == pd.Timestamp("2019-01-01")   # bdate_range has no holidays
+    assert sched["signal_date"].iloc[-1] == pd.Timestamp("2026-09-30")
+    assert pd.isna(sched["execution_date"].iloc[-1])
+    assert sched["period_end"].iloc[-2] == pd.Timestamp("2026-09-30")
+    assert len(sched) - 1 == 93                                            # holding periods, §8.2
+    # the union index alone would have silently used 2026-10-01 for IEF and forward-filled TLT
+    union = run.oos_schedule(prices.dropna(how="all").index)
+    assert union["period_end"].iloc[-2] == pd.Timestamp("2026-10-01")

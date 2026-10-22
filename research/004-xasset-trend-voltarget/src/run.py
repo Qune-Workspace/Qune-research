@@ -509,10 +509,19 @@ def insample_schedule(bars: pd.DatetimeIndex) -> pd.DataFrame:
     return build_schedule(bars, month_end_signal_dates(bars, INSAMPLE_FIRST_SIGNAL_DATE, end))
 
 
+def common_last_bar(prices: pd.DataFrame, columns: list[str]) -> pd.Timestamp:
+    """The last bar that every one of ``columns`` has (§16, 2026-10-22: the
+    held-back window ends there for every instrument alike)."""
+    return min(prices[c].last_valid_index() for c in columns)
+
+
 def oos_schedule(bars: pd.DatetimeIndex) -> pd.DataFrame:
+    """§8.2 signal dates on ``bars``; the last holding period ends at the last
+    bar when the bars stop before the execution date that follows the last
+    signal (§16 amendment of 2026-10-22, decided before the run)."""
     start = pd.Period(OOS_FIRST_SIGNAL_MONTH, "M").to_timestamp(how="start")
     end = pd.Period(OOS_LAST_SIGNAL_MONTH, "M").to_timestamp(how="end").normalize()
-    return build_schedule(bars, month_end_signal_dates(bars, start, end))
+    return build_schedule(bars, month_end_signal_dates(bars, start, end), end_at_last_bar=True)
 
 
 def run_insample(out_dir: Path = RESULTS_DIR / "insample") -> None:
@@ -549,9 +558,20 @@ def run_oos(out_dir: Path = RESULTS_DIR / "oos") -> None:
     universe = universe_from_checks()
     prices = load_prices(sorted(set(universe) | set(REFERENCE_SYMBOLS), key=lambda s: (s not in universe, s)))
     cash_tri = vendor_tri(CASH_ETF)
+    # §16 (2026-10-22): the window ends at the last bar every instrument and the cash ETF have.
+    # IEF and BIL were reused from earlier studies and reach beyond 2026-09-30; the ten fetched
+    # files stop there.  Without this cut the engine would forward-fill nine assets one day short
+    # of the last execution date while IEF and cash got the full period.
+    last_bar = min(common_last_bar(prices, universe), cash_tri.last_valid_index())
     bars = prices[universe].dropna(how="all").index
+    bars = bars[bars <= last_bar]
     sched = oos_schedule(bars)
-    summary = {"window": "oos", "runs": {}}
+    summary = {"window": "oos", "runs": {},
+               "common_last_bar": str(last_bar.date()),
+               "last_period_ends_at_last_bar": bool(pd.isna(sched["execution_date"].iloc[-1])),
+               "note": "§16 amendment, 2026-10-22, decided before this run: the last holding period ends at the "
+                       "common last bar instead of the first execution date of October 2026 (§8.2), which no "
+                       "fetched file holds; one trading day short, identical for every instrument"}
     for tag, uni, kkey in (("ten", universe, "k_exposure_ratio_frozen"),
                            ("nine_without_IEF", [a for a in universe if a != "IEF"], "k_exposure_ratio_frozen_nine_without_IEF")):
         k = float(insample[kkey])

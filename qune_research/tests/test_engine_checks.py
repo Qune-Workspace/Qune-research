@@ -176,3 +176,28 @@ def test_calendar_schedule_and_entry():
     assert cal.months_before(pd.Timestamp("2004-01-30"), 12, bars) == pd.Timestamp("2003-01-31")
     with pytest.raises(ValueError):
         cal.schedule(bars, cal.month_end_signal_dates(bars, "2004-03-01", "2004-03-31"))
+
+
+def test_schedule_end_at_last_bar_ends_the_last_period_at_the_last_bar():
+    # bars stop on the month-end that is the last signal date (Study 004 §16, 2026-10-22)
+    bars = pd.bdate_range("2003-01-01", "2004-02-27")
+    sig = cal.month_end_signal_dates(bars, "2003-12-01", "2004-02-29")
+    assert list(sig.strftime("%Y-%m-%d")) == ["2003-12-31", "2004-01-30", "2004-02-27"]
+    with pytest.raises(ValueError):
+        cal.schedule(bars, sig)
+    s = cal.schedule(bars, sig, end_at_last_bar=True)
+    assert len(s) == 3
+    assert s["execution_date"].iloc[0] == pd.Timestamp("2004-01-01")
+    assert s["execution_date"].iloc[1] == pd.Timestamp("2004-02-02")
+    assert pd.isna(s["execution_date"].iloc[-1])        # the last signal starts no period
+    assert s["period_end"].iloc[0] == pd.Timestamp("2004-02-02")
+    assert s["period_end"].iloc[1] == pd.Timestamp("2004-02-27")   # one day short of 2004-03-01
+    assert pd.isna(s["period_end"].iloc[-1])
+    # unchanged when the bars do reach the next execution date
+    bars2 = pd.bdate_range("2003-01-01", "2004-03-31")
+    s2 = cal.schedule(bars2, sig, end_at_last_bar=True)
+    assert s2["period_end"].iloc[1] == pd.Timestamp("2004-03-01")
+    assert s2.equals(cal.schedule(bars2, sig))
+    # still refuses when more than the last signal has no execution bar
+    with pytest.raises(ValueError):
+        cal.schedule(bars, pd.DatetimeIndex(["2004-02-27", "2004-03-31"]), end_at_last_bar=True)

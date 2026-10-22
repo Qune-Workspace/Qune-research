@@ -20,18 +20,31 @@ def month_end_signal_dates(bars: pd.DatetimeIndex, start: str | pd.Timestamp,
     return out[(out >= pd.Timestamp(start)) & (out <= pd.Timestamp(end))]
 
 
-def schedule(bars: pd.DatetimeIndex, signal_dates: pd.DatetimeIndex) -> pd.DataFrame:
+def schedule(bars: pd.DatetimeIndex, signal_dates: pd.DatetimeIndex,
+             end_at_last_bar: bool = False) -> pd.DataFrame:
     """One row per signal date: ``signal_date``, ``execution_date`` (the first
     bar strictly after the signal date) and ``period_end`` (the next row's
     execution date; NaT on the last row, which starts no holding period).
-    Raises if the bars end before the execution date of any signal."""
+    Raises if the bars end before the execution date of any signal, unless
+    ``end_at_last_bar`` is set and only the *last* signal has no later bar:
+    then that row's execution date is NaT (it starts no period, as before)
+    and the previous row's holding period ends at the last bar instead of at
+    the missing execution date (Study 004 §16, 2026-10-22: the held-back
+    window ends at the last bar every instrument has, one trading day short
+    of the next execution date)."""
     idx = pd.DatetimeIndex(bars).sort_values()
-    pos = idx.searchsorted(pd.DatetimeIndex(signal_dates).values, side="right")
+    sig = pd.DatetimeIndex(signal_dates)
+    pos = idx.searchsorted(sig.values, side="right")
+    truncated = False
     if len(pos) and pos[-1] >= len(idx):
-        raise ValueError("bars end before the execution date of the last signal")
-    exe = pd.DatetimeIndex(idx[pos])
-    out = pd.DataFrame({"signal_date": pd.DatetimeIndex(signal_dates), "execution_date": exe})
+        if not end_at_last_bar or (len(pos) > 1 and pos[-2] >= len(idx)):
+            raise ValueError("bars end before the execution date of the last signal")
+        truncated = True
+    exe = pd.DatetimeIndex([idx[p] if p < len(idx) else pd.NaT for p in pos])
+    out = pd.DataFrame({"signal_date": sig, "execution_date": exe})
     out["period_end"] = out["execution_date"].shift(-1)
+    if truncated and len(out) > 1:
+        out.loc[out.index[-2], "period_end"] = idx[-1]
     return out
 
 

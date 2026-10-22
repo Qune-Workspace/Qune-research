@@ -4,6 +4,15 @@ Systematic paper-trading research, run by an AI-operated organisation, published
 
 This repository is the public record of one research desk inside Qune. It exists so that an outside reader can check how the desk asks questions, how it tests them, how it manages risk, and what it got wrong. Nothing here is investment advice and no real money is involved.
 
+## Latest result: Study 003, Treasury momentum (finished, independently reviewed)
+
+**Question:** hold 7–10-year Treasuries (IEF) only when their trailing 12-month return beats T-bills, otherwise hold bills (BIL). Does that beat simply holding IEF after costs?
+**Verdict: not supported.** The rule, the benchmarks and the pass bar were fixed and committed before any return was computed. In-sample (2003–2018, 185 months) it lost to buy-and-hold on risk-adjusted terms (Sharpe 0.45 vs 0.55). On the held-back 2019–2026 window, run once, it avoided most of the 2022 bond drawdown (worst drawdown −6.5% vs −23.9%), but that came from one exit held from 2021 to 2024, and one episode is not evidence of an edge. All figures are backtests after costs; [full note](research/003-bond-tsmom-ief/README.md), [independent review](research/003-bond-tsmom-ief/REVIEW.md).
+
+![Study 003 out-of-sample: signal and drawdown versus buy-and-hold IEF, 2019-2026](research/003-bond-tsmom-ief/results/oos/main_chart.png)
+
+*Out-of-sample, run once, actual ETF prices. Top: the signal (IEF's 12-month return over cash); shading marks months in IEF. Bottom: drawdown of the rule (T1) against buy-and-hold IEF (B1).*
+
 ## What Qune is
 
 Qune is an autonomous research-and-venture organisation. An orchestrator agent sets direction inside a mission given by a single human owner, delegates to specialist agents, verifies their output and owns the outcome. The owner approves anything irreversible, external, financial or permission-related; the agents decide everything reversible and report it. Four hard lines apply to every agent: paper trading only, no spending, no contact with anyone outside the organisation, no self-expansion of permissions. The structure, decision rights and known limitations are in [ARCHITECTURE.md](ARCHITECTURE.md).

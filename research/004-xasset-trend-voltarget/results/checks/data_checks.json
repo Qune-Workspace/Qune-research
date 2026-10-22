@@ -1,0 +1,978 @@
+{
+  "D0": {
+    "run_at_utc": "2026-10-22T20:25:31Z",
+    "coverage_end": "2026-09-30",
+    "max_consecutive_missing": 3,
+    "symbols": {
+      "SPY": {
+        "symbol": "SPY",
+        "class": "equities",
+        "attempts": [
+          {
+            "attempt": 1,
+            "outcome": "coverage pass"
+          }
+        ],
+        "coverage": {
+          "window": {
+            "start": "2002-07-01",
+            "end": "2026-09-30"
+          },
+          "nyse_trading_days": 6102,
+          "bars_present": 6102,
+          "missing_days": [],
+          "max_consecutive_missing_days": 0,
+          "max_consecutive_missing_allowed": 3,
+          "extra_bars_on_rule_calendar_closures": [],
+          "pass": true
+        },
+        "status": "pass",
+        "rows": 6102,
+        "first_bar": "2002-07-01",
+        "last_bar": "2026-09-30",
+        "inception": {
+          "expected": "1993-01",
+          "first_bar_month": "2002-07",
+          "verdict": "file starts at the fetch start, inception earlier (not testable here)"
+        },
+        "entry": {
+          "expected_signal_date": "2003-12-31",
+          "signal_date": "2003-12-31",
+          "as_expected": true
+        }
+      },
+      "IWM": {
+        "symbol": "IWM",
+        "class": "equities",
+        "attempts": [
+          {
+            "attempt": 1,
+            "outcome": "coverage pass"
+          }
+        ],
+        "coverage": {
+          "window": {
+            "start": "2002-07-01",
+            "end": "2026-09-30"
+          },
+          "nyse_trading_days": 6102,
+          "bars_present": 6102,
+          "missing_days": [],
+          "max_consecutive_missing_days": 0,
+          "max_consecutive_missing_allowed": 3,
+          "extra_bars_on_rule_calendar_closures": [],
+          "pass": true
+        },
+        "status": "pass",
+        "rows": 6102,
+        "first_bar": "2002-07-01",
+        "last_bar": "2026-09-30",
+        "inception": {
+          "expected": "2000-05",
+          "first_bar_month": "2002-07",
+          "verdict": "file starts at the fetch start, inception earlier (not testable here)"
+        },
+        "entry": {
+          "expected_signal_date": "2003-12-31",
+          "signal_date": "2003-12-31",
+          "as_expected": true
+        }
+      },
+      "EFA": {
+        "symbol": "EFA",
+        "class": "equities",
+        "attempts": [
+          {
+            "attempt": 1,
+            "outcome": "coverage pass"
+          }
+        ],
+        "coverage": {
+          "window": {
+            "start": "2002-07-01",
+            "end": "2026-09-30"
+          },
+          "nyse_trading_days": 6102,
+          "bars_present": 6102,
+          "missing_days": [],
+          "max_consecutive_missing_days": 0,
+          "max_consecutive_missing_allowed": 3,
+          "extra_bars_on_rule_calendar_closures": [],
+          "pass": true
+        },
+        "status": "pass",
+        "rows": 6102,
+        "first_bar": "2002-07-01",
+        "last_bar": "2026-09-30",
+        "inception": {
+          "expected": "2001-08",
+          "first_bar_month": "2002-07",
+          "verdict": "file starts at the fetch start, inception earlier (not testable here)"
+        },
+        "entry": {
+          "expected_signal_date": "2003-12-31",
+          "signal_date": "2003-12-31",
+          "as_expected": true
+        }
+      },
+      "EEM": {
+        "symbol": "EEM",
+        "class": "equities",
+        "attempts": [
+          {
+            "attempt": 1,
+            "outcome": "coverage pass"
+          }
+        ],
+        "coverage": {
+          "window": {
+            "start": "2003-04-11",
+            "end": "2026-09-30"
+          },
+          "nyse_trading_days": 5905,
+          "bars_present": 5905,
+          "missing_days": [],
+          "max_consecutive_missing_days": 0,
+          "max_consecutive_missing_allowed": 3,
+          "extra_bars_on_rule_calendar_closures": [],
+          "pass": true
+        },
+        "status": "pass",
+        "rows": 5905,
+        "first_bar": "2003-04-11",
+        "last_bar": "2026-09-30",
+        "inception": {
+          "expected": "2003-04",
+          "first_bar_month": "2003-04",
+          "verdict": "confirmed"
+        },
+        "entry": {
+          "expected_signal_date": "2004-04-30",
+          "signal_date": "2004-04-30",
+          "as_expected": true
+        }
+      },
+      "SHY": {
+        "symbol": "SHY",
+        "class": "treasuries",
+        "attempts": [
+          {
+            "attempt": 1,
+            "outcome": "coverage pass"
+          }
+        ],
+        "coverage": {
+          "window": {
+            "start": "2002-07-26",
+            "end": "2026-09-30"
+          },
+          "nyse_trading_days": 6084,
+          "bars_present": 6084,
+          "missing_days": [],
+          "max_consecutive_missing_days": 0,
+          "max_consecutive_missing_allowed": 3,
+          "extra_bars_on_rule_calendar_closures": [],
+          "pass": true
+        },
+        "status": "pass",
+        "rows": 6084,
+        "first_bar": "2002-07-26",
+        "last_bar": "2026-09-30",
+        "inception": {
+          "expected": "2002-07",
+          "first_bar_month": "2002-07",
+          "verdict": "confirmed"
+        },
+        "entry": {
+          "expected_signal_date": "2003-12-31",
+          "signal_date": "2003-12-31",
+          "as_expected": true
+        }
+      },
+      "IEF": {
+        "symbol": "IEF",
+        "class": "treasuries",
+        "attempts": [
+          {
+            "attempt": 1,
+            "outcome": "coverage pass"
+          }
+        ],
+        "coverage": {
+          "window": {
+            "start": "2002-07-26",
+            "end": "2026-09-30"
+          },
+          "nyse_trading_days": 6084,
+          "bars_present": 6084,
+          "missing_days": [],
+          "max_consecutive_missing_days": 0,
+          "max_consecutive_missing_allowed": 3,
+          "extra_bars_on_rule_calendar_closures": [],
+          "pass": true
+        },
+        "status": "pass",
+        "rows": 6099,
+        "first_bar": "2002-07-26",
+        "last_bar": "2026-10-21",
+        "inception": {
+          "expected": "2002-07",
+          "first_bar_month": "2002-07",
+          "verdict": "confirmed"
+        },
+        "entry": {
+          "expected_signal_date": "2003-12-31",
+          "signal_date": "2003-12-31",
+          "as_expected": true
+        }
+      },
+      "TLT": {
+        "symbol": "TLT",
+        "class": "treasuries",
+        "attempts": [
+          {
+            "attempt": 1,
+            "outcome": "coverage pass"
+          }
+        ],
+        "coverage": {
+          "window": {
+            "start": "2002-07-26",
+            "end": "2026-09-30"
+          },
+          "nyse_trading_days": 6084,
+          "bars_present": 6084,
+          "missing_days": [],
+          "max_consecutive_missing_days": 0,
+          "max_consecutive_missing_allowed": 3,
+          "extra_bars_on_rule_calendar_closures": [],
+          "pass": true
+        },
+        "status": "pass",
+        "rows": 6084,
+        "first_bar": "2002-07-26",
+        "last_bar": "2026-09-30",
+        "inception": {
+          "expected": "2002-07",
+          "first_bar_month": "2002-07",
+          "verdict": "confirmed"
+        },
+        "entry": {
+          "expected_signal_date": "2003-12-31",
+          "signal_date": "2003-12-31",
+          "as_expected": true
+        }
+      },
+      "LQD": {
+        "symbol": "LQD",
+        "class": "credit",
+        "attempts": [
+          {
+            "attempt": 1,
+            "outcome": "coverage pass"
+          }
+        ],
+        "coverage": {
+          "window": {
+            "start": "2002-07-26",
+            "end": "2026-09-30"
+          },
+          "nyse_trading_days": 6084,
+          "bars_present": 6084,
+          "missing_days": [],
+          "max_consecutive_missing_days": 0,
+          "max_consecutive_missing_allowed": 3,
+          "extra_bars_on_rule_calendar_closures": [],
+          "pass": true
+        },
+        "status": "pass",
+        "rows": 6084,
+        "first_bar": "2002-07-26",
+        "last_bar": "2026-09-30",
+        "inception": {
+          "expected": "2002-07",
+          "first_bar_month": "2002-07",
+          "verdict": "confirmed"
+        },
+        "entry": {
+          "expected_signal_date": "2003-12-31",
+          "signal_date": "2003-12-31",
+          "as_expected": true
+        }
+      },
+      "HYG": {
+        "symbol": "HYG",
+        "class": "credit",
+        "attempts": [
+          {
+            "attempt": 1,
+            "outcome": "coverage pass"
+          }
+        ],
+        "coverage": {
+          "window": {
+            "start": "2007-04-11",
+            "end": "2026-09-30"
+          },
+          "nyse_trading_days": 4900,
+          "bars_present": 4900,
+          "missing_days": [],
+          "max_consecutive_missing_days": 0,
+          "max_consecutive_missing_allowed": 3,
+          "extra_bars_on_rule_calendar_closures": [],
+          "pass": true
+        },
+        "status": "pass",
+        "rows": 4900,
+        "first_bar": "2007-04-11",
+        "last_bar": "2026-09-30",
+        "inception": {
+          "expected": "2007-04",
+          "first_bar_month": "2007-04",
+          "verdict": "confirmed"
+        },
+        "entry": {
+          "expected_signal_date": "2008-04-30",
+          "signal_date": "2008-04-30",
+          "as_expected": true
+        }
+      },
+      "GLD": {
+        "symbol": "GLD",
+        "class": "real_assets",
+        "attempts": [
+          {
+            "attempt": 1,
+            "outcome": "coverage pass"
+          }
+        ],
+        "coverage": {
+          "window": {
+            "start": "2004-11-18",
+            "end": "2026-09-30"
+          },
+          "nyse_trading_days": 5500,
+          "bars_present": 5500,
+          "missing_days": [],
+          "max_consecutive_missing_days": 0,
+          "max_consecutive_missing_allowed": 3,
+          "extra_bars_on_rule_calendar_closures": [],
+          "pass": true
+        },
+        "status": "pass",
+        "rows": 5500,
+        "first_bar": "2004-11-18",
+        "last_bar": "2026-09-30",
+        "inception": {
+          "expected": "2004-11",
+          "first_bar_month": "2004-11",
+          "verdict": "confirmed"
+        },
+        "entry": {
+          "expected_signal_date": "2005-11-30",
+          "signal_date": "2005-11-30",
+          "as_expected": true
+        }
+      },
+      "DBC": {
+        "symbol": "DBC",
+        "class": "real_assets",
+        "attempts": [
+          {
+            "attempt": 1,
+            "outcome": "coverage pass"
+          }
+        ],
+        "coverage": {
+          "window": {
+            "start": "2006-02-03",
+            "end": "2026-09-30"
+          },
+          "nyse_trading_days": 5196,
+          "bars_present": 5196,
+          "missing_days": [],
+          "max_consecutive_missing_days": 0,
+          "max_consecutive_missing_allowed": 3,
+          "extra_bars_on_rule_calendar_closures": [],
+          "pass": true
+        },
+        "status": "pass",
+        "rows": 5196,
+        "first_bar": "2006-02-03",
+        "last_bar": "2026-09-30",
+        "inception": {
+          "expected": "2006-02",
+          "first_bar_month": "2006-02",
+          "verdict": "confirmed"
+        },
+        "entry": {
+          "expected_signal_date": "2007-02-28",
+          "signal_date": "2007-02-28",
+          "as_expected": true
+        }
+      },
+      "VNQ": {
+        "symbol": "VNQ",
+        "class": "real_assets",
+        "attempts": [
+          {
+            "attempt": 1,
+            "outcome": "coverage pass"
+          }
+        ],
+        "coverage": {
+          "window": {
+            "start": "2004-09-29",
+            "end": "2026-09-30"
+          },
+          "nyse_trading_days": 5536,
+          "bars_present": 5536,
+          "missing_days": [],
+          "max_consecutive_missing_days": 0,
+          "max_consecutive_missing_allowed": 3,
+          "extra_bars_on_rule_calendar_closures": [],
+          "pass": true
+        },
+        "status": "pass",
+        "rows": 5536,
+        "first_bar": "2004-09-29",
+        "last_bar": "2026-09-30",
+        "inception": {
+          "expected": "2004-09",
+          "first_bar_month": "2004-09",
+          "verdict": "confirmed"
+        },
+        "entry": {
+          "expected_signal_date": "2005-09-30",
+          "signal_date": "2005-09-30",
+          "as_expected": true
+        }
+      },
+      "BIL": {
+        "symbol": "BIL",
+        "class": "cash",
+        "attempts": [
+          {
+            "attempt": 1,
+            "outcome": "coverage pass"
+          }
+        ],
+        "coverage": {
+          "window": {
+            "start": "2007-05-30",
+            "end": "2026-09-30"
+          },
+          "nyse_trading_days": 4866,
+          "bars_present": 4866,
+          "missing_days": [],
+          "max_consecutive_missing_days": 0,
+          "max_consecutive_missing_allowed": 3,
+          "extra_bars_on_rule_calendar_closures": [],
+          "pass": true
+        },
+        "status": "pass",
+        "rows": 4881,
+        "first_bar": "2007-05-30",
+        "last_bar": "2026-10-21"
+      }
+    }
+  },
+  "D1": {
+    "run_at_utc": "2026-10-22T20:26:06Z",
+    "window": {
+      "start": "2016-01-04",
+      "end": "2018-12-31"
+    },
+    "threshold_abs_max": 0.002,
+    "exante_abs_max": 0.001,
+    "symbols": {
+      "SPY": {
+        "symbol": "SPY",
+        "class": "equities",
+        "attempts": [],
+        "overlap": {
+          "window": {
+            "start": "2016-01-04",
+            "end": "2018-12-31"
+          },
+          "common_return_days": 753,
+          "first_common_return_date": "2016-01-05",
+          "last_common_return_date": "2018-12-31",
+          "days_only_in_vendor": [
+            "2016-01-04"
+          ],
+          "days_only_in_broker": [],
+          "mean_diff_annual_vendor_minus_broker": 0.003146317337410997,
+          "correlation_descriptive": 0.9988563226781078,
+          "tracking_error_annual_descriptive": 0.0062288786947892055,
+          "max_abs_daily_diff": 0.0051162625499003855,
+          "days_abs_diff_over_large": 14,
+          "large_diff": 0.001,
+          "mean_diff_annual_by_year": {
+            "2016": 0.005262904573403644,
+            "2017": -0.00027739140009184083,
+            "2018": 0.004453438838921188
+          }
+        },
+        "check": {
+          "mean_diff_annual_vendor_minus_broker": 0.003146317337410997,
+          "threshold": "within +/-0.002",
+          "pass": false,
+          "within_exante_expectation": false
+        },
+        "status": "excluded",
+        "reason": "branch X: mean difference outside +/-0.20% p.a."
+      },
+      "IWM": {
+        "symbol": "IWM",
+        "class": "equities",
+        "attempts": [],
+        "overlap": {
+          "window": {
+            "start": "2016-01-04",
+            "end": "2018-12-31"
+          },
+          "common_return_days": 753,
+          "first_common_return_date": "2016-01-05",
+          "last_common_return_date": "2018-12-31",
+          "days_only_in_vendor": [
+            "2016-01-04"
+          ],
+          "days_only_in_broker": [],
+          "mean_diff_annual_vendor_minus_broker": 0.00018247278981329063,
+          "correlation_descriptive": 0.9995840282297355,
+          "tracking_error_annual_descriptive": 0.004704022685814099,
+          "max_abs_daily_diff": 0.0016681415957775503,
+          "days_abs_diff_over_large": 10,
+          "large_diff": 0.001,
+          "mean_diff_annual_by_year": {
+            "2016": -1.3872730130449448e-05,
+            "2017": -5.232003994311733e-05,
+            "2018": 0.0006136111395134387
+          }
+        },
+        "check": {
+          "mean_diff_annual_vendor_minus_broker": 0.00018247278981329063,
+          "threshold": "within +/-0.002",
+          "pass": true,
+          "within_exante_expectation": true
+        },
+        "status": "pass",
+        "reason": "mean difference within the gate"
+      },
+      "EFA": {
+        "symbol": "EFA",
+        "class": "equities",
+        "attempts": [],
+        "overlap": {
+          "window": {
+            "start": "2016-01-04",
+            "end": "2018-12-31"
+          },
+          "common_return_days": 753,
+          "first_common_return_date": "2016-01-05",
+          "last_common_return_date": "2018-12-31",
+          "days_only_in_vendor": [
+            "2016-01-04"
+          ],
+          "days_only_in_broker": [],
+          "mean_diff_annual_vendor_minus_broker": -0.00011045625006202712,
+          "correlation_descriptive": 0.9997416976807189,
+          "tracking_error_annual_descriptive": 0.003197288581744658,
+          "max_abs_daily_diff": 0.0013006394339269978,
+          "days_abs_diff_over_large": 3,
+          "large_diff": 0.001,
+          "mean_diff_annual_by_year": {
+            "2016": 0.00017352369836279934,
+            "2017": 3.3076071838751385e-05,
+            "2018": -0.0005379685203876321
+          }
+        },
+        "check": {
+          "mean_diff_annual_vendor_minus_broker": -0.00011045625006202712,
+          "threshold": "within +/-0.002",
+          "pass": true,
+          "within_exante_expectation": true
+        },
+        "status": "pass",
+        "reason": "mean difference within the gate"
+      },
+      "EEM": {
+        "symbol": "EEM",
+        "class": "equities",
+        "attempts": [],
+        "overlap": {
+          "window": {
+            "start": "2016-01-04",
+            "end": "2018-12-31"
+          },
+          "common_return_days": 753,
+          "first_common_return_date": "2016-01-05",
+          "last_common_return_date": "2018-12-31",
+          "days_only_in_vendor": [
+            "2016-01-04"
+          ],
+          "days_only_in_broker": [],
+          "mean_diff_annual_vendor_minus_broker": 8.392546430120811e-05,
+          "correlation_descriptive": 0.9996566517900907,
+          "tracking_error_annual_descriptive": 0.004980295724432636,
+          "max_abs_daily_diff": 0.0018487170277627918,
+          "days_abs_diff_over_large": 12,
+          "large_diff": 0.001,
+          "mean_diff_annual_by_year": {
+            "2016": -3.147634386948752e-05,
+            "2017": 0.00011932999387688165,
+            "2018": 0.0001639227428962302
+          }
+        },
+        "check": {
+          "mean_diff_annual_vendor_minus_broker": 8.392546430120811e-05,
+          "threshold": "within +/-0.002",
+          "pass": true,
+          "within_exante_expectation": true
+        },
+        "status": "pass",
+        "reason": "mean difference within the gate"
+      },
+      "SHY": {
+        "symbol": "SHY",
+        "class": "treasuries",
+        "attempts": [],
+        "overlap": {
+          "window": {
+            "start": "2016-01-04",
+            "end": "2018-12-31"
+          },
+          "common_return_days": 753,
+          "first_common_return_date": "2016-01-05",
+          "last_common_return_date": "2018-12-31",
+          "days_only_in_vendor": [
+            "2016-01-04"
+          ],
+          "days_only_in_broker": [],
+          "mean_diff_annual_vendor_minus_broker": 0.0001824899574543205,
+          "correlation_descriptive": 0.9924635922242302,
+          "tracking_error_annual_descriptive": 0.0010827811624604406,
+          "max_abs_daily_diff": 0.0005294489334662922,
+          "days_abs_diff_over_large": 0,
+          "large_diff": 0.001,
+          "mean_diff_annual_by_year": {
+            "2016": 0.0005864043599174428,
+            "2017": -6.798877446612029e-06,
+            "2018": -3.213561010786925e-05
+          }
+        },
+        "check": {
+          "mean_diff_annual_vendor_minus_broker": 0.0001824899574543205,
+          "threshold": "within +/-0.002",
+          "pass": true,
+          "within_exante_expectation": true
+        },
+        "status": "pass",
+        "reason": "mean difference within the gate"
+      },
+      "IEF": {
+        "symbol": "IEF",
+        "class": "treasuries",
+        "attempts": [],
+        "overlap": {
+          "window": {
+            "start": "2016-01-04",
+            "end": "2018-12-31"
+          },
+          "common_return_days": 753,
+          "first_common_return_date": "2016-01-05",
+          "last_common_return_date": "2018-12-31",
+          "days_only_in_vendor": [
+            "2016-01-04"
+          ],
+          "days_only_in_broker": [],
+          "mean_diff_annual_vendor_minus_broker": 0.0004942119487127113,
+          "correlation_descriptive": 0.9995905914170927,
+          "tracking_error_annual_descriptive": 0.0013168048932391276,
+          "max_abs_daily_diff": 0.0013673499465400862,
+          "days_abs_diff_over_large": 1,
+          "large_diff": 0.001,
+          "mean_diff_annual_by_year": {
+            "2016": 0.0014232790691042483,
+            "2017": 2.8092499885458315e-05,
+            "2018": 3.1264277148427354e-05
+          }
+        },
+        "check": {
+          "mean_diff_annual_vendor_minus_broker": 0.0004942119487127113,
+          "threshold": "within +/-0.002",
+          "pass": true,
+          "within_exante_expectation": true
+        },
+        "status": "pass",
+        "reason": "mean difference within the gate"
+      },
+      "TLT": {
+        "symbol": "TLT",
+        "class": "treasuries",
+        "attempts": [],
+        "overlap": {
+          "window": {
+            "start": "2016-01-04",
+            "end": "2018-12-31"
+          },
+          "common_return_days": 753,
+          "first_common_return_date": "2016-01-05",
+          "last_common_return_date": "2018-12-31",
+          "days_only_in_vendor": [
+            "2016-01-04"
+          ],
+          "days_only_in_broker": [],
+          "mean_diff_annual_vendor_minus_broker": 0.000676543792677538,
+          "correlation_descriptive": 0.999799481680339,
+          "tracking_error_annual_descriptive": 0.0021539526865121906,
+          "max_abs_daily_diff": 0.001838195965093603,
+          "days_abs_diff_over_large": 3,
+          "large_diff": 0.001,
+          "mean_diff_annual_by_year": {
+            "2016": 0.0018894869680530764,
+            "2017": 4.1028439232364565e-05,
+            "2018": 9.911597074717321e-05
+          }
+        },
+        "check": {
+          "mean_diff_annual_vendor_minus_broker": 0.000676543792677538,
+          "threshold": "within +/-0.002",
+          "pass": true,
+          "within_exante_expectation": true
+        },
+        "status": "pass",
+        "reason": "mean difference within the gate"
+      },
+      "LQD": {
+        "symbol": "LQD",
+        "class": "credit",
+        "attempts": [],
+        "overlap": {
+          "window": {
+            "start": "2016-01-04",
+            "end": "2018-12-31"
+          },
+          "common_return_days": 753,
+          "first_common_return_date": "2016-01-05",
+          "last_common_return_date": "2018-12-31",
+          "days_only_in_vendor": [
+            "2016-01-04"
+          ],
+          "days_only_in_broker": [],
+          "mean_diff_annual_vendor_minus_broker": 0.0008798714986566232,
+          "correlation_descriptive": 0.9990628335618172,
+          "tracking_error_annual_descriptive": 0.0019154551539738685,
+          "max_abs_daily_diff": 0.0026014162847131095,
+          "days_abs_diff_over_large": 1,
+          "large_diff": 0.001,
+          "mean_diff_annual_by_year": {
+            "2016": 0.0026125540775494035,
+            "2017": 3.2019767279726476e-05,
+            "2018": -4.959348859260468e-06
+          }
+        },
+        "check": {
+          "mean_diff_annual_vendor_minus_broker": 0.0008798714986566232,
+          "threshold": "within +/-0.002",
+          "pass": true,
+          "within_exante_expectation": true
+        },
+        "status": "pass",
+        "reason": "mean difference within the gate"
+      },
+      "HYG": {
+        "symbol": "HYG",
+        "class": "credit",
+        "attempts": [],
+        "overlap": {
+          "window": {
+            "start": "2016-01-04",
+            "end": "2018-12-31"
+          },
+          "common_return_days": 753,
+          "first_common_return_date": "2016-01-05",
+          "last_common_return_date": "2018-12-31",
+          "days_only_in_vendor": [
+            "2016-01-04"
+          ],
+          "days_only_in_broker": [],
+          "mean_diff_annual_vendor_minus_broker": 0.001410166886730227,
+          "correlation_descriptive": 0.9970021874030329,
+          "tracking_error_annual_descriptive": 0.004613192323197051,
+          "max_abs_daily_diff": 0.004453095294651543,
+          "days_abs_diff_over_large": 7,
+          "large_diff": 0.001,
+          "mean_diff_annual_by_year": {
+            "2016": 0.0045357841433732345,
+            "2017": -0.00019578548035692833,
+            "2018": -0.00010949800282562512
+          }
+        },
+        "check": {
+          "mean_diff_annual_vendor_minus_broker": 0.001410166886730227,
+          "threshold": "within +/-0.002",
+          "pass": true,
+          "within_exante_expectation": false
+        },
+        "status": "pass",
+        "reason": "mean difference within the gate"
+      },
+      "GLD": {
+        "symbol": "GLD",
+        "class": "real_assets",
+        "attempts": [],
+        "overlap": {
+          "window": {
+            "start": "2016-01-04",
+            "end": "2018-12-31"
+          },
+          "common_return_days": 753,
+          "first_common_return_date": "2016-01-05",
+          "last_common_return_date": "2018-12-31",
+          "days_only_in_vendor": [
+            "2016-01-04"
+          ],
+          "days_only_in_broker": [],
+          "mean_diff_annual_vendor_minus_broker": 1.3793324066536657e-05,
+          "correlation_descriptive": 0.9999078023324522,
+          "tracking_error_annual_descriptive": 0.001672185796022285,
+          "max_abs_daily_diff": 0.0007131427810969093,
+          "days_abs_diff_over_large": 0,
+          "large_diff": 0.001,
+          "mean_diff_annual_by_year": {
+            "2016": 0.0001928200186087831,
+            "2017": -0.0002585468281767912,
+            "2018": 0.00010710678176761813
+          }
+        },
+        "check": {
+          "mean_diff_annual_vendor_minus_broker": 1.3793324066536657e-05,
+          "threshold": "within +/-0.002",
+          "pass": true,
+          "within_exante_expectation": true
+        },
+        "status": "pass",
+        "reason": "mean difference within the gate"
+      },
+      "DBC": {
+        "symbol": "DBC",
+        "class": "real_assets",
+        "attempts": [],
+        "overlap": {
+          "window": {
+            "start": "2016-01-04",
+            "end": "2018-12-31"
+          },
+          "common_return_days": 753,
+          "first_common_return_date": "2016-01-05",
+          "last_common_return_date": "2018-12-31",
+          "days_only_in_vendor": [
+            "2016-01-04"
+          ],
+          "days_only_in_broker": [],
+          "mean_diff_annual_vendor_minus_broker": -0.004648298502291276,
+          "correlation_descriptive": 0.9980869890993778,
+          "tracking_error_annual_descriptive": 0.00942247166018869,
+          "max_abs_daily_diff": 0.013946545477573347,
+          "days_abs_diff_over_large": 2,
+          "large_diff": 0.001,
+          "mean_diff_annual_by_year": {
+            "2016": -0.0006586615812572088,
+            "2017": 0.00020859979560923023,
+            "2018": -0.01349483372122585
+          }
+        },
+        "check": {
+          "mean_diff_annual_vendor_minus_broker": -0.004648298502291276,
+          "threshold": "within +/-0.002",
+          "pass": false,
+          "within_exante_expectation": false
+        },
+        "status": "excluded",
+        "reason": "branch X: mean difference outside +/-0.20% p.a."
+      },
+      "VNQ": {
+        "symbol": "VNQ",
+        "class": "real_assets",
+        "attempts": [],
+        "overlap": {
+          "window": {
+            "start": "2016-01-04",
+            "end": "2018-12-31"
+          },
+          "common_return_days": 753,
+          "first_common_return_date": "2016-01-05",
+          "last_common_return_date": "2018-12-31",
+          "days_only_in_vendor": [
+            "2016-01-04"
+          ],
+          "days_only_in_broker": [],
+          "mean_diff_annual_vendor_minus_broker": 7.015839974206339e-05,
+          "correlation_descriptive": 0.9996635690483959,
+          "tracking_error_annual_descriptive": 0.003804363819151727,
+          "max_abs_daily_diff": 0.001001532895518853,
+          "days_abs_diff_over_large": 1,
+          "large_diff": 0.001,
+          "mean_diff_annual_by_year": {
+            "2016": 0.0001754553437750121,
+            "2017": 0.00014367816898471303,
+            "2018": -0.00010865831353353498
+          }
+        },
+        "check": {
+          "mean_diff_annual_vendor_minus_broker": 7.015839974206339e-05,
+          "threshold": "within +/-0.002",
+          "pass": true,
+          "within_exante_expectation": true
+        },
+        "status": "pass",
+        "reason": "mean difference within the gate"
+      }
+    }
+  },
+  "evaluation": {
+    "excluded": {
+      "SPY": "branch X: mean difference outside +/-0.20% p.a.",
+      "DBC": "branch X: mean difference outside +/-0.20% p.a."
+    },
+    "universe": [
+      "IWM",
+      "EFA",
+      "EEM",
+      "SHY",
+      "IEF",
+      "TLT",
+      "LQD",
+      "HYG",
+      "GLD",
+      "VNQ"
+    ],
+    "universe_size": 10,
+    "per_class": {
+      "equities": [
+        "IWM",
+        "EFA",
+        "EEM"
+      ],
+      "treasuries": [
+        "SHY",
+        "IEF",
+        "TLT"
+      ],
+      "credit": [
+        "LQD",
+        "HYG"
+      ],
+      "real_assets": [
+        "GLD",
+        "VNQ"
+      ]
+    },
+    "single_vendor_unchecked": [],
+    "halt": false,
+    "halt_reasons": [],
+    "outcome": "proceed with 10 instruments"
+  }
+}

@@ -15,5 +15,6 @@ Every trial is logged here before it is run (§7). The deflated Sharpe ratio use
 | Step | Date | Outcome |
 |---|---|---|
 | Pre-registration committed (§14 step 1) | 2026-10-22 | this commit; no fetch, no check, no return computed |
+| BIL vendor fetch (§5.3.2 step 1) | logged 2026-10-22 06:3x London before the run; outcome appended below | **About to run once**: Tiingo daily BIL prices from 2007-05-01 with the desk's existing credential (token read from the environment, sent as a header, never logged; no credential created). The overlap-check code (`src/bil_overlap_check.py`, acceptance = mean difference within ±0.05% p.a. only, as §5.3.2 fixes) is committed in the same commit as this row, before either runs. |
 
 No return of any rule or benchmark has been computed on real data as of 2026-10-22 under this study. T1, T2 and T3 have not been run. The out-of-sample window (2019-01 to 2026-09) has never been touched by any study.

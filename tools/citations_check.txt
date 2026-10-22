@@ -1,0 +1,39 @@
+Citation check of RESEARCH_AGENDA.md: 37 DOIs, 37 ok, 0 problems. Checked 2026-10-22 18:24 UTC
+
+[MOP12] doi:10.1016/j.jfineco.2011.11.003 -> ok | registered: Moskowitz (2012) | Time series momentum | Journal of Financial Economics
+[HOP17] doi:10.3905/jpm.2017.44.1.015 -> ok | registered: Hurst (2017) | A Century of Evidence on Trend-Following Investing | The Journal of Portfolio Management
+[GW17] doi:10.1093/rof/rfw048 -> ok | registered: Georgopoulou (2016) | The Trend Is Your Friend: Time-Series Momentum Strategies across Equity and Commodity Markets | Review of Finance
+[KMPV18] doi:10.1016/j.jfineco.2017.11.002 -> ok | registered: Koijen (2018) | Carry | Journal of Financial Economics
+[BPR18] doi:10.3905/jpm.2018.44.4.127 -> ok | registered: Brooks (2018) | Style Investing in Fixed Income | The Journal of Portfolio Management
+[AMP13] doi:10.1111/jofi.12021 -> ok | registered: ASNESS (2013) | Value and Momentum Everywhere | The Journal of Finance
+[MM17] doi:10.1111/jofi.12513 -> ok (title differs: see registered title) | registered: MOREIRA (2017) | Volatility‐Managed Portfolios | The Journal of Finance
+[COWY20] doi:10.1016/j.jfineco.2020.04.015 -> ok | registered: Cederburg (2020) | On the performance of volatility-managed portfolios | Journal of Financial Economics
+[HHKRSV18] doi:10.3905/jpm.2018.45.1.014 -> ok | registered: Harvey (2018) | The Impact of Volatility Targeting | The Journal of Portfolio Management
+[HLZ16] doi:10.1093/rfs/hhv059 -> ok | registered: Harvey (2015) | … and the Cross-Section of Expected Returns | Review of Financial Studies
+[BLdP14] doi:10.3905/jpm.2014.40.5.094 -> ok | registered: Bailey (2014) | The Deflated Sharpe Ratio: <i>Correcting for Selection Bias, Backtest</i> <i>Overfitting, and Non-Normality</i> | The Journal of Portfolio Management
+[BBLZ16] doi:10.21314/JCF.2016.322 -> ok | registered: Bailey (2016) | The probability of backtest overfitting | The Journal of Computational Finance
+[W00] doi:10.1111/1468-0262.00152 -> ok | registered: White (2000) | A Reality Check for Data Snooping | Econometrica
+[H05] doi:10.1198/073500105000000063 -> ok | registered: Hansen (2005) | A Test for Superior Predictive Ability | Journal of Business &amp; Economic Statistics
+[LW08] doi:10.1016/j.jempfin.2008.03.002 -> ok | registered: Ledoit (2008) | Robust performance hypothesis testing with the Sharpe ratio | Journal of Empirical Finance
+[PR94] doi:10.1080/01621459.1994.10476870 -> ok | registered: Politis (1994) | The Stationary Bootstrap | Journal of the American Statistical Association
+[MP16] doi:10.1111/jofi.12365 -> ok | registered: MCLEAN (2016) | Does Academic Research Destroy Stock Return Predictability? | The Journal of Finance
+[CMT19] doi:10.1287/mnsc.2018.3066 -> ok | registered: Calluzzo (2019) | When Anomalies Are Publicized Broadly, Do Institutions Trade Accordingly? | Management Science
+[HLWZ20] doi:10.1016/j.jfineco.2019.08.004 -> ok | registered: Huang (2020) | Time series momentum: Is it there? | Journal of Financial Economics
+[KTW16] doi:10.1016/j.finmar.2016.05.003 -> ok | registered: Kim (2016) | Time series momentum and volatility scaling | Journal of Financial Markets
+[GJ18] doi:10.1093/rfs/hhx131 -> ok | registered: Goyal (2017) | Cross-Sectional and Time-Series Tests of Return Predictability: What Is the Difference? | The Review of Financial Studies
+[CS91] doi:10.2307/2298008 -> ok | registered: Campbell (1991) | Yield Spreads and Interest Rate Movements: A Bird's Eye View | The Review of Economic Studies
+[CP05] doi:10.1257/0002828053828581 -> ok | registered: Cochrane (2005) | Bond Risk Premia | American Economic Review
+[TV12] doi:10.1093/rfs/hhs069 -> ok | registered: Thornton (2012) | Out-of-Sample Predictions of Bond Excess Returns and Forward Rates: An Asset Allocation Perspective | Review of Financial Studies
+[LN09] doi:10.1093/rfs/hhp081 -> ok | registered: Ludvigson (2009) | Macro Factors in Bond Risk Premia | Review of Financial Studies
+[BBT21] doi:10.1093/rfs/hhaa062 -> ok | registered: Bianchi (2020) | Bond Risk Premiums with Machine Learning | The Review of Financial Studies
+[HS20] doi:10.1111/jofi.12949 -> ok | registered: HADDAD (2020) | The Banking View of Bond Risk Premia | The Journal of Finance
+[ACM13] doi:10.1016/j.jfineco.2013.04.009 -> ok | registered: Adrian (2013) | Pricing the term structure with linear regressions | Journal of Financial Economics
+[CPV20] doi:10.1086/707766 -> ok | registered: Campbell (2020) | Macroeconomic Drivers of Bond and Equity Risks | Journal of Political Economy
+[I03] doi:10.3905/jfi.2003.319353 -> ok | registered: Ilmanen (2003) | Stock-Bond Correlations | The Journal of Fixed Income
+[DM16] doi:10.1016/j.jfineco.2015.12.002 -> ok | registered: Daniel (2016) | Momentum crashes | Journal of Financial Economics
+[BNP08] doi:10.1086/593088 -> ok | registered: Brunnermeier (2008) | Carry Trades and Currency Crashes | NBER Macroeconomics Annual
+[LRV11] doi:10.1093/rfs/hhr068 -> ok | registered: Lustig (2011) | Common Risk Factors in Currency Markets | Review of Financial Studies
+[MSSS12] doi:10.1016/j.jfineco.2012.06.009 -> ok | registered: Menkhoff (2012) | Currency momentum strategies | Journal of Financial Economics
+[BK12] doi:10.2139/ssrn.2140091 -> ok | registered: Baltas (2012) | Improving Time-Series Momentum Strategies: The Role of Trading Signals and Volatility Estimators | SSRN Electronic Journal
+[BGHLS15] doi:10.2139/ssrn.2695101 -> ok | registered: Baz (2015) | Dissecting Investment Strategies in the Cross Section and Time Series | SSRN Electronic Journal
+[HRvH16] doi:10.2139/ssrn.2831926 -> ok | registered: Hamill (2016) | Trend Following: Equity and Bond Crisis Alpha | 

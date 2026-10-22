@@ -33,6 +33,8 @@ In order:
 
 All of it is traded only through liquid ETFs (treasury ETFs, dollar and currency ETFs, index ETFs) on the paper account. Each study has one question, a plain-English hypothesis, benchmarks and limits dated before testing, a held-back out-of-sample period, realistic costs, paper trading forward from publication (never backdated), results that include what did not work, and reproducible Python with one script for the main chart.
 
+**Research agenda** (2026-10-22): [RESEARCH_AGENDA.md](RESEARCH_AGENDA.md) reviews the published evidence on trend, carry, volatility targeting and bond-return predictability (what is robust, what has decayed, what is crowded), says what the three studies here add, and ranks the next five questions. Every DOI in it is checked against the Crossref registry by `tools/check_citations.py`; the output of the check is committed beside it (`tools/citations_check.txt`). The check verifies that each reference exists as cited, not the claim drawn from it.
+
 ## Results at a glance
 
 Three studies, one verdict, no edge found. Every number below is a backtest on historical prices after costs; none is a track record.

@@ -1,6 +1,8 @@
 # Study 004: cross-asset time-series momentum with volatility targeting, ten liquid ETFs, long-only or flat
 
-**Status: in-sample complete (§14 step 7); out-of-sample not yet run.** The verdict will be set by the §9.5 table after the single out-of-sample run. Pre-registration: [PREREGISTRATION.md](PREREGISTRATION.md) (committed before any data were fetched); trial log: [trials.md](trials.md); data checks: [results/checks/data_checks.md](results/checks/data_checks.md); in-sample outputs: `results/insample/`.
+**Verdict: not supported** (pre-registered table, §9.5; published 2026-10-22; independent review pending, §14 step 10). **Status: finished (§14 step 9); out-of-sample run once on 2026-10-22, never to be re-run.** Pre-registration: [PREREGISTRATION.md](PREREGISTRATION.md) (committed before any data were fetched); trial log: [trials.md](trials.md); data checks: [results/checks/data_checks.md](results/checks/data_checks.md); in-sample outputs: `results/insample/`; out-of-sample outputs: `results/oos/`.
+
+**Out-of-sample headline (2019-01-02 to 2026-09-30, 93 monthly holding periods, run once, base costs): both pre-registered sign conditions held, and the verdict is still "not supported".** T1 earned a Sharpe ratio of 0.336 against 0.200 for the always-long volatility-scaled portfolio (B3) and for the exposure-matched one (B4), so **O2 passes**; the mean monthly difference T1 − B4 was +0.00027 with a Newey–West t of 0.35, so **O1 passes** (a sign condition, as registered: 93 months cannot establish a difference of this size); T1's monthly maximum drawdown was −4.1% against −11.1% for B4, so the drawdown clause is not triggered. **The verdict is fixed by the in-sample failures of C1 and C2 under the precedence rule written before any result** (not supported > inconclusive > supported), and this note does not re-weight the criteria after seeing the window go the rule's way. What the window shows, descriptively: the trend signal kept the book out of most of the 2022 sell-off (−3.1% from January to October 2022 against −13.4% for B3, −19.3% for equal weight and −18.2% for SPY), and that one episode is where its whole out-of-sample advantage sits; the 2020 crash it only softened (−8.5% against −11.8% for B3 over 2020-02-19 to 2020-03-23) and it then missed the recovery (−3.8% to 2020-08-31 against +3.3% for equal weight). T2 and T4 pass both sign conditions; T3 fails both. The nine-asset run without IEF passes both (Sharpe 0.340 against 0.273, t of the difference 0.03). Over the same window, plain equal weight (Sharpe 0.43) and 60/40 (0.74, vendor SPY) beat every volatility-scaled variant: the window rewarded equity beta, and 10%-per-asset volatility targeting with no leverage gave it up.
 
 **In-sample headline (2004-01 to 2018-12, 180 monthly holding periods, base costs): the trend signal added nothing measurable on top of volatility scaling.** T1 (hold each asset only when its 12-month excess return over cash is positive, each position sized to a 10% volatility target with a 25% cap) earned a Sharpe ratio of 0.886 against 0.880 for the always-long volatility-scaled portfolio (B3) and 0.880 for the same portfolio at T1's own average exposure (B4). **C1 fails** (the pre-registered margin is 0.10) and **C2 fails** (Newey–West t of the monthly difference T1 − B4 is 0.65 against the 2.0 required). C3 (deflated Sharpe 0.998 at N = 4) and C4 (the sign of T1 − B4 holds under doubled costs) pass. T2, T3 and T4 fail C1 and C2 on the same criteria. Because C1 and C2 fail, **the §9.5 table already fixes the verdict as "not supported" whatever the out-of-sample window shows**; the out-of-sample run still happens, once, as pre-registered, because the window's result is informative and the programme runs every step it registered. The test is not low-powered: T1 switched 167 times across the ten assets (the pre-registered floor was 40).
 
@@ -109,10 +111,96 @@ Plots: `results/insample/exposure_drawdown_10assets.png` (T1 gross exposure and 
 - B3 and B4 share one Sharpe ratio, so C1's two conditions coincide; the design intended them as two bars and they turned out to be one.
 - No covariance-based sizing, no shorting, no futures, no currencies: this does not test the published long/short futures trend result and does not claim to.
 
-## Out-of-sample (§8.2, §14 step 8)
+## Out-of-sample results (§8.2, §14 step 8; 2019-01-02 to 2026-09-30, 93 holding periods; run once; base costs)
 
-Not yet run. It will be run once by `reproduce.sh --oos` on the same vendor series with actual BIL as cash, k frozen at 0.8018 (ten) and 0.7764 (nine), after this note is committed; its outputs go to `results/oos/` and are never re-run. The §9.5 verdict for T1 is already fixed as **not supported** by the in-sample C1 and C2 failures; the out-of-sample section will report O1, O2, the 2020 and 2022 crisis windows and the drawdown clause as pre-registered, and say plainly that IEF's path in that window was not blind to the author.
+Run once by `reproduce.sh --oos` on code 1697e9d (2026-10-22 23:20–23:23 London, 2 min 52 s; results commit 784f6ed) on the same vendor series with actual BIL as cash, k frozen at 0.8018 (ten) and 0.7764 (nine). **End bar (§16, decided and committed before the run):** §8.2 asked for the last holding period to end at the first execution date of October 2026, but the ten fetched files stop at 2026-09-30 (the reused IEF and BIL files reach further), so without a change the engine would have ended IEF and the cash leg on 2026-10-01 while forward-filling the other nine assets from 2026-09-30, silently. The window therefore ends at the common last bar, 2026-09-30, for every instrument alike: the last period is one trading day short, and the 2026-09-30 signal is computed (the terminal position, the shadow record's first entry) but starts no period. Study 003's window ended on 2026-10-01; the one-day difference is recorded so that nobody reads it as a choice.
+
+### Ten assets
+
+| | Ann. return | Ann. vol | Sharpe | Max DD (monthly) | Max DD (daily) | Hit rate (excess > 0) | One-way turnover p.a. | Mean gross exposure | Skew / kurtosis |
+|---|---|---|---|---|---|---|---|---|---|
+| B0 cash (BIL) | 2.65% | 0.58% | — | −0.1% | −0.2% | — | 0 | 0 | — |
+| B1 equal weight | 6.61% | 10.10% | 0.426 | −19.6% | −22.4% | 0.581 | 0.41 | 1.00 | −0.50 / 4.6 |
+| B2 60/40 (vendor SPY) | 10.62% | 10.92% | 0.742 | −18.8% | −21.2% | 0.645 | 0.36 | 1.00 | −0.45 / 4.0 |
+| B3 vol-scaled, always long | 3.75% | 6.43% | 0.200 | −13.8% | −15.5% | 0.548 | 1.01 | 0.95 | −0.62 / 4.7 |
+| B4 = B3 × 0.8018 | 3.57% | 5.17% | 0.200 | −11.1% | −12.4% | 0.548 | 0.81 | 0.76 | −0.62 / 4.7 |
+| **T1 12-month, long/flat** | **3.95%** | **4.04%** | **0.336** | **−4.1%** | **−11.4%** | **0.538** | **2.16** | **0.63** | **−0.76 / 4.6** |
+| T2 6-month | 3.74% | 3.85% | 0.294 | −4.2% | −11.1% | 0.527 | 3.20 | 0.62 | −0.33 / 4.8 |
+| T3 3-month | 3.33% | 3.68% | 0.197 | −6.7% | −7.2% | 0.505 | 4.39 | 0.59 | −0.40 / 4.8 |
+| T4 blend | 3.80% | 3.67% | 0.322 | −4.6% | −10.1% | 0.559 | 2.81 | 0.63 | −0.40 / 3.9 |
+
+Stress costs (2× base): Sharpe T1 0.323, B3 0.196, B4 0.196, T2 0.274, T3 0.169, T4 0.304; the sign of T1 − B4 holds. Source: `results/oos/metrics_10assets_base.csv`, `summary.json`.
+
+Reading: T1 returned 1.3% a year over bills at 4% volatility. Its Sharpe advantage over B3 and B4 comes from a lower volatility and a far smaller monthly drawdown, not from a higher return (3.95% against 3.75% for B3); the daily drawdowns are close (−11.4% against −12.4% for B4), because the March 2020 fall happened inside one holding period, where a monthly rule cannot act. The ranking of the trials is the in-sample one (T1 > T4 > T2 > T3).
+
+### Inference (§9.3 items 7–9) and criteria (§9.5)
+
+| Trial | Sharpe 95% CI (stationary bootstrap, 10,000) | vs B3: NW mean (monthly) / t | vs B3: LW Sharpe diff (ann.) / p | vs B4: NW mean / t | vs B4: LW diff / p | O1 | O2 |
+|---|---|---|---|---|---|---|---|
+| T1 | −0.19 to 0.88 | +0.00006 / 0.06 | +0.137 / 0.45 | **+0.00027 / 0.35** | +0.137 / 0.46 | pass | pass |
+| T2 | −0.34 to 0.85 | −0.00012 / −0.10 | +0.095 / 0.69 | +0.00009 / 0.10 | +0.095 / 0.69 | pass | pass |
+| T3 | −0.56 to 1.01 | −0.00046 / −0.36 | −0.003 / 0.99 | −0.00025 / −0.24 | −0.003 / 0.99 | FAIL | FAIL |
+| T4 | −0.35 to 0.91 | −0.00008 / −0.07 | +0.124 / 0.56 | +0.00013 / 0.16 | +0.124 / 0.57 | pass | pass |
+
+No resample was degenerate. T1's Sharpe interval includes zero: the window cannot distinguish the rule from no edge. Deflated Sharpe ratio on the window (descriptive; no out-of-sample criterion uses it): T1 PSR 0.81, DSR 0.77 at N = 4, 0.75 at N = 10.
+
+| Criterion (T1, base costs) | Required | Observed | Result |
+|---|---|---|---|
+| C1–C4 (in-sample) | all four | C1 FAIL, C2 FAIL, C3 pass, C4 pass | **FAIL** |
+| O1 | mean(T1 − B4) > 0 | +0.00027 per month (t 0.35) | pass |
+| O2 | Sharpe(T1) > Sharpe(B3) | 0.336 > 0.200 | pass |
+| Drawdown clause | monthly max DD of T1 not worse than B4's | −4.1% vs −11.1% | not triggered |
+| **Verdict for T1** | §9.5 table, precedence not supported > inconclusive > supported | any of C1–C4 fails | **not supported** |
+
+T2–T4 do not affect the verdict; they are reported in full above. Had C1–C4 held, O1 and O2 would have made T1 "supported" and T3's out-of-sample failure would have downgraded it to "inconclusive" under the §9.5 clause on T2–T4; neither applies.
+
+### Nine assets without IEF (§9.6, §2.4)
+
+| | Ann. return | Ann. vol | Sharpe | Max DD (monthly) | Max DD (daily) | Mean gross exposure |
+|---|---|---|---|---|---|---|
+| B1 equal weight | 7.26% | 10.85% | 0.461 | −20.1% | −23.0% | 1.00 |
+| B3 vol-scaled, always long | 4.36% | 6.96% | 0.273 | −13.3% | −16.8% | 0.93 |
+| B4 = B3 × 0.7764 | 4.02% | 5.42% | 0.273 | −10.3% | −13.0% | 0.72 |
+| **T1** | **4.09%** | **4.43%** | **0.340** | **−6.0%** | **−13.3%** | **0.62** |
+| T2 / T3 / T4 | 3.84% / 3.55% / 3.95% | 4.27% / 3.84% / 3.97% | 0.291 / 0.245 / 0.339 | −5.5% / −6.1% / −4.7% | −12.9% / −8.0% / −11.4% | 0.61 / 0.58 / 0.61 |
+
+T1: O1 pass (mean T1 − B4 +0.00002 per month, t 0.03; against B3 −0.00033, t −0.33), O2 pass (0.340 > 0.273), drawdown clause not triggered (−6.0% against −10.3%); verdict **not supported** on the same in-sample grounds. T2, T3 and T4 all fail O1 here (T3 fails O2 as well). The asset the author had seen is not what made the sign conditions hold for T1, but it is part of what made them hold for T2 and T4; the ten-asset run decides nothing either way, as registered. Source: `results/oos/metrics_9assets_base.csv`.
+
+### Pre-registered descriptives for the window (§9.6; no decision weight)
+
+**Crisis table** (cumulative return over the public dates fixed in §9.6; ten assets):
+
+| Window | T1 | B1 | B2 | B3 | B4 | SPY (vendor) | IEF |
+|---|---|---|---|---|---|---|---|
+| 2020-02-19 to 2020-03-23 | −8.5% | −16.9% | −18.7% | −11.8% | −9.5% | −33.7% | +6.4% |
+| 2020-02-19 to 2020-08-31 | −3.8% | +3.3% | +7.0% | −4.0% | −3.2% | +4.3% | +7.8% |
+| 2022-01-01 to 2022-10-31 | −3.1% | −19.3% | −17.0% | −13.4% | −10.8% | −18.2% | −16.1% |
+
+2022 is the episode the rule exists for, and it did what the literature says such rules do: with bonds, equities and credit falling together, the long/flat book was mostly in bills. 2020 is the episode a monthly long/flat rule handles worst: it was fully invested when the crash came, cut the book at the March month-end near the low, and sat out most of the rebound. Over the whole window those two episodes net to the Sharpe advantage above and nothing more.
+
+**Per-asset attribution and timing** (T1, ten assets): GLD contributed +0.79% a year to T1's return, EEM +0.54%, HYG +0.43%, EFA +0.34%, LQD +0.29%, SHY +0.27%, IEF +0.23%, TLT +0.12%; IWM −0.08% and VNQ −0.08%. HYG, VNQ and LQD carried the largest variance shares (20%, 16%, 15%). Each asset's own long/flat Sharpe against its always-on volatility-scaled position: the signal **helped** on the four fixed-income legs (SHY 0.44 against −0.45, IEF 0.13 against −0.27, TLT 0.13 against −0.29, LQD 0.13 against −0.13) and on EEM (0.67 against 0.39); it **hurt** on IWM (−0.24 against 0.22), VNQ (−0.17 against 0.18), EFA (0.27 against 0.44), GLD (0.76 against 0.93) and HYG (0.03 against 0.13). This is the mirror image of the in-sample attribution, where the Treasury legs were the worst-timed: the signal's value here is one 2021–2024 exit from duration, which Study 003 found on IEF alone.
+
+**Correlations** (monthly excess returns): T1 with SPY 0.53, with IEF 0.33; B3 with SPY 0.72, with IEF 0.60. The signal reduced the book's equity and duration correlation, as in-sample.
+
+**Volatility forecast against realised** (diagonal, √Σ w²σ²): T1's realised 12-month volatility averaged 1.82× its forecast (74 months compared; 69% of months above 1.5×); B3's 2.32× (91% of months). Worse than in-sample (1.58×), for the reason §9.6 anticipated: the diagonal forecast ignores correlations, and 2020 and 2022 were the years in which everything moved together. First input to the programme's risk model.
+
+**Power**: 122 on/off switches across the ten assets (floor 40), "as registered". Plots: `results/oos/exposure_drawdown_10assets.png` (gross exposure with the number of assets on; drawdown of T1 against B3 and B4) and `onoff_strips_10assets.png`; the nine-asset versions beside them.
+
+## What did not work (§9.7; out-of-sample)
+
+- The 3-month lookback (T3) failed both sign conditions: Sharpe 0.197 against 0.200 for B3, at 4.4× turnover; monthly trend with a one-quarter window is noise at these costs.
+- Volatility targeting without leverage gave up the window's return: every vol-scaled variant (B3, B4, T1–T4) earned between 3.3% and 4.0% a year against 6.6% for equal weight and 10.6% for 60/40, and lost to both on Sharpe. The design choice §15 fixed (no leverage, 10% per asset) is the reason, and it was the right choice for a paper account that cannot borrow; it is also why this rule, even if it had been supported, would not have been worth trading over this window.
+- The daily drawdown did not improve (−11.4% against −12.4% for B4): a monthly rule cannot act inside a month, and the one month that mattered (March 2020) fell inside a period.
+- The 2020 exit cost more than it saved: −8.5% into the trough, then −3.8% by August while equal weight was up 3.3%.
+
+## Limitations of what can be concluded (out-of-sample)
+
+Ninety-three months of one window, with one episode (2022) carrying the whole advantage and one (2020) carrying the whole cost. The Sharpe interval for T1 (−0.19 to 0.88) contains zero. The author had seen IEF's path, and IEF's leg was one of the four where the signal helped; the nine-asset run says the sign conditions for T1 do not depend on it, and says nothing more. Ten instruments, not twelve; SPY's absence leaves the equity class small, and the study cannot say what the signal would have done on the largest equity ETF. Base costs are a model (2.0–3.5 bp per side); the sign held at double. Nothing here supports trading the rule; the pre-registered verdict says so, and the descriptives above are consistent with the published literature's claim that trend rules earn their keep in prolonged drawdowns and pay for it in sharp reversals, which is a statement about the 2019–2026 window and not evidence of an edge.
+
+## Forward record (§11)
+
+No paper order. The shadow record starts at the first month-end after this note's publication (2026-10-30): the terminal position from the 2026-09-30 signal is in `results/oos/signal_s12_10assets.csv` and `t1_periods_10assets_base.csv`; `paper-log/decisions/` and `paper-log/shadow.csv` are written from that date, never backdated.
 
 ## Reproduce
 
-Tests (no data needed): `pip install -r requirements.txt` then `python -m pytest -q` here and in `qune_research/`. The run itself needs the vendor files (licensed, not committed) and the `APPROVED` file; `./reproduce.sh --check` then `--insample` reproduce `results/checks/` and `results/insample/` from the manifest's data (the vendor re-bases adjusted closes on each fetch, so file hashes will differ while every return ratio is unchanged). Every statistic in this note is in `results/insample/summary.json`.
+Tests (no data needed): `pip install -r requirements.txt` then `python -m pytest -q` here and in `qune_research/`. The run itself needs the vendor files (licensed, not committed) and the `APPROVED` file; `./reproduce.sh --check` then `--insample` reproduce `results/checks/` and `results/insample/` from the manifest's data (the vendor re-bases adjusted closes on each fetch, so file hashes will differ while every return ratio is unchanged); `--oos` refuses while `results/oos/` exists, as §8.2 requires (move it aside to reproduce the window; the committed output is the one that counts). Every statistic in this note is in `results/insample/summary.json` and `results/oos/summary.json`.

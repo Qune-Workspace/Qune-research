@@ -6,9 +6,9 @@ Every trial is logged here before it is run (§7). The deflated Sharpe ratio use
 
 | ID | Date logged | Description | Date run | Code commit |
 |---|---|---|---|---|
-| T1 | 2026-10-22 | Primary: sign of IEF's 12-month excess return over cash at the month-end close; IEF if positive, BIL otherwise (§6.1) | registered, not run | — |
-| T2 | 2026-10-22 | V1: 12-1, the same excess return measured to the end of the previous month (§7) | registered, not run | — |
-| T3 | 2026-10-22 | V2: IEF month-end adjusted close above its 10-month moving average (Faber, 2007); price only (§7) | registered, not run | — |
+| T1 | 2026-10-22 | Primary: sign of IEF's 12-month excess return over cash at the month-end close; IEF if positive, BIL otherwise (§6.1) | in-sample run logged 2026-10-22 08:3x London, about to run once (`reproduce.sh --insample`, §14 step 6), after D0/D2 passed (5dfe8cf); outcome in `results/insample/` | 987b161 |
+| T2 | 2026-10-22 | V1: 12-1, the same excess return measured to the end of the previous month (§7) | same run as T1 | 987b161 |
+| T3 | 2026-10-22 | V2: IEF month-end adjusted close above its 10-month moving average (Faber, 2007); price only (§7) | same run as T1 | 987b161 |
 
 ## Data-check log (§5.3; instrument returns only, no rule)
 

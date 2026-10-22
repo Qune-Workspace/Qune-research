@@ -88,3 +88,17 @@ A new pre-registration (a new study number), not an amendment here. Three routes
 3. **A different question** in the programme's second strand (fixed income and macro), leaving the term-spread question with the two halt notes and a validated construction for later.
 
 The question in §1 stands. The construction in §5.2 is, on the evidence of two windows, a sound synthetic history for the level of 7–10-year Treasury ETF returns; its day-to-day tracking in stressed markets is what a successor has to decide how to judge.
+
+## Independent review (2026-10-22)
+
+Reviewed on 2026-10-22 by a separate agent session that did not write the code, the pre-registration or this note: [REVIEW.md](REVIEW.md). Headline: **confirmed with findings.** The reviewer reran the test suite (133 passed with the raw files present), recomputed 158 rows from the raw files with its own code (156 match, 1 mismatch, 1 informational): the window-2 overlap check, both validation windows, the ex-ante bias quantities and both A4 bands from the §5.3.1 table, the post-hoc year table; verified the manifest hashes and the reuse of Study 001's files; and checked that every commit in §16 precedes the result it governs. One should-fix, six notes.
+
+Corrections after the review (dated additions; no line above is edited):
+
+1. **"Pass by 0.6 bp" is wrong: the margin is 0.06 bp.** The overlap check's mean difference was +0.0494% p.a. against a ±0.05% limit, so the margin is 0.05% − 0.0494% = 0.0006% p.a. = 0.06 basis points, ten times narrower than stated. The figure appears in step 2 of the list at the top of this page, in "What did not work", in §16 of the pre-registration, in `trials.md` and in the message of commit `45743fa`; each is corrected by a dated note, not by editing. The check is pass/fail, the value in `window2_data_decision.json` is correct, and the decision stands.
+2. "Three days in October 2008" among the 90–115 bp gaps: two (93 and 92 bp); the next October 2008 gap is 68 bp. `posthoc_by_year.md` has it right.
+3. Times in the list at the top: the pre-registration commit was 22:23 London, not "23:2x"; the acceptance commit of the window-2 decision was 00:20 ("00:1x" covers the fetch at 00:18).
+4. §5.3.1 component 5, "+0.02 (0 to +0.05)": the band derivation takes its range as ±0.025, which is how the sums 0.29 and 0.38 arise before rounding up to 0.05. Stated here so the derivation is checkable; the bands are unchanged.
+5. The A4 convention note (the vendor's +0.049% shift) and the header pointer: no change; the pre-registration header is left as written and the §16 entry of 2026-10-22 is the pointer. Nothing in the folder reads a return or an out-of-sample bar: confirmed by the reviewer, no change.
+
+Author's rerun of the reviewer's script: 158 rows, 156 match, 1 mismatch (the prose figure in item 1), 1 informational. Nothing re-run, no result changed.

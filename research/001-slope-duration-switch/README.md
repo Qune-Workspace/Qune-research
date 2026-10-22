@@ -143,3 +143,7 @@ Each §3 citation was looked up by title and authors in the Crossref registry. "
 | Federal Reserve H.15 release notes | web page | Checked 2026-10-21 as stated in §3 |
 
 Page numbers and journal details were not changed. The two "online first" years are registry conventions, not citation errors.
+
+## Independent review (2026-10-22)
+
+Reviewed on 2026-10-22 by a separate agent session that did not write the code, the pre-registration or this note: [REVIEW.md](REVIEW.md). Headline: **confirmed.** The reviewer reran the test suite (101 passed with the raw files present), recomputed every statistic in both validation outputs and every derived number on this page from the raw files with its own code (69 of 69 match), verified the manifest hashes, and checked from the commit times that every pre-registration, approval, amendment and decision commit precedes the result it governs, including the chain run 1 failed → decision committed → implemented → run 2. No blocking or should-fix findings; six notes. Author's response, in the reviewer's order: (1) the delegation is recorded in the organisation's decision log outside this repository, as the reviewer says; (2) agreed, the remedy was the one §5.3 had named; (3) the A2 margin is 0.021, "0.02" is a rounding; (4) the pre-registration header is left as written, by the document's own rule, and the §16 entry of 2026-10-22 is the pointer for a reader at HEAD; (5) and (6) no change. Author's rerun of the reviewer's script: 69 of 69; `pytest`: 101 passed. Nothing re-run, no number on this page changed.

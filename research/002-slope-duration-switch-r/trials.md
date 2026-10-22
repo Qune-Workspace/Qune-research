@@ -23,3 +23,7 @@ Every trial is logged here before it is run (§7). The deflated Sharpe ratio use
 | **The run** | 2026-10-22 04:31 London (03:31Z) | **FAILED on window 2, A3. The study is halted permanently (§5.3.5).** Window 1 (753 days): A1 0.970, A2 0.940, A3 1.159%, A4 **+0.100% p.a.** in [−0.25, +0.35] (ex-ante centre +0.05), B1 −0.110%, B2 0.288%: all six pass. Window 2 (3,272 days): A1 0.960 pass, A2 0.926 pass, **A3 2.016% p.a. against ≤ 1.5%: fail**, A4 **−0.008% p.a.** in [−0.45, +0.35] (ex-ante centre −0.05): pass. Cross-check 0.010 and 0.013 bp. Outputs committed untouched (033a47b): `results/validation/{validation,window1/validation,window2/validation}.{json,md}` and the two figures. No rule, benchmark or trial return computed; out-of-sample window untouched. |
 
 No return of any rule or benchmark has been computed on real data as of 2026-10-22, under this study or Study 001. T1, T2 and T3 were never run.
+
+## Correction after the independent review (2026-10-22)
+
+The overlap-check row above says "pass by 0.6 bp". The margin is 0.05% − 0.0494% = 0.0006% p.a. = **0.06 bp** (`REVIEW.md`, finding 1). The row is left as written; the value in `window2_data_decision.json` is correct and the pass/fail decision is unchanged.

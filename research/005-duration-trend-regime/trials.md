@@ -6,9 +6,9 @@ Every trial is logged here before it is run (§7). The deflated Sharpe ratio, re
 
 | ID | Date logged | Description | Date run | Code commit |
 |---|---|---|---|---|
-| T1 | 2026-10-23 | Primary: regime = sign of the Pearson correlation of daily SPY and IEF total returns over the 63 most recent common return days ending at the month-end signal date; in the positive regime apply Study 003's T1 (IEF if its 12-month excess return over cash is positive, else BIL), in the negative regime hold IEF (§6) | not run | — |
-| T2 | 2026-10-23 | Descriptive alternative: the same with a 252-day window (§7) | not run | — |
-| T3 | 2026-10-23 | Descriptive alternative: regime = FRED CPIAUCNS twelve-month change for month m−2 above 3.0% at the signal date of month m (§7) | not run | — |
+| T1 | 2026-10-23 | Primary: regime = sign of the Pearson correlation of daily SPY and IEF total returns over the 63 most recent common return days ending at the month-end signal date; in the positive regime apply Study 003's T1 (IEF if its 12-month excess return over cash is positive, else BIL), in the negative regime hold IEF (§6) | 2026-10-23 11:2x London, in-sample (§14 step 6), logged before the run | 85381f2 (code as of the data-check commit; the run's own commit hash is written into results/insample/summary.json) |
+| T2 | 2026-10-23 | Descriptive alternative: the same with a 252-day window (§7) | 2026-10-23 11:2x London, in-sample (§14 step 6), logged before the run | 85381f2 (code as of the data-check commit; the run's own commit hash is written into results/insample/summary.json) |
+| T3 | 2026-10-23 | Descriptive alternative: regime = FRED CPIAUCNS twelve-month change for month m−2 above 3.0% at the signal date of month m (§7) | 2026-10-23 11:2x London, in-sample (§14 step 6), logged before the run | 85381f2 (code as of the data-check commit; the run's own commit hash is written into results/insample/summary.json) |
 
 ## Data-check log (§5.3; instrument returns, correlations and a committed file only; no rule)
 
@@ -35,5 +35,7 @@ Every trial is logged here before it is run (§7). The deflated Sharpe ratio, re
 | `--check`, third invocation logged | 2026-10-23 11:2x London | the full script again under the fixed code; D0 and D1 compared with the first invocation's kept outputs; outcome in the next row and in §16. |
 
 | `--check`, third invocation | 2026-10-23 11:25 London | **Completed.** D0 and D1 identical to the first invocation (diff observed). **D3**: in-sample T1 26 positive-regime months of 185 (14.1%), T2 12, T3 43; σ_d = 0.692%/month from Study 003's committed file; **actual MDE for T1 4.37% a year**; §9.5's in-sample rows **apply**. Episode (no decision weight): T1 38 of 93 positive (40.9%); T2 starts 2019-09 (84 dates); T3 44 of 93; one filled T3 month (2025-12 read 2025-09). Full figures in §16 and `results/checks/`. No return of this study computed. |
+
+| `reproduce.sh --insample` (§14 step 6) logged | 2026-10-23 11:2x London | the single in-sample run, T1–T3 at base and stress costs, logged before it runs; outcome in the next row and the note. |
 
 In-sample returns of this study have not been computed. The 2019–2026 window is the hypothesis-generating episode (§8.2), to be run once under that label after the in-sample results are committed, with no decision weight. The forward record starts at the first month-end after the note's publication (§11). N = 3.

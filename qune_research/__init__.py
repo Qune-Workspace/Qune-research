@@ -22,6 +22,11 @@ risk      ex-ante risk model: EWMA and Ledoit-Wolf-shrunk covariance forecasts,
           historical), historical stress windows, a drawdown-control multiplier
           and forecast-accuracy statistics (built 2026-10-23, after Study 004's
           results; describes a weight vector, never sizes one)
+multiple  multiple-testing inference for a family of trials: White's Reality
+          Check, Hansen's SPA test (lower, consistent, upper p-values) with the
+          stationary bootstrap, and the minimum track-record length (built
+          2026-10-23, after Study 004's results; no pre-registration names
+          these tests yet, so they carry no decision weight)
 """
 
 __version__ = "0.1.0"

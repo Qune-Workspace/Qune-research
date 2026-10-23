@@ -25,6 +25,10 @@ What happened, in order (every step is a dated commit; times are London):
 
 B2 is above its historical reference, and the by-year table in `results/checks/data_checks.md` shows why: 0.90% in 2007, 1.56% in 2008, 0.68% in 2009, then 0.21–0.31% in every year from 2010. The level by year moved the other way to what the daily noise might suggest: +0.26 to +0.32% p.a. in 2007–2009 while bill rates fell fast (the fund's portfolio yield lagged the spot rate) and −0.07 to −0.12% in 2016–2018 while they rose, both signs inside the ex-ante band and the pattern the largest component of the §5.3.3 table described in advance. This is the regime effect that made B2 descriptive rather than a gate in this study (§2.5), decided before the number was seen. Source: `results/checks/data_checks.json`; chart `results/checks/cash_check.png`.
 
+![BIL tracked the cash-accrual model to within 0.04% a year over 2007 to 2018; only 2007 to 2009 sat outside the ±0.2% band written down beforehand. Annualised mean daily difference, BIL minus the bill-yield cash accrual, by calendar year](charts/cash_check_by_year.png)
+
+*Drawn on 2026-10-23 from the committed `data_checks.json` by [charts/make_charts.py](charts/make_charts.py) to the chart standard; the check's own figure is `results/checks/cash_check.png`.*
+
 ## In-sample results (§8.1; 2003-08-01 to 2019-01-02; base costs 2 bp per side)
 
 Instruments: IEF from the vendor's adjusted close throughout (one vendor, no splice), cash from the §5.2 accrual. Every execution date fell on a bar (no slippage logged). The B3 weight, frozen here for the out-of-sample run, is **w = 0.692** (T1 held IEF in 128 of 185 months).
@@ -62,7 +66,11 @@ Deflation inputs: variance of monthly Sharpe ratios across the three trials 0.00
 
 T2 and T3 against the same criteria: T2 fails C1, C2 and C3 (DSR 0.929), passes C4; T3 fails C1, C2 and C3 (DSR 0.866), passes C4. T3 is the only trial whose return is lower than B1's at conventional significance (Newey–West t −2.23 against B1; Ledoit–Wolf p = 0.058). Under the stress cost case (4 bp per side) every number moves by a few hundredths and no conclusion changes (`metrics_stress.csv`); the switching cost of T1 was about 5 bp p.a. in the base case.
 
-![In-sample: 12-month excess return of IEF over cash at each month-end, shaded where T1 holds IEF; drawdown of T1 versus B1](results/insample/main_chart.png)
+![In-sample, the trend rule lagged holding IEF throughout: Sharpe 0.45 against 0.55, after 18 switches. Growth of 1 unit over the monthly holding periods, 2003-08 to 2018-12](charts/insample_growth.png)
+
+![In-sample, trend timing did not reduce the deepest monthly drawdown: −8.6% against −8.1% for holding IEF throughout. Drawdown from the running high of the holding-period return index, monthly, shaded where the rule held bills](charts/insample_drawdown.png)
+
+*Both drawn on 2026-10-23 from the committed `monthly_base.csv` and `metrics_base.csv` by [charts/make_charts.py](charts/make_charts.py); the drawdown is of the monthly holding-period index, while the −10.4% in the table above is the daily figure inside the holding periods. The run's own chart (signal strip and drawdown) is [results/insample/main_chart.png](results/insample/main_chart.png).*
 
 ### Mechanism (§9.6, descriptive)
 
@@ -145,7 +153,11 @@ Cumulative over the 93 months: T1 +27.7%, cash +22.5%, B3 +9.5%, B1 +3.5%. Sourc
 
 O1 and O2 also hold for T2 and T3. The deflated Sharpe ratio of T1 on this window is 0.52 at N = 3 (descriptive; it is not an out-of-sample criterion). Stress costs change nothing (`metrics_stress.csv`). Two reported intervals for T1 came out NaN (the stationary-bootstrap Sharpe interval and the Ledoit–Wolf interval): T1's excess return over cash is exactly zero in 50 of 93 months because it held the cash benchmark itself, and a bootstrap resample drawn only from those months has no Sharpe ratio. The point estimates, t-statistics and p-values are unaffected. Dropping the degenerate resamples (1 of 10,000 and 4 of 10,000) gives [−0.70, 0.95] for T1's annualised Sharpe and [−0.46, 1.43] for the Sharpe difference against B3; computed post hoc by `posthoc_bootstrap_nan.py` into `results/oos/posthoc_bootstrap_nan.md`, with the published files untouched.
 
-![Out-of-sample: 12-month excess return of IEF over cash at each month-end, shaded where T1 holds IEF; drawdown of T1 versus B1](results/oos/main_chart.png)
+![Out of sample, trend timing cut the deepest monthly drawdown from −22.2% to −5.5% by sitting in bills through 2023. Drawdown from the running high of the holding-period return index, monthly, 2019-01 to 2026-09, shaded where the rule held bills](charts/oos_drawdown.png)
+
+![Out of sample, the trend rule beat holding IEF: Sharpe 0.16 against −0.26; the largest yearly gap came in 2022 (1.0% against −13.6%). Growth of 1 unit over the monthly holding periods, 2019-01 to 2026-09](charts/oos_growth.png)
+
+*Both drawn on 2026-10-23 from the committed `monthly_base.csv` and `metrics_base.csv` by [charts/make_charts.py](charts/make_charts.py); the drawdown clause in the table above is scored on the daily figures (−6.5% against −23.9%), the chart shows the monthly holding-period index. The rule ended the window at 1.28 against 1.23 for bills: most of what it earned out of sample was the bill yield it sat in. The run's own chart is [results/oos/main_chart.png](results/oos/main_chart.png).*
 
 ### Mechanism (§9.6, descriptive)
 

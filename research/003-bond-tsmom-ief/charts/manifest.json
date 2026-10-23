@@ -1,0 +1,102 @@
+{
+  "made_at_utc": "2026-10-23T04:21:10+00:00",
+  "repository_commit_at_run": "c713a933c8f74e17c7529fab6de66aff5d60d728",
+  "inputs_sha256": {
+    "research/003-bond-tsmom-ief/results/insample/monthly_base.csv": "73dc805aa3cb2f74f20670a1f3708710e8c820bbd9af75b558766103d2b959c0",
+    "research/003-bond-tsmom-ief/results/insample/metrics_base.csv": "73bccfdd4c91df987092abf530e0b83417c86e2fcff292349c229ed8a1458de7",
+    "research/003-bond-tsmom-ief/results/insample/summary.json": "5996796b27151a67440a3688f8f085f178e60fc7937f0d781088e25c363a59f3",
+    "research/003-bond-tsmom-ief/results/oos/monthly_base.csv": "101782caef72eb7f5c5e57082022357af8b081a8096ffd9162e8d54c47860b24",
+    "research/003-bond-tsmom-ief/results/oos/metrics_base.csv": "480a2a2cf2565c2781ff1945cdd7a5858f84fc872410aea8032c6a5f06a7abd8",
+    "research/003-bond-tsmom-ief/results/oos/summary.json": "0645e90b6581ed86c74af81a357759e95bcada3d741827213d7694f9dafc9588",
+    "research/003-bond-tsmom-ief/results/checks/data_checks.json": "8bf4680da55d149282c354f1d6ebdfc6cb316de21b1e7fa760de95700889cfd6"
+  },
+  "outputs": [
+    "research/003-bond-tsmom-ief/charts/insample_drawdown.svg",
+    "research/003-bond-tsmom-ief/charts/insample_drawdown.png",
+    "research/003-bond-tsmom-ief/charts/insample_growth.svg",
+    "research/003-bond-tsmom-ief/charts/insample_growth.png",
+    "research/003-bond-tsmom-ief/charts/oos_drawdown.svg",
+    "research/003-bond-tsmom-ief/charts/oos_drawdown.png",
+    "research/003-bond-tsmom-ief/charts/oos_growth.svg",
+    "research/003-bond-tsmom-ief/charts/oos_growth.png",
+    "research/003-bond-tsmom-ief/charts/cash_check_by_year.svg",
+    "research/003-bond-tsmom-ief/charts/cash_check_by_year.png"
+  ],
+  "numbers_in_titles": {
+    "insample_monthly_max_drawdown": {
+      "T1": -0.08596771187683305,
+      "B1": -0.08069133520272709
+    },
+    "insample_daily_max_drawdown_from_summary": {
+      "T1": -0.10400628920289123,
+      "B1": -0.10400628920289123
+    },
+    "insample_drawdown_cut_share": -0.06538963149946286,
+    "insample_B1_trough_year": 2013,
+    "insample_T1_in_bills_every_month_of_trough_year": false,
+    "insample_months_in_bills": 57,
+    "insample_sharpe_annual": {
+      "T1": 0.4517880586803994,
+      "B1": 0.554636884994895
+    },
+    "insample_T1_switches": 18,
+    "insample_final_growth": {
+      "T1": 1.7407579501975292,
+      "B1": 1.974470242868816,
+      "B0": 1.1904062938198072
+    },
+    "insample_year_of_largest_gap_vs_B1": {
+      "year": 2010,
+      "T1": 0.02935254740608073,
+      "B1": 0.07436633904471757
+    },
+    "oos_monthly_max_drawdown": {
+      "T1": -0.05468990964482423,
+      "B1": -0.22241412396852767
+    },
+    "oos_daily_max_drawdown_from_summary": {
+      "T1": -0.06520046585647499,
+      "B1": -0.23924268502581758
+    },
+    "oos_drawdown_cut_share": 0.7541077487841418,
+    "oos_B1_trough_year": 2023,
+    "oos_T1_in_bills_every_month_of_trough_year": true,
+    "oos_months_in_bills": 55,
+    "oos_sharpe_annual": {
+      "T1": 0.1570382483893328,
+      "B1": -0.2589542578190917
+    },
+    "oos_T1_switches": 10,
+    "oos_final_growth": {
+      "T1": 1.2770604633711182,
+      "B1": 1.0354823747680906,
+      "B0": 1.2251708886208301
+    },
+    "oos_year_of_largest_gap_vs_B1": {
+      "year": 2022,
+      "T1": 0.010344376063899485,
+      "B1": -0.1355693914440652
+    },
+    "cash_check_mean_diff_annual": 0.00036630184080669003,
+    "cash_check_years_outside_exante_band": [
+      2007,
+      2008,
+      2009
+    ],
+    "cash_check_by_year": {
+      "2007": 0.0028741921251110064,
+      "2008": 0.0031987592487400054,
+      "2009": 0.002564472453197353,
+      "2010": -0.0004610814635612748,
+      "2011": 0.00043047260767148376,
+      "2012": 5.343114413900985e-05,
+      "2013": -9.070760035900793e-05,
+      "2014": 0.00037767816696387957,
+      "2015": -0.0004628324174524856,
+      "2016": -0.0007122547294361459,
+      "2017": -0.0011899386553458561,
+      "2018": -0.0011675999855106452
+    }
+  },
+  "note": "Presentation only. Every number is recomputed from the committed results files; no result file is written. Style: qune_research/style.py (chart standard of 2026-10-23)."
+}

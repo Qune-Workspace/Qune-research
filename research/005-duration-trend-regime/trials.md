@@ -22,4 +22,7 @@ Every trial is logged here before it is run (§7). The deflated Sharpe ratio, re
 
 | Fetch 1 logged (§5.3.3 step 1, §14 step 3) | 2026-10-23 11:2x London | Alpaca SPY daily bars 2018-09-01 to 2026-09-30, `adjustment='all'`, through `python -m src.data fetch-alpaca-spy` with the desk's existing paper credential read from its file into the environment for the one process (never printed). Attempt 1 of 2; branch S after a second failure on a separate run. Logged before the fetch runs; outcome in the next row. |
 
+| Fetch 1 outcome | 2026-10-23 11:21 London | **Succeeded on attempt 1**: `data/raw/alpaca_SPY_1Day_all.csv`, 2,029 bars, 2018-09-04 to 2026-09-30, SHA-256 `1f1d6425…` in `results/data_manifest.json` (downloaded 2026-10-23T10:21:40Z). Branch S not taken. Dates and row count read; no return, no correlation computed. |
+| Fetch 2 logged (§5.3.3 step 2) | 2026-10-23 11:2x London | FRED CPIAUCNS, full history, through `python -m src.data fetch-cpi`. Attempt 1 of 2; after a second failure on a separate run T3 is logged "not run: series unavailable" and N stays 3. Logged before the fetch runs; outcome in the next row. |
+
 In-sample returns of this study have not been computed. The 2019–2026 window is the hypothesis-generating episode (§8.2), to be run once under that label after the in-sample results are committed, with no decision weight. The forward record starts at the first month-end after the note's publication (§11). N = 3.

@@ -4,6 +4,8 @@ The desk's limits are set before the first test, reviewed by someone who did not
 
 This document states the rules the trading desk works under, the current numeric paper limits, the backtesting standards a result must meet, and the conditions under which trading stops. The numbers are current paper limits on a $100,000 paper account; they are not advice and they are not calibrated for anyone else's capital.
 
+*Written 2026-10-21. Updated 2026-10-23 in three places, each marked with its date: the approved-instrument row (IEF and BIL are approved for two study sleeves), the table of reviewed restrictions (five of the seven have been enforced in the engine since 2026-10-11; two are still applied by the runner), and the known gaps (the 2-hour signal-bar age gate and the Study 003 sleeve's clearance status). No limit was loosened.*
+
 ## Mandate
 
 1. **Paper only.** There is no route from the paper account to real money. The broker client refuses any host other than the paper and data endpoints. No task may propose, design or prepare a live route.
@@ -21,7 +23,7 @@ Interim values were set on 2026-10-10 and reviewed by Independent Risk the same 
 |---|---|---|
 | Account | $100,000 paper, cash basis | Exposure is capped by settled cash, never by buying power |
 | Margin, shorting, leverage | Not allowed | Enforced in code; the broker's paper account would allow them, so the refusal is ours |
-| Approved instruments | BTC/USD, ETH/USD (spot); SPY, QQQ, IWM, DIA | Any other symbol needs a recorded approval. Treasury and currency ETFs for the public programme are not yet approved. |
+| Approved instruments | BTC/USD, ETH/USD (spot); SPY, QQQ, IWM, DIA; IEF, BIL (study sleeves only) | Any other symbol needs a recorded approval. *Updated 2026-10-23:* IEF and BIL were approved by the owner on 2026-10-21 for the Study 001 sleeve and the scope was extended in writing on 2026-10-23 to the Study 003 paper sleeve (at most $2,250, same limits, no numeric change), each inside the limits above and each still needing Independent Risk's clearance before the first paper order ([RISK_CLEARANCE.md](research/003-bond-tsmom-ief/RISK_CLEARANCE.md)). Currency ETFs are not approved. |
 | Maximum risk per trade | $250 (0.25% of equity) | Loss from entry to the strategy's stop, including estimated fees and half-spread. Orders without a stop are refused. |
 | Maximum notional per order | $2,500 | |
 | Maximum position per asset | $5,000 | |
@@ -36,19 +38,19 @@ Interim values were set on 2026-10-10 and reviewed by Independent Risk the same 
 | Written strategy and recorded backtest | Required | The entry must cite a strategy identifier with a specification and a backtest |
 | Exit plan with time limit | Required | |
 
-Reviewed restrictions that the engine does not yet enforce in code (status: designed, not tested; the runner applies them itself until an enforcement task lands):
+Reviewed restrictions added after the limits above. *Updated 2026-10-23:* when this document was written the table said none of them was enforced in code; in fact the first five have been checked by the risk engine's market-data gates since 2026-10-11 (an order that fails one is refused and the reasons go into the run's decision record as a no-trade decision), and the last two are still applied by the runner, not the engine.
 
-| Restriction | Value |
-|---|---|
-| Price collar | Reject if the limit price is more than 1% from mid |
-| Maximum quoted spread | 25 basis points |
-| Maximum quote age | 5 minutes |
-| Maximum signal-bar age | 2 hours |
-| Order size against hourly volume | Warn at 1x, reject at 10x |
-| Duplicate-order window | 60 seconds |
-| Consecutive-loss switch-off | 5 losses |
+| Restriction | Value | Where it is enforced |
+|---|---|---|
+| Price collar | Reject if the limit price is more than 1% from mid | engine, since 2026-10-11 |
+| Maximum quoted spread | 25 basis points | engine, since 2026-10-11 |
+| Maximum quote age | 5 minutes | engine, since 2026-10-11 |
+| Maximum signal-bar age | 2 hours | engine, since 2026-10-11 (see the known gaps: written for hourly bars, it refuses every daily-bar entry) |
+| Duplicate-order window | 60 seconds | engine, since 2026-10-11 |
+| Order size against hourly volume | Warn at 1x, reject at 10x | runner only (designed, not tested) |
+| Consecutive-loss switch-off | 5 losses | runner only (designed, not tested) |
 
-These are new restrictions, so adding them is a tightening and needs no approval.
+These are new restrictions, so adding them is a tightening and needs no approval. Relaxing any of them, including making the signal-bar age depend on the bar's timeframe, is a loosening and follows the section "What loosening requires".
 
 ## Backtesting standards
 
@@ -97,7 +99,8 @@ A proposal in writing with the backtest evidence that motivates it, Independent 
 
 ## Known gaps
 
-- Several reviewed restrictions are not yet enforced in the engine (table above).
+- Two reviewed restrictions (order size against hourly volume, consecutive-loss switch-off) are applied by the runner, not the engine (table above).
+- *Added 2026-10-23:* the engine's 2-hour signal-bar age gate was written for hourly crypto bars and refuses every entry whose signal comes from a daily bar, which is every entry of the Study 003 rule. A timeframe-aware rule is a loosening in form, so it is the owner's decision; Independent Risk's opinion that the rule is sound is on record, and the decision is pending. Until it is taken, the Study 003 paper sleeve is **not cleared** (Independent Risk, 2026-10-22: nine conditions, of which the sleeve size, the symbol scope and the built execution path are met or recorded and this one is open; [RISK_CLEARANCE.md](research/003-bond-tsmom-ief/RISK_CLEARANCE.md), [paper/README.md](research/003-bond-tsmom-ief/paper/README.md)). Its decision records are written regardless, labelled as the paper record of a not-supported rule, and no order is placed.
 - The engine caps gross exposure but does not yet count correlated positions as one bet beyond the crypto bucket.
 - The paper runner wakes on a schedule and has no resting broker stop, so a paper loss can exceed the backtested stop by the movement between wakes.
 - Options work is observation and scoring only; options orders are not permitted.

@@ -1,0 +1,73 @@
+{
+  "made_at_utc": "2026-10-23T12:20:00+00:00",
+  "repository_commit_at_run": "6826dd37cd6e72f36d98c74ff4138705a7d7733b",
+  "inputs_sha256": {
+    "research/005-duration-trend-regime/results/insample/monthly_base.csv": "011791ec5fd08c81ba6e0ad9251a9c14f9ca055af39ae3ec421834754976f3e9",
+    "research/005-duration-trend-regime/results/insample/summary.json": "13656c6a59357aeb658fc344bdb7715e3c7bd1bbd9ed9c93e228906c9a9dfa28",
+    "research/005-duration-trend-regime/results/episode/monthly_base.csv": "7e06a13f71915854edbbe43a7ff16d4d263cc19cf779c53da619e38e578bc0d3",
+    "research/005-duration-trend-regime/results/episode/summary.json": "740e3a5ad5481cd6f698a05000b660b7cdc731a21f7b6cac4e8a4ed677f7add5"
+  },
+  "outputs": [
+    "research/005-duration-trend-regime/charts/insample_growth_T1_B1_B2.svg",
+    "research/005-duration-trend-regime/charts/insample_growth_T1_B1_B2.png",
+    "research/005-duration-trend-regime/charts/insample_d_by_regime.svg",
+    "research/005-duration-trend-regime/charts/insample_d_by_regime.png",
+    "research/005-duration-trend-regime/charts/episode_growth_T1_B1_B2.svg",
+    "research/005-duration-trend-regime/charts/episode_growth_T1_B1_B2.png",
+    "research/005-duration-trend-regime/charts/episode_d_by_regime.svg",
+    "research/005-duration-trend-regime/charts/episode_d_by_regime.png",
+    "research/005-duration-trend-regime/charts/rho63_regime_and_bill_months.svg",
+    "research/005-duration-trend-regime/charts/rho63_regime_and_bill_months.png"
+  ],
+  "numbers_in_titles": {
+    "insample_cumulative_return": {
+      "T1": 0.8125993856023173,
+      "B1": 0.9744702428688159,
+      "B2": 0.7407579501975292
+    },
+    "insample_edge_T1": {
+      "mean_positive": -0.003247431483137425,
+      "mean_negative": -0.00029032817738557836,
+      "delta": -0.0029571033057518466,
+      "nw_t": -2.3101555353626306,
+      "ci": [
+        -0.00519288867256479,
+        0.00026807517715194085
+      ],
+      "n_pos": 26,
+      "n_neg": 159
+    },
+    "episode_cumulative_return": {
+      "T1": 0.07271056202129111,
+      "B1": 0.035482374768090574,
+      "B2": 0.2770604633711182
+    },
+    "episode_share_of_exit_gain_kept": 0.1541041551759921,
+    "episode_edge_T1": {
+      "mean_positive": 0.000722925166610325,
+      "mean_negative": 0.0030423690912561472,
+      "delta": -0.002319443924645822,
+      "nw_t": -0.7167066366817286,
+      "ci": [
+        -0.00877677171259457,
+        0.0043853318027973565
+      ],
+      "n_pos": 38,
+      "n_neg": 55
+    },
+    "rho_positive_months": {
+      "insample": [
+        26,
+        185
+      ],
+      "episode": [
+        38,
+        93
+      ]
+    },
+    "first_positive_signal_date_2022": "2022-06-30",
+    "trend_rule_in_bills_since_signal_date": "2021-02-26",
+    "signal_months_of_2022_before_first_positive": 5
+  },
+  "note": "Presentation only (section 9.7, no decision weight). Every number is recomputed from the committed results files; no result file is written. Style: qune_research/style.py (chart standard of 2026-10-23)."
+}

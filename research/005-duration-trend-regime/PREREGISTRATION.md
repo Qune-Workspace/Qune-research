@@ -355,3 +355,10 @@ No dead band, smoothing or alternative threshold on the correlation; no window o
 ## 16. Amendments
 
 (Append dated entries here; each must state what changed, why, which results had already been seen at the time, and the trial count N.)
+
+**2026-10-23 (§14 step 2, first part; no fetch, no data check, no regime share, no return of this study computed; N = 3).** Layout notes recorded before any run, none changing a rule, a number or a step:
+1. `src/` carries five frozen copies of Study 003 modules, not two: `trend_signal.py` (003 `signal.py`), `cash.py`, `bey.py`, `switching.py` (003 `backtest.py`, the two-instrument monthly engine) and `schedule.py` (003 `calendar.py`). The engine and schedule are copied so that §5.3.5 (i) holds exactly rather than approximately: the test reproduces Study 003's committed in-sample `monthly_base.csv` (T1, B0, B1, B3 columns and the signal values) to 1e−10 from the hash-checked files, and it passed on this machine (observed). `pipeline.py` wires them; `data.py` holds the loaders.
+2. Precedence in the forward table (§11.4) when a result meets both the supported and the refuted condition (possible: Δ̂ > 0 with t ≥ 2.0 and an interval whose upper bound is still below 0.083% a month): the refuted row is tested first, as in §9.5, and the note names the conflict. Fixed in `forward.py` before any forward month exists.
+3. The §9.6 table's rows were evaluated at the unrounded share × 185 (18.5, 37, 55.5 months); at the integer count of 19 months the 10% row reads 7.2%, not 7.3%. The formula is unchanged; D3 fills the actual row from the actual counts.
+4. The 2016–2018 broker SPY file reused from Study 004 for D1 is kept in `data/raw/overlap/` and recorded in the manifest under `overlap/alpaca_SPY_1Day_all.csv`, so it cannot collide with the episode fetch of the same symbol (§5.3.3 step 1).
+Results seen at the time of writing: none of this study's. `APPROVED` is not yet written: it follows the second part of step 2 (`report.py`, `reproduce.sh`), so that the refusal gate protects every computation that touches a return.

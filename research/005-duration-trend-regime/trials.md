@@ -16,5 +16,6 @@ Every trial is logged here before it is run (§7). The deflated Sharpe ratio, re
 |---|---|---|
 | Question note (step 0) | 2026-10-23 08:2x London | `QUESTION.md` committed (b9ad02e) before this document; no fetch, no regime share, no return. |
 | Pre-registration committed (§14 step 1) | 2026-10-23 | this commit; no fetch, no check, no correlation, no return computed |
+| Code, first part (§14 step 2) | 2026-10-23 10:5x London | `src/` (five frozen Study 003 modules + `config`, `regime`, `conditional`, `edge`, `forward`, `pipeline`, `checks`, `data`) and `tests/` (20 tests incl. §5.3.5 (i)–(viii); (i) passed against Study 003's committed file to 1e−10 on this machine); CI matrix entry; §16 layout entry. Not yet: `report.py`, `reproduce.sh`, `APPROVED`. No fetch, no check, no correlation of real data beyond test (i)'s reproduction of Study 003's own public column, no return of this study. |
 
 In-sample returns of this study have not been computed. The 2019–2026 window is the hypothesis-generating episode (§8.2), to be run once under that label after the in-sample results are committed, with no decision weight. The forward record starts at the first month-end after the note's publication (§11). N = 3.

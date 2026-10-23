@@ -107,3 +107,16 @@ VOL_EXCEEDANCE_FACTOR = 1.5                # §9.6: "realised exceeded forecast 
 # The pre-registration fixes no bootstrap seed; Study 003's (20261021) is inherited so that
 # every resample is reproducible.  Recorded in §16 at the in-sample run.
 SEED = 20261021
+
+# --- Forward record (§11; code added at §14 step 11 on 2026-10-23, before the first forward month-end;
+# §16 entry of that date).  No paper order. ---
+FORWARD_FIRST_SIGNAL_DATE = "2026-10-30"         # the first month-end after the note's publication (2026-10-23)
+FORWARD_EARLIEST_UTC = (21, 15)                  # no record before 21:15 UTC on the signal date (after the New York close)
+FORWARD_BARS_START = "2025-06-02"                # bars fetched from here: covers t_12 and the 63 return days of every record
+FORWARD_BOOK_USD = 10_000.0                      # §11.1: notional book, marked at the closes, starts all cash
+FORWARD_LABEL = "not supported; forward shadow record (section 11); no paper order"
+FORWARD_RAW_DIR = PAPER_LOG_DIR / "raw"          # git-ignored; data/raw/ and results/data_manifest.json are never touched
+FORWARD_MANIFEST = PAPER_LOG_DIR / "manifest.json"
+FORWARD_DECISIONS_DIR = PAPER_LOG_DIR / "decisions"
+FORWARD_SHADOW_CSV = PAPER_LOG_DIR / "shadow.csv"
+FORWARD_BOOKS_DIR = PAPER_LOG_DIR / "books"      # the three books' values and drifted weights at each period end

@@ -4,6 +4,8 @@
 #   ./reproduce.sh --check      §5.3 data checks D0 then D1, one run -> results/checks/
 #   ./reproduce.sh --insample   §8.1 in-sample run (ten assets and nine without IEF, k frozen) -> results/insample/
 #   ./reproduce.sh --oos        §8.2 out-of-sample, once, k read from results/insample/        -> results/oos/
+#   ./reproduce.sh --forward    §11 forward shadow record (added at §14 step 11, before the first
+#                               forward month-end 2026-10-30; refuses until then); no paper order
 #
 # Every mode refuses to run unless a file named APPROVED exists in this folder
 # (§14 step 3).  --oos refuses if results/oos/ already exists (§8.2: executed
@@ -24,10 +26,11 @@ if [ -z "${PYTHON:-}" ]; then
   if [ -x ../../.venv/bin/python ]; then PYTHON=../../.venv/bin/python; else PYTHON=python3; fi
 fi
 
-usage() { echo "usage: $0 --check | --insample | --oos" >&2; exit 2; }
-[ $# -eq 1 ] || usage
+usage() { echo "usage: $0 --check | --insample | --oos | --forward <decide|shadow> --signal-date YYYY-MM-DD [--fetch] [--dry-run]" >&2; exit 2; }
+[ $# -ge 1 ] || usage
 mode="$1"
-case "$mode" in --check|--insample|--oos) ;; *) usage ;; esac
+shift
+case "$mode" in --check|--insample|--oos) [ $# -eq 0 ] || usage ;; --forward) ;; *) usage ;; esac
 
 if [ ! -s APPROVED ]; then
   echo "refused: no APPROVED file in $(pwd | xargs basename)." >&2
@@ -55,4 +58,15 @@ case "$mode" in
   --oos)
     echo "[1/1] out-of-sample run (§8.2), executed exactly once"
     "$PYTHON" -m src.run --oos ;;
+  --forward)
+    # §11, §14 step 11 (added 2026-10-23, before the first forward month-end 2026-10-30). No paper order.
+    #   decide  --signal-date t [--fetch]   after 21:15 UTC on the last NYSE trading day of a month:
+    #                                        paper-log/decisions/<t>.json (refuses before 2026-10-30, before
+    #                                        the close, on a non-month-end date, without the cash ETF's bar)
+    #   shadow  --signal-date t [--fetch]   after t's execution date's close: appends the period that ended
+    #                                        there to paper-log/shadow.csv and writes paper-log/books/<end>.json
+    # The study's data/raw/ and results/data_manifest.json are never touched: forward fetches go to
+    # paper-log/raw/ (git-ignored) with their own paper-log/manifest.json.
+    echo "[1/1] forward shadow record (§11): src.forward $*"
+    "$PYTHON" -m src.forward "$@" ;;
 esac

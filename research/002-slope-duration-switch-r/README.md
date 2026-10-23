@@ -45,6 +45,12 @@ No cash check on this window (§5.3.4). Source: `results/validation/window2/vali
 
 ![Window 2: IEF against the synthetic series, 2003–2015 (backtest data check)](results/validation/window2/validation.png)
 
+*2026-10-23, presentation only:* both windows drawn to the chart standard by [charts/make_charts.py](charts/make_charts.py) from the committed `validation.json` files, the post-hoc by-year table and, for one reference line, Study 001's `validation.json` (hashes and every title number in [charts/manifest.json](charts/manifest.json)). The run's own figures above and in `results/validation/` are unchanged; nothing was re-run. The first chart shows the level check (A4) the rebuilt series passed in both windows, with the by-year gaps the check does not score, against the +0.45% Study 001's series had missed by. The second shows the check that failed (A3) by calendar year against IEF's realised volatility, from the post-hoc table below, which carries no decision weight: the error stayed between 0.21 and 0.37 of the volatility in every year, so an absolute limit set when the volatility was 4.6% was breached in 8 of 13 years and on the whole window.
+
+![The rebuilt bond matched IEF's return level: a gap of −0.01% a year over 2003–15 and +0.10% over 2016–18, inside the bands set beforehand; Study 001's bond had missed by +0.45%. Mean gap by calendar year with each window's acceptance band.](charts/level_gap_by_year.png)
+
+![Tracking error rose with IEF's volatility, 0.21 to 0.37 of it in every year, so a fixed 1.5% limit set when volatility was 4.6% was breached in 8 of 13 years and on the whole window (2.02%). Tracking error against IEF volatility by calendar year, 2003–2015, post hoc.](charts/tracking_error_vs_volatility.png)
+
 ### Reading of the failure (inferred; written after the run; not used to change anything)
 
 **The level problem that halted Study 001 is solved.** Study 001's construction under-earned the ETF by 0.45% p.a. on 2016–2018 under two variants. This construction, with roll-down inside it, sits 0.10% p.a. below the ETF on that window against an estimate of 0.05% written before the comparison, and **on thirteen years the designer had never seen (2003–2015), where the roll-down term to get right was about 1.0% p.a. rather than 0.37%, the gap is −0.008% p.a. against an estimate of −0.05%.** The per-component bias table in §5.3.1 was, as far as the level goes, right.

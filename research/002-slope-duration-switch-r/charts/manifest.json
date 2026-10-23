@@ -1,0 +1,155 @@
+{
+  "made_at_utc": "2026-10-23T05:26:26+00:00",
+  "repository_commit_at_run": "fad9be5b86bfe65e2edeb20ed91d3c266e9f4b59",
+  "inputs_sha256": {
+    "research/002-slope-duration-switch-r/results/validation/window1/validation.json": "a2367a115d66f06b8beb01e6328fe2763b21d8cbff7d37aea19388a207cb7e6b",
+    "research/002-slope-duration-switch-r/results/validation/window2/validation.json": "58802c7b1523d4bbee56a325cd2f3e99016c1c19b085ffdff9fe4e84322c43f0",
+    "research/002-slope-duration-switch-r/results/validation/window2/posthoc_by_year.md": "b6e75165b4b3134f845f43dfd2e35e06a745c2ad2a237bbc93b8485080b5cab9",
+    "research/001-slope-duration-switch/results/validation/validation.json": "1f9f5511e977c619087d701800c34cb261dec41d1e9c088a0b2c8af1fa092c16"
+  },
+  "outputs": [
+    "research/002-slope-duration-switch-r/charts/level_gap_by_year.svg",
+    "research/002-slope-duration-switch-r/charts/level_gap_by_year.png",
+    "research/002-slope-duration-switch-r/charts/tracking_error_vs_volatility.svg",
+    "research/002-slope-duration-switch-r/charts/tracking_error_vs_volatility.png"
+  ],
+  "numbers_in_titles": {
+    "level_gap": {
+      "window2": {
+        "mean": -8.411946282997198e-05,
+        "pass": true,
+        "band": [
+          -0.0045,
+          0.0035
+        ],
+        "exante_central": -0.0005,
+        "years": "2003-2015",
+        "by_year": {
+          "2003": 0.0023143189272820147,
+          "2004": -0.0027384692174707848,
+          "2005": 0.002919874756846186,
+          "2006": 0.0013690538153250651,
+          "2007": -0.007031501533095443,
+          "2008": -0.01371642894031,
+          "2009": 0.010333035682676961,
+          "2010": 0.002979178606264843,
+          "2011": 0.0017522578198930772,
+          "2012": -0.003639304079794675,
+          "2013": 0.0012144282958107544,
+          "2014": 0.003746566188818745,
+          "2015": -0.0005829674269667295
+        }
+      },
+      "window1": {
+        "mean": 0.0009997714210304748,
+        "pass": true,
+        "band": [
+          -0.0025,
+          0.0035
+        ],
+        "exante_central": 0.0005,
+        "years": "2016-2018",
+        "by_year": {
+          "2016": -0.0006287981749626175,
+          "2017": 0.0014617656301798413,
+          "2018": 0.0021663468078742007
+        }
+      }
+    },
+    "study_001_mean_gap_2016_2018": 0.004508518381373151,
+    "study_001_band": 0.004,
+    "level_gap_title": "The rebuilt bond matched IEF's return level: a gap of \u22120.01% a year over 2003\u201315 and +0.10% over 2016\u201318, inside the bands set beforehand; Study 001's bond had missed by +0.45%",
+    "tracking_error": {
+      "window2": 0.020164724108645244,
+      "window1": 0.011588404148525163,
+      "limit": 0.015,
+      "window2_pass": false,
+      "years_above_limit": [
+        2003,
+        2004,
+        2007,
+        2008,
+        2009,
+        2010,
+        2011,
+        2013
+      ],
+      "n_years": 13,
+      "ratio_min": 0.21,
+      "ratio_max": 0.37,
+      "window2_ratio": 0.29,
+      "window1_ratio": 0.25,
+      "ief_vol_window2": 0.069,
+      "ief_vol_window1": 0.046,
+      "by_year": {
+        "2003": {
+          "te": 0.0202,
+          "ief_vol": 0.07400000000000001,
+          "ratio": 0.27
+        },
+        "2004": {
+          "te": 0.0163,
+          "ief_vol": 0.065,
+          "ratio": 0.25
+        },
+        "2005": {
+          "te": 0.0137,
+          "ief_vol": 0.05,
+          "ratio": 0.27
+        },
+        "2006": {
+          "te": 0.014199999999999999,
+          "ief_vol": 0.043,
+          "ratio": 0.33
+        },
+        "2007": {
+          "te": 0.0223,
+          "ief_vol": 0.06,
+          "ratio": 0.37
+        },
+        "2008": {
+          "te": 0.0356,
+          "ief_vol": 0.098,
+          "ratio": 0.36
+        },
+        "2009": {
+          "te": 0.025,
+          "ief_vol": 0.095,
+          "ratio": 0.26
+        },
+        "2010": {
+          "te": 0.016,
+          "ief_vol": 0.077,
+          "ratio": 0.21
+        },
+        "2011": {
+          "te": 0.0281,
+          "ief_vol": 0.08199999999999999,
+          "ratio": 0.34
+        },
+        "2012": {
+          "te": 0.013600000000000001,
+          "ief_vol": 0.055999999999999994,
+          "ratio": 0.24
+        },
+        "2013": {
+          "te": 0.0151,
+          "ief_vol": 0.062,
+          "ratio": 0.25
+        },
+        "2014": {
+          "te": 0.013600000000000001,
+          "ief_vol": 0.049,
+          "ratio": 0.28
+        },
+        "2015": {
+          "te": 0.014199999999999999,
+          "ief_vol": 0.066,
+          "ratio": 0.21
+        }
+      }
+    },
+    "tracking_error_title": "Tracking error rose with IEF's volatility, 0.21 to 0.37 of it in every year, so a fixed 1.5% limit set when volatility was 4.6% was breached in 8 of 13 years and on the whole window (2.02%)"
+  },
+  "note": "Presentation only. Every number is read from the committed validation files (the by-year tracking errors from the post-hoc table, which carries no decision weight); no result file is written. Style: qune_research/style.py (chart standard of 2026-10-23)."
+}

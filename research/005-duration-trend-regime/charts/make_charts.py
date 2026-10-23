@@ -37,7 +37,7 @@ STUDY_ID = "Study 005"
 SOURCE = "Tiingo and Alpaca daily IEF, SPY and BIL bars, FRED CPIAUCNS"
 WINDOWS = {
     "insample": ("2003-08 to 2018-12", "In-sample", "in-sample check, run once; verdict: refuted in-sample (section 9.5)"),
-    "episode": ("2019-01 to 2026-09", "2019–2026 episode", "hypothesis-generating episode, run once, no decision weight (section 8.2)"),
+    "episode": ("2019-01 to 2026-09", "2019–2026 episode", "hypothesis-generating episode, no decision weight (section 8.2)"),
 }
 
 
@@ -94,13 +94,13 @@ def rho_chart(frames: dict[str, pd.DataFrame], summaries: dict[str, dict], numbe
     numbers["signal_months_of_2022_before_first_positive"] = months_late
 
     fig, ax = style.figure(width=9.0, height=4.6)
-    finding = (f"The correlation regime was positive in {n_pos['insample']} of {n_all['insample']} months in-sample "
-               f"and {n_pos['episode']} of {n_all['episode']} in 2019–2026; in 2022 it turned positive only at the "
-               f"{first_pos_2022.strftime('%B')} signal date, {months_late} months into the sell-off")
+    finding = (f"In 2022 the correlation regime turned positive only at the {first_pos_2022.strftime('%B')} signal date, "
+               f"{months_late} months into the bond sell-off; the trend rule had been in bills since "
+               f"{bills_run_start.strftime('%B %Y')}")
     style.title(fig, finding,
                 "Pearson correlation of daily SPY and IEF total returns over the 63 most recent days at each monthly "
-                "signal date, 2003-07 to 2026-08. Shaded: positive regime. Ticks at the bottom: months in which "
-                f"Study 003's trend rule held bills (since the {bills_run_start.strftime('%B %Y')} signal date before the 2022 turn).")
+                "signal date, 2003-07 to 2026-08. Shaded: positive regime (26 of 185 months in-sample, 38 of 93 in "
+                "2019–2026). Ticks at the bottom: months in which Study 003's trend rule held bills.")
     _shade_positive(ax, both)
     ax.plot(both["signal_date"], both["rho_T1"], color=style.ACCENT, lw=1.4)
     ax.axhline(0.0, color=style.GREY_DARK, lw=0.8)
@@ -154,7 +154,7 @@ def growth_chart(window: str, monthly: pd.DataFrame, numbers: dict) -> Path:
     style.title(fig, finding,
                 f"Growth of 1 unit, monthly holding periods, {period}, after costs of 2 bp a side. "
                 f"IEF or BIL only; SPY is never held. {label[0].upper() + label[1:]}.")
-    for name, colour, lw in (("B1", style.GREY_LIGHT, 1.2), ("B2", style.GREY_DARK, 1.3), ("T1", style.ACCENT, 1.7)):
+    for name, colour, lw in (("B1", style.GREY, 1.2), ("B2", style.GREY_DARK, 1.3), ("T1", style.ACCENT, 1.7)):
         ax.plot(growth.index, growth[name], color=colour, lw=lw)
     if window == "episode":
         style.shade(ax, pd.Timestamp("2022-01-03"), pd.Timestamp("2022-12-30"), label="2022")
@@ -164,7 +164,7 @@ def growth_chart(window: str, monthly: pd.DataFrame, numbers: dict) -> Path:
     style.label_line_ends(ax, [
         style.EndLabel(f"Conditional (T1) {last['T1']:.2f}", float(last["T1"]), style.ACCENT),
         style.EndLabel(f"Trend rule (B2) {last['B2']:.2f}", float(last["B2"]), style.GREY_DARK),
-        style.EndLabel(f"Hold IEF (B1) {last['B1']:.2f}", float(last["B1"]), style.GREY_LIGHT),
+        style.EndLabel(f"Hold IEF (B1) {last['B1']:.2f}", float(last["B1"]), style.GREY),
     ], min_gap=0.07)
     style.source(fig, SOURCE, period, STUDY_ID, note=f"results/{window}/monthly_base.csv.")
     svg, _png = style.save(fig, HERE / f"{window}_growth_T1_B1_B2")
@@ -180,6 +180,10 @@ def d_chart(window: str, monthly: pd.DataFrame, summary: dict, numbers: dict) ->
     numbers[f"{window}_edge_T1"] = {"mean_positive": mp, "mean_negative": mn, "delta": delta, "nw_t": t,
                                     "ci": [lo, hi], "n_pos": edge["n_pos"], "n_neg": edge["n_neg"]}
     tt = f"{t:.2f}".replace("-", "−")
+
+    def signed(x: float) -> str:
+        return ("+" if x > 0 else "") + style.pct(x, 2)
+
     pos = monthly["positive_T1"].astype(bool)
     d = monthly["d"]
     fig, ax = style.figure(width=9.0, height=4.6)
@@ -204,8 +208,8 @@ def d_chart(window: str, monthly: pd.DataFrame, summary: dict, numbers: dict) ->
     style.percent_axis(ax, decimals=0)
     ax.set_xlim(monthly["signal_date"].iloc[0] - pd.Timedelta(days=20), monthly["signal_date"].iloc[-1] + pd.Timedelta(days=20))
     style.label_line_ends(ax, [
-        style.EndLabel(f"positive, mean {style.pct(mp, 2)}", float(mp), style.ACCENT),
-        style.EndLabel(f"negative, mean {style.pct(mn, 2)}", float(mn), style.GREY),
+        style.EndLabel(f"positive, mean {signed(mp)}", float(mp), style.ACCENT),
+        style.EndLabel(f"negative, mean {signed(mn)}", float(mn), style.GREY),
     ], min_gap=0.06)
     style.source(fig, SOURCE, period, STUDY_ID, note=f"results/{window}/monthly_base.csv and summary.json.")
     svg, _png = style.save(fig, HERE / f"{window}_d_by_regime")

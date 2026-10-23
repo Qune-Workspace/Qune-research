@@ -1,6 +1,6 @@
 # Methods: how this programme guards against overfitting
 
-*Written 2026-10-23 from the committed files at commit `7d38543`. Every number below was read from the file named beside it and rounded once from the stored value. Nothing was re-run for this document. It describes the guards as they operated in Studies 001 to 005; it is not a claim that they are sufficient (see §3).*
+*Written 2026-10-23 from the committed files at commit `7d38543`. Every number below was read from the file named beside it and rounded once from the stored value. Nothing was re-run for this document. A separate Tester agent that did not write this document checked 95 of its figures against the files on 2026-10-23: 94 matched and one section reference was wrong and is corrected (REVIEW.md §5, not §3). It describes the guards as they operated in Studies 001 to 005; it is not a claim that they are sufficient (see §3).*
 
 A backtest can be made to look good by choosing, after the fact, which rule, parameter, universe, window, benchmark or statistic to report. Every guard here removes one of those choices from the author by fixing it before the result exists, counting it when it cannot be fixed, or handing it to someone who did not write the code. The guards are listed in the order in which they act on a study, each with the worked case from this repository.
 
@@ -8,7 +8,7 @@ A backtest can be made to look good by choosing, after the fact, which rule, par
 
 ### 1.1 Pre-registration committed before the first fetch
 
-Each study's `PREREGISTRATION.md` fixes the question, the one-sided hypothesis and its null, the trials, the benchmarks, the cost cases, the pass criteria, the verdict table with its precedence rule, the in-sample and out-of-sample windows, the data checks with their halt rule and the order of operations (§14 of each). The commit that holds it precedes every fetch, and the independent reviewer checks the order from git timestamps (REVIEW.md §3 in each study).
+Each study's `PREREGISTRATION.md` fixes the question, the one-sided hypothesis and its null, the trials, the benchmarks, the cost cases, the pass criteria, the verdict table with its precedence rule, the in-sample and out-of-sample windows, the data checks with their halt rule and the order of operations (§14 of each). The commit that holds it precedes every fetch, and the independent reviewer checks the order from git timestamps (REVIEW.md §5 in each study).
 
 Worked case, Study 004: the pre-registration (`cf5ef34`, 2026-10-22 20:2x London) named twelve ETFs, the decisive benchmark B4 and four trials before a single price was fetched. The data checks then excluded SPY and DBC under a branch written in that document (§1.3 below), and the study ran on ten. The design was not changed to fit the data; the data check removed what the design had said it would remove.
 
@@ -93,7 +93,7 @@ Both times the held-back window went the rule's way and the table held:
 
 | Study | In-sample | Out of sample (run once) | Verdict |
 |---|---|---|---|
-| 003 | C1 fail (0.452 vs 0.555 and 0.554), C2 fail (t 0.37), C3 pass (0.951), C4 pass | O1 holds (mean T1 − B3 > 0, t 1.31), O2 holds (Sharpe 0.157 vs −0.259); monthly drawdown −5.5% vs −22.2% | **not supported** |
+| 003 | C1 fail (0.452 vs 0.555 and 0.554), C2 fail (t 0.37), C3 pass (0.951), C4 pass | O1 holds (mean T1 − B3 > 0, t 1.31), O2 holds (Sharpe 0.157 vs −0.259); monthly drawdown −5.5% vs −22.2% for B1, the benchmark the drawdown clause names | **not supported** |
 | 004 | C1 fail (0.886 vs 0.880), C2 fail (t 0.65), C3 pass (0.998), C4 pass | O1 holds (t 0.35), O2 holds (Sharpe 0.336 vs 0.199); monthly drawdown −4.1% vs −11.1% | **not supported** |
 | 005 | Δ −0.30% a month; upper bound of the interval +0.03% below the 0.083% a month believable minimum | episode 2019–2026 has no decision weight by design: Δ −0.23%, t −0.72, CI [−0.88%, +0.44%] | **refuted in-sample** |
 

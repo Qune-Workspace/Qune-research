@@ -262,6 +262,11 @@ def chart_decomposition(s: dict[str, pd.Series], start: str, numbers: dict) -> d
     one_year = {sid: next(r for r in numbers["changes_bp"][sid] if r["lookback"] == "1y") for sid in sids}
     latest = {sid: next(r for r in numbers["changes_bp"][sid] if r["lookback"] == "now") for sid in sids}
     change = {sid: float(r["change_bp"]) for sid, r in one_year.items()}
+    # The breakeven change is taken on the nominal's own date (decomposition_10y.breakeven_pct, the value
+    # used in the identity), not on the series' later last print, so that real + breakeven adds up to the
+    # nominal change the title states.  Found by the Tester chart review of 2026-10-23.
+    bei_on_nominal_date = float(numbers["decomposition_10y"]["breakeven_pct"])
+    change["T10YIE"] = (bei_on_nominal_date - float(one_year["T10YIE"]["value_pct"])) * vl.BP
     finding = vl.decomposition_finding(change["DGS10"], change["DFII10"], change["T10YIE"], change["THREEFYTP10"])
     lead = "DFII10" if abs(change["DFII10"]) >= abs(change["T10YIE"]) else "T10YIE"
     names = {"DFII10": "real yield (TIPS)", "T10YIE": "breakeven", "THREEFYTP10": "term premium"}
@@ -273,9 +278,8 @@ def chart_decomposition(s: dict[str, pd.Series], start: str, numbers: dict) -> d
     fig, ax = style.figure(width=8.0, height=4.8)
     style.title(fig, finding,
                 f"The 10-year Treasury yield's parts, %, daily, {day(start)} to {day(last)}. One-year changes from "
-                f"{day(one_year['DGS10']['observed_on'])} to {day(latest['DGS10']['observed_on'])} (breakeven to "
-                f"{day(latest['T10YIE']['observed_on'])}, term premium to {day(latest['THREEFYTP10']['observed_on'])}, "
-                f"which FRED publishes with a lag)")
+                f"{day(one_year['DGS10']['observed_on'])} to {day(latest['DGS10']['observed_on'])} (term premium to "
+                f"{day(latest['THREEFYTP10']['observed_on'])}, which FRED publishes with a lag)")
     for sid in ("THREEFYTP10", "T10YIE", "DFII10"):
         ax.plot(series[sid].index, series[sid].values, color=colours[sid], linewidth=1.8 if sid == lead else 1.3)
     ax.axhline(0, color=style.GREY_LIGHT, linewidth=0.8)
@@ -290,15 +294,20 @@ def chart_decomposition(s: dict[str, pd.Series], start: str, numbers: dict) -> d
     style.source(fig, SOURCE + "; DFII10, T10YIE, THREEFYTP10", f"{day(start)} to {day(last)}", STUDY_ID,
                  note="The term premium is a model estimate published with a lag and revised; it overlaps the other two.")
     style.save(fig, CHARTS / "decomposition_10y")
+    change_to = {sid: r["observed_on"] for sid, r in latest.items()}
+    change_to["T10YIE"] = numbers["decomposition_10y"]["dates_used"]["breakeven"]
     return {"finding": finding, "one_year_change_bp": change, "accent_series": lead,
-            "change_from": {sid: r["observed_on"] for sid, r in one_year.items()},
-            "change_to": {sid: r["observed_on"] for sid, r in latest.items()}}
+            "change_from": {sid: r["observed_on"] for sid, r in one_year.items()}, "change_to": change_to,
+            "breakeven_pct_on_nominal_date": bei_on_nominal_date}
 
 
 def chart_stock_bond(corr: pd.Series, numbers: dict) -> dict:
     sb = numbers["stock_bond_corr_63d"]
+    # The series starts 63 trading days into FRED's ten-year S&P 500 history, so the "before" period is
+    # labelled from its first actual year (2017), not from the numbers file's key.  Tester review, 2026-10-23.
+    first_year = int(corr.loc[:"2021"].index[0].year)
     finding = vl.correlation_finding(sb["now"], sb["share_of_days_positive_since_2022"],
-                                     sb["share_of_days_positive_2016_2021"])
+                                     sb["share_of_days_positive_2016_2021"], before_label=f"in {first_year}–2021")
     fig, ax = style.figure(width=8.0, height=4.2)
     style.title(fig, finding,
                 f"63-day correlation of daily S&P 500 returns with the daily fall in the 10-year yield "
@@ -320,7 +329,8 @@ def chart_stock_bond(corr: pd.Series, numbers: dict) -> dict:
     style.save(fig, CHARTS / "stock_bond_corr")
     return {"finding": finding, "now": sb["now"], "on": sb["on"],
             "share_of_days_positive_since_2022": sb["share_of_days_positive_since_2022"],
-            "share_of_days_positive_2016_2021": sb["share_of_days_positive_2016_2021"]}
+            "share_of_days_positive_before_2022": sb["share_of_days_positive_2016_2021"],
+            "before_period_first_day": str(corr.index[0].date()), "before_period_last_year": 2021}
 
 
 def draw_charts(s: dict[str, pd.Series], asof: pd.Timestamp, numbers: dict, corr: pd.Series,

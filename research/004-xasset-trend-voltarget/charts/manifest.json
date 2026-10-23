@@ -1,6 +1,6 @@
 {
-  "made_at_utc": "2026-10-23T03:25:23+00:00",
-  "repository_commit_at_run": "41af115f8d4d648fcc8cf8ded61c3aa77a569ece",
+  "made_at_utc": "2026-10-23T06:29:36+00:00",
+  "repository_commit_at_run": "73d7623494610f673a69b8a59030b1cd25e6a32a",
   "inputs_sha256": {
     "research/004-xasset-trend-voltarget/results/insample/daily_index_10assets.csv": "c36a27c1d8b6f9a1cf5bf96e08453c25ea3dae329a55bd2df235ab45e38e39ad",
     "research/004-xasset-trend-voltarget/results/insample/metrics_10assets_base.csv": "b64757b96e8675bcca8c3b0d1fe18203495efae05702537580daaa8199aaf900",
@@ -24,6 +24,7 @@
       "B4": -0.077699206850392
     },
     "insample_B4_trough_year": 2008,
+    "insample_T1_trough_date": "2018-10-26",
     "insample_drawdown_cut_share": 0.11938300011736291,
     "insample_sharpe_annual": {
       "T1": 0.8856896735791517,
@@ -47,6 +48,7 @@
       "B4": -0.1244528069395523
     },
     "oos_B4_trough_year": 2022,
+    "oos_T1_trough_date": "2020-03-19",
     "oos_drawdown_cut_share": 0.08452767847854037,
     "oos_sharpe_annual": {
       "T1": 0.3357469041919324,

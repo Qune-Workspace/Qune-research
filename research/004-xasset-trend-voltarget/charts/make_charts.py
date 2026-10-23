@@ -64,6 +64,15 @@ def drawdown_chart(window: str, idx: pd.DataFrame, numbers: dict) -> Path:
     numbers[f"{window}_daily_max_drawdown"] = {k: float(v) for k, v in worst.items()}
     trough_year = int(dd["B4"].idxmin().year)
     numbers[f"{window}_B4_trough_year"] = trough_year
+    t1_trough = dd["T1"].idxmin()
+    numbers[f"{window}_T1_trough_date"] = str(t1_trough.date())
+    # The two books bottom in different years; naming only B4's year read as the rule's (Tester chart
+    # review, 2026-10-23), so the sentence names both unless they coincide.
+    if int(t1_trough.year) == trough_year:
+        trough_clause = f"the trough came in {trough_year}"
+    else:
+        trough_clause = (f"the matched book's trough came in {trough_year}, the rule's in "
+                         f"{t1_trough.strftime('%B %Y')}")
     cut = 1.0 - worst["T1"] / worst["B4"]
     numbers[f"{window}_drawdown_cut_share"] = float(cut)
     fig, ax = style.figure(width=8.0, height=4.6)
@@ -75,7 +84,7 @@ def drawdown_chart(window: str, idx: pd.DataFrame, numbers: dict) -> Path:
     else:
         verb = "left the deepest daily drawdown about where it was,"
     finding = (f"{where_cap}, trend timing {verb} from {style.pct(worst['B4'])} to "
-               f"{style.pct(worst['T1'])}; the trough came in {trough_year}")
+               f"{style.pct(worst['T1'])}; {trough_clause}")
     style.title(fig, finding,
                 f"Drawdown from the running high, daily, %, {period}. Ten ETFs, 10% volatility target, "
                 f"no leverage, after costs.")
@@ -86,7 +95,7 @@ def drawdown_chart(window: str, idx: pd.DataFrame, numbers: dict) -> Path:
     else:
         style.shade(ax, pd.Timestamp("2007-12-03"), pd.Timestamp("2009-06-30"), label="2008 crisis")
     style.percent_axis(ax, decimals=0)
-    ax.set_ylim(min(worst.min() * 1.15, -0.05), 0.005)
+    ax.set_ylim(min(worst.min() * 1.15, -0.05), 0.012)  # headroom for the shade label above the 0% lines
     ax.set_xlim(dd.index[0], dd.index[-1])
     style.label_line_ends(ax, [
         style.EndLabel("Trend rule (T1)", float(dd["T1"].iloc[-1]), style.ACCENT),
@@ -126,7 +135,7 @@ def growth_chart(window: str, idx: pd.DataFrame, met: pd.DataFrame, numbers: dic
                 f"Sharpe ratios annualised.")
     for name, colour, lw in (("B3", style.GREY_LIGHT, 1.2), ("B4", style.GREY_DARK, 1.3), ("T1", style.ACCENT, 1.7)):
         ax.plot(growth.index, growth[name], color=colour, lw=lw)
-    ax.yaxis.set_major_formatter(style.FuncFormatter(lambda v, _p: f"{v:,.1f}"))
+    ax.yaxis.set_major_formatter(style.FuncFormatter(lambda v, _p: f"{v:,.2f}"))  # 0.05 steps need two decimals
     ax.set_xlim(growth.index[0], growth.index[-1])
     last = growth.iloc[-1]
     style.label_line_ends(ax, [

@@ -1,0 +1,104 @@
+{
+  "stage": "D3",
+  "written_at_utc": "2026-10-23T10:25:48Z",
+  "sigma_d": {
+    "sigma_d_per_month": 0.0069178744587992105,
+    "months": 185,
+    "share_months_d_nonzero": 0.3567567567567568
+  },
+  "sigma_d_at_registration": 0.01,
+  "prior_positive_share": [
+    0.1,
+    0.3
+  ],
+  "insample": {
+    "T1": {
+      "months": 185,
+      "positive_months": 26,
+      "positive_share": 0.14054054054054055,
+      "regime_changes": 18,
+      "positive_episodes": 9,
+      "mean_positive_episode_months": 2.888888888888889,
+      "longest_positive_episode_months": 7,
+      "first_signal_month": "2003-07",
+      "last_signal_month": "2018-11",
+      "undefined_months": 0,
+      "mde": {
+        "per_month": 0.003639561729998873,
+        "per_year": 0.04367474075998647
+      },
+      "insample_rows_apply": true
+    },
+    "T2": {
+      "months": 185,
+      "positive_months": 12,
+      "positive_share": 0.06486486486486487,
+      "regime_changes": 6,
+      "positive_episodes": 3,
+      "mean_positive_episode_months": 4.0,
+      "longest_positive_episode_months": 10,
+      "first_signal_month": "2003-07",
+      "last_signal_month": "2018-11",
+      "undefined_months": 0,
+      "mde": {
+        "per_month": 0.0051359483944676,
+        "per_year": 0.0616313807336112
+      },
+      "insample_rows_apply": true
+    },
+    "T3": {
+      "months": 185,
+      "positive_months": 43,
+      "positive_share": 0.23243243243243245,
+      "regime_changes": 12,
+      "positive_episodes": 6,
+      "mean_positive_episode_months": 7.166666666666667,
+      "longest_positive_episode_months": 14,
+      "first_signal_month": "2003-07",
+      "last_signal_month": "2018-11",
+      "undefined_months": 0,
+      "mde": {
+        "per_month": 0.002994717951546508,
+        "per_year": 0.035936615418558096
+      },
+      "insample_rows_apply": true
+    }
+  },
+  "episode_no_decision_weight": {
+    "T1": {
+      "months": 93,
+      "positive_months": 38,
+      "positive_share": 0.40860215053763443,
+      "regime_changes": 13,
+      "positive_episodes": 7,
+      "mean_positive_episode_months": 5.428571428571429,
+      "longest_positive_episode_months": 13,
+      "first_signal_month": "2018-12",
+      "last_signal_month": "2026-08"
+    },
+    "T2": {
+      "months": 84,
+      "positive_months": 38,
+      "positive_share": 0.4523809523809524,
+      "regime_changes": 7,
+      "positive_episodes": 4,
+      "mean_positive_episode_months": 9.5,
+      "longest_positive_episode_months": 31,
+      "first_signal_month": "2019-09",
+      "last_signal_month": "2026-08"
+    },
+    "T3": {
+      "months": 93,
+      "positive_months": 44,
+      "positive_share": 0.4731182795698925,
+      "regime_changes": 9,
+      "positive_episodes": 5,
+      "mean_positive_episode_months": 8.8,
+      "longest_positive_episode_months": 26,
+      "first_signal_month": "2018-12",
+      "last_signal_month": "2026-08"
+    }
+  },
+  "min_positive_months_for_rows": 12,
+  "insample_rows_apply_T1": true
+}

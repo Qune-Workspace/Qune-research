@@ -1,5 +1,5 @@
-Citation check of research/005-duration-trend-regime/QUESTION.md: 3 DOIs, 3 ok, 0 problems. Checked 2026-10-23 07:21 UTC
+Citation check of research/005-duration-trend-regime/PREREGISTRATION.md: 3 DOIs, 3 ok, 0 problems. Checked 2026-10-23 08:26 UTC
 
-[BBHIMM23] doi:10.3905/jpm.2023.1.459 -> ok | registered: Brixton (2023) | A Changing Stock–Bond Correlation: Drivers and Implications | The Journal of Portfolio Management
 [CPV20] doi:10.1086/707766 -> ok | registered: Campbell (2020) | Macroeconomic Drivers of Bond and Equity Risks | Journal of Political Economy
 [I03] doi:10.3905/jfi.2003.319353 -> ok | registered: Ilmanen (2003) | Stock-Bond Correlations | The Journal of Fixed Income
+[BBHIMM23] doi:10.3905/jpm.2023.1.459 -> ok | registered: Brixton (2023) | A Changing Stock–Bond Correlation: Drivers and Implications | The Journal of Portfolio Management

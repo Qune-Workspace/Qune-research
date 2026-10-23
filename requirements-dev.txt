@@ -1,6 +1,9 @@
-# Lint and type-check tools (pyproject.toml), pinned to the versions the
-# repository was checked with on 2026-10-23.  Not needed to run any study.
+# Lint, type-check and coverage tools (pyproject.toml, Makefile), pinned to
+# the versions the repository was checked with on 2026-10-23.  Not needed to
+# run any study.
 ruff==0.17.2
 mypy==2.4.0
 pandas-stubs==3.0.5.260914
 types-requests==2.33.0.20261006
+coverage==7.17.0
+pytest-cov==7.1.0

@@ -10,3 +10,7 @@ __pycache__/
 **/paper-log/raw/
 # Prediction scoring fetches are provenance-hashed in predictions/manifest.json, never committed.
 predictions/raw/
+# Coverage data (make coverage).
+.coverage
+coverage.xml
+htmlcov/

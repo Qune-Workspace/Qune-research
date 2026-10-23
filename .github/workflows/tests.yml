@@ -62,3 +62,29 @@ jobs:
         run: python -m ruff check .
       - name: mypy (shared library)
         run: python -m mypy
+      # Line coverage of the shared library, tests excluded (pyproject.toml).
+      # The floor is below the figure measured at adoption so that it catches
+      # a drop, not a rounding.
+      - name: coverage (shared library, floor 90%)
+        working-directory: qune_research
+        run: python -m pytest -q --cov=qune_research --cov-config=../pyproject.toml --cov-report=term-missing --cov-fail-under=90
+
+  # The independent reviewers' recomputation of every published statistic in
+  # Studies 003, 004 and 005 from the committed result files (`make reproduce`).
+  # No vendor data, credentials or approval file: rows that need the raw files
+  # are reported as "not checked".  The job fails only when a script does not
+  # run to its summary line; the last-digit README mismatches disclosed in the
+  # 004 and 005 reviews are expected and shown in the log.
+  reproduce:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: qune_research/requirements.txt
+      - name: Install pinned dependencies
+        run: python -m pip install --quiet -r qune_research/requirements.txt
+      - name: make reproduce
+        run: make reproduce PYTHON=python

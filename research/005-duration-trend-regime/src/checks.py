@@ -118,6 +118,8 @@ def regime_flags_for_window(close_spy: pd.Series, close_ief: pd.Series, cpi: pd.
     if cpi is not None:
         reg = regime.cpi_regime(cpi, signal_dates)
         frame["cpi_12m_change_T3"] = reg["cpi_12m_change"].reindex(frame.index)
+        frame["cpi_month_T3"] = reg["cpi_month"].reindex(frame.index)
+        frame["cpi_month_filled_T3"] = reg["cpi_month_filled"].reindex(frame.index)
         frame["positive_T3"] = reg["positive"].reindex(frame.index)
     return frame
 

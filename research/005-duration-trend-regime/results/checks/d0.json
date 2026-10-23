@@ -1,0 +1,81 @@
+{
+  "stage": "D0",
+  "written_at_utc": "2026-10-23T10:22:24Z",
+  "files": {
+    "tiingo_IEF": {
+      "window": {
+        "start": "2003-04-01",
+        "end": "2018-12-31"
+      },
+      "nyse_trading_days": 3966,
+      "bars_present": 3966,
+      "missing_days": [],
+      "max_consecutive_missing_days": 0,
+      "max_consecutive_missing_allowed": 3,
+      "extra_bars_on_rule_calendar_closures": [],
+      "pass": true,
+      "first_bar": "2002-07-26",
+      "first_bar_on_or_before_required": "2002-07-31"
+    },
+    "tiingo_SPY": {
+      "window": {
+        "start": "2003-04-01",
+        "end": "2018-12-31"
+      },
+      "nyse_trading_days": 3966,
+      "bars_present": 3966,
+      "missing_days": [],
+      "max_consecutive_missing_days": 0,
+      "max_consecutive_missing_allowed": 3,
+      "extra_bars_on_rule_calendar_closures": [],
+      "pass": true,
+      "first_bar": "2002-07-01"
+    },
+    "alpaca_SPY": {
+      "window": {
+        "start": "2018-09-04",
+        "end": "2026-09-30"
+      },
+      "nyse_trading_days": 2029,
+      "bars_present": 2029,
+      "missing_days": [],
+      "max_consecutive_missing_days": 0,
+      "max_consecutive_missing_allowed": 3,
+      "extra_bars_on_rule_calendar_closures": [],
+      "pass": true,
+      "first_bar": "2018-09-04"
+    },
+    "alpaca_IEF": {
+      "window": {
+        "start": "2018-09-04",
+        "end": "2026-09-30"
+      },
+      "nyse_trading_days": 2029,
+      "bars_present": 2029,
+      "missing_days": [],
+      "max_consecutive_missing_days": 0,
+      "max_consecutive_missing_allowed": 3,
+      "extra_bars_on_rule_calendar_closures": [],
+      "pass": true,
+      "first_bar": "2016-01-04"
+    },
+    "alpaca_BIL": {
+      "window": {
+        "start": "2018-09-04",
+        "end": "2026-09-30"
+      },
+      "nyse_trading_days": 2029,
+      "bars_present": 2029,
+      "missing_days": [],
+      "max_consecutive_missing_days": 0,
+      "max_consecutive_missing_allowed": 3,
+      "extra_bars_on_rule_calendar_closures": [],
+      "pass": true,
+      "first_bar": "2016-01-04"
+    }
+  },
+  "halt_ief": false,
+  "regime_unavailable_insample": false,
+  "regime_unavailable_episode": false,
+  "pass": true
+}

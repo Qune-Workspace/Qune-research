@@ -1,4 +1,44 @@
 {
+  "alpaca_BIL_1Day_all.csv": {
+    "downloaded_at_utc": "2026-10-21T20:22:32Z",
+    "first_bar": "2016-01-04",
+    "last_bar": "2026-10-21",
+    "params": {
+      "adjustment": "all",
+      "end": "2026-10-21T20:07:32Z",
+      "feed": "sip",
+      "limit": 10000,
+      "start": "2016-01-04",
+      "timeframe": "1Day"
+    },
+    "reused_at_utc": "2026-10-23T10:22:24Z",
+    "reused_from": "Study 003 data/raw (same bytes; SHA-256 verified against Study 003 results/data_manifest.json)",
+    "rows": 2716,
+    "sha256": "56f5058022079bb01a29e00a5a80f79122d4e0b9722de4291b91b9182a17f5dd",
+    "source": "Alpaca market data (licensed, not redistributed)",
+    "symbol": "BIL",
+    "url": "https://data.alpaca.markets/v2/stocks/BIL/bars"
+  },
+  "alpaca_IEF_1Day_all.csv": {
+    "downloaded_at_utc": "2026-10-21T20:22:32Z",
+    "first_bar": "2016-01-04",
+    "last_bar": "2026-10-21",
+    "params": {
+      "adjustment": "all",
+      "end": "2026-10-21T20:07:32Z",
+      "feed": "sip",
+      "limit": 10000,
+      "start": "2016-01-04",
+      "timeframe": "1Day"
+    },
+    "reused_at_utc": "2026-10-23T10:22:24Z",
+    "reused_from": "Study 003 data/raw (same bytes; SHA-256 verified against Study 003 results/data_manifest.json)",
+    "rows": 2716,
+    "sha256": "c8b27e189c7b4215c3c0d03ad9bba09bb767a680eb12fabbed52a7d224c1af81",
+    "source": "Alpaca market data (licensed, not redistributed)",
+    "symbol": "IEF",
+    "url": "https://data.alpaca.markets/v2/stocks/IEF/bars"
+  },
   "alpaca_SPY_1Day_all.csv": {
     "downloaded_at_utc": "2026-10-23T10:21:40Z",
     "first_bar": "2018-09-04",
@@ -27,5 +67,73 @@
     "sha256": "cfab9b9be4a5d4f06253c4dcc3f7e0b28b1d58837e710dd7cb1fd54a49e7ad7c",
     "source": "FRED (fredgraph.csv)",
     "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=CPIAUCNS"
+  },
+  "fred_DTB3.csv": {
+    "downloaded_at_utc": "2026-10-22T07:36:27Z",
+    "first_valid": "1954-01-04",
+    "last_valid": "2026-10-20",
+    "missing": 801,
+    "reused_at_utc": "2026-10-23T10:22:31Z",
+    "reused_from": "Study 003 data/raw (same bytes; SHA-256 verified against Study 003 results/data_manifest.json)",
+    "rows": 18992,
+    "series_id": "DTB3",
+    "sha256": "0cba14db6f47f5ac132af45880aaf3e25df8aa002dc39bb6b28c20835fe75422",
+    "source": "FRED",
+    "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=DTB3"
+  },
+  "overlap/alpaca_SPY_1Day_all.csv": {
+    "downloaded_at_utc": "2026-10-22T20:26:06Z",
+    "first_bar": "2016-01-04",
+    "last_bar": "2018-12-31",
+    "params": {
+      "adjustment": "all",
+      "end": "2019-01-01T00:00:00Z",
+      "feed": "sip",
+      "limit": 10000,
+      "start": "2016-01-04",
+      "timeframe": "1Day"
+    },
+    "reused_at_utc": "2026-10-23T10:22:27Z",
+    "reused_from": "Study 004 data/raw (same bytes; SHA-256 verified against Study 004 results/data_manifest.json)",
+    "rows": 754,
+    "sha256": "5306e411350e868dc0bd92015c83187757a8c8dc4ba7738496c3ecaeccec830f",
+    "source": "Alpaca market data (licensed, not redistributed)",
+    "symbol": "SPY",
+    "url": "https://data.alpaca.markets/v2/stocks/SPY/bars"
+  },
+  "tiingo_IEF_daily.csv": {
+    "downloaded_at_utc": "2026-10-21T23:18:29Z",
+    "first_bar": "2002-07-26",
+    "last_bar": "2026-10-21",
+    "params": {
+      "format": "json",
+      "resampleFreq": "daily",
+      "startDate": "2002-07-22"
+    },
+    "reused_at_utc": "2026-10-23T10:22:24Z",
+    "reused_from": "Study 004 data/raw (same bytes; SHA-256 verified against Study 004 results/data_manifest.json)",
+    "rows": 6099,
+    "sha256": "a15abb3dfb242ff5e08c0724a4df82c35269d6541dbc451b9cd0a7230f58cc06",
+    "source": "Tiingo end-of-day prices (licensed, not redistributed); adjClose = split- and distribution-adjusted close",
+    "symbol": "IEF",
+    "url": "https://api.tiingo.com/tiingo/daily/ief/prices"
+  },
+  "tiingo_SPY_daily.csv": {
+    "downloaded_at_utc": "2026-10-22T20:25:31Z",
+    "first_bar": "2002-07-01",
+    "last_bar": "2026-09-30",
+    "params": {
+      "endDate": "2026-09-30",
+      "format": "json",
+      "resampleFreq": "daily",
+      "startDate": "2002-07-01"
+    },
+    "reused_at_utc": "2026-10-23T10:22:24Z",
+    "reused_from": "Study 004 data/raw (same bytes; SHA-256 verified against Study 004 results/data_manifest.json)",
+    "rows": 6102,
+    "sha256": "1b0995bd6f5a05ba2995d779259c54225d897ccf8f82aa4faba61f062ab7f3fc",
+    "source": "Tiingo end-of-day prices (licensed, not redistributed); adjClose = split- and distribution-adjusted close",
+    "symbol": "SPY",
+    "url": "https://api.tiingo.com/tiingo/daily/spy/prices"
   }
 }

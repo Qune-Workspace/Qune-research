@@ -1,0 +1,21 @@
+{
+  "stage": "D1",
+  "written_at_utc": "2026-10-23T10:22:28Z",
+  "window": {
+    "start": "2016-01-04",
+    "end": "2018-12-31"
+  },
+  "correlation_days": 63,
+  "days_compared": 691,
+  "days_undefined_vendor": 0,
+  "days_undefined_broker": 63,
+  "sign_agreement_share": 1.0,
+  "days_signs_disagree": [],
+  "mean_abs_difference": 0.00601764470279152,
+  "max_abs_difference": 0.019028455047772924,
+  "max_abs_difference_date": "2018-01-17",
+  "share_days_vendor_positive": 0.04630969609261939,
+  "low_agreement_threshold_for_discussion": 0.95,
+  "discuss_in_limitations": false,
+  "gate": "none (\u00a75.3.2; the level gap that excluded SPY from Study 004 does not bear on a sign)"
+}

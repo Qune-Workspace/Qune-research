@@ -86,22 +86,34 @@ def cpi_regime(cpi: pd.Series, signal_dates: pd.Series, threshold: float = CPI_T
                lag_months: int = CPI_LAG_MONTHS) -> pd.DataFrame:
     """T3 (§6.1): at the signal date of month m the flag is
     ``change(m - lag) > threshold``; frame with ``signal_date``,
-    ``cpi_month``, ``cpi_12m_change``, ``positive``.  A month whose lagged
-    change is undefined is dropped at the start and an error later."""
+    ``cpi_month``, ``cpi_12m_change``, ``positive``, ``cpi_month_filled``.
+    Months whose lagged change is undefined are dropped at the start.  Later
+    on, a month whose lagged change is undefined because the index has no
+    published value for that month or for the month twelve months before it
+    (the BLS published no October 2025 CPI; §16 amendment of 2026-10-23)
+    reads the latest defined change for a month on or before m − lag, never
+    a later month; ``cpi_month`` names the month actually read and
+    ``cpi_month_filled`` flags it."""
     change = cpi_twelve_month_change(cpi)
     months = pd.PeriodIndex(signal_dates.index, freq="M")
     lagged = months - lag_months
-    values = change.reindex(lagged)
-    values.index = signal_dates.index
-    defined = values.dropna()
-    if defined.empty:
+    defined_change = change.dropna()
+    if defined_change.empty:
+        raise ValueError("the CPI series has no defined twelve-month change")
+    # the latest defined change on or before each lagged month (never later)
+    pos = defined_change.index.searchsorted(lagged, side="right") - 1
+    usable = pos >= 0
+    if not usable.any():
         raise ValueError("no signal month has a defined lagged CPI change")
-    later = values.loc[defined.index[0]:]
-    if later.isna().any():
-        raise ValueError(f"CPI change undefined on months {[str(m) for m in later.index[later.isna()]]}")
-    return pd.DataFrame({"signal_date": signal_dates.reindex(later.index),
-                         "cpi_month": [str(p) for p in lagged[signal_dates.index.get_indexer(later.index)]],
-                         "cpi_12m_change": later, "positive": (later > threshold).rename("positive")})
+    first = int(np.argmax(usable))
+    keep = signal_dates.index[first:]
+    pos, lagged_kept = pos[first:], lagged[first:]
+    read_months = defined_change.index[pos]
+    values = pd.Series(defined_change.to_numpy()[pos], index=keep, name="cpi_12m_change")
+    return pd.DataFrame({"signal_date": signal_dates.reindex(keep),
+                         "cpi_month": [str(p) for p in read_months],
+                         "cpi_month_filled": pd.Series(read_months != lagged_kept, index=keep),
+                         "cpi_12m_change": values, "positive": (values > threshold).rename("positive")})
 
 
 def regime_episodes(positive: pd.Series) -> dict:

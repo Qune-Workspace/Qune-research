@@ -137,3 +137,32 @@ def test_regime_episodes_counts():
     out = regime.regime_episodes(flags)
     assert out == {"months": 9, "positive_months": 5, "positive_share": 5 / 9, "regime_changes": 4,
                    "positive_episodes": 2, "mean_positive_episode_months": 2.5, "longest_positive_episode_months": 3}
+
+
+def test_v_missing_cpi_month_reads_latest_earlier_print_never_later(world):
+    """§16 amendment 2026-10-23: a month without a published CPI value (the
+    BLS skipped October 2025) makes the twelve-month change undefined for
+    that month and for the month a year later; the flag for a signal month
+    whose m − 2 falls there reads the latest defined change on or before
+    m − 2, is marked as filled, and never reads a later month."""
+    cpi = toy_cpi()
+    dates = world["schedule"]["signal_date"]
+    frame = regime.cpi_regime(cpi, dates)
+    m = frame.index[30]
+    lagged = pd.Period(m, "M") - CPI_LAG_MONTHS
+    gapped = cpi.copy()
+    gapped.loc[lagged] = float("nan")
+    filled = regime.cpi_regime(gapped, dates)
+    assert filled.at[m, "cpi_month"] == str(lagged - 1) and bool(filled.at[m, "cpi_month_filled"])
+    assert filled.at[m, "cpi_12m_change"] == pytest.approx(cpi.loc[lagged - 1] / cpi.loc[lagged - 13] - 1.0, abs=1e-15)
+    # the month twelve months after the gap is undefined too and reads the month before it
+    m12 = m + 12
+    assert filled.at[m12, "cpi_month"] == str(lagged + 11) and bool(filled.at[m12, "cpi_month_filled"])
+    # every other month reads its own m - 2
+    others = filled.index.difference([m, m12])
+    assert not filled.loc[others, "cpi_month_filled"].any()
+    assert (filled.loc[others, "cpi_12m_change"] == frame.loc[others, "cpi_12m_change"]).all()
+    # a later month's level never moves the filled value
+    later = gapped.copy()
+    later.loc[lagged + 1:] *= 1.5
+    assert regime.cpi_regime(later, dates).at[m, "cpi_12m_change"] == pytest.approx(filled.at[m, "cpi_12m_change"], abs=1e-15)

@@ -28,4 +28,7 @@ Every trial is logged here before it is run (§7). The deflated Sharpe ratio, re
 | Fetch 2 outcome | 2026-10-23 11:22 London | **Succeeded on attempt 1**: `data/raw/fred_CPIAUCNS.csv`, 1,365 monthly rows, 1913-01 to 2026-09, SHA-256 `cfab9b9b…` in the manifest (downloaded 2026-10-23T10:21:59Z). T3 runs. No correlation, no return computed. |
 | `reproduce.sh --check` (§14 step 4) | 2026-10-23 11:2x London | logged before the run: D0, D1, D3 once; outcome in the §16 entry and the next row. |
 
+| `--check`, first invocation | 2026-10-23 11:22 London | D0 **pass** (every file; halt flags false); D1 sign agreement **1.0000** on 691 days (mean abs. difference 0.0060, largest 0.0190); **D3 stopped** before writing: the T3 flag at the 2025-12 signal date had no value because CPIAUCNS has no 2025-10 print. §16 amendment (reading rule for a missing CPI month, T3 only) committed before the second invocation; no regime share, no MDE, no return seen. |
+| `--check`, second invocation logged | 2026-10-23 11:2x London | the full script again under the amended code; D0 and D1 are compared with the first invocation's kept outputs; outcome in the next row. |
+
 In-sample returns of this study have not been computed. The 2019–2026 window is the hypothesis-generating episode (§8.2), to be run once under that label after the in-sample results are committed, with no decision weight. The forward record starts at the first month-end after the note's publication (§11). N = 3.

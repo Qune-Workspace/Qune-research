@@ -120,8 +120,9 @@ def level_gap_chart(w1: dict, w2: dict, s001: dict, numbers: dict) -> Path:
                 ha="left", va="center", fontsize=style.LABEL_SIZE, color=style.GREY_DARK, annotation_clip=False)
     ax.annotate(f"mean {signed_pct(w1i['mean'])}", xy=(xr, w1i["mean"]), xytext=(6, 0), textcoords="offset points",
                 ha="left", va="center", fontsize=style.LABEL_SIZE, color=style.ACCENT, annotation_clip=False)
-    ax.annotate(f"mean {signed_pct(w2i['mean'])}", xy=(w2i["years"][-1] + 0.5, w2i["mean"]), xytext=(-4, 5),
-                textcoords="offset points", ha="right", va="bottom", fontsize=style.LABEL_SIZE, color=style.ACCENT)
+    # Below the line at the window's right end: above it the label ran across the 2014 bar (chart review, 2026-10-23).
+    ax.annotate(f"mean {signed_pct(w2i['mean'])}", xy=(w2i["years"][-1] + 0.5, w2i["mean"]), xytext=(-4, -5),
+                textcoords="offset points", ha="right", va="top", fontsize=style.LABEL_SIZE, color=style.ACCENT)
     for w, label in ((w2i, "window 2, thirteen years never seen"), (w1i, "window 1")):
         ax.annotate(label, xy=((w["years"][0] + w["years"][-1]) / 2.0, 1.0), xycoords=("data", "axes fraction"),
                     xytext=(0, -2), textcoords="offset points", ha="center", va="top", fontsize=style.TICK_SIZE,
@@ -213,8 +214,14 @@ def tracking_error_chart(w2: dict, w1: dict, numbers: dict) -> Path:
         r = years[y]
         if y in above:
             ax.scatter([r["ief_vol"]], [r["te"]], s=28, color=style.ACCENT, zorder=3, linewidths=0)
-            ax.annotate(str(y), xy=(r["ief_vol"], r["te"]), xytext=(4, 3), textcoords="offset points",
-                        fontsize=style.TICK_SIZE - 1, color=style.ACCENT)
+            # 2013 sits just left of and below 2004, so its label goes below-left; up-right it covered the 2004
+            # marker (chart review, 2026-10-23).
+            if y == 2013:
+                ax.annotate(str(y), xy=(r["ief_vol"], r["te"]), xytext=(-4, -10), textcoords="offset points",
+                            ha="right", fontsize=style.TICK_SIZE - 1, color=style.ACCENT)
+            else:
+                ax.annotate(str(y), xy=(r["ief_vol"], r["te"]), xytext=(4, 3), textcoords="offset points",
+                            fontsize=style.TICK_SIZE - 1, color=style.ACCENT)
         else:
             ax.scatter([r["ief_vol"]], [r["te"]], s=28, color=style.GREY, zorder=3, linewidths=0)
             ax.annotate(str(y), xy=(r["ief_vol"], r["te"]), xytext=(0, -4 - 10 * (below_row % 2)),

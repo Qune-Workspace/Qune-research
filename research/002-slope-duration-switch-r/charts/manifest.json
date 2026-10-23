@@ -1,6 +1,6 @@
 {
-  "made_at_utc": "2026-10-23T05:26:26+00:00",
-  "repository_commit_at_run": "fad9be5b86bfe65e2edeb20ed91d3c266e9f4b59",
+  "made_at_utc": "2026-10-23T07:16:32+00:00",
+  "repository_commit_at_run": "618c209f3e8b179cf5255015175e0ddd360eb772",
   "inputs_sha256": {
     "research/002-slope-duration-switch-r/results/validation/window1/validation.json": "a2367a115d66f06b8beb01e6328fe2763b21d8cbff7d37aea19388a207cb7e6b",
     "research/002-slope-duration-switch-r/results/validation/window2/validation.json": "58802c7b1523d4bbee56a325cd2f3e99016c1c19b085ffdff9fe4e84322c43f0",

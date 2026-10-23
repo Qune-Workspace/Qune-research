@@ -169,3 +169,43 @@ def test_committed_ledger_is_valid():
     if not ledger_path.exists():
         pytest.skip("no ledger yet")
     score.read_ledger(ledger_path)
+
+
+# --- chart title wording (pure; the chart script may not type a finding) ---------------------
+
+def test_curve_finding_every_tenor_up_names_the_range_and_the_largest_tenor():
+    text = vl.curve_finding({"3m": 30.0, "2y": 133.0, "10y": 112.0, "30y": 84.0}, True, False)
+    assert text.startswith("Every tenor yields more than a year ago, by 30 to 133 bp, most at the 2y")
+    assert text.endswith("; the front end no longer inverts")
+
+
+def test_curve_finding_mixed_signs_lists_each_tenor_and_no_inversion_clause_without_a_flip():
+    text = vl.curve_finding({"2y": -20.0, "10y": 15.0}, False, False)
+    assert text.startswith("The curve has twisted over the year: 2y −20 bp, 10y +15 bp")
+    assert "inverts" not in text
+    down = vl.curve_finding({"2y": -20.0, "10y": -15.0}, False, True)
+    assert down.startswith("Every tenor yields less") and down.endswith("; the front end now inverts")
+    with pytest.raises(ValueError):
+        vl.curve_finding({}, False, False)
+
+
+def test_front_end_finding_three_branches():
+    assert vl.front_end_finding(37.0, 93.0).startswith("The front end prices a higher policy rate: the 3-month bill sits +37 bp and the 2-year note +93 bp")
+    assert vl.front_end_finding(-40.0, -120.0).startswith("The front end prices cuts")
+    assert vl.front_end_finding(5.0, 40.0).startswith("The front end prices a path close to today's rate")
+
+
+def test_decomposition_finding_leads_with_the_larger_component_and_the_sign_of_the_move():
+    up = vl.decomposition_finding(112.0, 105.0, 2.0, 54.91)
+    assert up == ("Of the 10-year's 112 bp rise over the year, +105 bp is real yield and only +2 bp breakeven inflation; "
+                  "the term premium accounts for +55 bp of it")
+    down = vl.decomposition_finding(-80.0, -20.0, -60.0, -10.0)
+    assert down.startswith("Of the 10-year's 80 bp fall over the year, −60 bp is breakeven inflation and −20 bp real yield")
+
+
+def test_correlation_finding_states_both_shares_and_the_sign_today():
+    pos = vl.correlation_finding(0.4133, 0.6149, 0.0802)
+    assert pos == ("Stocks and bonds have moved together on 61% of days since 2022, against 8% in 2016–2021; "
+                   "the proxy is still positive at +0.41")
+    neg = vl.correlation_finding(-0.3, 0.5, 0.1)
+    assert neg.endswith("the proxy is negative today at −0.30")

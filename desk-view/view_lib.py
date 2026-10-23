@@ -89,6 +89,79 @@ def market_implied_path(effr: pd.Series, bill_3m: pd.Series, note_2y: pd.Series,
     }
 
 
+MINUS = "−"  # the typographic minus the chart tick labels use
+
+
+def bp(x: float) -> str:
+    """Basis points as a signed whole number with the typographic minus: 54.91 -> '+55 bp'."""
+    return f"{x:+.0f} bp".replace("-", MINUS)
+
+
+def curve_finding(tenor_changes_bp: dict[str, float], front_inverted_then: bool, front_inverted_now: bool) -> str:
+    """Title of the curve chart, chosen from the one-year change at each tenor.
+
+    ``tenor_changes_bp`` maps the tenor label to its change in basis points over
+    the year; the two flags say whether the 2-year sat below the 3-month bill a
+    year ago and whether it does today.  The wording cannot overstate: "every
+    tenor" needs every sign the same, and the inversion clause needs the flip.
+    """
+    if not tenor_changes_bp:
+        raise ValueError("no tenors")
+    values = list(tenor_changes_bp.values())
+    most = max(tenor_changes_bp, key=lambda t: abs(tenor_changes_bp[t]))
+    lo, hi = min(abs(v) for v in values), max(abs(v) for v in values)
+    if all(v > 0 for v in values):
+        text = (f"Every tenor yields more than a year ago, by {lo:.0f} to {hi:.0f} bp, most at the {most}")
+    elif all(v < 0 for v in values):
+        text = (f"Every tenor yields less than a year ago, by {lo:.0f} to {hi:.0f} bp, most at the {most}")
+    else:
+        parts = ", ".join(f"{t} {bp(v)}" for t, v in tenor_changes_bp.items())
+        text = f"The curve has twisted over the year: {parts}"
+    if front_inverted_then and not front_inverted_now:
+        text += "; the front end no longer inverts"
+    elif front_inverted_now and not front_inverted_then:
+        text += "; the front end now inverts"
+    return text
+
+
+def front_end_finding(bill_minus_effr_bp: float, note_2y_minus_effr_bp: float, threshold_bp: float = 10.0) -> str:
+    """Title of the policy chart from where the bill and the 2-year sit against the funds rate."""
+    a, b = bill_minus_effr_bp, note_2y_minus_effr_bp
+    where = (f"the 3-month bill sits {bp(a)} and the 2-year note {bp(b)} from the effective funds rate")
+    if a > threshold_bp and b > threshold_bp:
+        return f"The front end prices a higher policy rate: {where}"
+    if a < -threshold_bp and b < -threshold_bp:
+        return f"The front end prices cuts: {where}"
+    return f"The front end prices a path close to today's rate: {where}"
+
+
+def decomposition_finding(nominal_bp: float, real_bp: float, breakeven_bp: float, term_premium_bp: float) -> str:
+    """Title of the 10-year decomposition chart from the one-year changes in basis points.
+
+    Real yield and breakeven add up to the nominal change by the TIPS identity
+    (up to the series' dates and rounding); the term premium is a model estimate
+    that overlaps both, so it is stated as a share of the move, not a third addend.
+    """
+    move = "rise" if nominal_bp >= 0 else "fall"
+    n = abs(nominal_bp)
+    if abs(real_bp) >= abs(breakeven_bp):
+        lead = (f"Of the 10-year's {n:.0f} bp {move} over the year, {bp(real_bp)} is real yield and only "
+                f"{bp(breakeven_bp)} breakeven inflation")
+    else:
+        lead = (f"Of the 10-year's {n:.0f} bp {move} over the year, {bp(breakeven_bp)} is breakeven inflation and "
+                f"{bp(real_bp)} real yield")
+    return f"{lead}; the term premium accounts for {bp(term_premium_bp)} of it"
+
+
+def correlation_finding(now: float, share_positive_recent: float, share_positive_before: float,
+                        recent_label: str = "since 2022", before_label: str = "in 2016–2021") -> str:
+    """Title of the stock-bond correlation chart from the share of positive days in two periods."""
+    state = "still positive" if now > 0 else "negative today"
+    return (f"Stocks and bonds have moved together on {100 * share_positive_recent:.0f}% of days {recent_label}, "
+            f"against {100 * share_positive_before:.0f}% {before_label}; the proxy is {state} at "
+            f"{now:+.2f}".replace("-", MINUS))
+
+
 def change_table(series: pd.Series, asof: pd.Timestamp, lookbacks: dict[str, pd.DateOffset]) -> pd.DataFrame:
     """Value as of the date and the change, in basis points, over each lookback
     (the earlier value is the last valid observation on or before asof minus

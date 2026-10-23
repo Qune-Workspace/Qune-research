@@ -75,3 +75,7 @@ Each row in the ledger carries the basis and the downside case. The first is sco
 - The market-implied path is read off the bill and the 2-year, not off futures; it mixes expectations with term and liquidity premia and is a rougher reading than fed funds futures would give.
 - The charts are static images; the table view is the snapshot csv.
 - The calls are the desk's judgement. They are logged to be scored, and the desk will be wrong on some of them; the ledger exists so that the record of that is public.
+
+---
+
+*Addendum, 2026-10-23 (after publication; the text above is unchanged): the four charts were redrawn the same day to the house chart standard (`qune_research/style.py`), from the same raw files, hash-checked against `data/manifest.json`, by `build_view.py --charts-only`, which first recomputed every number in `data/numbers_2026-10-23.json` and found them equal. Each title now states the finding and is chosen by a function in `view_lib.py` from those numbers, not typed; the input hashes and title numbers are in `charts/manifest.json`. The first renders are in git at commit `11e4659`. No number on this page changed.*

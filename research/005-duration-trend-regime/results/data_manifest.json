@@ -16,5 +16,16 @@
     "source": "Alpaca market data (licensed, not redistributed)",
     "symbol": "SPY",
     "url": "https://data.alpaca.markets/v2/stocks/SPY/bars"
+  },
+  "fred_CPIAUCNS.csv": {
+    "downloaded_at_utc": "2026-10-23T10:21:59Z",
+    "first_bar": "1913-01-01",
+    "last_bar": "2026-09-01",
+    "last_valid": "2026-09-01",
+    "rows": 1365,
+    "series_id": "CPIAUCNS",
+    "sha256": "cfab9b9be4a5d4f06253c4dcc3f7e0b28b1d58837e710dd7cb1fd54a49e7ad7c",
+    "source": "FRED (fredgraph.csv)",
+    "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=CPIAUCNS"
   }
 }

@@ -25,4 +25,7 @@ Every trial is logged here before it is run (§7). The deflated Sharpe ratio, re
 | Fetch 1 outcome | 2026-10-23 11:21 London | **Succeeded on attempt 1**: `data/raw/alpaca_SPY_1Day_all.csv`, 2,029 bars, 2018-09-04 to 2026-09-30, SHA-256 `1f1d6425…` in `results/data_manifest.json` (downloaded 2026-10-23T10:21:40Z). Branch S not taken. Dates and row count read; no return, no correlation computed. |
 | Fetch 2 logged (§5.3.3 step 2) | 2026-10-23 11:2x London | FRED CPIAUCNS, full history, through `python -m src.data fetch-cpi`. Attempt 1 of 2; after a second failure on a separate run T3 is logged "not run: series unavailable" and N stays 3. Logged before the fetch runs; outcome in the next row. |
 
+| Fetch 2 outcome | 2026-10-23 11:22 London | **Succeeded on attempt 1**: `data/raw/fred_CPIAUCNS.csv`, 1,365 monthly rows, 1913-01 to 2026-09, SHA-256 `cfab9b9b…` in the manifest (downloaded 2026-10-23T10:21:59Z). T3 runs. No correlation, no return computed. |
+| `reproduce.sh --check` (§14 step 4) | 2026-10-23 11:2x London | logged before the run: D0, D1, D3 once; outcome in the §16 entry and the next row. |
+
 In-sample returns of this study have not been computed. The 2019–2026 window is the hypothesis-generating episode (§8.2), to be run once under that label after the in-sample results are committed, with no decision weight. The forward record starts at the first month-end after the note's publication (§11). N = 3.

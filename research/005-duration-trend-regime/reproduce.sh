@@ -26,10 +26,11 @@ if [ -z "${PYTHON:-}" ]; then
   if [ -x ../../.venv/bin/python ]; then PYTHON=../../.venv/bin/python; else PYTHON=python3; fi
 fi
 
-usage() { echo "usage: $0 --check | --insample | --episode | --forward" >&2; exit 2; }
-[ $# -eq 1 ] || usage
+usage() { echo "usage: $0 --check | --insample | --episode | --forward <decide|shadow|interim> [--signal-date YYYY-MM-DD] [--fetch] [--dry-run]" >&2; exit 2; }
+[ $# -ge 1 ] || usage
 mode="$1"
-case "$mode" in --check|--insample|--episode|--forward) ;; *) usage ;; esac
+shift
+case "$mode" in --check|--insample|--episode) [ $# -eq 0 ] || usage ;; --forward) ;; *) usage ;; esac
 
 if [ ! -s APPROVED ]; then
   echo "refused: no APPROVED file in $(pwd | xargs basename)." >&2
@@ -69,7 +70,15 @@ case "$mode" in
     echo "[1/1] the 2019–2026 episode (§8.2), executed exactly once, no decision weight"
     "$PYTHON" -m src.report --episode ;;
   --forward)
-    echo "refused: the forward decision record (§11) is added at §14 step 11, after the note is" >&2
-    echo "published and before the first forward month-end. Nothing to run yet." >&2
-    exit 1 ;;
+    # §11, §14 step 11 (added 2026-10-23, before the first forward month-end 2026-10-30). No paper order.
+    #   decide  --signal-date t [--fetch]   after 21:15 UTC on the last NYSE trading day of a month:
+    #                                        paper-log/decisions/<t>.json (refuses before 2026-10-30,
+    #                                        before the close, on a non-month-end date, without the bars)
+    #   shadow  --signal-date t [--fetch]   after t's execution date's close: appends the period that
+    #                                        ended there to paper-log/shadow.csv; interim.json
+    #   interim                              rewrites paper-log/interim.json ("Not yet scored") only
+    # The study's data/raw/ and results/data_manifest.json are never touched: forward fetches go to
+    # paper-log/raw/ (git-ignored) with their own paper-log/manifest.json.
+    echo "[1/1] forward record (§11): src.forward $*"
+    "$PYTHON" -m src.forward "$@" ;;
 esac

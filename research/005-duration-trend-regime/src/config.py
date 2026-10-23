@@ -95,6 +95,18 @@ PRIOR_SIGMA_D_PER_MONTH = 0.010                  # §9.6 at registration; replac
 FORWARD_STOP_POSITIVE_MONTHS = 24
 FORWARD_STOP_TOTAL_MONTHS = 60
 FORWARD_T_MIN = 2.0
+FORWARD_FIRST_SIGNAL_DATE = "2026-10-30"         # §14 step 11: the first month-end after the note's publication (2026-10-23)
+FORWARD_EARLIEST_UTC = (21, 15)                  # §16 (step 11): no record before 21:15 UTC on the signal date (after the
+                                                 # 16:00 New York close under either EDT or EST; a daily bar fetched
+                                                 # during the session would be the partial day)
+FORWARD_BARS_START = "2024-01-02"                # §16 (step 11): bars fetched from here so that the 252-day window and the
+                                                 # 12-month lookback always have more history than they need
+FORWARD_LABEL = "refuted in-sample; forward record (section 11); no paper order"
+FORWARD_RAW_DIR = PAPER_LOG_DIR / "raw"          # git-ignored; the study's data/raw/ and its manifest are never touched
+FORWARD_MANIFEST = PAPER_LOG_DIR / "manifest.json"
+FORWARD_DECISIONS_DIR = PAPER_LOG_DIR / "decisions"
+FORWARD_SHADOW_CSV = PAPER_LOG_DIR / "shadow.csv"
+FORWARD_INTERIM_JSON = PAPER_LOG_DIR / "interim.json"
 
 # --- Engine conventions inherited by the frozen modules (Study 003 §6.5, §11.4) ---
 MAX_MISSING_BARS = 3

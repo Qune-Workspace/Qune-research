@@ -212,11 +212,27 @@ def _period_label(idx: pd.Index) -> str:
     return f"{pd.Timestamp(idx[0]):%Y-%m} to {pd.Timestamp(idx[-1]):%Y-%m}"
 
 
-def headline(metrics: pd.DataFrame, strategy: str, benchmark: str, labels: dict[str, str] | None = None) -> str:
+MATCHED_SHARPE_GAP = 0.05
+"""Below this absolute Sharpe-ratio gap the headline says "matched" rather than
+"beat" or "lagged": a gap of a few hundredths over a decade is inside the noise
+of any such comparison (Study 004's in-sample gap of 0.005 came with a
+Newey-West t of 0.65), and a verb of victory would overstate it."""
+
+
+def _minus(text: str) -> str:
+    """Hyphen-minus to the typographic minus the tick labels use (``style.pct`` does the same)."""
+    return text.replace("-", "−")
+
+
+def headline(metrics: pd.DataFrame, strategy: str, benchmark: str, labels: dict[str, str] | None = None,
+             t_stat: float | None = None) -> str:
     """A title that states what the numbers say, built from the metrics table.
 
-    The verb follows the sign of the Sharpe gap; every figure is read from the
-    table, so the sentence cannot overstate the panels below it.
+    The verb follows the Sharpe gap ("beat" or "lagged" beyond
+    ``MATCHED_SHARPE_GAP``, "matched" inside it); the Newey-West t of the
+    monthly gap is quoted when given, so the reader can weigh the verb; every
+    figure is read from the table, so the sentence cannot overstate the panels
+    below it.
     """
     labels = labels or {}
     s_name = labels.get(strategy, strategy)
@@ -229,18 +245,21 @@ def headline(metrics: pd.DataFrame, strategy: str, benchmark: str, labels: dict[
     b_dd = _f(metrics, "max_drawdown", benchmark) * 100.0
     if math.isnan(s_sr) or math.isnan(b_sr):
         verb = "returned"
+    elif abs(s_sr - b_sr) < MATCHED_SHARPE_GAP:
+        verb = "matched"
     elif s_sr > b_sr:
         verb = "beat"
-    elif s_sr < b_sr:
+    else:
         verb = "lagged"
-    else:
-        verb = "matched"
+    # Only the numbers get the typographic minus: labels such as "Newey-West" keep their hyphen.
+    n = _minus
+    t_text = "" if t_stat is None or math.isnan(t_stat) else f" (Newey-West t {n(f'{t_stat:.2f}')})"
     if verb == "returned":
-        head = f"{s_name} returned {s_ret:+.1f}% a year to {b_name}'s {b_ret:+.1f}%"
+        head = f"{s_name} returned {n(f'{s_ret:+.1f}')}% a year to {b_name}'s {n(f'{b_ret:+.1f}')}%{t_text}"
     else:
-        head = (f"{s_name} {verb} {b_name} on Sharpe ratio, {s_sr:.2f} to {b_sr:.2f}, "
-                f"returning {s_ret:+.1f}% a year to its {b_ret:+.1f}%")
-    return head + f"; maximum drawdown {s_dd:.1f}% against {b_dd:.1f}%"
+        head = (f"{s_name} {verb} {b_name} on Sharpe ratio, {n(f'{s_sr:.2f}')} to {n(f'{b_sr:.2f}')}{t_text}, "
+                f"returning {n(f'{s_ret:+.1f}')}% a year to its {n(f'{b_ret:+.1f}')}%")
+    return head + f"; maximum drawdown {n(f'{s_dd:.1f}')}% against {n(f'{b_dd:.1f}')}%"
 
 
 def build(monthly: pd.DataFrame, strategy: str, benchmarks: list[str], cash: str | None = None,
@@ -264,7 +283,8 @@ def build(monthly: pd.DataFrame, strategy: str, benchmarks: list[str], cash: str
         differences=difference_table(monthly, strategy, benchmarks, cash, lags),
         index=index, drawdown=drawdown, inputs=dict(inputs or {}),
     )
-    sheet.headline = headline(met, strategy, benchmarks[0], labels)
+    sheet.headline = headline(met, strategy, benchmarks[0], labels,
+                              t_stat=_f(sheet.differences, benchmarks[0], "t_newey_west"))
     return sheet
 
 
@@ -278,11 +298,10 @@ def _fmt(metric: str, value: float) -> str:
     if metric == "months":
         return f"{int(value):,d}"
     if metric in PERCENT_METRICS:
-        return f"{value * 100.0:+.1f}" if metric in {"ann_return", "worst_month", "best_month", "mean_monthly",
+        text = f"{value * 100.0:+.1f}" if metric in {"ann_return", "worst_month", "best_month", "mean_monthly",
                                                       "max_drawdown"} else f"{value * 100.0:.1f}"
-    if metric == "final_growth":
-        return f"{value:.2f}"
-    return f"{value:.2f}"
+        return _minus(text)
+    return _minus(f"{value:.2f}")
 
 
 def _colours(sheet: TearSheet) -> dict[str, str]:
@@ -333,7 +352,7 @@ def draw(sheet: TearSheet, data_source: str, study: str, subtitle: str | None = 
     style.percent_axis(ax_dd)
     ax_dd.set_ylabel("Drawdown")
     s_dd = _f(sheet.metrics, "max_drawdown", sheet.strategy)
-    ax_dd.annotate(f"{sheet.strategy} worst {s_dd * 100.0:.1f}%",
+    ax_dd.annotate(_minus(f"{sheet.strategy} worst {s_dd * 100.0:.1f}%"),
                    xy=(sheet.drawdown.index[-1], float(sheet.drawdown[sheet.strategy].iloc[-1])),
                    xytext=(6.0, 0), textcoords="offset points", ha="left", va="center", fontsize=9.0,
                    color=style.ACCENT, annotation_clip=False)
@@ -347,14 +366,14 @@ def draw(sheet: TearSheet, data_source: str, study: str, subtitle: str | None = 
     diff = sheet.differences
     met_rows.append([""] * len(header))
     met_rows.append([f"{sheet.strategy} minus {b0}, % a month"]
-                    + [f"{_f(diff, b0, 'mean_monthly_diff') * 100.0:+.2f}"] + [""] * (len(header) - 2))
+                    + [_minus(f"{_f(diff, b0, 'mean_monthly_diff') * 100.0:+.2f}")] + [""] * (len(header) - 2))
     met_rows.append([f"Newey-West t, {int(_f(diff, b0, 'lags'))} lags"]
-                    + [f"{_f(diff, b0, 't_newey_west'):.2f}"] + [""] * (len(header) - 2))
+                    + [_minus(f"{_f(diff, b0, 't_newey_west'):.2f}")] + [""] * (len(header) - 2))
     cal_rows: list[list[str]] = []
     for year in sheet.calendar.index:
         n = int(_f(sheet.calendar, year, "months"))
         year_label: str = f"{int(str(year))}" + ("" if n == 12 else f" ({n} m)")
-        cal_rows.append([year_label] + [f"{_f(sheet.calendar, year, c) * 100.0:+.1f}" for c in sheet.series])
+        cal_rows.append([year_label] + [_minus(f"{_f(sheet.calendar, year, c) * 100.0:+.1f}") for c in sheet.series])
     _table(ax_met, met_rows, header, colours, fontsize=8.0, row_height=1.0, label_width=0.44)
     _table(ax_cal, cal_rows, ["Year, %"] + list(sheet.series), colours, fontsize=8.0,
            row_height=min(1.0, 15.0 / max(len(cal_rows), 1)), label_width=0.3)

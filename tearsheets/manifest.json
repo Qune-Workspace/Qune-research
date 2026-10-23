@@ -1,15 +1,15 @@
 {
-  "generated_utc": "2026-10-23T20:28:33Z",
-  "commit": "c9013649ef7f30c61ac0b3b7379b9b92ff360508",
+  "generated_utc": "2026-10-23T21:25:34Z",
+  "commit": "8bb3de1cffede96134dc85e334d74e94c0a5bb2f",
   "tolerance": 1e-09,
   "sheets": [
     {
       "stem": "003_insample",
       "study": "Study 003",
       "window": "In-sample 2004-2018",
-      "period": "2003-09 to 2019-01",
+      "period": "2003-08 to 2018-12",
       "months": 185,
-      "headline": "Trend rule T1 lagged Constant mix B3 on Sharpe ratio, 0.45 to 0.55, returning +3.7% a year to its +3.5%; maximum drawdown -8.6% against -5.6%",
+      "headline": "Trend rule T1 lagged Constant mix B3 on Sharpe ratio, 0.45 to 0.55 (Newey-West t 0.37), returning +3.7% a year to its +3.5%; maximum drawdown \u22128.6% against \u22125.6%",
       "inputs": {
         "research/003-bond-tsmom-ief/results/insample/monthly_base.csv": "73dc805aa3cb2f74f20670a1f3708710e8c820bbd9af75b558766103d2b959c0",
         "research/003-bond-tsmom-ief/results/insample/metrics_base.csv": "73bccfdd4c91df987092abf530e0b83417c86e2fcff292349c229ed8a1458de7"
@@ -173,9 +173,9 @@
       "stem": "003_oos",
       "study": "Study 003",
       "window": "Out of sample 2019-2026",
-      "period": "2019-02 to 2026-10",
+      "period": "2019-01 to 2026-09",
       "months": 93,
-      "headline": "Trend rule T1 beat Constant mix B3 on Sharpe ratio, 0.16 to -0.26, returning +3.2% a year to its +1.2%; maximum drawdown -5.5% against -14.9%",
+      "headline": "Trend rule T1 beat Constant mix B3 on Sharpe ratio, 0.16 to \u22120.26 (Newey-West t 1.31), returning +3.2% a year to its +1.2%; maximum drawdown \u22125.5% against \u221214.9%",
       "inputs": {
         "research/003-bond-tsmom-ief/results/oos/monthly_base.csv": "101782caef72eb7f5c5e57082022357af8b081a8096ffd9162e8d54c47860b24",
         "research/003-bond-tsmom-ief/results/oos/metrics_base.csv": "480a2a2cf2565c2781ff1945cdd7a5858f84fc872410aea8032c6a5f06a7abd8"
@@ -339,9 +339,9 @@
       "stem": "004_insample",
       "study": "Study 004",
       "window": "In-sample 2004-2018, ten ETFs",
-      "period": "2004-02 to 2019-01",
+      "period": "2004-01 to 2018-12",
       "months": 180,
-      "headline": "Trend rule T1 beat Matched exposure B4 on Sharpe ratio, 0.89 to 0.88, returning +4.6% a year to its +4.2%; maximum drawdown -5.2% against -6.6%",
+      "headline": "Trend rule T1 matched Matched exposure B4 on Sharpe ratio, 0.89 to 0.88 (Newey-West t 0.65), returning +4.6% a year to its +4.2%; maximum drawdown \u22125.2% against \u22126.6%",
       "inputs": {
         "research/004-xasset-trend-voltarget/results/insample/monthly_10assets_base.csv": "e469f238664ad0ea941f0a78063f5bf0d2134baadc40e9764b9d2853bd4ca563",
         "research/004-xasset-trend-voltarget/results/insample/metrics_10assets_base.csv": "b64757b96e8675bcca8c3b0d1fe18203495efae05702537580daaa8199aaf900"
@@ -505,9 +505,9 @@
       "stem": "004_oos",
       "study": "Study 004",
       "window": "Out of sample 2019-2026, ten ETFs",
-      "period": "2019-02 to 2026-09",
+      "period": "2019-01 to 2026-09",
       "months": 93,
-      "headline": "Trend rule T1 beat Matched exposure B4 on Sharpe ratio, 0.34 to 0.20, returning +4.0% a year to its +3.6%; maximum drawdown -4.1% against -11.1%",
+      "headline": "Trend rule T1 beat Matched exposure B4 on Sharpe ratio, 0.34 to 0.20 (Newey-West t 0.35), returning +4.0% a year to its +3.6%; maximum drawdown \u22124.1% against \u221211.1%",
       "inputs": {
         "research/004-xasset-trend-voltarget/results/oos/monthly_10assets_base.csv": "62bfa3a57329ff891626a40560fc175e478d46e1c4f398842b658f8b27c204dd",
         "research/004-xasset-trend-voltarget/results/oos/metrics_10assets_base.csv": "8ec4d77832d7105337b72f71de2658fa5dc919d7311710b5426bdaf48297e9b3"
@@ -671,9 +671,9 @@
       "stem": "005_insample",
       "study": "Study 005",
       "window": "In-sample 2004-2018",
-      "period": "2003-09 to 2019-01",
+      "period": "2003-08 to 2018-12",
       "months": 185,
-      "headline": "Regime-gated exit T1 beat Unconditional trend B2 on Sharpe ratio, 0.47 to 0.45, returning +3.9% a year to its +3.7%; maximum drawdown -8.3% against -8.6%",
+      "headline": "Regime-gated exit T1 matched Unconditional trend B2 on Sharpe ratio, 0.47 to 0.45 (Newey-West t 0.51), returning +3.9% a year to its +3.7%; maximum drawdown \u22128.3% against \u22128.6%",
       "inputs": {
         "research/005-duration-trend-regime/results/insample/monthly_base.csv": "011791ec5fd08c81ba6e0ad9251a9c14f9ca055af39ae3ec421834754976f3e9",
         "research/005-duration-trend-regime/results/insample/metrics_base.csv": "a4ec756f06d8334e94f5fa919f4b33ebd73aeb6a17d8c4a23018dc5829dc592d"
@@ -837,9 +837,9 @@
       "stem": "005_episode",
       "study": "Study 005",
       "window": "Episode 2019-2026 (no decision weight)",
-      "period": "2019-02 to 2026-10",
+      "period": "2019-01 to 2026-09",
       "months": 93,
-      "headline": "Regime-gated exit T1 lagged Unconditional trend B2 on Sharpe ratio, -0.33 to 0.16, returning +0.9% a year to its +3.2%; maximum drawdown -17.8% against -5.5%",
+      "headline": "Regime-gated exit T1 lagged Unconditional trend B2 on Sharpe ratio, \u22120.33 to 0.16 (Newey-West t \u22121.69), returning +0.9% a year to its +3.2%; maximum drawdown \u221217.8% against \u22125.5%",
       "inputs": {
         "research/005-duration-trend-regime/results/episode/monthly_base.csv": "7e06a13f71915854edbbe43a7ff16d4d263cc19cf779c53da619e38e578bc0d3",
         "research/005-duration-trend-regime/results/episode/metrics_base.csv": "41490d93d2e511ec838123e35d03b25fe72f6d6ac99a2db33c54c3ad6ea3d8e8"

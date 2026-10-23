@@ -94,10 +94,13 @@ def test_headline_is_built_from_the_table_and_follows_the_sign():
     met = report.metrics_table(m, ["T1", "B1"], cash="B0")
     text = report.headline(met, "T1", "B1", {"T1": "Rule", "B1": "Buy and hold"})
     assert text.startswith("Rule ")
-    assert f"{met.loc['sharpe', 'T1']:.2f} to {met.loc['sharpe', 'B1']:.2f}" in text
-    assert f"{met.loc['ann_return', 'T1'] * 100:+.1f}% a year" in text
-    assert f"maximum drawdown {met.loc['max_drawdown', 'T1'] * 100:.1f}%" in text
-    verb = "beat" if met.loc["sharpe", "T1"] > met.loc["sharpe", "B1"] else "lagged"
+    minus = lambda s: s.replace("-", "−")  # noqa: E731
+    assert minus(f"{met.loc['sharpe', 'T1']:.2f} to {met.loc['sharpe', 'B1']:.2f}") in text
+    assert minus(f"{met.loc['ann_return', 'T1'] * 100:+.1f}% a year") in text
+    assert minus(f"maximum drawdown {met.loc['max_drawdown', 'T1'] * 100:.1f}%") in text
+    gap = float(met.loc["sharpe", "T1"] - met.loc["sharpe", "B1"])
+    assert abs(gap) >= report.MATCHED_SHARPE_GAP, "the constructed data should give a clear gap"
+    verb = "beat" if gap > 0 else "lagged"
     assert f" {verb} " in text
     # Reversed roles reverse the verb.
     rev = report.headline(met, "B1", "T1")
@@ -107,6 +110,43 @@ def test_headline_is_built_from_the_table_and_follows_the_sign():
     flat = met.copy()
     flat.loc["sharpe", "T1"] = float("nan")
     assert " returned " in report.headline(flat, "T1", "B1") and " beat " not in report.headline(flat, "T1", "B1")
+    # A gap inside MATCHED_SHARPE_GAP is "matched", whichever side is ahead.
+    close = met.copy()
+    close.loc["sharpe", "T1"] = float(met.loc["sharpe", "B1"]) + report.MATCHED_SHARPE_GAP / 2.0
+    assert " matched " in report.headline(close, "T1", "B1")
+    close.loc["sharpe", "T1"] = float(met.loc["sharpe", "B1"]) - report.MATCHED_SHARPE_GAP / 2.0
+    assert " matched " in report.headline(close, "T1", "B1")
+    # The Newey-West t is quoted when given and absent otherwise; minus signs are typographic.
+    assert "(Newey-West t −1.23)" in report.headline(met, "T1", "B1", t_stat=-1.23)
+    assert "Newey-West" not in text
+    assert "-" not in report.headline(met, "T1", "B1", t_stat=-1.23).replace("Newey-West", "")
+
+
+def test_table_numbers_use_the_typographic_minus():
+    assert report._fmt("ann_return", -0.0123) == "−1.2"
+    assert report._fmt("sharpe", -0.26) == "−0.26"
+    assert report._fmt("hit_rate", 0.5) == "50.0"
+    assert "-" not in report._fmt("max_drawdown", -0.149)
+
+
+def test_build_passes_the_decisive_t_into_the_headline():
+    m = _monthly()
+    sheet = report.build(m, "T1", ["B1", "B2"], cash="B0")
+    t = float(sheet.differences.loc["B1", "t_newey_west"])
+    assert f"(Newey-West t {t:.2f})".replace("t -", "t −") in sheet.headline
+
+
+def test_source_line_wraps_inside_the_right_margin():
+    style.apply()
+    fig = plt.figure(figsize=(8.5, 10.5))
+    long_note = "Post hoc, no decision weight; drawn from the committed result files. " * 3
+    style.source(fig, "Alpaca and Tiingo daily IEF and BIL bars", "2019-01 to 2026-09", "Study 003", long_note)
+    fig.canvas.draw()
+    text = [t for t in fig.texts if t.get_gid() == style._SOURCE_TAG][0]
+    assert "\n" in text.get_text()
+    bbox = text.get_window_extent(fig.canvas.get_renderer())
+    assert bbox.x1 <= 0.98 * fig.bbox.width
+    plt.close(fig)
 
 
 def test_build_draw_write_round_trip(tmp_path):
@@ -117,7 +157,8 @@ def test_build_draw_write_round_trip(tmp_path):
     assert sheet.index.iloc[0].tolist() == [1.0, 1.0, 1.0]          # the sheet starts at one
     assert sheet.index.index[0] < m.index[0]
     assert (sheet.drawdown <= 0).all().all()
-    assert sheet.headline == report.headline(sheet.metrics, "T1", "B1", labels)
+    assert sheet.headline == report.headline(sheet.metrics, "T1", "B1", labels,
+                                             t_stat=float(sheet.differences.loc["B1", "t_newey_west"]))
 
     fig = report.draw(sheet, "constructed data", "Study 000")
     assert style.check(fig) == []

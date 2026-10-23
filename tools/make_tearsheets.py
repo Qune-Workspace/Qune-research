@@ -44,7 +44,7 @@ SHEETS = [
         "stem": "003_insample", "study": "Study 003", "window": "In-sample 2004-2018",
         "monthly": "research/003-bond-tsmom-ief/results/insample/monthly_base.csv",
         "metrics": "research/003-bond-tsmom-ief/results/insample/metrics_base.csv",
-        "date_col": "period_end", "strategy": "T1", "benchmarks": ["B3", "B1", "B2"], "cash": "B0",
+        "date_col": "execution_date", "strategy": "T1", "benchmarks": ["B3", "B1", "B2"], "cash": "B0",
         "labels": {"T1": "Trend rule T1", "B3": "Constant mix B3", "B1": "Hold IEF B1", "B2": "50/50 B2",
                    "B0": "cash (B0)"},
         "source": "Alpaca and Tiingo daily IEF bars, FRED DTB3 cash leg in-sample",
@@ -53,7 +53,7 @@ SHEETS = [
         "stem": "003_oos", "study": "Study 003", "window": "Out of sample 2019-2026",
         "monthly": "research/003-bond-tsmom-ief/results/oos/monthly_base.csv",
         "metrics": "research/003-bond-tsmom-ief/results/oos/metrics_base.csv",
-        "date_col": "period_end", "strategy": "T1", "benchmarks": ["B3", "B1", "B2"], "cash": "B0",
+        "date_col": "execution_date", "strategy": "T1", "benchmarks": ["B3", "B1", "B2"], "cash": "B0",
         "labels": {"T1": "Trend rule T1", "B3": "Constant mix B3", "B1": "Hold IEF B1", "B2": "50/50 B2",
                    "B0": "cash (B0)"},
         "source": "Alpaca and Tiingo daily IEF and BIL bars",
@@ -62,7 +62,7 @@ SHEETS = [
         "stem": "004_insample", "study": "Study 004", "window": "In-sample 2004-2018, ten ETFs",
         "monthly": "research/004-xasset-trend-voltarget/results/insample/monthly_10assets_base.csv",
         "metrics": "research/004-xasset-trend-voltarget/results/insample/metrics_10assets_base.csv",
-        "date_col": "period_end", "strategy": "T1", "benchmarks": ["B4", "B3", "B1"], "cash": "B0",
+        "date_col": "execution_date", "strategy": "T1", "benchmarks": ["B4", "B3", "B1"], "cash": "B0",
         "labels": {"T1": "Trend rule T1", "B4": "Matched exposure B4", "B3": "Vol-scaled long B3",
                    "B1": "Equal weight B1", "B0": "cash (B0)"},
         "source": "Alpaca and Tiingo daily ETF bars, FRED DTB3 cash leg in-sample",
@@ -71,7 +71,7 @@ SHEETS = [
         "stem": "004_oos", "study": "Study 004", "window": "Out of sample 2019-2026, ten ETFs",
         "monthly": "research/004-xasset-trend-voltarget/results/oos/monthly_10assets_base.csv",
         "metrics": "research/004-xasset-trend-voltarget/results/oos/metrics_10assets_base.csv",
-        "date_col": "period_end", "strategy": "T1", "benchmarks": ["B4", "B3", "B1"], "cash": "B0",
+        "date_col": "execution_date", "strategy": "T1", "benchmarks": ["B4", "B3", "B1"], "cash": "B0",
         "labels": {"T1": "Trend rule T1", "B4": "Matched exposure B4", "B3": "Vol-scaled long B3",
                    "B1": "Equal weight B1", "B0": "cash (B0)"},
         "source": "Alpaca and Tiingo daily ETF bars, BIL as cash",
@@ -80,7 +80,7 @@ SHEETS = [
         "stem": "005_insample", "study": "Study 005", "window": "In-sample 2004-2018",
         "monthly": "research/005-duration-trend-regime/results/insample/monthly_base.csv",
         "metrics": "research/005-duration-trend-regime/results/insample/metrics_base.csv",
-        "date_col": "period_end", "strategy": "T1", "benchmarks": ["B2", "B1", "B3"], "cash": "B0",
+        "date_col": "execution_date", "strategy": "T1", "benchmarks": ["B2", "B1", "B3"], "cash": "B0",
         "labels": {"T1": "Regime-gated exit T1", "B2": "Unconditional trend B2", "B1": "Hold IEF B1",
                    "B3": "Constant mix B3", "B0": "cash (B0)"},
         "source": "Alpaca and Tiingo daily IEF and SPY bars, FRED DTB3 cash leg in-sample",
@@ -89,7 +89,7 @@ SHEETS = [
         "stem": "005_episode", "study": "Study 005", "window": "Episode 2019-2026 (no decision weight)",
         "monthly": "research/005-duration-trend-regime/results/episode/monthly_base.csv",
         "metrics": "research/005-duration-trend-regime/results/episode/metrics_base.csv",
-        "date_col": "period_end", "strategy": "T1", "benchmarks": ["B2", "B1", "B3"], "cash": "B0",
+        "date_col": "execution_date", "strategy": "T1", "benchmarks": ["B2", "B1", "B3"], "cash": "B0",
         "labels": {"T1": "Regime-gated exit T1", "B2": "Unconditional trend B2", "B1": "Hold IEF B1",
                    "B3": "Constant mix B3", "B0": "cash (B0)"},
         "source": "Alpaca and Tiingo daily IEF, SPY and BIL bars",
@@ -116,11 +116,21 @@ def git_head() -> str:
 
 
 def load_monthly(spec: dict) -> pd.DataFrame:
+    """The monthly returns indexed by holding month.
+
+    Every study's rows are holding periods from one execution date to the
+    next; the period's month is that of its execution date (the ``month``
+    column of 003 and 005 is the signal month before it, ``period_end`` is
+    the next period's execution date).  Indexing by ``period_end``, as the
+    first version of this script did, booked every December holding period
+    to the following year; the Tester's review of 2026-10-23 found it.
+    """
     raw = pd.read_csv(ROOT / spec["monthly"])
     cols = [spec["strategy"]] + spec["benchmarks"] + [spec["cash"]]
     monthly = raw[cols].astype(float)
-    monthly.index = pd.DatetimeIndex(pd.to_datetime(raw[spec["date_col"]]))
-    monthly.index.name = spec["date_col"]
+    holding = pd.to_datetime(raw[spec["date_col"]]).dt.to_period("M").dt.to_timestamp("M")
+    monthly.index = pd.DatetimeIndex(holding)
+    monthly.index.name = "holding_month"
     return monthly
 
 
@@ -150,8 +160,9 @@ def main() -> int:
         sheet = report.build(monthly, spec["strategy"], spec["benchmarks"], cash=spec["cash"],
                              labels=spec["labels"], inputs=inputs)
         cash_label = spec["labels"][spec["cash"]]
-        subtitle = (f"{spec['window']}; monthly net returns for the periods ending {sheet.period}; Sharpe ratio of the excess over "
-                    f"{cash_label}, annualised; drawdown from the running high of the monthly total-return index")
+        subtitle = (f"{spec['window']}; monthly net returns for the holding periods {sheet.period}, each from one execution "
+                    f"date to the next; Sharpe ratio of the excess over {cash_label}, annualised; drawdown from the "
+                    f"running high of the monthly total-return index")
         fig = report.draw(sheet, spec["source"], spec["study"], subtitle=subtitle,
                           note="Post hoc, no decision weight; drawn from the committed result files.")
         paths = report.write(sheet, fig, OUT, spec["stem"])

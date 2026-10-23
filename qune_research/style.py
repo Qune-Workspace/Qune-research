@@ -186,8 +186,10 @@ def source(fig: Figure, data_source: str, period: str, study: str, note: str | N
     text = f"Source: {data_source}. Sample {period}. Qune Research, {study}."
     if note:
         text += f" {note}"
-    fig.text(x, 0.02, text, ha="left", va="bottom", fontsize=SOURCE_SIZE, color=TEXT_MUTED,
-             gid=_SOURCE_TAG, wrap=True)
+    # Wrapped here at the title block's right margin: matplotlib's own wrap=True
+    # wraps at the figure edge, which left a long line 5 px from it (Tester, 2026-10-23).
+    fig.text(x, 0.02, "\n".join(_wrap(text, fig, SOURCE_SIZE, x)), ha="left", va="bottom",
+             fontsize=SOURCE_SIZE, color=TEXT_MUTED, gid=_SOURCE_TAG, linespacing=1.2)
 
 
 def despine(ax: Axes, keep: Iterable[str] = ("left", "bottom")) -> None:

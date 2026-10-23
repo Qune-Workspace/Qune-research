@@ -148,11 +148,12 @@ desk-view/              weekly rates-and-macro view from public data; numbers in
 predictions/            the desk's calls, logged before the outcome (append-only) and scored when due
 qune_research/          the shared library: calendar, data adapters with hashing, engine, statistics, risk model, multiple-testing inference, house chart style (style.py)
 tools/scan.sh           leak scan run before every commit and push
-.github/workflows/      the unit tests of every study, run on each push (no data, no secrets)
+.github/workflows/      the unit tests of every study, ruff and mypy, run on each push (no data, no secrets)
+pyproject.toml          lint (ruff) and type-check (mypy) configuration; requirements-dev.txt pins the tools
 LICENSE                 MIT for the code and documents; vendor data excluded; not advice
 ```
 
-The workflow's status for every commit is on the repository's Actions tab. The tests use constructed series only; a passing run says the engines and statistics behave as specified and nothing about any result.
+The workflow's status for every commit is on the repository's Actions tab. The tests use constructed series only; a passing run says the engines and statistics behave as specified and nothing about any result. Since 2026-10-23 the workflow also runs ruff over the whole repository and mypy (with the pandas and requests stubs) over the shared library; the reviewers' scripts are excluded so they stay exactly as the reviewers wrote them, and the study code that produced published results received only mechanical fixes when lint was adopted (import order, the `datetime.UTC` alias, unused imports; verified by comparing each file's syntax tree with imports removed, see `BUILD_LOG.md`).
 
 Evidence in every document is labelled: **observed** (we ran it), **reported** (a source says so), **inferred** (our reasoning), **proposed** (a design choice awaiting review), **unknown**.
 

@@ -92,3 +92,28 @@ def episode_closes(raw_dir: Path = RAW_DIR, manifest_path: Path = MANIFEST_PATH,
     """Alpaca ``adjustment='all'`` closes of IEF, BIL and SPY (episode and forward inputs)."""
     return {s: alpaca_frame(s, raw_dir, manifest_path, session)["close"].astype(float).dropna()
             for s in (DURATION_LEG, CASH_LEG, REGIME_SYMBOL)}
+
+
+def main(argv: list[str] | None = None) -> None:
+    """The two fetches of §5.3.3, each run on its own after its trials.md
+    row: ``fetch-alpaca-spy`` (the episode window, credential from the
+    environment, never printed) and ``fetch-cpi`` (FRED CPIAUCNS).  Prints
+    the row count, first and last date and the recorded SHA-256 prefix."""
+    import argparse
+    parser = argparse.ArgumentParser(description="Study 005 fetches (§5.3.3). Log the row in trials.md first.")
+    parser.add_argument("step", choices=("fetch-alpaca-spy", "fetch-cpi"))
+    parser.add_argument("--refetch", action="store_true", help="fetch again even if a recorded file exists")
+    args = parser.parse_args(argv)
+    if args.step == "fetch-alpaca-spy":
+        frame = alpaca_frame(REGIME_SYMBOL, refetch=args.refetch)
+        key = lib.alpaca_path(REGIME_SYMBOL, RAW_DIR).name
+    else:
+        frame = cpi_series(refetch=args.refetch).to_frame()
+        key = lib.fred_path(CPI_SERIES, RAW_DIR).name
+    entry = lib.read_manifest(MANIFEST_PATH)[key]
+    print(f"{key}: {len(frame)} rows, {frame.index[0]} to {frame.index[-1]}, sha256 {entry['sha256'][:12]}..., "
+          f"recorded {entry.get('downloaded_at_utc', entry.get('reused_at_utc', '?'))}")
+
+
+if __name__ == "__main__":
+    main()

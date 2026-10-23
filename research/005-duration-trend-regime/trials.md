@@ -38,4 +38,6 @@ Every trial is logged here before it is run (§7). The deflated Sharpe ratio, re
 
 | `reproduce.sh --insample` (§14 step 6) logged | 2026-10-23 11:2x London | the single in-sample run, T1–T3 at base and stress costs, logged before it runs; outcome in the next row and the note. |
 
-In-sample returns of this study have not been computed. The 2019–2026 window is the hypothesis-generating episode (§8.2), to be run once under that label after the in-sample results are committed, with no decision weight. The forward record starts at the first month-end after the note's publication (§11). N = 3.
+| `--insample` outcome | 2026-10-23 11:27 London | **Run once, committed as written (e60ab05).** §9.5 rows at base costs: **T1 refuted in-sample** (Δ −0.296%/month, NW t −2.31, 95% interval [−0.519%, +0.027%], upper bound below 0.083%); T2 refuted in-sample (descriptive; Δ −0.593%, t −3.11; 480 of 10,000 resamples dropped for want of a positive month); T3 sign consistent, forward record decides (descriptive; Δ +0.101%, t 0.81, interval [−0.125%, +0.302%]). Note's in-sample section in the next commit. |
+
+In-sample returns of this study were computed once on 2026-10-23 (row above). The 2019–2026 window is the hypothesis-generating episode (§8.2), to be run once under that label now that the in-sample results are committed, with no decision weight. The forward record starts at the first month-end after the note's publication (§11). N = 3.

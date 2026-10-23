@@ -1,0 +1,295 @@
+{
+  "built": "2026-10-23T02:23+01:00",
+  "commit_before_run": "f3f047d5144d1f0619b9f54c853aa1dd89efee5e",
+  "universe": [
+    "IWM",
+    "EFA",
+    "EEM",
+    "SHY",
+    "IEF",
+    "TLT",
+    "LQD",
+    "HYG",
+    "GLD",
+    "VNQ"
+  ],
+  "halflife_days": 42,
+  "lookback_bars": 252,
+  "var_level": 0.99,
+  "files": {
+    "tiingo_IWM_daily.csv": {
+      "sha256": "2300d7b1e6e26c95c08b4080b6ce7c56c51b80d6fa442e00fcbe6f5bbc732dce",
+      "matches_manifest": true
+    },
+    "tiingo_EFA_daily.csv": {
+      "sha256": "bb45a3348e7af010c0cc60791d3abcfe53809115f3318a465b844b6c9ccd37ce",
+      "matches_manifest": true
+    },
+    "tiingo_EEM_daily.csv": {
+      "sha256": "8fdc3ac90320a784b4e2b951d80ff3445e682b1d9c0b024c579bb10956f0f6d8",
+      "matches_manifest": true
+    },
+    "tiingo_SHY_daily.csv": {
+      "sha256": "71466341392bde6cc823d4e70f86fac7d9fcc6e1fb4083f33b9408dd2a3988f9",
+      "matches_manifest": true
+    },
+    "tiingo_IEF_daily.csv": {
+      "sha256": "a15abb3dfb242ff5e08c0724a4df82c35269d6541dbc451b9cd0a7230f58cc06",
+      "matches_manifest": true
+    },
+    "tiingo_TLT_daily.csv": {
+      "sha256": "8a02961a930c04c99a1ad4209039a11084ea484faa8fac3afcb21796e74ac469",
+      "matches_manifest": true
+    },
+    "tiingo_LQD_daily.csv": {
+      "sha256": "ffa657999b6ab55f30cec7c3b681c1fe95bade12e1b664a2ee0e255e2995b5be",
+      "matches_manifest": true
+    },
+    "tiingo_HYG_daily.csv": {
+      "sha256": "baea100ca0568a028bc80243417222aa5505d8073b9bfd24f42649c0a653b36b",
+      "matches_manifest": true
+    },
+    "tiingo_GLD_daily.csv": {
+      "sha256": "f78bd958a51ca478cb792a984a6aa072976bda658ddec8cb6adf2e1599c33ca7",
+      "matches_manifest": true
+    },
+    "tiingo_VNQ_daily.csv": {
+      "sha256": "8933e5327e7c78e12e15f1d2f4d5406fcb7b020751d24249b69ceb48cc3dd0a5",
+      "matches_manifest": true
+    },
+    "tiingo_BIL_daily.csv": {
+      "sha256": "3701cdcf6294fd7a70556a141cee1b2fabdd878e691481cf44291fc5ee062869",
+      "matches_manifest": true
+    }
+  },
+  "windows": {
+    "insample": {
+      "accuracy": {
+        "months_with_forecast_and_realised": 180,
+        "vol_diagonal": {
+          "n": 180,
+          "mean_forecast": 0.024671628490272202,
+          "mean_realised": 0.03957007071545657,
+          "mean_ratio": 1.601175711238019,
+          "median_ratio": 1.4697932714875916,
+          "share_over_factor": 0.4722222222222222,
+          "mean_log_ratio": 0.4137698690905519,
+          "slope_through_origin": 1.6040491150445504
+        },
+        "vol_ewma": {
+          "n": 180,
+          "mean_forecast": 0.03997439467696269,
+          "mean_realised": 0.03957007071545657,
+          "mean_ratio": 1.0051173857286686,
+          "median_ratio": 0.9040393939426594,
+          "share_over_factor": 0.08333333333333333,
+          "mean_log_ratio": -0.047416957597274205,
+          "slope_through_origin": 0.9760642618982023
+        },
+        "vol_shrunk": {
+          "n": 180,
+          "mean_forecast": 0.0399628356750931,
+          "mean_realised": 0.03957007071545657,
+          "mean_ratio": 1.0052160457393018,
+          "median_ratio": 0.9034606361788954,
+          "share_over_factor": 0.08333333333333333,
+          "mean_log_ratio": -0.04730212737682968,
+          "slope_through_origin": 0.9765182446749705
+        },
+        "vol_sample": {
+          "n": 180,
+          "mean_forecast": 0.043042944723152114,
+          "mean_realised": 0.03957007071545657,
+          "mean_ratio": 0.96813204359374,
+          "median_ratio": 0.8904489664932269,
+          "share_over_factor": 0.09444444444444444,
+          "mean_log_ratio": -0.09957039083020613,
+          "slope_through_origin": 0.8718673257232579
+        },
+        "var99_1d_backtest_shrunk": {
+          "days": 3780,
+          "exceedances": 80,
+          "rate": 0.021164021164021163,
+          "expected_rate": 0.010000000000000009
+        },
+        "lw_intensity_mean": 0.07590257508781394
+      },
+      "drawdown_rule": {
+        "limit": 0.1,
+        "days": 3781,
+        "share_days_multiplier_below_one": 0.8749008198889183,
+        "min_multiplier": 0.3157675757014735,
+        "max_drawdown": -0.06842324242985265,
+        "date_of_max_drawdown": "2018-10-26",
+        "note": "descriptive: what a linear rule with this limit would have applied to T1's realised path; never run as a rule"
+      },
+      "risk_contributions_mean_over_months_held": {
+        "IWM": 0.12861150222478435,
+        "EFA": 0.12882349370288493,
+        "EEM": 0.11614548383954756,
+        "SHY": 0.03388032053855859,
+        "IEF": 0.10963962392222751,
+        "TLT": 0.10411874052547664,
+        "LQD": 0.108197517941773,
+        "HYG": 0.08563267061137096,
+        "GLD": 0.0718971826458758,
+        "VNQ": 0.11305346404750068
+      },
+      "months": 180,
+      "months_in_cash": 0
+    },
+    "oos": {
+      "accuracy": {
+        "months_with_forecast_and_realised": 84,
+        "vol_diagonal": {
+          "n": 84,
+          "mean_forecast": 0.022192658532788283,
+          "mean_realised": 0.04036947702292061,
+          "mean_ratio": 1.78903970933873,
+          "median_ratio": 1.6334993716822876,
+          "share_over_factor": 0.5714285714285714,
+          "mean_log_ratio": 0.47868227680968806,
+          "slope_through_origin": 1.8338065797521417
+        },
+        "vol_ewma": {
+          "n": 84,
+          "mean_forecast": 0.04061874825409618,
+          "mean_realised": 0.04036947702292061,
+          "mean_ratio": 1.027974680998402,
+          "median_ratio": 0.9331230074059647,
+          "share_over_factor": 0.05952380952380952,
+          "mean_log_ratio": -0.07412900034447585,
+          "slope_through_origin": 0.9599106548816233
+        },
+        "vol_shrunk": {
+          "n": 84,
+          "mean_forecast": 0.0405641943483268,
+          "mean_realised": 0.04036947702292061,
+          "mean_ratio": 1.028765446992156,
+          "median_ratio": 0.9374526131837837,
+          "share_over_factor": 0.05952380952380952,
+          "mean_log_ratio": -0.07315884856098014,
+          "slope_through_origin": 0.9617361515046521
+        },
+        "vol_sample": {
+          "n": 84,
+          "mean_forecast": 0.04558006818621469,
+          "mean_realised": 0.04036947702292061,
+          "mean_ratio": 0.9667095713854563,
+          "median_ratio": 0.8186157826654096,
+          "share_over_factor": 0.09523809523809523,
+          "mean_log_ratio": -0.15128516815956483,
+          "slope_through_origin": 0.800747777911956
+        },
+        "var99_1d_backtest_shrunk": {
+          "days": 1756,
+          "exceedances": 46,
+          "rate": 0.02619589977220957,
+          "expected_rate": 0.010000000000000009
+        },
+        "lw_intensity_mean": 0.15051794803764904
+      },
+      "drawdown_rule": {
+        "limit": 0.1,
+        "days": 1946,
+        "share_days_multiplier_below_one": 0.8823227132579651,
+        "min_multiplier": 0.0,
+        "max_drawdown": -0.11393310008881397,
+        "date_of_max_drawdown": "2020-03-19",
+        "note": "descriptive: what a linear rule with this limit would have applied to T1's realised path; never run as a rule"
+      },
+      "risk_contributions_mean_over_months_held": {
+        "IWM": 0.10026598772843712,
+        "EFA": 0.15146681206503163,
+        "EEM": 0.10135974150005196,
+        "SHY": 0.018120883694136065,
+        "IEF": 0.06383523584072093,
+        "TLT": 0.05318147761741389,
+        "LQD": 0.10769411569664217,
+        "HYG": 0.15582975764684096,
+        "GLD": 0.13520550398509643,
+        "VNQ": 0.11304048422562886
+      },
+      "months": 93,
+      "months_in_cash": 9,
+      "last_book": {
+        "signal_date": "2026-08-31",
+        "weights": {
+          "IWM": 0.0597932138848875,
+          "EFA": 0.0665018838670859,
+          "EEM": 0.0312561858195183,
+          "HYG": 0.25,
+          "GLD": 0.0372693573758002,
+          "VNQ": 0.0656758605656021
+        },
+        "risk_contributions_shrunk": {
+          "IWM": 0.20433024085378307,
+          "EFA": 0.2145001053511259,
+          "EEM": 0.15707848186330833,
+          "SHY": 0.0,
+          "IEF": 0.0,
+          "TLT": 0.0,
+          "LQD": 0.0,
+          "HYG": 0.17301267342205462,
+          "GLD": 0.15715191216246935,
+          "VNQ": 0.09392658634725894
+        },
+        "vol_forecasts": {
+          "vol_diagonal": 0.02362371223387492,
+          "vol_ewma": 0.043560160995778155,
+          "vol_shrunk": 0.043548168432263,
+          "vol_sample": 0.04482757091849673
+        },
+        "var99_1d_parametric_shrunk": 0.006381816047682083
+      },
+      "historical_var_es_T1_daily_oos": {
+        "var": 0.008038019127728013,
+        "es": 0.013009053953395877,
+        "n": 1945,
+        "n_tail": 20
+      },
+      "stress_last_book": {
+        "GFC 2008-09-01..2009-02-28": {
+          "total": -0.1622175115023699,
+          "cash": 0.00216572425720913,
+          "leg_IWM": -0.02779041467212706,
+          "leg_EFA": -0.029757224801984547,
+          "leg_EEM": -0.014452172623448011,
+          "leg_HYG": -0.05825624077561964,
+          "leg_GLD": 0.004980802625672967,
+          "leg_VNQ": -0.03910798551207273
+        },
+        "Taper 2013-05-21..2013-09-05": {
+          "total": -0.02331311716604428,
+          "cash": -0.00010685516248267688,
+          "leg_IWM": 0.002005254237319234,
+          "leg_EFA": -0.0015811609566823046,
+          "leg_EEM": -0.0025420751552706566,
+          "leg_HYG": -0.00936166200565236,
+          "leg_GLD": -0.00019072217802185593,
+          "leg_VNQ": -0.01153589594525366
+        },
+        "COVID 2020-02-19..2020-03-23": {
+          "total": -0.1377447786571666,
+          "cash": 0.001270472022709073,
+          "leg_IWM": -0.024322061467410228,
+          "leg_EFA": -0.021678900828708884,
+          "leg_EEM": -0.00962489827860439,
+          "leg_HYG": -0.05474692121433919,
+          "leg_GLD": -0.001347972672726414,
+          "leg_VNQ": -0.027294496218086575
+        },
+        "2022 2022-01-01..2022-10-31": {
+          "total": -0.08372204630452106,
+          "cash": 0.0035238636132494507,
+          "leg_IWM": -0.01002688773944265,
+          "leg_EFA": -0.01523941295888589,
+          "leg_EEM": -0.009189713671613562,
+          "leg_HYG": -0.031014873371631335,
+          "leg_GLD": -0.004152908621952467,
+          "leg_VNQ": -0.01762211355424461
+        }
+      }
+    }
+  }
+}

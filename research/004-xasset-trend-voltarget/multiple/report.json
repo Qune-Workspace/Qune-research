@@ -1,0 +1,463 @@
+{
+  "built": "2026-10-23T03:19+01:00",
+  "commit_before_run": "0a1c7e89aed023cca1d0cb4d8c65f3419998435b",
+  "seed": 20261023,
+  "resamples": 10000,
+  "expected_block_months": 12,
+  "trials": [
+    "T1",
+    "T2",
+    "T3",
+    "T4"
+  ],
+  "cases": {
+    "insample_10assets": {
+      "periods": 180,
+      "first_period": "2003-12-31",
+      "last_period": "2018-11-30",
+      "tests": {
+        "B4": {
+          "spa": {
+            "statistic": 0.8203929259034894,
+            "p_lower": 0.2584,
+            "p_consistent": 0.3768,
+            "p_upper": 0.3768,
+            "n": 180,
+            "trials": 4,
+            "best_trial": 0,
+            "trial_t": [
+              0.8203929259034894,
+              -0.8272115819152862,
+              -0.6492881768011306,
+              -0.1429407692161476
+            ],
+            "trial_means": [
+              0.00033216877312607356,
+              -0.00039607886250654076,
+              -0.0002689472632571621,
+              -5.189686115127315e-05
+            ],
+            "trial_p_individual": [
+              0.198,
+              0.8031,
+              0.7423,
+              0.5418
+            ],
+            "trials_kept_negative_consistent": 0,
+            "threshold_consistent": -1.8151050965366262,
+            "resamples": 10000,
+            "expected_block": 12
+          },
+          "reality_check": {
+            "statistic": 0.004456511740275635,
+            "p_value": 0.3942,
+            "n": 180,
+            "trials": 4,
+            "best_trial": 0,
+            "trial_means": [
+              0.00033216877312607356,
+              -0.00039607886250654076,
+              -0.0002689472632571621,
+              -5.189686115127315e-05
+            ],
+            "resamples": 10000,
+            "expected_block": 12
+          }
+        },
+        "B3": {
+          "spa": {
+            "statistic": 0.0,
+            "p_lower": 1.0,
+            "p_consistent": 1.0,
+            "p_upper": 1.0,
+            "n": 180,
+            "trials": 4,
+            "best_trial": 0,
+            "trial_t": [
+              -0.6111352381331383,
+              -1.832278337205781,
+              -1.8752193325164668,
+              -1.5285834288076359
+            ],
+            "trial_means": [
+              -0.00029543582403720813,
+              -0.0010236834596698224,
+              -0.0008965518604204438,
+              -0.0006795014583145549
+            ],
+            "trial_p_individual": [
+              0.7259,
+              0.9714,
+              0.9754,
+              0.9503
+            ],
+            "trials_kept_negative_consistent": 2,
+            "threshold_consistent": -1.8151050965366262,
+            "resamples": 10000,
+            "expected_block": 12
+          },
+          "reality_check": {
+            "statistic": -0.003963687513215183,
+            "p_value": 0.893,
+            "n": 180,
+            "trials": 4,
+            "best_trial": 0,
+            "trial_means": [
+              -0.00029543582403720813,
+              -0.0010236834596698224,
+              -0.0008965518604204438,
+              -0.0006795014583145549
+            ],
+            "resamples": 10000,
+            "expected_block": 12
+          }
+        }
+      },
+      "min_track_record_months": {
+        "T1_sharpe_monthly": 0.2556765857296975,
+        "B4_sharpe_monthly": 0.2541654272743843,
+        "T1_skew": -0.4352132066768542,
+        "T1_kurtosis": 3.885188414627697,
+        "vs_zero_95": 48.94470660211605,
+        "vs_B4_95": 1372470.0849036213,
+        "months_available": 180
+      }
+    },
+    "insample_9assets": {
+      "periods": 180,
+      "first_period": "2003-12-31",
+      "last_period": "2018-11-30",
+      "tests": {
+        "B4": {
+          "spa": {
+            "statistic": 0.9588255339526384,
+            "p_lower": 0.247,
+            "p_consistent": 0.3075,
+            "p_upper": 0.3075,
+            "n": 180,
+            "trials": 4,
+            "best_trial": 0,
+            "trial_t": [
+              0.9588255339526384,
+              -0.17256362367156994,
+              -0.608312632894677,
+              0.18130190024239104
+            ],
+            "trial_means": [
+              0.0003969864359947338,
+              -8.197515712141328e-05,
+              -0.0002571656150699561,
+              6.701738738374291e-05
+            ],
+            "trial_p_individual": [
+              0.1648,
+              0.5503,
+              0.7212,
+              0.402
+            ],
+            "trials_kept_negative_consistent": 0,
+            "threshold_consistent": -1.8151050965366262,
+            "resamples": 10000,
+            "expected_block": 12
+          },
+          "reality_check": {
+            "statistic": 0.005326131942177565,
+            "p_value": 0.3314,
+            "n": 180,
+            "trials": 4,
+            "best_trial": 0,
+            "trial_means": [
+              0.0003969864359947338,
+              -8.197515712141328e-05,
+              -0.0002571656150699561,
+              6.701738738374291e-05
+            ],
+            "resamples": 10000,
+            "expected_block": 12
+          }
+        },
+        "B3": {
+          "spa": {
+            "statistic": 0.0,
+            "p_lower": 1.0,
+            "p_consistent": 1.0,
+            "p_upper": 1.0,
+            "n": 180,
+            "trials": 4,
+            "best_trial": 0,
+            "trial_t": [
+              -0.6560076065347684,
+              -1.375956689490841,
+              -1.9145246591397393,
+              -1.3675059610788907
+            ],
+            "trial_means": [
+              -0.00033903173563573603,
+              -0.0008179933287518833,
+              -0.0009931837867004256,
+              -0.0006690007842467271
+            ],
+            "trial_p_individual": [
+              0.7349,
+              0.9281,
+              0.9784,
+              0.9329
+            ],
+            "trials_kept_negative_consistent": 1,
+            "threshold_consistent": -1.8151050965366262,
+            "resamples": 10000,
+            "expected_block": 12
+          },
+          "reality_check": {
+            "statistic": -0.004548588044467462,
+            "p_value": 0.8957,
+            "n": 180,
+            "trials": 4,
+            "best_trial": 0,
+            "trial_means": [
+              -0.00033903173563573603,
+              -0.0008179933287518833,
+              -0.0009931837867004256,
+              -0.0006690007842467271
+            ],
+            "resamples": 10000,
+            "expected_block": 12
+          }
+        }
+      },
+      "min_track_record_months": {
+        "T1_sharpe_monthly": 0.2536361376725914,
+        "B4_sharpe_monthly": 0.2418657595396809,
+        "T1_skew": -0.5346271481846366,
+        "T1_kurtosis": 3.6902740880711455,
+        "vs_zero_95": 50.578960590293676,
+        "vs_B4_95": 23022.777370630934,
+        "months_available": 180
+      }
+    },
+    "oos_10assets": {
+      "periods": 93,
+      "first_period": "2018-12-31",
+      "last_period": "2026-08-31",
+      "tests": {
+        "B4": {
+          "spa": {
+            "statistic": 0.4083081445066584,
+            "p_lower": 0.4715,
+            "p_consistent": 0.5026,
+            "p_upper": 0.5026,
+            "n": 93,
+            "trials": 4,
+            "best_trial": 0,
+            "trial_t": [
+              0.4083081445066584,
+              0.11260537453718344,
+              -0.25796529226508297,
+              0.1789176499286595
+            ],
+            "trial_means": [
+              0.0002674480726175677,
+              9.271375188547549e-05,
+              -0.0002454996334325555,
+              0.00013202174620754827
+            ],
+            "trial_p_individual": [
+              0.3268,
+              0.4481,
+              0.6086,
+              0.4295
+            ],
+            "trials_kept_negative_consistent": 0,
+            "threshold_consistent": -1.7385601021881119,
+            "resamples": 10000,
+            "expected_block": 12
+          },
+          "reality_check": {
+            "statistic": 0.0025791758090245058,
+            "p_value": 0.5339,
+            "n": 93,
+            "trials": 4,
+            "best_trial": 0,
+            "trial_means": [
+              0.0002674480726175677,
+              9.271375188547549e-05,
+              -0.0002454996334325555,
+              0.00013202174620754827
+            ],
+            "resamples": 10000,
+            "expected_block": 12
+          }
+        },
+        "B3": {
+          "spa": {
+            "statistic": 0.0637060230547484,
+            "p_lower": 0.5444,
+            "p_consistent": 0.6005,
+            "p_upper": 0.6005,
+            "n": 93,
+            "trials": 4,
+            "best_trial": 0,
+            "trial_t": [
+              0.0637060230547484,
+              -0.11070928702694041,
+              -0.4031609752599511,
+              -0.0810259730622888
+            ],
+            "trial_means": [
+              5.741848333237727e-05,
+              -0.00011731583739971417,
+              -0.00045552922271774576,
+              -7.800784307764184e-05
+            ],
+            "trial_p_individual": [
+              0.4473,
+              0.529,
+              0.6579,
+              0.5205
+            ],
+            "trials_kept_negative_consistent": 0,
+            "threshold_consistent": -1.7385601021881119,
+            "resamples": 10000,
+            "expected_block": 12
+          },
+          "reality_check": {
+            "statistic": 0.0005537238004833414,
+            "p_value": 0.607,
+            "n": 93,
+            "trials": 4,
+            "best_trial": 0,
+            "trial_means": [
+              5.741848333237727e-05,
+              -0.00011731583739971417,
+              -0.00045552922271774576,
+              -7.800784307764184e-05
+            ],
+            "resamples": 10000,
+            "expected_block": 12
+          }
+        }
+      },
+      "min_track_record_months": {
+        "T1_sharpe_monthly": 0.0969217827573978,
+        "B4_sharpe_monthly": 0.0575836696063736,
+        "T1_skew": -0.7594421820055017,
+        "T1_kurtosis": 4.6389008621834025,
+        "vs_zero_95": 312.6736672771321,
+        "vs_B4_95": 1892.976982040303,
+        "months_available": 93
+      }
+    },
+    "oos_9assets": {
+      "periods": 93,
+      "first_period": "2018-12-31",
+      "last_period": "2026-08-31",
+      "tests": {
+        "B4": {
+          "spa": {
+            "statistic": 0.035359986229780066,
+            "p_lower": 0.5919,
+            "p_consistent": 0.6682,
+            "p_upper": 0.6682,
+            "n": 93,
+            "trials": 4,
+            "best_trial": 0,
+            "trial_t": [
+              0.035359986229780066,
+              -0.2450269207172372,
+              -0.4746861650502187,
+              -0.15657746625756971
+            ],
+            "trial_means": [
+              2.0338657600048536e-05,
+              -0.0001895383044159722,
+              -0.0004388122947934677,
+              -0.00010826632691185255
+            ],
+            "trial_p_individual": [
+              0.4756,
+              0.5992,
+              0.6902,
+              0.5638
+            ],
+            "trials_kept_negative_consistent": 0,
+            "threshold_consistent": -1.7385601021881119,
+            "resamples": 10000,
+            "expected_block": 12
+          },
+          "reality_check": {
+            "statistic": 0.00019613891084228321,
+            "p_value": 0.6642,
+            "n": 93,
+            "trials": 4,
+            "best_trial": 0,
+            "trial_means": [
+              2.0338657600048536e-05,
+              -0.0001895383044159722,
+              -0.0004388122947934677,
+              -0.00010826632691185255
+            ],
+            "resamples": 10000,
+            "expected_block": 12
+          }
+        },
+        "B3": {
+          "spa": {
+            "statistic": 0.0,
+            "p_lower": 1.0,
+            "p_consistent": 1.0,
+            "p_upper": 1.0,
+            "n": 93,
+            "trials": 4,
+            "best_trial": 0,
+            "trial_t": [
+              -0.38736116401816206,
+              -0.5276218706750186,
+              -0.6913780232694483,
+              -0.48417910574135503
+            ],
+            "trial_means": [
+              -0.0003320855199117781,
+              -0.0005419624819277988,
+              -0.0007912364723052943,
+              -0.0004606905044236792
+            ],
+            "trial_p_individual": [
+              0.6327,
+              0.6902,
+              0.7548,
+              0.6747
+            ],
+            "trials_kept_negative_consistent": 0,
+            "threshold_consistent": -1.7385601021881119,
+            "resamples": 10000,
+            "expected_block": 12
+          },
+          "reality_check": {
+            "statistic": -0.00320251677681196,
+            "p_value": 0.7506,
+            "n": 93,
+            "trials": 4,
+            "best_trial": 0,
+            "trial_means": [
+              -0.0003320855199117781,
+              -0.0005419624819277988,
+              -0.0007912364723052943,
+              -0.0004606905044236792
+            ],
+            "resamples": 10000,
+            "expected_block": 12
+          }
+        }
+      },
+      "min_track_record_months": {
+        "T1_sharpe_monthly": 0.0982183649613872,
+        "B4_sharpe_monthly": 0.0789151197963396,
+        "T1_skew": -1.0578436615657474,
+        "T1_kurtosis": 6.266654583131116,
+        "vs_zero_95": 314.1606986045513,
+        "vs_B4_95": 8108.594145996784,
+        "months_available": 93
+      }
+    }
+  }
+}

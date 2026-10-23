@@ -30,6 +30,10 @@ Sources: `results/validation/run1-ten-year-only/validation.json` and `results/va
 
 ![Validation: IEF and BIL against the synthetic series, 2016–2018 (backtest data check)](results/validation/validation.png)
 
+*2026-10-23, presentation only:* the same two runs drawn to the chart standard, by [charts/make_charts.py](charts/make_charts.py) from the two committed `validation.json` files (hashes and every title number in [charts/manifest.json](charts/manifest.json)). The run's own figures above and in `results/validation/` are unchanged; nothing was re-run.
+
+![Blending in the 7-year bond fixed the tracking error (1.540% to 1.145% a year) but not the return gap: +0.455% then +0.451% a year against ±0.40%, so the study halted. Checks A3 and A4 by run, 2016–2018.](charts/validation_checks.png)
+
 ### Reading of the failure (inferred; written after both runs; not used to change anything)
 
 The blend did what it was meant to do: the ETF's day-to-day moves are now matched almost one for one (slope 0.95, tracking error down by a quarter). What it did not touch is the **level** of the gap: IEF earned about 45 bp a year more than the synthetic in both runs, in each of the three years (0.47%, 0.50% and 0.38% p.a. in 2016, 2017 and 2018, computed from the same aligned daily series). A gap that survives a large change in duration, and is stable year by year, is not a duration effect and not noise. It is a systematic term the construction leaves out.

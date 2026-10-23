@@ -1,0 +1,49 @@
+{
+  "made_at_utc": "2026-10-23T05:22:36+00:00",
+  "repository_commit_at_run": "fad9be5b86bfe65e2edeb20ed91d3c266e9f4b59",
+  "inputs_sha256": {
+    "research/001-slope-duration-switch/results/validation/run1-ten-year-only/validation.json": "be2218987f54381b4b8f32cc155671a38c73ed8677285e23d2d59839427e1901",
+    "research/001-slope-duration-switch/results/validation/validation.json": "1f9f5511e977c619087d701800c34cb261dec41d1e9c088a0b2c8af1fa092c16"
+  },
+  "outputs": [
+    "research/001-slope-duration-switch/charts/validation_checks.svg",
+    "research/001-slope-duration-switch/charts/validation_checks.png"
+  ],
+  "numbers_in_titles": {
+    "tracking_error_annual": {
+      "run1": 0.01540375618989169,
+      "run2": 0.011453524409499614
+    },
+    "mean_diff_annual": {
+      "run1": 0.004548148754788812,
+      "run2": 0.004508518381373151
+    },
+    "tracking_error_limit": 0.015,
+    "mean_diff_band": 0.004,
+    "A3_fail": {
+      "run1": true,
+      "run2": false
+    },
+    "A4_fail": {
+      "run1": true,
+      "run2": true
+    },
+    "other_checks": [
+      "A1",
+      "A2",
+      "B1",
+      "B2"
+    ],
+    "other_checks_passed_in_both_runs": true,
+    "days": {
+      "run1": 753,
+      "run2": 753
+    },
+    "window": {
+      "start": "2016-01-04",
+      "end": "2018-12-31"
+    },
+    "title": "Blending in the 7-year bond fixed the tracking error (1.540% to 1.145% a year) but not the return gap: +0.455% then +0.451% a year against \u00b10.40%, so the study halted"
+  },
+  "note": "Presentation only. Every number is read from the committed validation files; no result file is written. Style: qune_research/style.py (chart standard of 2026-10-23)."
+}

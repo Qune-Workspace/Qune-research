@@ -66,9 +66,21 @@ def alpaca_overlap_frame(symbol: str = REGIME_SYMBOL, raw_dir: Path = RAW_DIR,
     sub = Path(raw_dir) / OVERLAP_SUBDIR
     scratch = sub / "manifest.tmp.json"
     lib.reuse_file(name, source, sub, scratch)
-    entry = json.loads(scratch.read_text(encoding="utf-8"))[name]
-    scratch.unlink()
-    lib.update_manifest(f"{OVERLAP_SUBDIR}/{name}", entry, manifest_path)
+    key = f"{OVERLAP_SUBDIR}/{name}"
+    if scratch.exists():                      # first reuse: the library wrote the entry to the scratch file
+        entry = json.loads(scratch.read_text(encoding="utf-8"))[name]
+        scratch.unlink()
+        lib.update_manifest(key, entry, manifest_path)
+    elif key not in lib.read_manifest(manifest_path):
+        # the file was already present with the recorded hash (the library writes nothing then) but the
+        # study's manifest has no entry yet: record the source study's entry with the hash verified now
+        recorded = json.loads((Path(source) / "results" / "data_manifest.json").read_text(encoding="utf-8"))[name]
+        if lib.sha256_of(sub / name) != recorded["sha256"]:
+            raise RuntimeError(f"{key}: SHA-256 differs from {Path(source).name}'s manifest")
+        label = Path(source).name.split("-")[0]
+        lib.update_manifest(key, dict(recorded, reused_from=f"Study {label} data/raw (same bytes; SHA-256 verified "
+                                                           f"against Study {label} results/data_manifest.json)",
+                                      reused_at_utc=lib.utc_now()), manifest_path)
     return lib.load_alpaca(symbol, sub)
 
 

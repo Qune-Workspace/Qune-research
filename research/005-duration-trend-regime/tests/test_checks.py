@@ -69,3 +69,28 @@ def test_d3_flags_on_holding_period_dates_and_rows_switch():
     # a missing T3 column is reported, not an error
     out = checks.d3(flags.drop(columns=["positive_T3", "cpi_12m_change_T3"]), None, sigma)
     assert out["insample"]["T3"] == {"status": "not run: series unavailable"}
+
+
+def test_overlap_reuse_is_idempotent(tmp_path):
+    """The 2016–2018 broker SPY file is reused into data/raw/overlap/ and
+    recorded under its prefixed key on the first call, and a second call
+    (the file already present with the recorded hash) records the same
+    entry instead of failing.  Needs Study 004's raw file; skips in CI."""
+    import json
+    from src import data
+    from src.config import OVERLAP_SUBDIR, REUSED_ALPACA_OVERLAP
+    name, source = REUSED_ALPACA_OVERLAP["SPY"]
+    if not (source / "data" / "raw" / name).exists():
+        pytest.skip("Study 004's raw overlap file is not on this machine (CI)")
+    manifest = tmp_path / "manifest.json"
+    first = data.alpaca_overlap_frame("SPY", raw_dir=tmp_path, manifest_path=manifest)
+    key = f"{OVERLAP_SUBDIR}/{name}"
+    entry1 = json.loads(manifest.read_text())[key]
+    assert not (tmp_path / OVERLAP_SUBDIR / "manifest.tmp.json").exists()
+    second = data.alpaca_overlap_frame("SPY", raw_dir=tmp_path, manifest_path=manifest)
+    entry2 = json.loads(manifest.read_text())[key]
+    assert entry1["sha256"] == entry2["sha256"] and len(first) == len(second)
+    # a manifest without the entry but the file present: the entry is rebuilt from the source study
+    manifest.write_text("{}")
+    data.alpaca_overlap_frame("SPY", raw_dir=tmp_path, manifest_path=manifest)
+    assert json.loads(manifest.read_text())[key]["sha256"] == entry1["sha256"]

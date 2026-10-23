@@ -6,7 +6,6 @@ from __future__ import annotations
 
 import numpy as np
 import pandas as pd
-
 from src.cash import cash_index
 from src.config import SEED
 

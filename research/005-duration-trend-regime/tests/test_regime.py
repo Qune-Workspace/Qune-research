@@ -2,10 +2,10 @@
 import numpy as np
 import pandas as pd
 import pytest
-
 from src import regime
 from src.config import CPI_LAG_MONTHS, REGIME_WINDOWS
 from src.schedule import build_schedule
+
 from tests.toy import toy_bars, toy_closes, toy_cpi
 
 

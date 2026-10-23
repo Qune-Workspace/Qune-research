@@ -25,7 +25,7 @@ import argparse
 import hashlib
 import json
 import os
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pandas as pd
@@ -97,7 +97,7 @@ def fetch_prices(symbol: str, start: str = DEFAULT_START, end: str | None = None
     if requests.utils.urlparse(url).hostname != ALLOWED_HOST:
         raise RuntimeError("host not allowed")
     headers = {"Authorization": f"Token {token}", "Content-Type": "application/json"}
-    downloaded_at = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    downloaded_at = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
     client = session or requests
     response = client.get(url, headers=headers, params=params, timeout=TIMEOUT_SECONDS, allow_redirects=False)
     if response.status_code != 200:

@@ -3,14 +3,19 @@ from a bar index, execution dates, and (when the raw files are present) the
 counts of holding periods in each window.  Dates only; no return is computed."""
 import pandas as pd
 import pytest
-
 from src import calendar as cal
-from src.config import (DURATION_LEG, INSAMPLE_FIRST_SIGNAL_MONTH, INSAMPLE_LAST_SIGNAL_MONTH,
-                        OOS_FIRST_SIGNAL_MONTH, OOS_LAST_SIGNAL_MONTH)
 from src.alpaca_bars import load_bars
 from src.alpaca_bars import raw_path as alpaca_raw_path
+from src.config import (
+    DURATION_LEG,
+    INSAMPLE_FIRST_SIGNAL_MONTH,
+    INSAMPLE_LAST_SIGNAL_MONTH,
+    OOS_FIRST_SIGNAL_MONTH,
+    OOS_LAST_SIGNAL_MONTH,
+)
 from src.tiingo_bars import load_prices
 from src.tiingo_bars import raw_path as tiingo_raw_path
+
 from tests.toy import toy_bars
 
 CLOSED = ["2018-01-01", "2018-01-15", "2018-02-19", "2018-03-30", "2018-05-28", "2018-07-04",

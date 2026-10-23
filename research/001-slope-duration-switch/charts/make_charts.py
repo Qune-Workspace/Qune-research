@@ -18,7 +18,7 @@ import json
 import re
 import subprocess
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -147,7 +147,7 @@ def main() -> None:
     except Exception:  # pragma: no cover
         commit = "unknown"
     manifest = {
-        "made_at_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "made_at_utc": datetime.now(UTC).isoformat(timespec="seconds"),
         "repository_commit_at_run": commit,
         "inputs_sha256": inputs,
         "outputs": [str(svg.relative_to(ROOT)), str(png.relative_to(ROOT))],

@@ -42,20 +42,34 @@ from __future__ import annotations
 
 import argparse
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
-import numpy as np
 import pandas as pd
 
 from qune_research import data as lib
 from qune_research.nyse import nyse_trading_days
 from qune_research.sizing import excess_momentum, realised_vol, target_weights
 
-from .config import (CASH_ETF, COST_BP_BASE, FORWARD_BOOK_USD, FORWARD_BOOKS_DIR, FORWARD_DECISIONS_DIR,
-                     FORWARD_EARLIEST_UTC, FORWARD_FIRST_SIGNAL_DATE, FORWARD_LABEL, FORWARD_MANIFEST, FORWARD_RAW_DIR,
-                     FORWARD_SHADOW_CSV, LOOKBACKS_MONTHS, RESULTS_DIR, SIGMA_TARGET, STUDY_DIR, VOL_WINDOW_DAYS,
-                     WEIGHT_CAP)
+from .config import (
+    CASH_ETF,
+    COST_BP_BASE,
+    FORWARD_BOOK_USD,
+    FORWARD_BOOKS_DIR,
+    FORWARD_DECISIONS_DIR,
+    FORWARD_EARLIEST_UTC,
+    FORWARD_FIRST_SIGNAL_DATE,
+    FORWARD_LABEL,
+    FORWARD_MANIFEST,
+    FORWARD_RAW_DIR,
+    FORWARD_SHADOW_CSV,
+    LOOKBACKS_MONTHS,
+    RESULTS_DIR,
+    SIGMA_TARGET,
+    STUDY_DIR,
+    VOL_WINDOW_DAYS,
+    WEIGHT_CAP,
+)
 from .run import universe_from_checks
 
 STRATEGY_IDS = ("T1", "B3", "B4")                # T1 on record; B3 always-on vol-scaled; B4 = B3 × k (§9.1)
@@ -72,7 +86,7 @@ SHADOW_COLUMNS = ["signal_date", "execution_date", "period_start_bar", "period_e
 # --- Gates ----------------------------------------------------------------------------------
 
 def utc_now() -> str:
-    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    return datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 def earliest_run_utc(signal_date) -> pd.Timestamp:

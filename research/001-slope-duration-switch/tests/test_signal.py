@@ -2,7 +2,6 @@
 import numpy as np
 import pandas as pd
 import pytest
-
 from src import signal
 from src.bey import discount_to_bey, par_modified_duration
 from src.config import CASH_LEG, DURATION_LEG

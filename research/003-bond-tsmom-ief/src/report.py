@@ -30,11 +30,31 @@ from .alpaca_bars import load_bars
 from .alpaca_bars import total_return_index as etf_total_return_index
 from .calendar import build_schedule, month_end_bars
 from .cash import cash_index
-from .config import (C1_SHARPE_MARGIN, C2_T_MIN, C3_DSR_MIN, CASH_LEG, COST_CASES, DURATION_LEG,
-                     INSAMPLE_FIRST_SIGNAL_MONTH, INSAMPLE_LAST_SIGNAL_MONTH, MANIFEST_PATH,
-                     N_TRIALS_REGISTERED, N_TRIALS_SENSITIVITY, NOT_SUPPORTED_T_MAX,
-                     OOS_FIRST_SIGNAL_MONTH, OOS_LAST_SIGNAL_MONTH, POWER_MIN_SWITCHES, PRIOR_CASH_SHARE,
-                     PRIOR_SWITCHES, RESULTS_DIR, SEED, STUDY_DIR, SUBPERIODS, SYMBOLS, TRIAL_IDS)
+from .config import (
+    C1_SHARPE_MARGIN,
+    C2_T_MIN,
+    C3_DSR_MIN,
+    CASH_LEG,
+    COST_CASES,
+    DURATION_LEG,
+    INSAMPLE_FIRST_SIGNAL_MONTH,
+    INSAMPLE_LAST_SIGNAL_MONTH,
+    MANIFEST_PATH,
+    N_TRIALS_REGISTERED,
+    N_TRIALS_SENSITIVITY,
+    NOT_SUPPORTED_T_MAX,
+    OOS_FIRST_SIGNAL_MONTH,
+    OOS_LAST_SIGNAL_MONTH,
+    POWER_MIN_SWITCHES,
+    PRIOR_CASH_SHARE,
+    PRIOR_SWITCHES,
+    RESULTS_DIR,
+    SEED,
+    STUDY_DIR,
+    SUBPERIODS,
+    SYMBOLS,
+    TRIAL_IDS,
+)
 from .fred import load_series
 from .signal import t1, t2, t3
 from .tiingo_bars import load_prices

@@ -22,7 +22,7 @@ from __future__ import annotations
 import argparse
 import json
 import shutil
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 from .alpaca_bars import raw_path as alpaca_raw_path
@@ -51,7 +51,7 @@ def reuse_file(name: str, source_dir: Path, raw_dir: Path = RAW_DIR,
     raw_dir.mkdir(parents=True, exist_ok=True)
     shutil.copyfile(source, target)
     update_manifest(name, dict(recorded, reused_from=_reuse_note(source_dir),
-                               reused_at_utc=datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")),
+                               reused_at_utc=datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")),
                     manifest_path)
     return target
 

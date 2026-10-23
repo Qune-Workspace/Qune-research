@@ -4,12 +4,12 @@ import json
 import numpy as np
 import pandas as pd
 import pytest
-
 from src import checks
 from src.bey import discount_to_bey
 from src.calendar import nyse_trading_days
 from src.cash import cash_index, cash_returns
 from src.config import BIL_EXPENSE_RATIO, CASH_GAP_EXANTE
+
 from tests.toy import toy_bars, toy_bil, toy_dtb3
 
 

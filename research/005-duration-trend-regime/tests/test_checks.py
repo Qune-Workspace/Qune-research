@@ -2,12 +2,11 @@
 agreement, D3 flags on the window's holding-period dates, the switch-off of
 the in-sample rows and the MDE at the actual counts.  No raw file, no network."""
 import numpy as np
-import pandas as pd
 import pytest
-
-from qune_research.nyse import nyse_trading_days
 from src import checks
 from src.config import MIN_POSITIVE_MONTHS, TIINGO_COVERAGE
+
+from qune_research.nyse import nyse_trading_days
 from tests.toy import toy_closes, toy_cpi
 
 
@@ -77,6 +76,7 @@ def test_overlap_reuse_is_idempotent(tmp_path):
     (the file already present with the recorded hash) records the same
     entry instead of failing.  Needs Study 004's raw file; skips in CI."""
     import json
+
     from src import data
     from src.config import OVERLAP_SUBDIR, REUSED_ALPACA_OVERLAP
     name, source = REUSED_ALPACA_OVERLAP["SPY"]

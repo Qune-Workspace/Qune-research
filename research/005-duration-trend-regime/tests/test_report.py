@@ -7,9 +7,9 @@ import json
 import numpy as np
 import pandas as pd
 import pytest
-
 from src import pipeline, regime, report
 from src.config import COST_CASES
+
 from tests.toy import toy_cpi, toy_world
 
 

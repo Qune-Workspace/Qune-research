@@ -45,7 +45,7 @@ import argparse
 import json
 import math
 from collections.abc import Iterable
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import numpy as np
@@ -54,11 +54,31 @@ import pandas as pd
 from qune_research import data as lib
 
 from . import regime
-from .config import (CASH_LEG, COST_CASES, CPI_SERIES, DURATION_LEG, FORWARD_BARS_START, FORWARD_DECISIONS_DIR,
-                     FORWARD_EARLIEST_UTC, FORWARD_FIRST_SIGNAL_DATE, FORWARD_INTERIM_JSON, FORWARD_LABEL,
-                     FORWARD_MANIFEST, FORWARD_RAW_DIR, FORWARD_SHADOW_CSV, FORWARD_STOP_POSITIVE_MONTHS,
-                     FORWARD_STOP_TOTAL_MONTHS, FORWARD_T_MIN, MIN_EDGE_PER_MONTH, MOMENTUM_LOOKBACK_MONTHS,
-                     REGIME_SYMBOL, REGIME_WINDOWS, RESULTS_DIR, SEED, STUDY_DIR)
+from .config import (
+    CASH_LEG,
+    COST_CASES,
+    CPI_SERIES,
+    DURATION_LEG,
+    FORWARD_BARS_START,
+    FORWARD_DECISIONS_DIR,
+    FORWARD_EARLIEST_UTC,
+    FORWARD_FIRST_SIGNAL_DATE,
+    FORWARD_INTERIM_JSON,
+    FORWARD_LABEL,
+    FORWARD_MANIFEST,
+    FORWARD_RAW_DIR,
+    FORWARD_SHADOW_CSV,
+    FORWARD_STOP_POSITIVE_MONTHS,
+    FORWARD_STOP_TOTAL_MONTHS,
+    FORWARD_T_MIN,
+    MIN_EDGE_PER_MONTH,
+    MOMENTUM_LOOKBACK_MONTHS,
+    REGIME_SYMBOL,
+    REGIME_WINDOWS,
+    RESULTS_DIR,
+    SEED,
+    STUDY_DIR,
+)
 from .pipeline import etf_indices, window_bars
 from .schedule import execution_dates, month_end_bars, nyse_trading_days
 from .trend_signal import excess_momentum, month_end_levels
@@ -108,7 +128,7 @@ def forward_verdict(edge: dict, t_min: float = FORWARD_T_MIN, min_edge: float = 
 # --- Gates ----------------------------------------------------------------------------------
 
 def utc_now() -> str:
-    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    return datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 def earliest_run_utc(signal_date) -> pd.Timestamp:

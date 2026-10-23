@@ -9,7 +9,6 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import pytest
-
 from src import alpaca_bars, bil_overlap_check, fred, reuse_bars, tiingo_bars
 from src.config import STUDY_DIR
 

@@ -28,11 +28,10 @@ from __future__ import annotations
 
 import argparse
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pandas as pd
-
 from src.alpaca_bars import fetch_bars, load_bars, total_return_index
 from src.calendar import execution_dates, month_end_bars, nyse_trading_days
 from src.config import CASH_LEG, DURATION_LEG, MOMENTUM_LOOKBACK_MONTHS, PAPER_LOG_DIR, SYMBOLS
@@ -66,7 +65,7 @@ def decision_record(ief_bars: pd.DataFrame, bil_bars: pd.DataFrame, signal_date:
     base = {
         "strategy_id": STRATEGY_ID, "strategy_version": STRATEGY_VERSION,
         "signal_date": t.strftime("%Y-%m-%d"), "holding_before": holding_before,
-        "run_at_utc": run_at_utc or datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "run_at_utc": run_at_utc or datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "orders": [], "equity_close": None, "peak_equity": None, "drawdown": None, "notes": "",
     }
     if len(later_in_month):

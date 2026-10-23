@@ -3,7 +3,6 @@ tests (iv) and (v)."""
 import numpy as np
 import pandas as pd
 import pytest
-
 from src import signal
 from src.calendar import month_end_bars
 from src.config import CASH_LEG, DURATION_LEG

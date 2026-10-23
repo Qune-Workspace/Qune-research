@@ -37,9 +37,20 @@ import pandas as pd
 from .alpaca_bars import load_bars
 from .calendar import nyse_trading_days
 from .cash import cash_index
-from .config import (B2_READING_2016_2018, B2_REFERENCE_TRACKING_ERROR, CASH_CHECK_THRESHOLDS, CASH_GAP_EXANTE,
-                     CASH_LEG, COVERAGE_END, COVERAGE_START, DURATION_LEG, FIRST_BAR_REQUIRED_ON_OR_BEFORE,
-                     MAX_MISSING_BARS, RESULTS_DIR, VENDOR_DECISION_PATH)
+from .config import (
+    B2_READING_2016_2018,
+    B2_REFERENCE_TRACKING_ERROR,
+    CASH_CHECK_THRESHOLDS,
+    CASH_GAP_EXANTE,
+    CASH_LEG,
+    COVERAGE_END,
+    COVERAGE_START,
+    DURATION_LEG,
+    FIRST_BAR_REQUIRED_ON_OR_BEFORE,
+    MAX_MISSING_BARS,
+    RESULTS_DIR,
+    VENDOR_DECISION_PATH,
+)
 from .fred import load_series
 from .tiingo_bars import load_prices
 

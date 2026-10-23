@@ -7,12 +7,12 @@ world by one day moves every date by exactly one day and nothing else.
 import numpy as np
 import pandas as pd
 import pytest
-
 from src import backtest
 from src.calendar import build_schedule
 from src.config import CASH_LEG, DURATION_LEG
 from src.signal import daily_spread, t1, t2, t3
 from src.synthetic import synthetic_indices
+
 from tests.toy import toy_yields
 
 FIRST, LAST = "2000-02", "2005-10"

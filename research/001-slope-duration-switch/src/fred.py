@@ -14,7 +14,7 @@ import argparse
 import hashlib
 import io
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pandas as pd
@@ -73,7 +73,7 @@ def fetch_series(series_id: str, raw_dir: Path = RAW_DIR,
     url = FRED_URL.format(series_id=series_id)
     response = (session or requests).get(url, timeout=TIMEOUT_SECONDS)
     response.raise_for_status()
-    downloaded_at = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    downloaded_at = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
     series = parse_fred_csv(response.text)
     raw_dir.mkdir(parents=True, exist_ok=True)
     path = raw_path(series_id, raw_dir)

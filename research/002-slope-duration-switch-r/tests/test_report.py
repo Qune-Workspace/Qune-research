@@ -7,11 +7,11 @@ import json
 import numpy as np
 import pandas as pd
 import pytest
-
 from src import report, validate
 from src.calendar import build_schedule
 from src.config import CASH_LEG, COST_CASES, DURATION_LEG, TRIAL_IDS
 from src.synthetic import synthetic_indices
+
 from tests.toy import toy_yields
 
 

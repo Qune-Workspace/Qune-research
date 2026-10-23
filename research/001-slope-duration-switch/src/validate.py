@@ -23,8 +23,7 @@ import pandas as pd
 
 from .alpaca_bars import load_bars
 from .alpaca_bars import total_return_index as etf_total_return_index
-from .config import (CASH_LEG, DURATION_LEG, RESULTS_DIR, VALIDATION_END, VALIDATION_START,
-                     VALIDATION_THRESHOLDS)
+from .config import CASH_LEG, DURATION_LEG, RESULTS_DIR, VALIDATION_END, VALIDATION_START, VALIDATION_THRESHOLDS
 from .fred import load_series
 from .synthetic import blend_returns, crosscheck_mean_abs_error, synthetic_indices
 

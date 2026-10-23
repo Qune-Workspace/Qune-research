@@ -3,12 +3,9 @@
 import json
 import os
 import subprocess
-from pathlib import Path
 
-import numpy as np
 import pandas as pd
 import pytest
-
 from src import alpaca_bars, fred
 from src.config import STUDY_DIR
 

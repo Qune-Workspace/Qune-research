@@ -5,10 +5,10 @@ import json
 
 import pandas as pd
 import pytest
-
 from src import backtest, report
 from src.calendar import build_schedule, month_end_bars
 from src.config import CASH_LEG, COST_CASES, DURATION_LEG, POWER_MIN_SWITCHES, SUBPERIODS, TRIAL_IDS
+
 from tests.toy import toy_world
 
 

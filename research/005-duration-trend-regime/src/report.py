@@ -40,13 +40,34 @@ import pandas as pd
 
 from qune_research import stats
 
-from . import data, regime, switching
-from .config import (CASH_LEG, COST_CASES, DURATION_LEG, EPISODE_FIRST_SIGNAL_MONTH, EPISODE_LAST_SIGNAL_MONTH,
-                     INSAMPLE_FIRST_SIGNAL_MONTH, INSAMPLE_LAST_SIGNAL_MONTH, MANIFEST_PATH, N_TRIALS_REGISTERED,
-                     N_TRIALS_SENSITIVITY, RESULTS_DIR, SEED, STUDY_DIR, SUBPERIODS, TRIAL_IDS)
+from . import data, regime
+from .config import (
+    CASH_LEG,
+    COST_CASES,
+    DURATION_LEG,
+    EPISODE_FIRST_SIGNAL_MONTH,
+    EPISODE_LAST_SIGNAL_MONTH,
+    INSAMPLE_FIRST_SIGNAL_MONTH,
+    INSAMPLE_LAST_SIGNAL_MONTH,
+    MANIFEST_PATH,
+    N_TRIALS_REGISTERED,
+    N_TRIALS_SENSITIVITY,
+    RESULTS_DIR,
+    SEED,
+    STUDY_DIR,
+    SUBPERIODS,
+    TRIAL_IDS,
+)
 from .edge import conditional_edge, insample_row, regime_descriptives
-from .pipeline import (etf_indices, insample_indices, period_targets, trend_frame, window_bars, window_paths,
-                       window_schedule)
+from .pipeline import (
+    etf_indices,
+    insample_indices,
+    period_targets,
+    trend_frame,
+    window_bars,
+    window_paths,
+    window_schedule,
+)
 
 BENCHMARK_IDS = ("B0", "B1", "B2", "B3")
 EPISODE_LABEL = "hypothesis-generating episode (no decision weight)"
@@ -304,6 +325,7 @@ def _cpi_or_none() -> pd.Series | None:
     otherwise (T3 then reads "not run: series unavailable").  A run never
     fetches: fetches happen under step 3, logged first."""
     from qune_research import data as lib
+
     from .config import CPI_SERIES, RAW_DIR
     path = lib.fred_path(CPI_SERIES, RAW_DIR)
     if path.exists() and path.name in lib.read_manifest(MANIFEST_PATH):

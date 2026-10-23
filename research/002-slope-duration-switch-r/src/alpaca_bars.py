@@ -16,7 +16,7 @@ from __future__ import annotations
 
 import argparse
 import os
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pandas as pd
@@ -47,7 +47,7 @@ def raw_path(symbol: str, raw_dir: Path = RAW_DIR) -> Path:
 
 
 def _end_timestamp(end: str | None) -> str:
-    latest = datetime.now(timezone.utc) - END_LAG
+    latest = datetime.now(UTC) - END_LAG
     if end is not None:
         requested = pd.Timestamp(end).tz_localize("UTC") + pd.Timedelta(days=1)
         latest = min(latest, requested.to_pydatetime())
@@ -77,7 +77,7 @@ def fetch_bars(symbol: str, start: str = ETF_BARS_START, end: str | None = None,
     client = session or requests
     bars: list[dict] = []
     page_token = None
-    downloaded_at = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    downloaded_at = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
     while True:
         query = dict(params, page_token=page_token) if page_token else params
         response = client.get(url, headers=headers, params=query, timeout=TIMEOUT_SECONDS)

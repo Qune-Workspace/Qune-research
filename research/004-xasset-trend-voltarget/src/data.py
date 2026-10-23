@@ -26,8 +26,18 @@ import requests
 
 from qune_research import data as lib
 
-from .config import (BROKER_FETCH_END, BROKER_FETCH_START, FRED_SERIES, MANIFEST_PATH, RAW_DIR, REUSED_BROKER_FILES,
-                     REUSED_FRED_FILE, REUSED_VENDOR_FILES, VENDOR_FETCH_END, VENDOR_FETCH_START)
+from .config import (
+    BROKER_FETCH_END,
+    BROKER_FETCH_START,
+    FRED_SERIES,
+    MANIFEST_PATH,
+    RAW_DIR,
+    REUSED_BROKER_FILES,
+    REUSED_FRED_FILE,
+    REUSED_VENDOR_FILES,
+    VENDOR_FETCH_END,
+    VENDOR_FETCH_START,
+)
 
 
 def vendor_frame(symbol: str, refetch: bool = False, raw_dir: Path = RAW_DIR, manifest_path: Path = MANIFEST_PATH,

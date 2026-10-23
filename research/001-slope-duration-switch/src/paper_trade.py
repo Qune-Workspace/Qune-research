@@ -19,7 +19,7 @@ from __future__ import annotations
 import argparse
 import json
 import math
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pandas as pd
@@ -52,7 +52,7 @@ def decision_record(dgs10: pd.Series, dtb3: pd.Series, signal_month: str, holdin
             "dgs10": dgs10_t, "dtb3": dtb3_t, "bey": bey_t, "spread": spread, "target": target,
             "holding_before": holding_before, "orders": [], "equity_close": None, "peak_equity": None,
             "drawdown": None, "notes": "decision only; orders are placed by the cleared runner (§11)",
-            "recorded_at_utc": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")}
+            "recorded_at_utc": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")}
 
 
 def order_plan(target: str, holding_before: str, holding_qty: int, prices: dict[str, float],

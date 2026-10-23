@@ -20,9 +20,15 @@ from __future__ import annotations
 import pandas as pd
 
 from .bey import discount_to_bey, duration_convexity, par_bond_price
-from .config import (BIL_EXPENSE_RATIO, BLEND_START, BLEND_WEIGHT_SEVEN_YEAR,
-                     DC_CROSSCHECK_TOLERANCE, IEF_EXPENSE_RATIO, SEVEN_YEAR_PERIODS,
-                     TEN_YEAR_PERIODS)
+from .config import (
+    BIL_EXPENSE_RATIO,
+    BLEND_START,
+    BLEND_WEIGHT_SEVEN_YEAR,
+    DC_CROSSCHECK_TOLERANCE,
+    IEF_EXPENSE_RATIO,
+    SEVEN_YEAR_PERIODS,
+    TEN_YEAR_PERIODS,
+)
 
 DAYS_PER_YEAR = 365.0
 

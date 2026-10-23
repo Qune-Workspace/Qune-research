@@ -5,7 +5,6 @@ import numpy as np
 import pandas as pd
 import pytest
 from scipy.stats import norm
-
 from src import stats
 from src.config import DSR_VARIANCE_FLOOR, SEED
 

@@ -4,10 +4,9 @@ validation are marked ``§5.2 (i)``-``(v)`` in their docstrings."""
 import numpy as np
 import pandas as pd
 import pytest
-
 from src import bey, synthetic
-from src.config import (BIL_EXPENSE_RATIO, BOND_PERIODS, BOND_YEARS, DC_CROSSCHECK_TOLERANCE,
-                        IEF_EXPENSE_RATIO)
+from src.config import BIL_EXPENSE_RATIO, BOND_PERIODS, BOND_YEARS, DC_CROSSCHECK_TOLERANCE, IEF_EXPENSE_RATIO
+
 from tests.toy import toy_yields
 
 

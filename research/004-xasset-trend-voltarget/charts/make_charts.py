@@ -17,7 +17,7 @@ import hashlib
 import json
 import subprocess
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pandas as pd
@@ -165,7 +165,7 @@ def main() -> None:
     except Exception:  # pragma: no cover
         commit = "unknown"
     manifest = {
-        "made_at_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "made_at_utc": datetime.now(UTC).isoformat(timespec="seconds"),
         "repository_commit_at_run": commit,
         "inputs_sha256": inputs,
         "outputs": outputs,

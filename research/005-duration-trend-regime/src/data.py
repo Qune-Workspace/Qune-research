@@ -27,8 +27,20 @@ import requests
 
 from qune_research import data as lib
 
-from .config import (ALPACA_FETCH, CASH_LEG, CPI_SERIES, DURATION_LEG, MANIFEST_PATH, OVERLAP_SUBDIR, RAW_DIR,
-                     REGIME_SYMBOL, REUSED_ALPACA, REUSED_ALPACA_OVERLAP, REUSED_FRED, REUSED_TIINGO)
+from .config import (
+    ALPACA_FETCH,
+    CASH_LEG,
+    CPI_SERIES,
+    DURATION_LEG,
+    MANIFEST_PATH,
+    OVERLAP_SUBDIR,
+    RAW_DIR,
+    REGIME_SYMBOL,
+    REUSED_ALPACA,
+    REUSED_ALPACA_OVERLAP,
+    REUSED_FRED,
+    REUSED_TIINGO,
+)
 
 
 def tiingo_frame(symbol: str, raw_dir: Path = RAW_DIR, manifest_path: Path = MANIFEST_PATH) -> pd.DataFrame:

@@ -34,7 +34,7 @@ from __future__ import annotations
 import json
 import math
 import shutil
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pandas as pd
@@ -70,7 +70,7 @@ def reuse_study_001_bars(raw_dir: Path = RAW_DIR, manifest_path: Path = MANIFEST
     target = raw_dir / ALPACA_FILE
     shutil.copyfile(source, target)
     update_manifest(ALPACA_FILE, dict(recorded, reused_from=REUSE_NOTE,
-                                      reused_at_utc=datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")),
+                                      reused_at_utc=datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")),
                     manifest_path)
     return target
 
@@ -153,7 +153,7 @@ def write_report(result: dict, path: Path = REPORT_PATH) -> None:
         f"| Annualised tracking error (descriptive) | {s['tracking_error_annual_descriptive'] * 100:.4f}% p.a. |",
         f"| Largest absolute daily difference (descriptive) | {s['max_abs_daily_diff'] * 1e4:.2f} bp |",
         f"| Days with absolute difference over 10 bp (descriptive) | {s['days_abs_diff_over_10bp']} |",
-        f"| Mean difference by year (descriptive, % p.a.) | " + ", ".join(f"{y}: {v * 100:+.4f}" for y, v in s['mean_diff_annual_by_year'].items()) + " |",
+        "| Mean difference by year (descriptive, % p.a.) | " + ", ".join(f"{y}: {v * 100:+.4f}" for y, v in s['mean_diff_annual_by_year'].items()) + " |",
         "",
         "Full statistics in `bil_vendor_decision.json`.",
     ]
@@ -173,7 +173,7 @@ def run() -> dict:
     alpaca = pd.read_csv(alpaca_path, index_col="date", parse_dates=["date"])["close"]
     stats = overlap_statistics(vendor, alpaca)
     result = {
-        "run_at_utc": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "run_at_utc": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "vendor": {k: vendor_entry[k] for k in ("source", "rows", "first_bar", "last_bar", "sha256", "downloaded_at_utc")},
         "alpaca": {k: alpaca_entry[k] for k in ("source", "rows", "first_bar", "last_bar", "sha256", "downloaded_at_utc")},
         "overlap": stats,

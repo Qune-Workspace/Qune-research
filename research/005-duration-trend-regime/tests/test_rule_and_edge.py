@@ -7,11 +7,18 @@ import json
 import numpy as np
 import pandas as pd
 import pytest
+from src import edge, forward, pipeline
+from src.config import (
+    COST_CASES,
+    DURATION_LEG,
+    INSAMPLE_FIRST_SIGNAL_MONTH,
+    INSAMPLE_LAST_SIGNAL_MONTH,
+    MIN_EDGE_PER_MONTH,
+    STUDY_003_DIR,
+    STUDY_003_INSAMPLE_MONTHLY,
+)
 
 from qune_research.data import sha256_of
-from src import edge, forward, pipeline
-from src.config import (COST_CASES, DURATION_LEG, INSAMPLE_FIRST_SIGNAL_MONTH, INSAMPLE_LAST_SIGNAL_MONTH,
-                        MIN_EDGE_PER_MONTH, STUDY_003_DIR, STUDY_003_INSAMPLE_MONTHLY)
 from tests.toy import toy_world
 
 

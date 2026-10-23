@@ -19,8 +19,14 @@ import statsmodels.api as sm
 
 from qune_research.stats import stationary_bootstrap_indices
 
-from .config import (BOOTSTRAP_BLOCK_MONTHS, BOOTSTRAP_RESAMPLES, MIN_EDGE_PER_MONTH, MIN_POSITIVE_MONTHS,
-                     NEWEY_WEST_LAGS, POWER_Z)
+from .config import (
+    BOOTSTRAP_BLOCK_MONTHS,
+    BOOTSTRAP_RESAMPLES,
+    MIN_EDGE_PER_MONTH,
+    MIN_POSITIVE_MONTHS,
+    NEWEY_WEST_LAGS,
+    POWER_Z,
+)
 
 
 def newey_west_delta(d: np.ndarray, positive: np.ndarray, lags: int = NEWEY_WEST_LAGS) -> dict[str, float]:

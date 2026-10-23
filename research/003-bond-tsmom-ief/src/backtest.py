@@ -11,7 +11,7 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
-from .config import (CASH_LEG, DURATION_LEG, MAX_MISSING_BARS, STOP_DESCRIPTIVE_DRAWDOWN)
+from .config import CASH_LEG, DURATION_LEG, MAX_MISSING_BARS, STOP_DESCRIPTIVE_DRAWDOWN
 
 INSTRUMENTS = (DURATION_LEG, CASH_LEG)
 

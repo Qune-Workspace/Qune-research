@@ -10,10 +10,10 @@ import sys
 import numpy as np
 import pandas as pd
 import pytest
-
-from qune_research.nyse import nyse_trading_days
 from src import checks
 from src.config import CASH_ETF, STUDY_DIR, SYMBOLS
+
+from qune_research.nyse import nyse_trading_days
 
 DAYS = nyse_trading_days("2002-07-01", "2026-09-30")
 

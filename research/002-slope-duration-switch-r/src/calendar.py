@@ -20,8 +20,14 @@ from pathlib import Path
 
 import pandas as pd
 
-from .config import (INSAMPLE_FIRST_SIGNAL_MONTH, INSAMPLE_LAST_SIGNAL_MONTH,
-                     OOS_FIRST_SIGNAL_MONTH, OOS_LAST_SIGNAL_MONTH, RESULTS_DIR, STUDY_DIR)
+from .config import (
+    INSAMPLE_FIRST_SIGNAL_MONTH,
+    INSAMPLE_LAST_SIGNAL_MONTH,
+    OOS_FIRST_SIGNAL_MONTH,
+    OOS_LAST_SIGNAL_MONTH,
+    RESULTS_DIR,
+    STUDY_DIR,
+)
 
 # Unscheduled or one-off NYSE closures since 1962 (weekdays that would
 # otherwise be trading days).  Sources: NYSE's published list of historical

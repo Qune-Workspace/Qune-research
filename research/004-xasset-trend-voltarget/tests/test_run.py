@@ -7,11 +7,10 @@ import json
 import numpy as np
 import pandas as pd
 import pytest
+from src import run
 
 from qune_research import engine
 from qune_research.dates import month_end_signal_dates, schedule
-from src import run
-
 
 COSTS = {"AAA": 2.0, "BBB": 2.5, "CCC": 3.0}   # bp, constructed symbols only
 

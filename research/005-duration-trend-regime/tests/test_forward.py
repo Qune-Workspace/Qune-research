@@ -6,11 +6,11 @@ import json
 import numpy as np
 import pandas as pd
 import pytest
-
 from src import forward, pipeline, report, switching
 from src.cash import cash_index
 from src.conditional import conditional_targets
 from src.config import CASH_LEG, COST_CASES, DURATION_LEG
+
 from tests.toy import toy_bars, toy_closes, toy_cpi, toy_dtb3
 
 

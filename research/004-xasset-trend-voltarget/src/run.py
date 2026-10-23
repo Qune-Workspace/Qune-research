@@ -26,17 +26,45 @@ import numpy as np
 import pandas as pd
 
 from qune_research import engine, stats
-from qune_research.dates import month_end_signal_dates, schedule as build_schedule
+from qune_research.dates import month_end_signal_dates
+from qune_research.dates import schedule as build_schedule
 from qune_research.sizing import realised_vol, target_weights, trend_signal
 
 from . import data
 from .cash import cash_index
-from .config import (B2_WEIGHTS, C1_SHARPE_MARGIN, C2_T_MIN, C3_DSR_MIN, CASH_ETF, CHECKS_DIR, COST_BP_BASE,
-                     COST_MULTIPLES_BREAKEVEN, COST_STRESS_MULTIPLE, CRISIS_WINDOWS, INSAMPLE_FIRST_SIGNAL_DATE,
-                     INSAMPLE_LAST_SIGNAL_MONTH, LOOKBACKS_MONTHS, MANIFEST_PATH, N_TRIALS_REGISTERED,
-                     N_TRIALS_SENSITIVITY, NOT_SUPPORTED_T_MAX, OOS_FIRST_SIGNAL_MONTH, OOS_LAST_SIGNAL_MONTH,
-                     POWER_MIN_SWITCHES, REFERENCE_SYMBOLS, RESULTS_DIR, SEED, SIGMA_TARGET, STUDY_DIR, SUBPERIODS,
-                     TRIAL_IDS, VOL_EXCEEDANCE_FACTOR, VOL_REALISED_WINDOW_MONTHS, VOL_WINDOW_DAYS, WEIGHT_CAP)
+from .config import (
+    B2_WEIGHTS,
+    C1_SHARPE_MARGIN,
+    C2_T_MIN,
+    C3_DSR_MIN,
+    CASH_ETF,
+    CHECKS_DIR,
+    COST_BP_BASE,
+    COST_MULTIPLES_BREAKEVEN,
+    COST_STRESS_MULTIPLE,
+    CRISIS_WINDOWS,
+    INSAMPLE_FIRST_SIGNAL_DATE,
+    INSAMPLE_LAST_SIGNAL_MONTH,
+    LOOKBACKS_MONTHS,
+    MANIFEST_PATH,
+    N_TRIALS_REGISTERED,
+    N_TRIALS_SENSITIVITY,
+    NOT_SUPPORTED_T_MAX,
+    OOS_FIRST_SIGNAL_MONTH,
+    OOS_LAST_SIGNAL_MONTH,
+    POWER_MIN_SWITCHES,
+    REFERENCE_SYMBOLS,
+    RESULTS_DIR,
+    SEED,
+    SIGMA_TARGET,
+    STUDY_DIR,
+    SUBPERIODS,
+    TRIAL_IDS,
+    VOL_EXCEEDANCE_FACTOR,
+    VOL_REALISED_WINDOW_MONTHS,
+    VOL_WINDOW_DAYS,
+    WEIGHT_CAP,
+)
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402  (backend must be chosen first)

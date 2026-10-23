@@ -6,9 +6,9 @@ from __future__ import annotations
 
 import numpy as np
 import pandas as pd
+from src.cash import cash_index
 
 from qune_research.nyse import nyse_trading_days
-from src.cash import cash_index
 
 SEED = 2005
 

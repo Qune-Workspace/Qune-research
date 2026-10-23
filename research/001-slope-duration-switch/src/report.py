@@ -23,11 +23,29 @@ from . import backtest, stats
 from .alpaca_bars import load_bars
 from .alpaca_bars import total_return_index as etf_total_return_index
 from .calendar import build_schedule
-from .config import (C1_SHARPE_MARGIN, C2_T_MIN, C3_DSR_MIN, CASH_LEG, COST_CASES, DURATION_LEG,
-                     INSAMPLE_FIRST_SIGNAL_MONTH, INSAMPLE_LAST_SIGNAL_MONTH, MANIFEST_PATH,
-                     N_TRIALS_REGISTERED, N_TRIALS_SENSITIVITY, NOT_SUPPORTED_T_MAX,
-                     OOS_FIRST_SIGNAL_MONTH, OOS_LAST_SIGNAL_MONTH, RESULTS_DIR, SEED, STUDY_DIR,
-                     SUBPERIODS, SYMBOLS, T3_FIRST_SIGNAL_MONTH, TRIAL_IDS)
+from .config import (
+    C1_SHARPE_MARGIN,
+    C2_T_MIN,
+    C3_DSR_MIN,
+    CASH_LEG,
+    COST_CASES,
+    DURATION_LEG,
+    INSAMPLE_FIRST_SIGNAL_MONTH,
+    INSAMPLE_LAST_SIGNAL_MONTH,
+    MANIFEST_PATH,
+    N_TRIALS_REGISTERED,
+    N_TRIALS_SENSITIVITY,
+    NOT_SUPPORTED_T_MAX,
+    OOS_FIRST_SIGNAL_MONTH,
+    OOS_LAST_SIGNAL_MONTH,
+    RESULTS_DIR,
+    SEED,
+    STUDY_DIR,
+    SUBPERIODS,
+    SYMBOLS,
+    T3_FIRST_SIGNAL_MONTH,
+    TRIAL_IDS,
+)
 from .fred import load_series
 from .signal import daily_spread, t1, t2, t3
 from .synthetic import synthetic_indices

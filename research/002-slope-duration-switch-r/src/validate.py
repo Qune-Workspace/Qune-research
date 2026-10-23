@@ -33,9 +33,19 @@ import pandas as pd
 
 from .alpaca_bars import load_bars
 from .alpaca_bars import total_return_index as etf_total_return_index
-from .config import (A4_CENTRAL_ESTIMATE, CASH_LEG, DURATION_LEG, RESULTS_DIR, ROLLDOWN_ESTIMATE_BY_YEAR,
-                     VALIDATION_END, VALIDATION_START, VALIDATION_THRESHOLDS, WINDOW2_DECISION_PATH,
-                     WINDOW2_END, WINDOW2_START)
+from .config import (
+    A4_CENTRAL_ESTIMATE,
+    CASH_LEG,
+    DURATION_LEG,
+    RESULTS_DIR,
+    ROLLDOWN_ESTIMATE_BY_YEAR,
+    VALIDATION_END,
+    VALIDATION_START,
+    VALIDATION_THRESHOLDS,
+    WINDOW2_DECISION_PATH,
+    WINDOW2_END,
+    WINDOW2_START,
+)
 from .fred import load_series
 from .synthetic import crosscheck_mean_abs_error, duration_returns, synthetic_indices
 from .tiingo_bars import load_prices

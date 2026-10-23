@@ -9,12 +9,12 @@ every date by exactly one day and nothing else.
 import numpy as np
 import pandas as pd
 import pytest
-
 from src import backtest
 from src.calendar import build_schedule, month_end_bars
 from src.cash import cash_index
 from src.config import CASH_LEG, DURATION_LEG
 from src.signal import t1, t2, t3
+
 from tests.toy import toy_bars, toy_dtb3, toy_ief, toy_world
 
 FIRST, LAST = "2001-01", "2007-10"

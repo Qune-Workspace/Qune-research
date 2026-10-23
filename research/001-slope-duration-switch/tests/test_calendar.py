@@ -4,11 +4,16 @@ holding periods in each window.  Dates only; no return is computed."""
 import numpy as np
 import pandas as pd
 import pytest
-
 from src import calendar as cal
-from src.config import (INSAMPLE_FIRST_SIGNAL_MONTH, INSAMPLE_LAST_SIGNAL_MONTH,
-                        OOS_FIRST_SIGNAL_MONTH, OOS_LAST_SIGNAL_MONTH, RAW_DIR)
+from src.config import (
+    INSAMPLE_FIRST_SIGNAL_MONTH,
+    INSAMPLE_LAST_SIGNAL_MONTH,
+    OOS_FIRST_SIGNAL_MONTH,
+    OOS_LAST_SIGNAL_MONTH,
+    RAW_DIR,
+)
 from src.fred import load_series, raw_path
+
 from tests.toy import toy_yields
 
 CLOSED = ["2018-01-01", "2018-01-15", "2018-02-19", "2018-03-30", "2018-05-28", "2018-07-04",

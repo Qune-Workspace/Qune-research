@@ -15,7 +15,6 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-
 from src.alpaca_bars import load_bars
 from src.config import VALIDATION_END, VALIDATION_START, WINDOW2_END, WINDOW2_START
 from src.fred import load_series

@@ -8,9 +8,9 @@ import json
 import numpy as np
 import pandas as pd
 import pytest
-
 from paper.decide import STRATEGY_ID, decision_record, write_record
 from src.calendar import month_end_bars
+
 from tests.toy import toy_bars, toy_ief
 
 BARS = toy_bars("2020-01-02", years=4)

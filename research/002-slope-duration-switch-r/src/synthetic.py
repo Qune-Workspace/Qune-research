@@ -25,8 +25,15 @@ from __future__ import annotations
 import pandas as pd
 
 from .bey import discount_to_bey, duration_convexity, par_bond_price
-from .config import (BIL_EXPENSE_RATIO, BOND_PERIODS, BOND_YEARS, CURVE_LONG_YEARS,
-                     CURVE_SHORT_YEARS, DC_CROSSCHECK_TOLERANCE, IEF_EXPENSE_RATIO)
+from .config import (
+    BIL_EXPENSE_RATIO,
+    BOND_PERIODS,
+    BOND_YEARS,
+    CURVE_LONG_YEARS,
+    CURVE_SHORT_YEARS,
+    DC_CROSSCHECK_TOLERANCE,
+    IEF_EXPENSE_RATIO,
+)
 
 DAYS_PER_YEAR = 365.0
 PERIODS_PER_YEAR = 2.0

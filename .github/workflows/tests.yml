@@ -25,6 +25,7 @@ jobs:
           - research/003-bond-tsmom-ief
           - research/004-xasset-trend-voltarget
           - qune_research
+          - desk-view
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5

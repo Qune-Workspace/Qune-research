@@ -8,3 +8,5 @@ __pycache__/
 .worklock
 # Paper-trading fetches are provenance-hashed in paper-log/manifest.json, never committed.
 **/paper-log/raw/
+# Prediction scoring fetches are provenance-hashed in predictions/manifest.json, never committed.
+predictions/raw/

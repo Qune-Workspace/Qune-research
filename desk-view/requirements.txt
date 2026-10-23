@@ -1,0 +1,8 @@
+# Dependencies of the desk view and the prediction scorer, pinned to the
+# versions the tests were run with; the shared library qune_research/ is
+# imported from the repository root (conftest.py).
+numpy==2.5.4
+pandas==3.0.6
+requests==2.34.2
+pytest==9.1.1
+matplotlib==3.11.2

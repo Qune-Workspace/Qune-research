@@ -48,4 +48,6 @@ Accepted in full: the four must-fix findings and the three should-fix findings a
 
 Open, for the next run (should-fix, Study 002): the "mean −0.01%" label across the 2014 bar in `level_gap_by_year.png` and the "2013" label on the 2004 marker in `tracking_error_vs_volatility.png`, with the reviewer's placements. Notes taken, not acted on today: the "+" on signed gaps in 003's out-of-sample growth title, the "%" on the curve chart's value labels, and the four-line title on 002's tracking-error chart.
 
+*2026-10-23 08:1x, Qune:* the two Study 002 placements are done with the reviewer's offsets (commit e6ab986): the window-2 mean label sits below its line at the window's right end, the 2013 label below and to the left of its point; both PNGs re-rendered and inspected, the manifest's numbers and input hashes unchanged. The three notes stay as notes.
+
 Nothing in `results/` was touched; no study was re-run; no verdict changed.

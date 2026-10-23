@@ -91,7 +91,7 @@ def test_end_labels_are_pushed_apart():
                                     style.EndLabel("b", 0.51, style.GREY),
                                     style.EndLabel("c", 0.52, style.GREY_LIGHT)], min_gap=0.05)
     ordered = sorted(ys)
-    assert all(b - a >= 0.05 - 1e-9 for a, b in zip(ordered, ordered[1:]))
+    assert all(b - a >= 0.05 - 1e-9 for a, b in zip(ordered, ordered[1:], strict=False))
     assert ys[0] < ys[1] < ys[2]
     assert max(ys) <= 1.0
     plt.close(fig)

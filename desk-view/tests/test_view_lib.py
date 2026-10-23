@@ -11,8 +11,8 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))
 sys.path.insert(0, str(HERE.parent.parent / "predictions"))
 
-import view_lib as vl  # noqa: E402
 import score  # noqa: E402
+import view_lib as vl  # noqa: E402
 
 
 def days(start: str, n: int) -> pd.DatetimeIndex:

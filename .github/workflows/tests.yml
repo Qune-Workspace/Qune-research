@@ -39,3 +39,26 @@ jobs:
       - name: Run the study's tests
         working-directory: ${{ matrix.study }}
         run: python -m pytest -q
+
+  # Lint (ruff) over the whole repository and type check (mypy with the pandas
+  # and requests stubs) of the shared library, as configured in pyproject.toml.
+  # The reviewers' scripts and the data directories are excluded there.
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: |
+            requirements-dev.txt
+            qune_research/requirements.txt
+      - name: Install pinned dependencies
+        run: |
+          python -m pip install --quiet -r requirements-dev.txt
+          python -m pip install --quiet -r qune_research/requirements.txt
+      - name: ruff
+        run: python -m ruff check .
+      - name: mypy (shared library)
+        run: python -m mypy

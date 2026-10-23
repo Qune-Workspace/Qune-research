@@ -170,8 +170,8 @@ def main() -> int:
             raise SystemExit(f"{row['id']} is already scored; refusing")
         fetched: list[str] = []
 
-        def fetch(sid: str) -> pd.Series:
-            fetched.append(sid)
+        def fetch(sid: str, _fetched: list[str] = fetched) -> pd.Series:
+            _fetched.append(sid)
             return qdata.fetch_fred(sid, RAW_DIR, MANIFEST)
 
         series = load_series(row["series"], fetch)

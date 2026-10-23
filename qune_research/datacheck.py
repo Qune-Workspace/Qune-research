@@ -77,5 +77,5 @@ def overlap_statistics(vendor_close: pd.Series, broker_close: pd.Series, start, 
         "max_abs_daily_diff": float(diff.abs().max()) if len(common) else float("nan"),
         "days_abs_diff_over_large": int((diff.abs() > large_diff).sum()),
         "large_diff": large_diff,
-        "mean_diff_annual_by_year": {str(y): float(g.mean() * TRADING_DAYS_PER_YEAR) for y, g in diff.groupby(diff.index.year)},
+        "mean_diff_annual_by_year": {str(y): float(g.mean() * TRADING_DAYS_PER_YEAR) for y, g in diff.groupby(pd.DatetimeIndex(diff.index).year)},
     }

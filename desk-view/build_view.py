@@ -33,7 +33,7 @@ import json
 import math
 import subprocess
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import matplotlib
@@ -47,9 +47,10 @@ ROOT = HERE.parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+import view_lib as vl  # noqa: E402
+
 from qune_research import data as qdata  # noqa: E402
 from qune_research import style  # noqa: E402
-import view_lib as vl  # noqa: E402
 
 RAW_DIR = HERE / "data" / "raw"
 MANIFEST = HERE / "data" / "manifest.json"
@@ -162,7 +163,7 @@ def same_numbers(a, b, path: str = "") -> list[str]:
         if len(a) != len(b):
             diffs.append(f"{path}: length {len(a)} vs {len(b)}")
         else:
-            for i, (x, y) in enumerate(zip(a, b)):
+            for i, (x, y) in enumerate(zip(a, b, strict=True)):
                 diffs += same_numbers(x, y, f"{path}[{i}]")
     elif isinstance(a, float) or isinstance(b, float):
         if not (isinstance(a, (int, float)) and isinstance(b, (int, float)) and math.isclose(a, b, abs_tol=1e-9)):
@@ -216,7 +217,7 @@ def chart_curve(s: dict[str, pd.Series], asof: pd.Timestamp) -> dict:
         style.EndLabel("3 months ago", float(snaps["3m"]["yield_pct"].iloc[-1]), style.GREY_DARK),
         style.EndLabel("a year ago", float(year["yield_pct"].iloc[-1]), style.GREY),
     ], x=30, min_gap=0.08)
-    for i, t in enumerate(TENORS):
+    for i in range(len(TENORS)):
         ax.annotate(f"{now['yield_pct'].iloc[i]:.2f}", (x[i], now["yield_pct"].iloc[i]), xytext=(0, 8),
                     textcoords="offset points", ha="center", va="bottom", fontsize=style.TICK_SIZE, color=style.ACCENT)
     style.source(fig, SOURCE + "; DGS3MO, DGS2, DGS10, DGS30", f"{day(dates['1y'])} to {day(dates['now'])}", STUDY_ID,
@@ -224,7 +225,7 @@ def chart_curve(s: dict[str, pd.Series], asof: pd.Timestamp) -> dict:
     style.save(fig, CHARTS / "curve")
     return {"finding": finding, "one_year_change_bp_by_tenor": changes, "front_inverted_a_year_ago": inverted_then,
             "front_inverted_now": inverted_now, "dates": dates,
-            "yields_now_pct": {t: float(v) for t, v in zip(TENORS, now["yield_pct"])}}
+            "yields_now_pct": {t: float(v) for t, v in zip(TENORS, now["yield_pct"], strict=True)}}
 
 
 def chart_policy(s: dict[str, pd.Series], start: str, numbers: dict) -> dict:
@@ -348,7 +349,7 @@ def draw_charts(s: dict[str, pd.Series], asof: pd.Timestamp, numbers: dict, corr
     except (OSError, subprocess.CalledProcessError):
         commit = None
     manifest = {
-        "made_at_utc": datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
+        "made_at_utc": datetime.now(UTC).replace(microsecond=0).isoformat(),
         "repository_commit_at_run": commit,
         "asof": str(asof.date()),
         "inputs_sha256": raw_hashes,

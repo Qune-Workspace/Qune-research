@@ -70,11 +70,13 @@ def test_ii_relabelling_every_date_moves_the_schedule_and_keeps_every_weight(wor
     w0 = _weights(prices, cash, sig)
     shift = pd.DateOffset(years=1)
     shifted_bars = pd.DatetimeIndex([d + shift for d in bars])
-    sp = prices.copy(); sp.index = shifted_bars
-    sc = cash.copy(); sc.index = shifted_bars
+    sp = prices.copy()
+    sp.index = shifted_bars
+    sc = cash.copy()
+    sc.index = shifted_bars
     ssig = cal.month_end_signal_dates(shifted_bars, "2005-12-01", "2007-11-30")
     assert len(ssig) == len(sig)
-    assert all(s == t + shift for s, t in zip(ssig, sig))
+    assert all(s == t + shift for s, t in zip(ssig, sig, strict=True))
     ssched = cal.schedule(shifted_bars, ssig)
     assert all(ssched["execution_date"] == sched["execution_date"] + shift)
     w1 = _weights(sp, sc, ssig)
@@ -143,7 +145,8 @@ def test_vi_drift_is_tracked(world):
     # hold A at 0.5 for one month; if A doubled while cash was flat the drifted weight is 2/3,
     # so the next month's turnover to 0.5 is 1/6
     bars2 = pd.bdate_range("2004-01-01", "2004-04-30")
-    a = pd.Series(100.0, index=bars2); a[a.index > "2004-02-15"] = 200.0
+    a = pd.Series(100.0, index=bars2)
+    a[a.index > "2004-02-15"] = 200.0
     cash2 = pd.Series(100.0, index=bars2)
     sig2 = cal.month_end_signal_dates(bars2, "2004-01-01", "2004-03-31")
     sched2 = cal.schedule(bars2, sig2)

@@ -19,7 +19,7 @@ def excess_momentum(tri: pd.Series, cash_tri: pd.Series, signal_date: pd.Timesta
     """``TRI(t)/TRI(t_L) − cash(t)/cash(t_L)`` (§6.1), or None if the asset has
     no bar at t_L (it has not entered the universe)."""
     t = pd.Timestamp(signal_date)
-    t_l = months_before(t, lookback_months, tri.dropna().index)
+    t_l = months_before(t, lookback_months, pd.DatetimeIndex(tri.dropna().index))
     if t_l is None or t not in tri.index or np.isnan(tri.loc[t]):
         return None
     cash = cash_tri.reindex([t_l, t], method="ffill")

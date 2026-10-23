@@ -40,7 +40,7 @@ def schedule(bars: pd.DatetimeIndex, signal_dates: pd.DatetimeIndex,
         if not end_at_last_bar or (len(pos) > 1 and pos[-2] >= len(idx)):
             raise ValueError("bars end before the execution date of the last signal")
         truncated = True
-    exe = pd.DatetimeIndex([idx[p] if p < len(idx) else pd.NaT for p in pos])
+    exe = pd.DatetimeIndex([idx[int(p)] if p < len(idx) else pd.NaT for p in pos])
     out = pd.DataFrame({"signal_date": sig, "execution_date": exe})
     out["period_end"] = out["execution_date"].shift(-1)
     if truncated and len(out) > 1:

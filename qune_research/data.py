@@ -33,8 +33,9 @@ import io
 import json
 import os
 import shutil
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from urllib.parse import urlparse
 
 import pandas as pd
 import requests
@@ -49,7 +50,7 @@ def sha256_of(path: Path) -> str:
 
 
 def utc_now() -> str:
-    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    return datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 def read_manifest(manifest_path: Path) -> dict:
@@ -115,11 +116,11 @@ def fetch_tiingo(symbol: str, start: str, end: str | None, raw_dir: Path, manife
                  session: requests.Session | None = None) -> pd.DataFrame:
     """One GET for ``symbol``; write ``tiingo_{symbol}_daily.csv`` and record provenance."""
     token = tiingo_token_from_env()
-    params = {"startDate": start, "format": "json", "resampleFreq": "daily"}
+    params: dict[str, str] = {"startDate": start, "format": "json", "resampleFreq": "daily"}
     if end:
         params["endDate"] = end
     url = TIINGO_URL.format(symbol=symbol.lower())
-    if requests.utils.urlparse(url).hostname != TIINGO_HOST:
+    if urlparse(url).hostname != TIINGO_HOST:
         raise RuntimeError("host not allowed")
     headers = {"Authorization": f"Token {token}", "Content-Type": "application/json"}
     downloaded_at = utc_now()
@@ -168,7 +169,7 @@ def alpaca_path(symbol: str, raw_dir: Path) -> Path:
 
 
 def _alpaca_end_timestamp(end: str | None) -> str:
-    latest = datetime.now(timezone.utc) - ALPACA_END_LAG
+    latest = datetime.now(UTC) - ALPACA_END_LAG
     if end is not None:
         requested = pd.Timestamp(end).tz_localize("UTC") + pd.Timedelta(days=1)
         latest = min(latest, requested.to_pydatetime())
@@ -191,7 +192,7 @@ def fetch_alpaca(symbol: str, start: str, end: str | None, raw_dir: Path, manife
     """All daily bars of ``symbol`` from ``start`` to ``end`` (or now minus 15
     minutes), ``adjustment='all'``; written and recorded."""
     headers = alpaca_credentials_from_env()
-    params = {"timeframe": "1Day", "feed": "sip", "adjustment": "all",
+    params: dict[str, str | int] = {"timeframe": "1Day", "feed": "sip", "adjustment": "all",
               "start": start, "end": _alpaca_end_timestamp(end), "limit": ALPACA_PAGE_LIMIT}
     url = ALPACA_URL.format(symbol=symbol)
     client = session or requests

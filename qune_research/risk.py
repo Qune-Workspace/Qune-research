@@ -233,7 +233,8 @@ def stress_window_returns(prices: pd.DataFrame, weights: pd.Series | dict[str, f
         p1 = prices.reindex([e], method="ffill").iloc[0]
         leg = {}
         ok = True
-        for a, wa in w.items():
+        for a_, wa in w.items():
+            a = str(a_)
             if np.isnan(p0[a]) or np.isnan(p1[a]):
                 ok = False
                 break

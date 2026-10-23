@@ -172,8 +172,8 @@ def ledoit_wolf_sharpe_test(r1: pd.Series, r2: pd.Series, rng: np.random.Generat
     if x1.shape != x2.shape:
         raise ValueError("series must be paired")
     n = len(x1)
-    diff, se = _sharpe_difference_and_se(x1[None, :], x2[None, :], hac_lags)
-    diff, se = float(diff[0]), float(se[0])
+    diff_arr, se_arr = _sharpe_difference_and_se(x1[None, :], x2[None, :], hac_lags)
+    diff, se = float(diff_arr[0]), float(se_arr[0])
     t_stat = diff / se
     idx = circular_block_indices(rng, n, n_resamples, block_length)
     extremes = 0

@@ -119,7 +119,7 @@ def nyse_trading_days(start, end) -> pd.DatetimeIndex:
     """NYSE trading days in [start, end] from the rule-based calendar."""
     start, end = pd.Timestamp(start), pd.Timestamp(end)
     weekdays = pd.bdate_range(start, end)
-    closed = set()
+    closed: set[pd.Timestamp] = set()
     for year in range(start.year, end.year + 1):
         closed.update(pd.Timestamp(d) for d in nyse_holidays(year))
     return weekdays[~weekdays.isin(closed)]

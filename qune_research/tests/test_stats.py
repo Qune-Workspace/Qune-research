@@ -92,7 +92,8 @@ def test_bootstraps_are_deterministic_under_the_seed():
     lw_b = stats.ledoit_wolf_sharpe_test(x, y, rng_b, n_resamples=1000)
     assert lw_a == lw_b
     assert 0.0 <= lw_a["p_value"] <= 1.0
-    population_sharpe = lambda s: s.mean() / s.std(ddof=0)   # Ledoit-Wolf use population moments
+    def population_sharpe(s):   # Ledoit-Wolf use population moments
+        return s.mean() / s.std(ddof=0)
     assert lw_a["diff_monthly"] == pytest.approx(population_sharpe(x) - population_sharpe(y))
     assert lw_a["diff_annual"] == pytest.approx(lw_a["diff_monthly"] * math.sqrt(12))
 

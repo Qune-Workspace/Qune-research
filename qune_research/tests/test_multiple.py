@@ -10,7 +10,6 @@ from scipy.stats import norm
 from qune_research.multiple import min_track_record_length, reality_check, spa_test
 from qune_research.stats import probabilistic_sharpe
 
-
 # --- MinTRL ---------------------------------------------------------------------
 
 def test_mintrl_closed_form_under_normality():

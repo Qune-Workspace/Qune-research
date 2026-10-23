@@ -43,6 +43,7 @@ from cycler import cycler  # noqa: E402
 from matplotlib.axes import Axes  # noqa: E402
 from matplotlib.colors import to_hex  # noqa: E402
 from matplotlib.figure import Figure  # noqa: E402
+from matplotlib.patches import Rectangle  # noqa: E402
 from matplotlib.ticker import FuncFormatter, MaxNLocator, PercentFormatter  # noqa: E402
 
 # ----------------------------------------------------------------------------
@@ -318,7 +319,7 @@ def check(fig: Figure) -> list[str]:
                 break
         for patch in ax.patches:
             fc = patch.get_facecolor()
-            if fc is not None and len(fc) == 4 and fc[3] > 0 and to_hex(fc).lower() in _DEFAULT_CYCLE:
+            if isinstance(fc, tuple) and len(fc) == 4 and float(fc[3]) > 0 and to_hex(fc).lower() in _DEFAULT_CYCLE:
                 failures.append(f"axes {i}: a bar or band uses matplotlib's default colour {to_hex(fc)}")
                 break
         for gl in ax.get_xgridlines():
@@ -332,8 +333,7 @@ def check(fig: Figure) -> list[str]:
 
 
 def _is_barh(ax: Axes) -> bool:
-    return any(getattr(p, "get_width", None) is not None and p.get_height() < p.get_width()
-               for p in ax.patches)
+    return any(isinstance(p, Rectangle) and p.get_height() < p.get_width() for p in ax.patches)
 
 
 def save(fig: Figure, stem: str | Path, strict: bool = True) -> tuple[Path, Path]:

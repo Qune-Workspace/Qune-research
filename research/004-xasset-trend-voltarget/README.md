@@ -184,7 +184,7 @@ T1: O1 pass (mean T1 − B4 +0.00002 per month, t 0.03; against B3 −0.00033, t
 
 **Volatility forecast against realised** (diagonal, √Σ w²σ²): T1's realised 12-month volatility averaged 1.82× its forecast (74 months compared; 69% of months above 1.5×); B3's 2.32× (91% of months). Worse than in-sample (1.58×), for the reason §9.6 anticipated: the diagonal forecast ignores correlations, and 2020 and 2022 were the years in which everything moved together. First input to the programme's risk model.
 
-**Power**: 122 on/off switches across the ten assets (floor 40), "as registered". Plots: `results/oos/exposure_drawdown_10assets.png` (gross exposure with the number of assets on; drawdown of T1 against B3 and B4) and `onoff_strips_10assets.png`; the nine-asset versions beside them.
+**Power**: 122 on/off switches across the ten assets (floor 40), "as registered". Plots: `results/oos/exposure_drawdown_10assets.png` (gross exposure with the number of assets on; drawdown of T1 against B3 and B4) and `onoff_strips_10assets.png`; the nine-asset versions beside them. *Added 2026-10-23: the same daily index and metrics drawn to the chart standard of that date are in `charts/` (`oos_drawdown_10assets`, `oos_growth_10assets`, and the in-sample pair, SVG + PNG, built by `charts/make_charts.py` from the committed files with every title number in `charts/manifest.json`); the results/ charts stay as the run wrote them. On the daily series the deepest drawdown is −11.4% for T1 against −12.4% for B4 and −15.5% for B3, beside the monthly −4.1% against −11.1% above: the monthly figure is what the pre-registration scores, the daily one shows how little of it survives inside the month, which §9.7 already lists.*
 
 ## What did not work (§9.7; out-of-sample)
 

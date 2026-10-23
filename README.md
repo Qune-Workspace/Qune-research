@@ -9,9 +9,9 @@ This repository is the public record of one research desk inside Qune. It exists
 **Question:** across ten liquid ETFs (equities, Treasuries, credit, real assets), hold each one only when its own 12-month return beats T-bills, with every position scaled to a 10% volatility target and no leverage. Does that beat the same volatility-scaled portfolio held throughout, after per-asset costs?
 **Verdict: not supported.** The rule, the benchmarks and the pass bar were fixed and committed before any data were fetched. In-sample (2004–2018, 180 months) the trend signal added nothing measurable on top of volatility scaling (Sharpe 0.886 against 0.880 for the always-long volatility-scaled book; t = 0.65), so two of the four in-sample criteria failed. On the held-back 2019–2026 window, run once, both out-of-sample sign conditions held (Sharpe 0.34 against 0.20; monthly drawdown −4.1% against −11.1%), almost entirely because the book sat in bills through the 2022 sell-off (−3.1% against −13.4%); it was fully invested into the March 2020 crash and missed the rebound. The verdict was fixed by the in-sample failures under a precedence rule written in advance, and the note does not re-weight the criteria after seeing the window go the rule's way. Over that window, plain equal weight and 60/40 beat every volatility-scaled variant. All figures are backtests after costs; [full note](research/004-xasset-trend-voltarget/README.md), [pre-registration](research/004-xasset-trend-voltarget/PREREGISTRATION.md).
 
-![Study 004 out-of-sample: gross exposure and number of assets on, and drawdown of the rule against the always-long and exposure-matched volatility-scaled portfolios, 2019-2026](research/004-xasset-trend-voltarget/results/oos/exposure_drawdown_10assets.png)
+![Out of sample, trend timing trimmed the deepest daily drawdown only from −12.4% to −11.4%; the trough came in 2022. Daily drawdown of the rule (T1) against the same volatility-scaled book held throughout at matched exposure (B4) and fully invested (B3), 2019-01 to 2026-09](research/004-xasset-trend-voltarget/charts/oos_drawdown_10assets.png)
 
-*Out-of-sample, run once, vendor prices with actual BIL as cash. Top: the rule's gross exposure and the number of assets on. Bottom: drawdown of the rule (T1) against the always-long volatility-scaled book (B3) and the same book at the rule's average exposure (B4).*
+*Out-of-sample, run once, vendor prices with actual BIL as cash; drawn from the committed daily index by [charts/make_charts.py](research/004-xasset-trend-voltarget/charts/make_charts.py). The monthly drawdown the pre-registration scores fell from −11.1% to −4.1%; the daily series shows how little of that survives inside the month. The run's own chart is in [results/oos/](research/004-xasset-trend-voltarget/results/oos/exposure_drawdown_10assets.png), unchanged.*
 
 **Previous result:** Study 003, Treasury momentum (not supported; independently reviewed): [note](research/003-bond-tsmom-ief/README.md), [review](research/003-bond-tsmom-ief/REVIEW.md).
 
@@ -130,10 +130,11 @@ research/NNN-slug/      one study per folder
   reproduce.sh          --check | --validate | --insample | --oos, each gated; --oos runs once
   src/, tests/          Python and its unit tests (constructed data only)
   results/              outputs written once and never edited; data_manifest.json with file hashes
+  charts/               the same results drawn to the house chart standard (SVG + 2x PNG, manifest with input hashes)
   paper-log/            forward paper-trading record from publication (once a study trades)
 desk-view/              weekly rates-and-macro view from public data; numbers in json, charts by code
 predictions/            the desk's calls, logged before the outcome (append-only) and scored when due
-qune_research/          the shared library: calendar, data adapters with hashing, engine, statistics, risk model, multiple-testing inference
+qune_research/          the shared library: calendar, data adapters with hashing, engine, statistics, risk model, multiple-testing inference, house chart style (style.py)
 tools/scan.sh           leak scan run before every commit and push
 .github/workflows/      the unit tests of every study, run on each push (no data, no secrets)
 LICENSE                 MIT for the code and documents; vendor data excluded; not advice

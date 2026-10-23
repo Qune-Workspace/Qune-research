@@ -87,6 +87,10 @@ Every agent in the organisation, and every interactive session, draws on a singl
 
 Every claim in a desk document carries one of five labels. **Observed**: the author opened or ran it in that session. **Reported**: a source says so and the author did not verify it against the full text. **Inferred**: the author's reasoning from observed or reported facts. **Proposed**: a design choice awaiting review. **Unknown**: stated as not known. A number without a label is treated as unverified.
 
+## Chart standard
+
+Every chart the desk publishes is drawn by a script from committed results files through one house style module, `qune_research/style.py`: the title states the finding and a subtitle carries the units and the period; one series in the accent colour and the rest in greys; no top or right spines, faint horizontal gridlines only, no border, lines labelled at their ends instead of a legend, bars sorted by value; one sans-serif family at fixed sizes; a source line bottom left with the data source, the sample period, "Qune Research" and the study id; SVG and a 2x PNG. The module's `check` refuses to save a figure that breaks the mechanical part of the list, and the Tester review applies the whole list (`style.CHECKLIST`) and returns each failure with the exact fix. A study's `results/` charts are the run's own output and are never replaced; the restyled versions live in `charts/` beside a manifest with the input hashes and every number that appears in a title.
+
 ## Limitations
 
 - **One human owner.** Every irreversible decision waits for one person. If the owner is unavailable the organisation keeps doing reversible work and stops at the first ask-first boundary.

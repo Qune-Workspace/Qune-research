@@ -124,3 +124,18 @@ def test_title_block_wraps_and_lowers_the_axes_top():
     text = next(t for t in fig.texts if t.get_gid() == "qune-title")
     assert "\n" in text.get_text()
     plt.close(fig)
+
+
+def test_house_font_is_installed_and_resolves_without_fallback(caplog):
+    """The family is pinned to a font matplotlib ships, so no machine falls back."""
+    from matplotlib import font_manager as fm
+
+    assert len(style.FONT_FAMILY) == 1
+    path = fm.findfont(fm.FontProperties(family=style.FONT_FAMILY), fallback_to_default=False)
+    assert fm.FontProperties(fname=path).get_name() == style.FONT_FAMILY[0]
+    style.apply()
+    with caplog.at_level("WARNING", logger="matplotlib.font_manager"):
+        fig, _ = _finished_figure()
+        fig.canvas.draw()
+        plt.close(fig)
+    assert not [r for r in caplog.records if "findfont" in r.getMessage()]

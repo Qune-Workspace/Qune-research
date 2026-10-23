@@ -1,6 +1,6 @@
 {
-  "made_at_utc": "2026-10-23T12:37:39+00:00",
-  "repository_commit_at_run": "3991344852113d13c37a62ec4dc64a31894386f6",
+  "made_at_utc": "2026-10-23T22:18:29+00:00",
+  "repository_commit_at_run": "e4eebde49517e1415afd6e53ef2fd1765a076912",
   "inputs_sha256": {
     "research/005-duration-trend-regime/results/insample/monthly_base.csv": "011791ec5fd08c81ba6e0ad9251a9c14f9ca055af39ae3ec421834754976f3e9",
     "research/005-duration-trend-regime/results/insample/summary.json": "13656c6a59357aeb658fc344bdb7715e3c7bd1bbd9ed9c93e228906c9a9dfa28",

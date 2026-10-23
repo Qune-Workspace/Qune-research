@@ -69,7 +69,15 @@ _DEFAULT_CYCLE = {
     "#8c564b", "#e377c2", "#7f7f7f", "#bcbd22", "#17becf",
 }
 
-FONT_FAMILY = ["Helvetica Neue", "Helvetica", "Arial", "Liberation Sans", "DejaVu Sans"]
+# One family, pinned to the font that ships inside matplotlib itself, so that
+# every machine (and CI) draws the same glyphs with the same metrics and the
+# SVG names the font that the PNG was laid out with.  Until 2026-10-23 the list
+# started with Helvetica Neue / Helvetica / Arial / Liberation Sans, none of
+# which is installed here: every chart was already drawn in DejaVu Sans, but
+# the SVG text asked viewers for Helvetica, whose metrics differ from the ones
+# the label positions were computed with.  ``test_style`` checks that the
+# family resolves without a fallback.
+FONT_FAMILY = ["DejaVu Sans"]
 TITLE_SIZE = 13.5
 SUBTITLE_SIZE = 10.0
 LABEL_SIZE = 10.0

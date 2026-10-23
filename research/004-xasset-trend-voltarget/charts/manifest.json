@@ -1,6 +1,6 @@
 {
-  "made_at_utc": "2026-10-23T06:29:36+00:00",
-  "repository_commit_at_run": "73d7623494610f673a69b8a59030b1cd25e6a32a",
+  "made_at_utc": "2026-10-23T22:18:25+00:00",
+  "repository_commit_at_run": "e4eebde49517e1415afd6e53ef2fd1765a076912",
   "inputs_sha256": {
     "research/004-xasset-trend-voltarget/results/insample/daily_index_10assets.csv": "c36a27c1d8b6f9a1cf5bf96e08453c25ea3dae329a55bd2df235ab45e38e39ad",
     "research/004-xasset-trend-voltarget/results/insample/metrics_10assets_base.csv": "b64757b96e8675bcca8c3b0d1fe18203495efae05702537580daaa8199aaf900",

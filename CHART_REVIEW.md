@@ -91,3 +91,7 @@ Accepted in full. The reviewer's recompute of all 24 series matched the sheets t
 - **Source line at the edge (should-fix):** `style.source` wraps at the title block's right margin instead of the figure edge, which also moves every other chart's source line inside the same margin when it is next re-rendered (none was re-rendered today; their PNGs are unchanged).
 
 Tests: four added or extended in the library suite (the "matched" branch, the t in the headline, the typographic minus, the source wrap), 121 pass; ruff and mypy clean. Nothing in `results/` was touched; no study was re-run; no verdict changed.
+
+### Note on SVG text (Qune, 2026-10-24; follows the house-font pin of 2026-10-23)
+
+The charts are exported with `svg.fonttype = "none"`: the text in every SVG stays text, selectable and searchable, and the files are small. The cost is that a viewer without DejaVu Sans installed draws its own sans-serif at slightly different metrics, so an end-label or the wrapped source line can sit a few pixels from where matplotlib placed it; nothing overlaps in the PNG, which is laid out and rasterised with the pinned font and is the reference rendering of every chart. The alternative, `svg.fonttype = "path"`, would freeze the glyphs as outlines (identical look everywhere, no selectable text, files several times larger). Decided: keep text, since the PNG is the record and the SVG exists so that a reader can inspect and reuse the figure. Revisit if the 2026-10-26 cold read reports a misplaced label in an SVG. No chart re-rendered for this note.

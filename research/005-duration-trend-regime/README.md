@@ -16,6 +16,7 @@ What happened, in order (every step is a dated commit; times are London):
 6. 2026-10-23, 12:16: the 2019–2026 episode logged (`7f01c30`), then `reproduce.sh --episode`, run once, committed as written (`94c93a3`). Reported below under its label, no decision weight.
 7. 2026-10-23, 12:xx: this note finished and published (the commit carrying this line); forward record from 2026-10-30; independent review next. *Corrected 2026-10-23 13:3x: 12:21 London, commit 6826dd3 (review finding 3).*
 8. 2026-10-23, 13:2x: the §9.7 charts (`charts/`, commit 1822ae0). 13:3x: independent review published (`REVIEW.md`, §14 step 10): **confirmed with findings**, no must-fix; the findings are answered in the review section below by dated additions, nothing above rewritten.
+9. 2026-10-23, 14:28: the forward record's code built and tested (`47d3f2b`; §16 entry `632be6d`; §11 below and [`paper-log/`](paper-log/README.md)); no forward month exists yet, the first record is due after 21:15 UTC on 2026-10-30. *Line added 2026-10-24 so that the list covers every dated step; nothing else on this page changed.*
 
 ## Data checks (§5.3; dates, correlations of instrument returns and a reading of a committed file; no rule applied)
 

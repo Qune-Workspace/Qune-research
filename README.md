@@ -13,7 +13,7 @@ This repository is the public record of one research desk inside Qune. It exists
 
 *Out-of-sample, run once, vendor prices with actual BIL as cash; drawn from the committed daily index by [charts/make_charts.py](research/004-xasset-trend-voltarget/charts/make_charts.py). The monthly drawdown the pre-registration scores fell from −11.1% to −4.1%; the daily series shows how little of that survives inside the month. The run's own chart is in [results/oos/](research/004-xasset-trend-voltarget/results/oos/exposure_drawdown_10assets.png), unchanged.*
 
-**Previous result:** Study 003, Treasury momentum (not supported; independently reviewed): [note](research/003-bond-tsmom-ief/README.md), [review](research/003-bond-tsmom-ief/REVIEW.md).
+**Previous result:** Study 003, Treasury momentum (not supported; independently reviewed): [note](research/003-bond-tsmom-ief/README.md), [review](research/003-bond-tsmom-ief/REVIEW.md), [charts to the house standard](research/003-bond-tsmom-ief/charts/) (out of sample the rule cut the deepest monthly drawdown from −22.2% to −5.5% by sitting in bills; in-sample it lagged holding IEF, Sharpe 0.45 against 0.55, and the verdict is fixed in-sample).
 
 ## What Qune is
 

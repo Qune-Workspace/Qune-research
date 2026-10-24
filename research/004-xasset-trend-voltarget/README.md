@@ -43,6 +43,8 @@ Reading: volatility scaling, not trend, did the work. B3 lifts the Sharpe ratio 
 
 No bootstrap resample was degenerate (0 dropped in every interval). Deflated Sharpe ratio (§9.4; variance of the four trials' monthly Sharpe ratios 0.000337, floor not applied): T1 PSR 0.999, **DSR 0.998 at N = 4**, 0.998 at N = 10; T2 0.991 / 0.988; T3 0.994 / 0.992; T4 0.997 / 0.996. These say the portfolios' Sharpe ratios are far from zero, which is the volatility-scaled long-only portfolio's merit, not the signal's.
 
+*Dated addition, 2026-10-24, after the [cold read](../../COLD_READ.md) (point 5).* At the programme-level count of the trend family up to and including this study (13 trials of the 12-month signal alone, 18 of any trend-timing rule, counting ten earlier desk trials on equity ETFs and Study 003's three), T1's in-sample DSR is 0.997 at both counts and its out-of-sample DSR 0.741 / 0.734 (descriptive). C3 still passes and still says only that T1's own Sharpe ratio is above zero, which the exposure-matched benchmark B4 shares; the verdict rests on C1 and C2. Computed post hoc by [`tools/tsmom_family_dsr.py`](../../tools/tsmom_family_dsr.py); see [METHODS §2.1](../../METHODS.md#21-trial-ledger-and-the-deflated-sharpe-ratio).
+
 | Criterion (T1, base costs) | Required | Observed | Result |
 |---|---|---|---|
 | C1 | Sharpe(T1) ≥ Sharpe(B4) + 0.10 and ≥ Sharpe(B3) + 0.10 | 0.886 vs 0.880 + 0.10 and 0.880 + 0.10 | **FAIL** |

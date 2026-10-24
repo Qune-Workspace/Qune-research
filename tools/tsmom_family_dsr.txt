@@ -1,0 +1,34 @@
+Deflated Sharpe at the programme-level family count (post hoc, descriptive, no decision weight)
+
+Family trials whose return was seen, in time order:
+  2026-10-18   1  broad only    desk TRD-11 round 2, crypto daily TSMOM, 480-bar lookback [TR-00506]
+  2026-10-19   5  narrow+broad  desk EQ-03, 12-month TSMOM on SPY, QQQ, IWM, DIA and their portfolio, 2017-2026 [TR-00480..00484]
+  2026-10-20   5  narrow+broad  desk TRD-46, the same five, 1994-2015 [TR-00508..00512]
+  2026-10-22   2  narrow+broad  Study 003 T1 (12-month) and T2 (12-1) [trials.md]
+  2026-10-22   1  broad only    Study 003 T3 (10-month moving average) [trials.md]
+  2026-10-22   1  narrow+broad  Study 004 T1 (12-month, vol-scaled) [trials.md]
+  2026-10-22   3  broad only    Study 004 T2-T4 (6-month, 3-month, blend) [trials.md]
+  2026-10-23   3  narrow+broad  Study 005 T1-T3 (Study 003's T1 exit, three regime variables) [trials.md]
+  Channel-breakout rules on crypto 1-hour and 4-hour bars (desk registry: 18 rows 'donchian-trend-1h', TR-00505, TR-00507) are trend-following in spirit but a different signal; adding their 20 rows to the broad family would raise it further. Correction and audit rows marked NON-TRIAL in the registry are not trials.
+
+study window    trial  N_study  DSR(N_study)  DSR(10)  N_narrow  DSR(narrow)  N_broad  DSR(broad)  PSR
+003   insample  T1           3         0.951    0.932        12        0.930       14       0.927  0.968
+003   insample  T2           3         0.929    0.904        12        0.900       14       0.897  0.952
+003   insample  T3           3         0.866    0.827        12        0.822       14       0.818  0.904
+003   oos       T1           3         0.519    0.390        12        0.374       14       0.362  0.668
+003   oos       T2           3         0.352    0.240        12        0.227       14       0.217  0.503
+003   oos       T3           3         0.146    0.083        12        0.077       14       0.072  0.252
+004   insample  T1           4         0.998    0.998        13        0.997       18       0.997  0.999
+004   insample  T2           4         0.991    0.988        13        0.987       18       0.986  0.996
+004   insample  T3           4         0.994    0.992        13        0.991       18       0.990  0.997
+004   insample  T4           4         0.997    0.996        13        0.996       18       0.995  0.999
+004   oos       T1           4         0.771    0.747        13        0.741       18       0.734  0.814
+004   oos       T2           4         0.740    0.714        13        0.708       18       0.700  0.788
+004   oos       T3           4         0.649    0.619        13        0.612       18       0.604  0.705
+004   oos       T4           4         0.764    0.739        13        0.733       18       0.726  0.809
+005   insample  T1           3         0.959    0.945        16        0.939       21       0.936  0.972
+005   insample  T2           3         0.962    0.948        16        0.943       21       0.940  0.974
+005   insample  T3           3         0.983    0.976        16        0.973       21       0.971  0.989
+
+Check: 34 committed DSR values reproduced from (SR, PSR, V, N) to within 1e-9 before any family figure was computed.
+Reading: at these N the expected maximum SR* stays small against the trials' own SR, so the DSR stays close to the PSR, which tests whether the rule's own Sharpe ratio is above zero (largely the asset's premium), not whether the timing beats a benchmark. Reported descriptively; no verdict depends on it.

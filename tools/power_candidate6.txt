@@ -1,0 +1,26 @@
+Candidate 6: minimum detectable timing edge of the C2 test, committed before the question is fixed
+(inputs: Study 003's committed in-sample file only; no constant-maturity data read)
+
+Study 003 in-sample check: 185 months, NW t 0.37 (published 0.37), w 0.692 (published 0.692)
+  sd(T1 - B3) 0.708% a month; sqrt(w(1-w)) x rms(B1 - B0) 0.845% (approximation / actual 1.193)
+  NW / i.i.d. standard error 0.972; IEF excess-return volatility 6.26% a year
+  C2-bar MDE at 185 months: 1.73% a year
+
+Same dispersion and autocorrelation at 593 months (1969-08 to 2018-12): MDE 0.96% a year
+
+Largest annualised excess-return volatility of the duration leg at which the C2-bar MDE stays at or below:
+  target    w = 0.5 (worst case)    w = 0.692 (003's)
+  2%/yr        10.18%                 11.03%
+  1%/yr         5.09%                  5.51%
+
+The product form overstates the 003 dispersion by a factor of 1.193, so the bars above are conservative.
+Calibrated to 003 (divide the dispersion by 1.193), the 2% bar would be 12.15% (w = 0.5) / 13.16% (w = 0.692).
+Committed bar (chosen before any candidate-6 data are read): the conservative w = 0.5 figure, 10.18% a year for 2%/yr.
+
+MDE = (2.0 + 0.842) x 12 x NW standard error of the mean monthly differential (C2 bar, 80% power).
+Assumptions (stated before any candidate-6 data are read): the NW/i.i.d. factor and the product form of the
+differential carry over from the ETF era; the duration leg's excess-return volatility is the only quantity
+expected to change. Inferred, not measured: 1969-2018 rates were more volatile than 2003-2018, so the leg's
+volatility will be higher than the ETF-era figure; whether it stays under the 2% bar is checked at the
+candidate-6 data step, before any rule return. Under the committed (conservative) form the 1% bar needs a
+leg calmer than IEF was in 2003-2018, so candidate 6 cannot claim to see an edge of 1% a year or less.

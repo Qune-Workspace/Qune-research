@@ -8,7 +8,7 @@ import json
 import numpy as np
 import pandas as pd
 import pytest
-from paper.decide import STRATEGY_ID, decision_record, write_record
+from paper.decide import STRATEGY_ID, decision_record, earliest_write_utc, write_record
 from src.calendar import month_end_bars
 
 from tests.toy import toy_bars, toy_ief
@@ -85,3 +85,34 @@ def test_write_record_never_overwrites(tmp_path):
     assert json.loads(path.read_text()) == rec
     with pytest.raises(FileExistsError):
         write_record(rec, tmp_path)
+
+
+# --- §11.2 clock gate (added 2026-10-24, before the first record) ---------------
+
+def test_earliest_write_is_1700_new_york_under_edt_and_est():
+    # 2026-10-30 is EDT (UTC-4): 17:00 New York = 21:00Z; 2026-11-30 is EST (UTC-5): 22:00Z
+    assert earliest_write_utc("2026-10-30") == pd.Timestamp("2026-10-30T21:00:00Z")
+    assert earliest_write_utc("2026-11-30") == pd.Timestamp("2026-11-30T22:00:00Z")
+
+
+def test_write_record_refuses_before_1700_new_york(tmp_path):
+    rec = decision_record(IEF, BIL, T.strftime("%Y-%m-%d"), "BIL", TRADING_DAYS, run_at_utc="x")
+    early = earliest_write_utc(rec["signal_date"]) - pd.Timedelta(minutes=1)
+    with pytest.raises(RuntimeError, match="too early"):
+        write_record(rec, tmp_path, now_utc=early)
+    assert list(tmp_path.iterdir()) == []            # a refused write leaves nothing on disk
+    # the same minute, and a later day (the §11.2 re-check), are accepted
+    path = write_record(rec, tmp_path, now_utc=earliest_write_utc(rec["signal_date"]))
+    assert path.exists()
+    later = decision_record(IEF, BIL, MONTH_ENDS.iloc[-4].strftime("%Y-%m-%d"), "BIL", TRADING_DAYS, run_at_utc="x")
+    assert write_record(later, tmp_path, now_utc=earliest_write_utc(later["signal_date"]) + pd.Timedelta(days=1)).exists()
+
+
+def test_write_record_gate_accepts_naive_and_string_clocks(tmp_path):
+    rec = decision_record(IEF, BIL, T.strftime("%Y-%m-%d"), "BIL", TRADING_DAYS, run_at_utc="x")
+    naive = earliest_write_utc(rec["signal_date"]).tz_localize(None) - pd.Timedelta(minutes=1)
+    with pytest.raises(RuntimeError, match="too early"):
+        write_record(rec, tmp_path, now_utc=naive)                      # naive = UTC
+    with pytest.raises(RuntimeError, match="too early"):
+        write_record(rec, tmp_path, now_utc=str(naive))                 # ISO string, naive = UTC
+    assert write_record(rec, tmp_path, now_utc=str(naive + pd.Timedelta(minutes=1))).exists()

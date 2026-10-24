@@ -18,7 +18,10 @@ A record is written whatever the outcome: a missing or stale month-end bar
 produces ``status = "signal unavailable"`` with ``target = None`` (§11.2:
 hold, re-check for up to three NYSE days, then alert).  The record carries
 ``run_at_utc`` so the commit history shows it was written after the signal
-date, never before and never backdated.
+date, never before and never backdated.  Since 2026-10-24 (before the first
+record) ``write_record`` also refuses to write before 17:00 New York time on
+the signal date (§11.2), so a record cannot be made from a session that has
+not closed; a refused write leaves nothing on disk.
 
 Usage (from the study folder, after the close on the signal date):
 
@@ -45,6 +48,10 @@ STRATEGY_VERSION = "1"
 # Bars are fetched from this date so that the 12-month lookback and the T3
 # comparison always have more history than they need.
 PAPER_BARS_START = "2024-01-02"
+# §11.2: the decision is made after 17:00 New York time on the signal date.
+# ``write_record`` refuses an earlier write whatever the host's clock says.
+DECISION_TIME_NY = "17:00"
+NEW_YORK = "America/New_York"
 
 
 def decision_record(ief_bars: pd.DataFrame, bil_bars: pd.DataFrame, signal_date: str,
@@ -98,9 +105,29 @@ def decision_record(ief_bars: pd.DataFrame, bil_bars: pd.DataFrame, signal_date:
     }
 
 
-def write_record(record: dict, directory: Path = DECISIONS_DIR) -> Path:
+def earliest_write_utc(signal_date: str) -> pd.Timestamp:
+    """§11.2: the decision is made after 17:00 New York time on the signal
+    date, i.e. after the 16:00 close under EDT or EST.  Returned in UTC
+    (21:00Z under EDT, 22:00Z under EST).  Added 2026-10-24, before the first
+    record: until then only the schedule, not the code, kept a record from
+    being written during the session."""
+    local = pd.Timestamp(f"{pd.Timestamp(signal_date).date()} {DECISION_TIME_NY}", tz=NEW_YORK)
+    return local.tz_convert("UTC")
+
+
+def write_record(record: dict, directory: Path = DECISIONS_DIR,
+                 now_utc: pd.Timestamp | str | None = None) -> Path:
     """One file per signal date; refuses to overwrite (a record is never
-    rewritten; a correction is a new, later record with a note)."""
+    rewritten; a correction is a new, later record with a note) and refuses
+    to write before 17:00 New York time on the signal date (§11.2).  A
+    refused write leaves nothing on disk."""
+    now = pd.Timestamp.now(tz="UTC") if now_utc is None else pd.Timestamp(now_utc)
+    now = now.tz_localize("UTC") if now.tzinfo is None else now.tz_convert("UTC")
+    earliest = earliest_write_utc(record["signal_date"])
+    if now < earliest:
+        raise RuntimeError(f"too early: a record for {record['signal_date']} is written after "
+                           f"{DECISION_TIME_NY} New York time ({earliest.strftime('%Y-%m-%dT%H:%MZ')}); "
+                           f"now {now.strftime('%Y-%m-%dT%H:%MZ')} (§11.2)")
     directory.mkdir(parents=True, exist_ok=True)
     path = directory / f"{record['signal_date']}.json"
     if path.exists():
@@ -123,7 +150,11 @@ def main(argv: list[str] | None = None) -> int:
                              args.signal_date, args.holding)
     print(json.dumps(record, indent=2, sort_keys=True))
     if not args.dry_run:
-        print(f"written: {write_record(record)}")
+        try:
+            print(f"written: {write_record(record)}")
+        except RuntimeError as exc:          # before 17:00 New York time: nothing written
+            print(f"refused: {exc}")
+            return 1
     return 0 if record["status"] == "ok" else 1
 
 

@@ -157,7 +157,7 @@ qune_research/          the shared library: calendar, data adapters with hashing
 tearsheets/             post-hoc one-page tear-sheets per published window of Studies 003-005, checked against the committed metrics files
 tools/scan.sh           leak scan run before every commit and push; tools/check_citations.py checks every DOI against Crossref
 .github/workflows/      on each push: the seven test suites, ruff and mypy, library coverage with a 90% floor, and the reviewers' recomputation scripts (no data, no secrets)
-Makefile                venv, test, lint, coverage, reproduce, reproduce-raw, charts: the same steps CI runs, for a reader's machine
+Makefile                venv, test, lint, coverage, reproduce, reproduce-raw, charts, tearsheets: the same steps CI runs, for a reader's machine
 pyproject.toml          lint (ruff), type-check (mypy) and coverage configuration; requirements-dev.txt pins the tools
 LICENSE                 MIT for the code and documents; vendor data excluded; not advice
 ```

@@ -150,7 +150,7 @@ research/NNN-slug/      one study per folder
   src/, tests/          Python and its unit tests (constructed data only)
   results/              outputs written once and never edited; data_manifest.json with file hashes
   charts/               the same results drawn to the house chart standard (SVG + 2x PNG, manifest with input hashes)
-  paper-log/            forward paper-trading record from publication (once a study trades)
+  paper-log/            forward record from publication: 003 the paper sleeve (orders only once Independent Risk clears it), 004 and 005 shadow records with no order; first entries 2026-10-30
 desk-view/              weekly rates-and-macro view from public data; numbers in json, charts by code to the house standard
 predictions/            the desk's calls, logged before the outcome (append-only) and scored when due
 qune_research/          the shared library: calendar, data adapters with hashing, engine, statistics, risk model, multiple-testing inference, house chart style (style.py), tear-sheet report (report.py)

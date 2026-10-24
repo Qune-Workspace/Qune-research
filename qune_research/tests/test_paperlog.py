@@ -194,3 +194,19 @@ def test_build_is_byte_identical_for_the_same_inputs_and_stamp(root):
     paperlog.build(root, [BOOK_SPEC], out, "2026-10-24T08:00:00Z", commit="deadbee")
     second = {p.name: p.read_bytes() for p in out.iterdir()}
     assert first == second
+
+
+def test_shadow_file_is_configurable_for_the_sleeve_summary(root):
+    """Study 003 writes its periods to summary.csv (§11.5); the dashboard reads that file, not shadow.csv."""
+    spec = paperlog.LogSpec(
+        study="Study 003", folder=SLEEVE_SPEC.folder, kind="paper sleeve", label="not supported",
+        first_signal_date="2026-10-30", strategy="T1", benchmarks=("B3", "B1"),
+        return_columns={"T1": "rule_return", "B3": "B3", "B1": "B1"}, shadow_file="summary.csv")
+    folder = root / spec.folder / "paper-log"
+    dates = pd.date_range("2026-11-01", periods=3, freq="MS")
+    pd.DataFrame([{"signal_date": "2026-10-30", "execution_date": str(dates[i].date()), "period_end": str(dates[i + 1].date()),
+                   "rule_return": 0.01, "B3": 0.002, "B1": -0.003} for i in range(2)]).to_csv(folder / "summary.csv", index=False)
+    st = paperlog.status(root, spec)
+    assert len(st.shadow) == 2 and st.equity["T1"].iloc[-1] == pytest.approx(1.01 ** 2)
+    assert f"{spec.folder}/paper-log/summary.csv" in st.inputs
+    assert paperlog.status(root, SLEEVE_SPEC).shadow.empty      # the default still reads shadow.csv

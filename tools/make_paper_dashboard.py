@@ -35,9 +35,11 @@ SPECS = [
         study="Study 003", folder="research/003-bond-tsmom-ief", kind="paper sleeve",
         label="not supported; paper record of a not-supported rule; orders only once Independent Risk clears the sleeve",
         first_signal_date="2026-10-30",
-        chart_note=("No equity series yet: the sleeve's monthly summary with its B0/B1/B3 benchmarks "
-                    "(PREREGISTRATION.md §11.5) is designed, not built; execution records and the daily "
-                    "stop-check lines are counted above as they appear."),
+        strategy="T1", benchmarks=("B3", "B1", "B0"), shadow_file="summary.csv",
+        return_columns={"T1": "rule_return", "B3": "B3", "B1": "B1", "B0": "B0"},
+        labels={"T1": "Trend rule T1", "B3": "Same-exposure mix B3", "B1": "Hold IEF B1", "B0": "Bills B0"},
+        data_source="Alpaca daily IEF and BIL bars (adjustment='all') read by paper/summarise.py",
+        chart_note="Rule at official closes, net of 2 bp per side; the sleeve's own fills are in summary.csv",
     ),
     paperlog.LogSpec(
         study="Study 004", folder="research/004-xasset-trend-voltarget", kind="shadow record",

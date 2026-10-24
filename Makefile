@@ -14,6 +14,8 @@
 #   make tearsheets     redraw the post-hoc tear-sheets in tearsheets/ from the
 #                       committed monthly files and check them against the
 #                       committed metrics files (exits 1 on any difference)
+#   make dashboard      regenerate dashboard/ (the paper dashboard) from the
+#                       studies' committed paper-log/ folders; nothing fetched
 #
 # Nothing here fetches data or runs a backtest: those paths stay behind each
 # study's reproduce.sh, its APPROVED file and the raw files it refuses without.
@@ -41,10 +43,10 @@ RECOMPUTE     := research/003-bond-tsmom-ief \
 RECOMPUTE_RAW := research/001-slope-duration-switch \
                  research/002-slope-duration-switch-r
 
-.PHONY: help venv test lint coverage reproduce reproduce-raw charts tearsheets clean
+.PHONY: help venv test lint coverage reproduce reproduce-raw charts tearsheets dashboard clean
 
 help:
-	@sed -n '3,17p' $(firstword $(MAKEFILE_LIST))
+	@sed -n '3,19p' $(firstword $(MAKEFILE_LIST))
 
 venv:
 	python3 -m venv .venv
@@ -93,6 +95,10 @@ charts:
 tearsheets:
 	$(PYTHON) tools/make_tearsheets.py
 	@git diff --stat -- tearsheets || true
+
+dashboard:
+	$(PYTHON) tools/make_paper_dashboard.py
+	@git diff --stat -- dashboard || true
 
 clean:
 	find . -name __pycache__ -type d -prune -exec rm -rf {} +

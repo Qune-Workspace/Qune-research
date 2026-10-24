@@ -1,0 +1,73 @@
+"""Paper dashboard for Studies 003, 004 and 005 from their committed paper-log folders.
+
+Descriptive only.  This script reads each study's ``paper-log/`` exactly as
+committed (decision records, shadow lines, execution records, runner and
+stop-check lines), compounds the shadow lines into one equity path per
+series with ``qune_research.paperlog`` and writes ``dashboard/README.md``,
+one chart per study that has at least one shadow line (SVG + 2x PNG, house
+style) and ``dashboard/manifest.json`` with the SHA-256 of every input and
+output and the generation time.  It fetches nothing, runs no strategy code,
+writes nothing into any study folder and carries no decision weight.  A
+record that is not on disk is reported as absent, never estimated; the page
+is regenerated after each forward record and never by hand.
+
+Run from the repository root:  .venv/bin/python tools/make_paper_dashboard.py
+"""
+
+from __future__ import annotations
+
+import sys
+from datetime import UTC, datetime
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
+
+from qune_research import paperlog  # noqa: E402
+
+OUT = ROOT / "dashboard"
+
+# One entry per published study with a forward record.  Series ids, labels,
+# book sizes and columns are the ones each study's PREREGISTRATION.md §11 and
+# its forward code define; nothing here changes how a record is written.
+SPECS = [
+    paperlog.LogSpec(
+        study="Study 003", folder="research/003-bond-tsmom-ief", kind="paper sleeve",
+        label="not supported; paper record of a not-supported rule; orders only once Independent Risk clears the sleeve",
+        first_signal_date="2026-10-30",
+        chart_note=("No equity series yet: the sleeve's monthly summary with its B0/B1/B3 benchmarks "
+                    "(PREREGISTRATION.md §11.5) is designed, not built; execution records and the daily "
+                    "stop-check lines are counted above as they appear."),
+    ),
+    paperlog.LogSpec(
+        study="Study 004", folder="research/004-xasset-trend-voltarget", kind="shadow record",
+        label="not supported; no paper order", first_signal_date="2026-10-30",
+        strategy="T1", benchmarks=("B4", "B3"),
+        book_columns={"T1": "T1_book", "B4": "B4_book", "B3": "B3_book"}, book_usd=10_000.0,
+        labels={"T1": "Trend T1", "B4": "Vol-scaled long-only B4", "B3": "Equal weight B3"},
+        data_source="Alpaca daily bars (adjustment='all') read by the study's forward code; ten ETFs and BIL",
+    ),
+    paperlog.LogSpec(
+        study="Study 005", folder="research/005-duration-trend-regime", kind="shadow record",
+        label="refuted in-sample; no paper order", first_signal_date="2026-10-30",
+        strategy="T1", benchmarks=("B2", "B1"),
+        return_columns={"T1": "T1", "B2": "B2", "B1": "B1"},
+        labels={"T1": "Conditional exit T1", "B2": "Trend exit B2", "B1": "Hold IEF B1"},
+        data_source="Alpaca daily IEF, BIL and SPY bars (adjustment='all') read by the study's forward code",
+    ),
+]
+
+
+def main() -> int:
+    generated = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+    manifest = paperlog.build(ROOT, SPECS, OUT, generated)
+    for entry in manifest["studies"]:
+        print(f"{entry['study']}: {entry['records']} record(s), {entry['shadow_lines']} shadow line(s), "
+              f"{entry['executions']} execution record(s); next record due {entry['next_record_due']}")
+    print(f"written: {OUT.relative_to(ROOT)}/README.md, manifest.json"
+          + (", " + ", ".join(sorted(manifest["outputs_sha256"])) if manifest["outputs_sha256"] else " (no chart: no shadow line yet)"))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

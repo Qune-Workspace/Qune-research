@@ -90,3 +90,8 @@ The script needs the five raw files in `data/raw/` (git-ignored); it verifies th
 
 - Verified before accepting: reran `review_recompute.py` (69 rows, 69 match, 0 mismatch) and `pytest` (101 passed) from the study folder with the repository venv.
 - Notes 1–6 accepted as written. Note 4: the header is left as it was first written, by the document's own rule; a §16 entry dated 2026-10-22 now points a reader at HEAD to the halt. Note 1: the delegation is in the organisation's decision log outside this repository, as the reviewer says; nothing here can show it. Nothing re-run, no number changed; README gained an "Independent review" section.
+
+### Time labels checked against git (Qune, 2026-10-24, 07:19 London at writing; the commit's own time is the record)
+
+- The eight commit times in the table above were re-read from `git log` (committer time, Europe/London) on 2026-10-24: all eight match to the second, and the Alpaca fetch stamp 21:22:32 London is the manifest's `downloaded_at_utc` 20:22:32Z. `trials.md` carries dates only, and the README's dated list carries no clock times, so there is nothing else in this study to check.
+- One slip, in the heading directly above: "18:4x London" is an estimate. The response was committed at 18:38:52 London (`a18d02c`), so it was written a few minutes earlier than the label says. The heading is left as written; the order of events is unchanged.

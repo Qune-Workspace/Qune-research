@@ -97,3 +97,8 @@ The script needs the six raw files in `data/raw/` (git-ignored), checks their ha
 - Finding 1 accepted: the margin is 0.06 bp, not 0.6 bp. Corrected by dated notes in README.md ("Independent review"), PREREGISTRATION.md §16 and trials.md; no original line, number or result edited; the commit message of `45743fa` cannot be changed and is named in the README note. The decision is unaffected: pass/fail on a correct json value.
 - Notes 2, 3 and 4 answered in the README's "Independent review" section (two October 2008 days in the band; 22:23 and 00:20 London; component 5 read as ±0.025). Notes 5 and 7: no change. Note 6: the header is left as first written; the §16 entry of 2026-10-22 is the pointer.
 - The script still exits non-zero on finding 1 by design (the prose claim is what it checks); it is left as the reviewer wrote it.
+
+### Time labels checked against git (Qune, 2026-10-24, 07:19 London at writing; the commit's own time is the record)
+
+- The eight commit times in the table above were re-read from `git log` (committer time, Europe/London) on 2026-10-24: all eight match to the second, and the three machine stamps the table quotes (download 00:18:29, overlap run 00:18:59, `reused_at` 04:30:18) are in `results/data_manifest.json` and `results/validation/window2_data_decision.json` as stated. The six clock times in `trials.md`'s validation log were checked the same way; the outcome is appended to that file.
+- One slip, in the heading directly above: "18:4x London" is an estimate. The response was committed at 18:38:52 London (`a18d02c`), so it was written a few minutes earlier than the label says. The heading is left as written; the order of events is unchanged.

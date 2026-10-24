@@ -11,3 +11,7 @@ Every trial is logged here before it is run (§7). The deflated Sharpe ratio use
 | T3 | 2026-10-21 | V2: carry including roll-down, spread + D_mod(DGS10) × (DGS10 − DGS7)/3, from 1969-07 (§7) | registered 2026-10-21, not run | — |
 
 No return of any rule or benchmark has been computed on real data as of 2026-10-21. The study halted permanently at the §5.3 data validation on 2026-10-21 (second and final run, A4 failed; §16), so T1, T2 and T3 were never run. The table is kept so that the registered trial count N = 3 remains on record.
+
+## Time labels checked (Qune, 2026-10-24, 07:20 London at writing)
+
+This log carries dates only. The clock times of the study's eight commits are tabulated in `REVIEW.md` and were re-read from `git log` on 2026-10-24: all match to the second (pre-registration 11:58:04; approval 21:22:20; run 1 outputs 21:42:59; §16 decision 21:43:53; implementation 21:51:23; run 2 outputs 21:54:59, all 2026-10-21 London). Nothing here is changed.

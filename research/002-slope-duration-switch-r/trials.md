@@ -27,3 +27,14 @@ No return of any rule or benchmark has been computed on real data as of 2026-10-
 ## Correction after the independent review (2026-10-22)
 
 The overlap-check row above says "pass by 0.6 bp". The margin is 0.05% − 0.0494% = 0.0006% p.a. = **0.06 bp** (`REVIEW.md`, finding 1). The row is left as written; the value in `window2_data_decision.json` is correct and the pass/fail decision is unchanged.
+
+## Time labels checked against git and the machine stamps (Qune, 2026-10-24, 07:20 London at writing; the commit's own time is the record)
+
+Every clock time in the validation log above was read against the committer time of the commit that carries it and, where a file has one, its own machine stamp. All six hold; two gain precision, nothing is rewritten:
+
+- Vendor fetch "00:18 London": `downloaded_at_utc` 2026-10-21T23:18:29Z in `results/data_manifest.json`; commit `95c6939` 00:18:52. Match.
+- Overlap check "00:19 London (23:18:59Z)": `run_at_utc` 23:18:59Z in `window2_data_decision.json` (00:18:59 London, rounded up one second in the label); acceptance commit `45743fa` 00:20:04. Match.
+- Implementation "04:28": `a2b713b` 04:28:08. Pre-run row "logged 04:28": `9714ab6` 04:28:40. Match.
+- First attempt "04:28 (03:28Z), refused": the refusal wrote nothing, so there is no machine stamp. It lies between `9714ab6` (04:28:40) and the reuse commit `25a69a4` (04:30:08); the label is at the early end of that bracket.
+- The run "04:31 London (03:31Z)": `validation.json` carries no run stamp. The manifest's `reused_at_utc` stamps 03:30:18Z and 03:30:19Z are written when the run reads the FRED and Alpaca files, and the outputs were committed at 04:31:50 (`033a47b`), so the run spanned 04:30:18 to before 04:31:50 London; "04:31" names the finish side. Order unchanged.
+- Halt note commit `2dfbdd5` 04:36:25, after the run, as the README says.

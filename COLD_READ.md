@@ -145,3 +145,20 @@ Count by severity: would-not-hire 1, serious 8, cosmetic 1.
 | 10 | cosmetic | **Agree in part.** A five-line summary at the top of the README and a "descriptive" label on the post-hoc reports are accepted. The lead chart stays the latest study's, but its caption already says "no decision weight"; I will weigh swapping it for the in-sample chart that fixed the verdict. | Next by 2026-10-27. |
 
 **What I will not break while fixing** (the reader's "What holds up"): verdict precedence that is not re-weighted, the exposure-matched benchmarks, the mechanism sections, correction by dated addition, chart titles drawn from committed files.
+
+## Follow-ups (Qune, 2026-10-24 23:2x London)
+
+Done the same evening, each by dated addition, nothing re-run, no result file touched:
+
+| # | What was done | Commit |
+|---|---|---|
+| 2 | §16 entries in the 003 and 004 pre-registrations and a dated addition under 004's out-of-sample limitations: the window was kept from the code, not from an AI author; 004 §2.4's "from any source" holds for the programme's files only | `cf97498` |
+| 5 | `tools/tsmom_family_dsr.py` (reproduces all 34 committed DSR values first) and dated notes beside every DSR: at the programme-level count of the trend family (12-month signal alone 12 / 13 / 16; any trend-timing rule 14 / 18 / 21), **Study 003's C3 would fail** (0.930 / 0.927 against 0.95; verdict unchanged), 004 stays 0.997, 005 0.939 / 0.936; METHODS §2.1: the DSR is descriptive from now on | `453e443` |
+| 4 | METHODS §2.5: 003 and 004 spent the window after their verdicts were fixed; rule for new pre-registrations: the window stays sealed unless the in-sample criteria pass | `ece37cb` |
+| 6 | ARCHITECTURE: author and reviewer of every study ran on the same model (Fable 5.1), table per study; new reviews titled "separate-session recomputation"; next pre-registration pushed before any fetch; signed commits need a key the owner creates; dated note in all five `REVIEW.md` | `e9b6821` |
+| 1, 7 | `tools/power_first.py` (reproduces the published C2 t first): 003's and 004's decision tests could see a timing edge of about 1.7% a year, not 1%; RESEARCH_AGENDA power-first rule and candidate 6 (long pre-ETF history, gate tied to the monthly differential); README precision and halts bullet | `21d0ca4` |
+| 3, 10 | README five-line summary; lead chart = 005's in-sample check; when a forward record could first count (2027-11-01 at the earliest) and at what size; MinTRL labelled descriptive; one error found on the way (004's multiple-testing report misdescribed T4) corrected | `8cd1409` |
+
+Two corrections to the response table above, by addition. (a) Point 4: the reason given there ("the order was written so that a failing rule could not skip its out-of-sample report") is not in any pre-registration; it is my reading after the fact, as METHODS §2.5 now says. (b) Point 1: "Studies 003 and 005 state in their own pre-registrations that they could not detect an edge of the size the literature makes plausible" (README, "Read this first") is precise for 005 only; 003's pre-registration calls itself low-powered without a figure, and the figure computed tonight is about 1.7% a year (README precision line).
+
+Still open: point 8 (owner's explicit yes or a revert of the 003 symbol-scope record; asked in the 2026-10-25 daily summary, outcome into ARCHITECTURE by 2026-10-27); point 3's market-implied scoring, for new calls from the 2026-10-30 weekly view; point 6's signing key (owner).

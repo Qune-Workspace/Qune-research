@@ -1,0 +1,11 @@
+Minimum detectable timing edge of the C2 test (post hoc, descriptive, no decision weight)
+
+case                      months  NW t (published)  MDE 5%/80%  MDE at C2 bar  months for 2%/yr  months for 1%/yr
+003 in-sample, T1 - B3       185    0.37 (0.37)      1.51%         1.73%               138               551
+004 in-sample, T1 - B4       180    0.65 (0.65)      1.53%         1.75%               138               552
+
+MDE = (z + 0.842) x NW standard error of the mean monthly differential x 12; z = 1.645 (one-sided 5%) or 2.0 (the C2 bar).
+Months needed assume the differential keeps the same dispersion and autocorrelation; a longer history is a different sample.
+Reading: each test could detect a timing edge of about 1.7% a year over its exposure-matched benchmark with 80% power;
+an edge of 1% a year, or less, would usually have been missed. Study 005's in-sample MDE (4.4% a year) is in its own
+results/checks/d3.json and is not recomputed here.

@@ -440,6 +440,8 @@ What this costs the study, said plainly: the equity class loses its largest and 
 
 ### 2026-10-23 (00:4x London): independent review done; corrections of record, no run, N = 4 unchanged
 
+*Time label, checked 2026-10-24 against git: this entry was committed at 00:37:48 London (e73223a), not "00:4x"; the order of events is unchanged, the heading is left as written.*
+
 - The study was reviewed by a separate agent session (REVIEW.md): confirmed with findings, no must-fix. Two should-fix items are answered here and in the note.
 - **Time labels.** The heading of the 2026-10-22 entry above reads "(23:3x London)"; the commit that carries it, `1697e9d`, was made at 23:20:12 London. Five trial-log rows carry the same kind of estimate (20:3x, 20:4x, 21:3x, 22:4x, 23:3x against committer times 20:27, 20:29, 21:25, 22:25, 23:20). Corrected by this entry and a dated row in `trials.md`; the earlier text is left as written. The order of events is unchanged.
 - **Fourteen README figures** were rounded twice and are one unit off in their last digit (the largest: B3 and B4's out-of-sample Sharpe, 0.200 for a stored 0.19947). Corrected in place in the note, with every change listed in its review section. No criterion input is affected; no results file changed.

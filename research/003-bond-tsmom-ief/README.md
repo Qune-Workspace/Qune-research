@@ -15,6 +15,8 @@ What happened, in order (every step is a dated commit; times are London):
 5. 2026-10-22, 08:32: T1–T3 run dates logged (`106696e`), then `reproduce.sh --insample`, the single in-sample run. Results below.
 6. 2026-10-22, 08:37: the in-sample section of this note committed (`7e44a4c`), then `reproduce.sh --oos`, the single out-of-sample run. Results below. The window had never been touched by any study.
 
+*Precision added 2026-10-24, from the commit timestamps (git, London time), nothing above rewritten.* Step 6's commit `7e44a4c` is at 08:36:11, not 08:37; 08:37 is the out-of-sample run's time as the trial log records it, and no machine stamp exists for that run (`results/oos/summary.json` carries none; the results commit `6ce61e1` is at 08:41:16). Step 2's chain is fetch commit `521e033` 06:27:17, overlap check run 06:27:20 (05:27:20Z, in its output file), acceptance commit `e03064d` 06:28:01. The trial log's two "logged 06:3x London before the run" labels for the fetch and the overlap check were estimates written at the time and are wrong by a few minutes: the rows and the check code went in with `5a83286` at 06:26:57, before both runs, so the order the log claims holds; a dated correction is appended to the log. The data-check row's "08:31 London (07:30:55Z)" rounds 08:30:55 up; the Z stamp is the authority. Every pre-run commit still precedes the run it governs by the margins the independent review found (seconds to a minute, one clock).
+
 ## Data checks (§5.3; backtest data check, not a performance test)
 
 | Check | Statistic | Threshold | Observed | Result |
@@ -24,6 +26,8 @@ What happened, in order (every step is a dated commit; times are London):
 | D2 / B2 | Annualised tracking error of the same difference | descriptive; reference 0.50%, 2016–2018 reading 0.288% | 0.586% | descriptive |
 
 B2 is above its historical reference, and the by-year table in `results/checks/data_checks.md` shows why: 0.90% in 2007, 1.56% in 2008, 0.68% in 2009, then 0.21–0.31% in every year from 2010. The level by year moved the other way to what the daily noise might suggest: +0.26 to +0.32% p.a. in 2007–2009 while bill rates fell fast (the fund's portfolio yield lagged the spot rate) and −0.07 to −0.12% in 2016–2018 while they rose, both signs inside the ex-ante band and the pattern the largest component of the §5.3.3 table described in advance. This is the regime effect that made B2 descriptive rather than a gate in this study (§2.5), decided before the number was seen. Source: `results/checks/data_checks.json`; chart `results/checks/cash_check.png`.
+
+*Units note added 2026-10-24 (display only; no file or number changed).* The generated `results/checks/data_checks.md` and `.json` print the B1 gate as "within +/-0.003" while the value beside it is printed in per cent ("+0.0366% p.a."): 0.003 is the gate as a fraction, that is ±0.30% p.a., the threshold the table above states. The comparison in `src/checks.py` is fraction against fraction (0.000366 against 0.003), so the gate that was applied is the pre-registered one; only the printed string lacks the unit. The results files are written once and stay as written, so the slip is disclosed here rather than corrected there.
 
 ![BIL tracked the cash-accrual model to within 0.04% a year over 2007 to 2018; only 2007 to 2009 sat outside the ±0.2% band written down beforehand. Annualised mean daily difference, BIL minus the bill-yield cash accrual, by calendar year](charts/cash_check_by_year.png)
 

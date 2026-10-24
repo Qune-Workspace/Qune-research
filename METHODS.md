@@ -124,6 +124,8 @@ The DSR treats trials as draws of no skill; White's (2000) reality check and Han
 
 Minimum track-record length (Bailey and López de Prado, 2012) for T1 in-sample, ten assets: 49 months to be 95% confident its Sharpe ratio exceeds zero, and **1,372,470 months** to be 95% confident it exceeds B4's (monthly Sharpe 0.2557 against 0.2542). Source: `multiple/report.json`.
 
+*Added 2026-10-24, after the [cold read](COLD_READ.md) (point 10):* the 1,372,470-month figure treats B4's Sharpe ratio as a known constant, while T1 and B4 are two estimates from nearly the same book; it shows only that the two cannot be told apart, which the paired Newey–West t of 0.65 already says. It, the SPA family test and the post-hoc risk model are descriptive appendices with no decision weight, as their own files state; none is evidence for or against the rule beyond C1 and C2.
+
 ### 2.7 Everything that could be a choice is reported
 
 Each note has a "what did not work" section and every variant that was registered is shown beside the headline: the stress cost case, the N = 10 deflation, the sub-periods, the per-asset attribution, the run without the instrument the designer was not blind to (004), the descriptive trials (005's T2 and T3). Study 005's T2 interval was built on 10,000 resamples of which 480 contained only one regime and were dropped; the count is in the file (`resamples_dropped_one_regime`).

@@ -8,6 +8,8 @@
 
 The reviewer is Tester, a separate agent session that did not write the code, the pre-registration or the study note. Date of review: 2026-10-22. The reviewer had read access to the repository at commit `6ce61e1` (the finished note), its git history, and the git-ignored raw files in `data/raw/` as present on disk (SHA-256 of all five files matches `results/data_manifest.json`). The reviewer had no network access, no vendor credentials, and did not run `reproduce.sh` in any mode; `results/` was not modified. Every statistic in §4 was re-derived in `review_recompute.py` with numpy, pandas and scipy only, without importing anything from the study's `src/`. The reviewer wrote only this file and `review_recompute.py`.
 
+*Dated note, 2026-10-24, after the [cold read](../../COLD_READ.md) (point 6):* "independent" in this file means a separate agent session that did not write the study, on the same underlying model as the author (Fable 5.1) and on the same machine; it recomputes the published figures from the committed files and checks the commit order, and is not a replication by an outside party. New reviews are titled "separate-session recomputation"; this file keeps its title. See [ARCHITECTURE.md](../../ARCHITECTURE.md#how-independence-is-enforced).
+
 ## 3. Tests
 
 Command, run from the study folder exactly as `.github/workflows/tests.yml` does (`python -m pytest -q`), with the repository's virtual environment:

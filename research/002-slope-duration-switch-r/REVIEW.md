@@ -8,6 +8,8 @@
 
 The reviewer is Tester, a separate agent session that did not write the code, the pre-registration or the README. Date of review: 2026-10-22, repository at `27dd47a` (study last changed at `2dfbdd5`). Read access to the git history and the git-ignored raw files in `data/raw/`; no network, no credentials; `reproduce.sh` not run; only this file and `review_recompute.py` written. The script imports nothing from `src/` or `exante_bias.py`: the §5.2 ageing 8.5-year par bond (non-integer periods, interpolated sale yield), the cash leg, the cross-check, A1–A4, B1–B2, D1, the vendor overlap check, the ex-ante yield quantities and the post-hoc table are re-derived with numpy and pandas from the pre-registration text.
 
+*Dated note, 2026-10-24, after the [cold read](../../COLD_READ.md) (point 6):* "independent" in this file means a separate agent session that did not write the study, on the same underlying model as the author (Fable 5.1) and on the same machine; it recomputes the published figures from the committed files and checks the commit order, and is not a replication by an outside party. New reviews are titled "separate-session recomputation"; this file keeps its title. See [ARCHITECTURE.md](../../ARCHITECTURE.md#how-independence-is-enforced).
+
 ## 3. Tests
 
 ```

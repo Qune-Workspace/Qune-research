@@ -8,6 +8,8 @@
 
 The reviewer is Tester, a separate agent session that did not write the code, the pre-registration or the README. Date of review: 2026-10-22, repository at `27dd47a` (study last changed at `b6db436`). The reviewer had read access to the git history and to the git-ignored raw files in `data/raw/`, no network and no credentials, did not run `reproduce.sh`, and wrote only this file and `review_recompute.py`. The script imports nothing from `src/`: both constructions (the 10-year par bond of §5.2 and the 7/10-year blend of the §16 decision), the cash leg, the duration/convexity cross-check and the six statistics were re-derived with numpy and pandas from the pre-registration text.
 
+*Dated note, 2026-10-24, after the [cold read](../../COLD_READ.md) (point 6):* "independent" in this file means a separate agent session that did not write the study, on the same underlying model as the author (Fable 5.1) and on the same machine; it recomputes the published figures from the committed files and checks the commit order, and is not a replication by an outside party. New reviews are titled "separate-session recomputation"; this file keeps its title. See [ARCHITECTURE.md](../../ARCHITECTURE.md#how-independence-is-enforced).
+
 ## 3. Tests
 
 ```

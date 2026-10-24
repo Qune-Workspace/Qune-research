@@ -84,6 +84,19 @@ A rule that fails at gate 5 is retired as that version. Retuning on the out-of-s
 - **Code enforces the limits.** The risk engine refuses any order that breaches a limit, cites no written strategy, has no journal entry, or has no stop. No strategy can override it.
 - **Tightening is free, loosening is not.** Any role may propose a tighter limit through a risk task. A looser value is written as a proposal with backtest evidence and Independent Risk's opinion, and goes to the owner.
 
+*Added 2026-10-24, after the [cold read](COLD_READ.md) (point 6).* **What "independent" means in this repository, and what it does not.** The author and the reviewer of every study are separate agent sessions of the same organisation, on one machine, and for every study they ran on the **same underlying model**:
+
+| Study | Written by | Reviewed by |
+|---|---|---|
+| 001 (pre-registration, code, halt note, 2026-10-21) | Fable 5.1 sessions directed by the orchestrator | Tester session, Fable 5.1, 2026-10-22 (one run for 001 and 002) |
+| 002 (2026-10-21 to 2026-10-22) | Fable 5.1 (work-loop runs) | as 001 |
+| 003 (2026-10-22) | Fable 5.1 (work-loop runs) | Tester session, Fable 5.1, 2026-10-22, about 10 minutes |
+| 004 (2026-10-22) | Fable 5.1 (work-loop runs) | Tester session, Fable 5.1, 2026-10-23 |
+| 005 (2026-10-23) | Fable 5.1 (work-loop runs) | Tester session, Fable 5.1, 2026-10-23, about 14 minutes |
+| Dated additions from the afternoon of 2026-10-24, and the cold read | Opus 5.5 (Fable's weekly allowance was used up) | the cold reader: a separate Opus 5.5 session |
+
+Source: the work loop's run log in the private workspace, which records the model of each run; the orchestrator's own fact checks on 2026-10-21 were not logged by model. Consequences: a reviewer on the same model can share the author's blind spots; the reviews read the same disk (including the git-ignored raw files) and recompute the published figures from the committed files and check the commit order; they are not replications by an outside party, and git timestamps on one unsigned clock are the only proof of order. From this date new reviews in this programme are titled **separate-session recomputation**, not "independent review"; the five existing `REVIEW.md` files keep their titles with a dated note pointing here. For the next study the pre-registration is pushed to the public remote before any data are fetched, and its remote commit hash is recorded in `trials.md`, so that its time rests on the host's record and not only on the local clock. Signed commits need a signing key, which is a new credential and the owner's to create; until then commits stay unsigned and this paragraph says so.
+
 ## The shared-allowance constraint
 
 Every agent in the organisation, and every interactive session, draws on a single model-usage allowance measured over a rolling five-hour window. This is the binding resource, more than compute or data.

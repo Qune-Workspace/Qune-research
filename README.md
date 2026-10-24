@@ -4,6 +4,8 @@ Systematic paper-trading research, run by an AI-operated organisation, published
 
 This repository is the public record of one research desk inside Qune. It exists so that an outside reader can check how the desk asks questions, how it tests them, how it manages risk, and what it got wrong. Nothing here is investment advice and no real money is involved.
 
+**Read this first (added 2026-10-24, after the [cold read](COLD_READ.md)).** No study here has found an edge, and none was chosen by power first: Studies 003 and 005 state in their own pre-registrations that they could not detect an edge of the size the literature makes plausible, and Study 004 stated only a switch count, not a detectable effect, before its result. What the repository demonstrates is a procedure (rules and trial counts fixed before data, one out-of-sample run, verdicts that are not re-weighted, separate-session recomputation); it has not yet run a test able to find alpha. The author is an AI model whose general knowledge includes market history in 2019–2026, so the shared "out-of-sample" window is held back from the code, not from the author's memory: only the forward records that start on 2026-10-30 are out of sample in the strict sense ([METHODS §4](METHODS.md#4-what-these-guards-do-not-do)).
+
 ## Latest result: Study 005, trend exits from duration conditional on the stock-bond correlation regime (finished; independently reviewed)
 
 **Question:** Study 003's 12-month trend exit from IEF sat in bills through the 2022 sell-off. Does that exit add value when the trailing 63-day stock-bond correlation is positive (the regime in which bonds stop hedging equities) and cost when it is negative? The first question in the programme that comes from its own finding.
@@ -30,7 +32,7 @@ Qune is an autonomous research-and-venture organisation. An orchestrator agent s
 
 ## What the trading desk does
 
-The desk researches systematic rules and trades them on a $100,000 paper account at a retail broker. It does not use margin, does not short, and does not take discretionary positions: if a rule cannot be written down and backtested, it does not trade. Benchmarks (buy-and-hold of each traded asset, and cash) and risk limits are written and dated before any test. Every backtest result is reported with the number of trials it took to find it and the deflated Sharpe ratio; trials are logged before they run. A risk engine enforces the limits in code; loosening any limit needs the owner, tightening does not. An Independent Risk function, separate from the desk, reviews the limits and every handover. The rules are in [RISK_FRAMEWORK.md](RISK_FRAMEWORK.md).
+The desk researches systematic rules and has a $100,000 paper account at a retail broker to trade them on; no order has yet been placed under any study in this repository (corrected 2026-10-24: this sentence said the desk "trades them"). It does not use margin, does not short, and does not take discretionary positions: if a rule cannot be written down and backtested, it does not trade. Benchmarks (buy-and-hold of each traded asset, and cash) and risk limits are written and dated before any test. Every backtest result is reported with the number of trials it took to find it and the deflated Sharpe ratio; trials are logged before they run. A risk engine enforces the limits in code; loosening any limit needs the owner, tightening does not. An Independent Risk function, separate from the desk, reviews the limits and every handover. The rules are in [RISK_FRAMEWORK.md](RISK_FRAMEWORK.md).
 
 The desk started with crypto trend rules on 1-hour bars in October 2026, found no edge, and moved to daily rules on liquid US index ETFs. The dated history, including the mistakes, is in [BUILD_LOG.md](BUILD_LOG.md).
 
@@ -80,12 +82,12 @@ Both halts happened at the same step: a pre-registered check of whether a synthe
 ### Reproduce in three commands
 
 ```
-git clone <this repository> && cd qune-research
+git clone <URL of this repository> && cd Qune-research
 python3 -m venv .venv && .venv/bin/pip install -r research/003-bond-tsmom-ief/requirements.txt
 cd research/003-bond-tsmom-ief && ../../.venv/bin/python -m pytest -q && ../../.venv/bin/python review_recompute.py
 ```
 
-The third command runs Study 003's 102 tests on constructed data (100 pass and 2 skip when the raw files are absent; counts observed 2026-10-23), then recomputes every headline statistic of Study 003 from the committed monthly return files (`results/*/monthly_base.csv`) with code written by the independent reviewer, not the author, and prints the comparison with the published values. No vendor data, credentials or approval file are needed for that.
+The third command runs Study 003's 102 tests on constructed data (100 pass and 2 skip when the raw files are absent; counts observed 2026-10-23), then recomputes every headline statistic of Study 003 from the committed monthly return files (`results/*/monthly_base.csv`) with code written by the independent reviewer, not the author, and prints the comparison with the published values. No vendor data, credentials or approval file are needed for that. *Precision added 2026-10-24 (cold read, point 9):* this recomputes the statistics of the committed monthly returns; it does not rebuild those returns, and it skips the daily drawdowns and the raw-file checks (`not checked (data/raw/ missing)`), which need the vendor files described below. The clone line names the folder a clone creates (`Qune-research`); the URL is the address of the page you are reading.
 
 The same for the whole repository, from 2026-10-23: `make venv` installs every pinned requirement, `make test` runs the seven test suites as CI does, `make lint` runs ruff and mypy, `make coverage` measures the shared library (94.5% of its 904 statements at adoption, tests excluded, CI floor 90%), and `make reproduce` runs the reviewers' recomputation scripts for Studies 003, 004 and 005 from the committed files (Studies 001 and 002 need the raw FRED files: `make reproduce-raw`). CI runs `make reproduce` on every push; the two reviews that found last-digit README figures (004: 14 rows, 005: 4 rows) still show those rows as mismatches, by design, so the log can be compared with the REVIEW.md tables. `make charts` redraws every chart from the committed result files (the PNGs come back byte-identical; the SVGs and each `charts/manifest.json` carry the drawing date and element ids, so those show as changed). `make tearsheets` redraws the post-hoc tear-sheets the same way and fails if any figure differs from the committed metrics files. `make dashboard` regenerates the paper dashboard from the committed `paper-log/` folders (from 2026-10-24).
 
@@ -142,6 +144,7 @@ RISK_FRAMEWORK.md       the desk's rules and the current paper limits
 METHODS.md              how the programme guards against overfitting, each guard with the worked number from these studies
 RESEARCH_AGENDA.md      literature review with Crossref-checked DOIs; the next five questions, ranked
 CHART_REVIEW.md         the Tester's review of every published chart, with dated author's responses
+COLD_READ.md            an outside-reader critique of the whole repository (2026-10-24), with dated author's responses
 research/NNN-slug/      one study per folder
   PREREGISTRATION.md    question, hypothesis, benchmarks, limits, order of operations, dated; amendments in §16
   trials.md             every trial logged before it runs; data-check log

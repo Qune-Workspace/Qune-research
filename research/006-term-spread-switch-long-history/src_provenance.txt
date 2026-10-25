@@ -1,0 +1,17 @@
+Study 002 src/: a2b713b against the working tree at edec076 (imports removed, UTC alias normalised)
+  __init__.py        identical
+  alpaca_bars.py     identical
+  backtest.py        identical
+  bey.py             identical
+  calendar.py        identical
+  config.py          identical
+  fred.py            identical
+  overlap_check.py   DIFFERS
+  paper_trade.py     identical
+  report.py          identical
+  reuse_bars.py      DIFFERS
+  signal.py          identical
+  stats.py           identical
+  synthetic.py       identical
+  tiingo_bars.py     identical
+  validate.py        identical

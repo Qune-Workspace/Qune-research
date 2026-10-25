@@ -65,6 +65,7 @@ PROGRAMME_FAMILY = (
     ("2026-10-25", "Study 006 T1-T3, synthetic leg 1969-2018", "trials.md", 3),
     ("this study", "Study 007 T1, T1a, T1b, T2, T3", "trials.md", 5),
 )
+# Re-counted 2026-10-25 12:3x London before the history run (trials.md): 14, unchanged.
 FAMILY_COUNT_AT_REGISTRATION = sum(row[3] for row in PROGRAMME_FAMILY)
 assert FAMILY_COUNT_AT_REGISTRATION == 14
 

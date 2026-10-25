@@ -1,0 +1,1702 @@
+{
+  "started_utc": "2026-10-25T18:18:33Z",
+  "url_form": "https://alfred.stlouisfed.org/graph/alfredgraph.csv?id={series_id}&vintage_date={date}",
+  "series": {
+    "CPIAUCNS": {
+      "signal_months": 687,
+      "vintages_read": 687,
+      "vintages_unread": [],
+      "m1_not_published_by_t": [
+        {
+          "signal_month": "1996-01",
+          "signal_date": "1996-01-31",
+          "k_used": "1995-11"
+        },
+        {
+          "signal_month": "2025-11",
+          "signal_date": "2025-11-28",
+          "k_used": "2025-09"
+        }
+      ],
+      "m1_not_published_by_t_in_test_window": 1,
+      "m1_not_published_by_t_before_test_window": 0,
+      "m1_not_published_by_t_after_test_window": 1,
+      "sha256_of_all_vintage_responses": "92e73c53e5c81750be447a512e1f5fb78ae29132199fdd239010a8abf152b8cc",
+      "revision_check": {
+        "1995-12": {
+          "months_compared": 995,
+          "median_ratio_current_over_vintage": 1.0,
+          "months_beyond_rounding": 0,
+          "largest_relative_departure": 0.0,
+          "departures": []
+        },
+        "1996-12": {
+          "months_compared": 1007,
+          "median_ratio_current_over_vintage": 1.0,
+          "months_beyond_rounding": 0,
+          "largest_relative_departure": 0.0,
+          "departures": []
+        },
+        "1997-12": {
+          "months_compared": 1019,
+          "median_ratio_current_over_vintage": 1.0,
+          "months_beyond_rounding": 0,
+          "largest_relative_departure": 0.0,
+          "departures": []
+        },
+        "1998-12": {
+          "months_compared": 1031,
+          "median_ratio_current_over_vintage": 1.0,
+          "months_beyond_rounding": 0,
+          "largest_relative_departure": 0.0,
+          "departures": []
+        },
+        "1999-12": {
+          "months_compared": 1043,
+          "median_ratio_current_over_vintage": 1.0,
+          "months_beyond_rounding": 0,
+          "largest_relative_departure": 0.0,
+          "departures": []
+        },
+        "2000-12": {
+          "months_compared": 1055,
+          "median_ratio_current_over_vintage": 1.0,
+          "months_beyond_rounding": 0,
+          "largest_relative_departure": 0.0,
+          "departures": []
+        },
+        "2001-12": {
+          "months_compared": 1067,
+          "median_ratio_current_over_vintage": 1.0,
+          "months_beyond_rounding": 0,
+          "largest_relative_departure": 0.0,
+          "departures": []
+        },
+        "2002-12": {
+          "months_compared": 1079,
+          "median_ratio_current_over_vintage": 1.0,
+          "months_beyond_rounding": 0,
+          "largest_relative_departure": 0.0,
+          "departures": []
+        },
+        "2003-12": {
+          "months_compared": 1091,
+          "median_ratio_current_over_vintage": 1.0,
+          "months_beyond_rounding": 0,
+          "largest_relative_departure": 0.0,
+          "departures": []
+        },
+        "2004-12": {
+          "months_compared": 1103,
+          "median_ratio_current_over_vintage": 1.0,
+          "months_beyond_rounding": 0,
+          "largest_relative_departure": 0.0,
+          "departures": []
+        },
+        "2005-12": {
+          "months_compared": 1115,
+          "median_ratio_current_over_vintage": 1.0,
+          "months_beyond_rounding": 0,
+          "largest_relative_departure": 0.0,
+          "departures": []
+        },
+        "2006-12": {
+          "months_compared": 1127,
+          "median_ratio_current_over_vintage": 1.0,
+          "months_beyond_rounding": 0,
+          "largest_relative_departure": 0.0,
+          "departures": []
+        },
+        "2007-12": {
+          "months_compared": 1139,
+          "median_ratio_current_over_vintage": 1.0,
+          "months_beyond_rounding": 0,
+          "largest_relative_departure": 0.0,
+          "departures": []
+        },
+        "2008-12": {
+          "months_compared": 1151,
+          "median_ratio_current_over_vintage": 1.0,
+          "months_beyond_rounding": 0,
+          "largest_relative_departure": 0.0,
+          "departures": []
+        },
+        "2009-12": {
+          "months_compared": 1163,
+          "median_ratio_current_over_vintage": 1.0,
+          "months_beyond_rounding": 0,
+          "largest_relative_departure": 0.0,
+          "departures": []
+        },
+        "2010-12": {
+          "months_compared": 1175,
+          "median_ratio_current_over_vintage": 1.0,
+          "months_beyond_rounding": 0,
+          "largest_relative_departure": 0.0,
+          "departures": []
+        },
+        "2011-12": {
+          "months_compared": 1187,
+          "median_ratio_current_over_vintage": 1.0,
+          "months_beyond_rounding": 0,
+          "largest_relative_departure": 0.0,
+          "departures": []
+        },
+        "2012-12": {
+          "months_compared": 1199,
+          "median_ratio_current_over_vintage": 1.0,
+          "months_beyond_rounding": 0,
+          "largest_relative_departure": 0.0,
+          "departures": []
+        },
+        "2013-12": {
+          "months_compared": 1211,
+          "median_ratio_current_over_vintage": 1.0,
+          "months_beyond_rounding": 0,
+          "largest_relative_departure": 0.0,
+          "departures": []
+        },
+        "2014-12": {
+          "months_compared": 1223,
+          "median_ratio_current_over_vintage": 1.0,
+          "months_beyond_rounding": 0,
+          "largest_relative_departure": 0.0,
+          "departures": []
+        },
+        "2015-12": {
+          "months_compared": 1235,
+          "median_ratio_current_over_vintage": 1.0,
+          "months_beyond_rounding": 0,
+          "largest_relative_departure": 0.0,
+          "departures": []
+        },
+        "2016-12": {
+          "months_compared": 1247,
+          "median_ratio_current_over_vintage": 1.0,
+          "months_beyond_rounding": 0,
+          "largest_relative_departure": 0.0,
+          "departures": []
+        },
+        "2017-12": {
+          "months_compared": 1259,
+          "median_ratio_current_over_vintage": 1.0,
+          "months_beyond_rounding": 0,
+          "largest_relative_departure": 0.0,
+          "departures": []
+        },
+        "2018-12": {
+          "months_compared": 1271,
+          "median_ratio_current_over_vintage": 1.0,
+          "months_beyond_rounding": 0,
+          "largest_relative_departure": 0.0,
+          "departures": []
+        }
+      },
+      "revision_years_with_any_month_beyond_rounding": []
+    },
+    "CPILFENS": {
+      "signal_months": 687,
+      "vintages_read": 358,
+      "vintages_unread": [
+        {
+          "signal_month": "1969-07",
+          "error": "404"
+        },
+        {
+          "signal_month": "1969-08",
+          "error": "404"
+        },
+        {
+          "signal_month": "1969-09",
+          "error": "404"
+        },
+        {
+          "signal_month": "1969-10",
+          "error": "404"
+        },
+        {
+          "signal_month": "1969-11",
+          "error": "404"
+        },
+        {
+          "signal_month": "1969-12",
+          "error": "404"
+        },
+        {
+          "signal_month": "1970-01",
+          "error": "404"
+        },
+        {
+          "signal_month": "1970-02",
+          "error": "404"
+        },
+        {
+          "signal_month": "1970-03",
+          "error": "404"
+        },
+        {
+          "signal_month": "1970-04",
+          "error": "404"
+        },
+        {
+          "signal_month": "1970-05",
+          "error": "404"
+        },
+        {
+          "signal_month": "1970-06",
+          "error": "404"
+        },
+        {
+          "signal_month": "1970-07",
+          "error": "404"
+        },
+        {
+          "signal_month": "1970-08",
+          "error": "404"
+        },
+        {
+          "signal_month": "1970-09",
+          "error": "404"
+        },
+        {
+          "signal_month": "1970-10",
+          "error": "404"
+        },
+        {
+          "signal_month": "1970-11",
+          "error": "404"
+        },
+        {
+          "signal_month": "1970-12",
+          "error": "404"
+        },
+        {
+          "signal_month": "1971-01",
+          "error": "404"
+        },
+        {
+          "signal_month": "1971-02",
+          "error": "404"
+        },
+        {
+          "signal_month": "1971-03",
+          "error": "404"
+        },
+        {
+          "signal_month": "1971-04",
+          "error": "404"
+        },
+        {
+          "signal_month": "1971-05",
+          "error": "404"
+        },
+        {
+          "signal_month": "1971-06",
+          "error": "404"
+        },
+        {
+          "signal_month": "1971-07",
+          "error": "404"
+        },
+        {
+          "signal_month": "1971-08",
+          "error": "404"
+        },
+        {
+          "signal_month": "1971-09",
+          "error": "404"
+        },
+        {
+          "signal_month": "1971-10",
+          "error": "404"
+        },
+        {
+          "signal_month": "1971-11",
+          "error": "404"
+        },
+        {
+          "signal_month": "1971-12",
+          "error": "404"
+        },
+        {
+          "signal_month": "1972-01",
+          "error": "404"
+        },
+        {
+          "signal_month": "1972-02",
+          "error": "404"
+        },
+        {
+          "signal_month": "1972-03",
+          "error": "404"
+        },
+        {
+          "signal_month": "1972-04",
+          "error": "404"
+        },
+        {
+          "signal_month": "1972-05",
+          "error": "404"
+        },
+        {
+          "signal_month": "1972-06",
+          "error": "404"
+        },
+        {
+          "signal_month": "1972-07",
+          "error": "404"
+        },
+        {
+          "signal_month": "1972-08",
+          "error": "404"
+        },
+        {
+          "signal_month": "1972-09",
+          "error": "404"
+        },
+        {
+          "signal_month": "1972-10",
+          "error": "404"
+        },
+        {
+          "signal_month": "1972-11",
+          "error": "404"
+        },
+        {
+          "signal_month": "1972-12",
+          "error": "404"
+        },
+        {
+          "signal_month": "1973-01",
+          "error": "404"
+        },
+        {
+          "signal_month": "1973-02",
+          "error": "404"
+        },
+        {
+          "signal_month": "1973-03",
+          "error": "404"
+        },
+        {
+          "signal_month": "1973-04",
+          "error": "404"
+        },
+        {
+          "signal_month": "1973-05",
+          "error": "404"
+        },
+        {
+          "signal_month": "1973-06",
+          "error": "404"
+        },
+        {
+          "signal_month": "1973-07",
+          "error": "404"
+        },
+        {
+          "signal_month": "1973-08",
+          "error": "404"
+        },
+        {
+          "signal_month": "1973-09",
+          "error": "404"
+        },
+        {
+          "signal_month": "1973-10",
+          "error": "404"
+        },
+        {
+          "signal_month": "1973-11",
+          "error": "404"
+        },
+        {
+          "signal_month": "1973-12",
+          "error": "404"
+        },
+        {
+          "signal_month": "1974-01",
+          "error": "404"
+        },
+        {
+          "signal_month": "1974-02",
+          "error": "404"
+        },
+        {
+          "signal_month": "1974-03",
+          "error": "404"
+        },
+        {
+          "signal_month": "1974-04",
+          "error": "404"
+        },
+        {
+          "signal_month": "1974-05",
+          "error": "404"
+        },
+        {
+          "signal_month": "1974-06",
+          "error": "404"
+        },
+        {
+          "signal_month": "1974-07",
+          "error": "404"
+        },
+        {
+          "signal_month": "1974-08",
+          "error": "404"
+        },
+        {
+          "signal_month": "1974-09",
+          "error": "404"
+        },
+        {
+          "signal_month": "1974-10",
+          "error": "404"
+        },
+        {
+          "signal_month": "1974-11",
+          "error": "404"
+        },
+        {
+          "signal_month": "1974-12",
+          "error": "404"
+        },
+        {
+          "signal_month": "1975-01",
+          "error": "404"
+        },
+        {
+          "signal_month": "1975-02",
+          "error": "404"
+        },
+        {
+          "signal_month": "1975-03",
+          "error": "404"
+        },
+        {
+          "signal_month": "1975-04",
+          "error": "404"
+        },
+        {
+          "signal_month": "1975-05",
+          "error": "404"
+        },
+        {
+          "signal_month": "1975-06",
+          "error": "404"
+        },
+        {
+          "signal_month": "1975-07",
+          "error": "404"
+        },
+        {
+          "signal_month": "1975-08",
+          "error": "404"
+        },
+        {
+          "signal_month": "1975-09",
+          "error": "404"
+        },
+        {
+          "signal_month": "1975-10",
+          "error": "404"
+        },
+        {
+          "signal_month": "1975-11",
+          "error": "404"
+        },
+        {
+          "signal_month": "1975-12",
+          "error": "404"
+        },
+        {
+          "signal_month": "1976-01",
+          "error": "404"
+        },
+        {
+          "signal_month": "1976-02",
+          "error": "404"
+        },
+        {
+          "signal_month": "1976-03",
+          "error": "404"
+        },
+        {
+          "signal_month": "1976-04",
+          "error": "404"
+        },
+        {
+          "signal_month": "1976-05",
+          "error": "404"
+        },
+        {
+          "signal_month": "1976-06",
+          "error": "404"
+        },
+        {
+          "signal_month": "1976-07",
+          "error": "404"
+        },
+        {
+          "signal_month": "1976-08",
+          "error": "404"
+        },
+        {
+          "signal_month": "1976-09",
+          "error": "404"
+        },
+        {
+          "signal_month": "1976-10",
+          "error": "404"
+        },
+        {
+          "signal_month": "1976-11",
+          "error": "404"
+        },
+        {
+          "signal_month": "1976-12",
+          "error": "404"
+        },
+        {
+          "signal_month": "1977-01",
+          "error": "404"
+        },
+        {
+          "signal_month": "1977-02",
+          "error": "404"
+        },
+        {
+          "signal_month": "1977-03",
+          "error": "404"
+        },
+        {
+          "signal_month": "1977-04",
+          "error": "404"
+        },
+        {
+          "signal_month": "1977-05",
+          "error": "404"
+        },
+        {
+          "signal_month": "1977-06",
+          "error": "404"
+        },
+        {
+          "signal_month": "1977-07",
+          "error": "404"
+        },
+        {
+          "signal_month": "1977-08",
+          "error": "404"
+        },
+        {
+          "signal_month": "1977-09",
+          "error": "404"
+        },
+        {
+          "signal_month": "1977-10",
+          "error": "404"
+        },
+        {
+          "signal_month": "1977-11",
+          "error": "404"
+        },
+        {
+          "signal_month": "1977-12",
+          "error": "404"
+        },
+        {
+          "signal_month": "1978-01",
+          "error": "404"
+        },
+        {
+          "signal_month": "1978-02",
+          "error": "404"
+        },
+        {
+          "signal_month": "1978-03",
+          "error": "404"
+        },
+        {
+          "signal_month": "1978-04",
+          "error": "404"
+        },
+        {
+          "signal_month": "1978-05",
+          "error": "404"
+        },
+        {
+          "signal_month": "1978-06",
+          "error": "404"
+        },
+        {
+          "signal_month": "1978-07",
+          "error": "404"
+        },
+        {
+          "signal_month": "1978-08",
+          "error": "404"
+        },
+        {
+          "signal_month": "1978-09",
+          "error": "404"
+        },
+        {
+          "signal_month": "1978-10",
+          "error": "404"
+        },
+        {
+          "signal_month": "1978-11",
+          "error": "404"
+        },
+        {
+          "signal_month": "1978-12",
+          "error": "404"
+        },
+        {
+          "signal_month": "1979-01",
+          "error": "404"
+        },
+        {
+          "signal_month": "1979-02",
+          "error": "404"
+        },
+        {
+          "signal_month": "1979-03",
+          "error": "404"
+        },
+        {
+          "signal_month": "1979-04",
+          "error": "404"
+        },
+        {
+          "signal_month": "1979-05",
+          "error": "404"
+        },
+        {
+          "signal_month": "1979-06",
+          "error": "404"
+        },
+        {
+          "signal_month": "1979-07",
+          "error": "404"
+        },
+        {
+          "signal_month": "1979-08",
+          "error": "404"
+        },
+        {
+          "signal_month": "1979-09",
+          "error": "404"
+        },
+        {
+          "signal_month": "1979-10",
+          "error": "404"
+        },
+        {
+          "signal_month": "1979-11",
+          "error": "404"
+        },
+        {
+          "signal_month": "1979-12",
+          "error": "404"
+        },
+        {
+          "signal_month": "1980-01",
+          "error": "404"
+        },
+        {
+          "signal_month": "1980-02",
+          "error": "404"
+        },
+        {
+          "signal_month": "1980-03",
+          "error": "404"
+        },
+        {
+          "signal_month": "1980-04",
+          "error": "404"
+        },
+        {
+          "signal_month": "1980-05",
+          "error": "404"
+        },
+        {
+          "signal_month": "1980-06",
+          "error": "404"
+        },
+        {
+          "signal_month": "1980-07",
+          "error": "404"
+        },
+        {
+          "signal_month": "1980-08",
+          "error": "404"
+        },
+        {
+          "signal_month": "1980-09",
+          "error": "404"
+        },
+        {
+          "signal_month": "1980-10",
+          "error": "404"
+        },
+        {
+          "signal_month": "1980-11",
+          "error": "404"
+        },
+        {
+          "signal_month": "1980-12",
+          "error": "404"
+        },
+        {
+          "signal_month": "1981-01",
+          "error": "404"
+        },
+        {
+          "signal_month": "1981-02",
+          "error": "404"
+        },
+        {
+          "signal_month": "1981-03",
+          "error": "404"
+        },
+        {
+          "signal_month": "1981-04",
+          "error": "404"
+        },
+        {
+          "signal_month": "1981-05",
+          "error": "404"
+        },
+        {
+          "signal_month": "1981-06",
+          "error": "404"
+        },
+        {
+          "signal_month": "1981-07",
+          "error": "404"
+        },
+        {
+          "signal_month": "1981-08",
+          "error": "404"
+        },
+        {
+          "signal_month": "1981-09",
+          "error": "404"
+        },
+        {
+          "signal_month": "1981-10",
+          "error": "404"
+        },
+        {
+          "signal_month": "1981-11",
+          "error": "404"
+        },
+        {
+          "signal_month": "1981-12",
+          "error": "404"
+        },
+        {
+          "signal_month": "1982-01",
+          "error": "404"
+        },
+        {
+          "signal_month": "1982-02",
+          "error": "404"
+        },
+        {
+          "signal_month": "1982-03",
+          "error": "404"
+        },
+        {
+          "signal_month": "1982-04",
+          "error": "404"
+        },
+        {
+          "signal_month": "1982-05",
+          "error": "404"
+        },
+        {
+          "signal_month": "1982-06",
+          "error": "404"
+        },
+        {
+          "signal_month": "1982-07",
+          "error": "404"
+        },
+        {
+          "signal_month": "1982-08",
+          "error": "404"
+        },
+        {
+          "signal_month": "1982-09",
+          "error": "404"
+        },
+        {
+          "signal_month": "1982-10",
+          "error": "404"
+        },
+        {
+          "signal_month": "1982-11",
+          "error": "404"
+        },
+        {
+          "signal_month": "1982-12",
+          "error": "404"
+        },
+        {
+          "signal_month": "1983-01",
+          "error": "404"
+        },
+        {
+          "signal_month": "1983-02",
+          "error": "404"
+        },
+        {
+          "signal_month": "1983-03",
+          "error": "404"
+        },
+        {
+          "signal_month": "1983-04",
+          "error": "404"
+        },
+        {
+          "signal_month": "1983-05",
+          "error": "404"
+        },
+        {
+          "signal_month": "1983-06",
+          "error": "404"
+        },
+        {
+          "signal_month": "1983-07",
+          "error": "404"
+        },
+        {
+          "signal_month": "1983-08",
+          "error": "404"
+        },
+        {
+          "signal_month": "1983-09",
+          "error": "404"
+        },
+        {
+          "signal_month": "1983-10",
+          "error": "404"
+        },
+        {
+          "signal_month": "1983-11",
+          "error": "404"
+        },
+        {
+          "signal_month": "1983-12",
+          "error": "404"
+        },
+        {
+          "signal_month": "1984-01",
+          "error": "404"
+        },
+        {
+          "signal_month": "1984-02",
+          "error": "404"
+        },
+        {
+          "signal_month": "1984-03",
+          "error": "404"
+        },
+        {
+          "signal_month": "1984-04",
+          "error": "404"
+        },
+        {
+          "signal_month": "1984-05",
+          "error": "404"
+        },
+        {
+          "signal_month": "1984-06",
+          "error": "404"
+        },
+        {
+          "signal_month": "1984-07",
+          "error": "404"
+        },
+        {
+          "signal_month": "1984-08",
+          "error": "404"
+        },
+        {
+          "signal_month": "1984-09",
+          "error": "404"
+        },
+        {
+          "signal_month": "1984-10",
+          "error": "404"
+        },
+        {
+          "signal_month": "1984-11",
+          "error": "404"
+        },
+        {
+          "signal_month": "1984-12",
+          "error": "404"
+        },
+        {
+          "signal_month": "1985-01",
+          "error": "404"
+        },
+        {
+          "signal_month": "1985-02",
+          "error": "404"
+        },
+        {
+          "signal_month": "1985-03",
+          "error": "404"
+        },
+        {
+          "signal_month": "1985-04",
+          "error": "404"
+        },
+        {
+          "signal_month": "1985-05",
+          "error": "404"
+        },
+        {
+          "signal_month": "1985-06",
+          "error": "404"
+        },
+        {
+          "signal_month": "1985-07",
+          "error": "404"
+        },
+        {
+          "signal_month": "1985-08",
+          "error": "404"
+        },
+        {
+          "signal_month": "1985-09",
+          "error": "404"
+        },
+        {
+          "signal_month": "1985-10",
+          "error": "404"
+        },
+        {
+          "signal_month": "1985-11",
+          "error": "404"
+        },
+        {
+          "signal_month": "1985-12",
+          "error": "404"
+        },
+        {
+          "signal_month": "1986-01",
+          "error": "404"
+        },
+        {
+          "signal_month": "1986-02",
+          "error": "404"
+        },
+        {
+          "signal_month": "1986-03",
+          "error": "404"
+        },
+        {
+          "signal_month": "1986-04",
+          "error": "404"
+        },
+        {
+          "signal_month": "1986-05",
+          "error": "404"
+        },
+        {
+          "signal_month": "1986-06",
+          "error": "404"
+        },
+        {
+          "signal_month": "1986-07",
+          "error": "404"
+        },
+        {
+          "signal_month": "1986-08",
+          "error": "404"
+        },
+        {
+          "signal_month": "1986-09",
+          "error": "404"
+        },
+        {
+          "signal_month": "1986-10",
+          "error": "404"
+        },
+        {
+          "signal_month": "1986-11",
+          "error": "404"
+        },
+        {
+          "signal_month": "1986-12",
+          "error": "404"
+        },
+        {
+          "signal_month": "1987-01",
+          "error": "404"
+        },
+        {
+          "signal_month": "1987-02",
+          "error": "404"
+        },
+        {
+          "signal_month": "1987-03",
+          "error": "404"
+        },
+        {
+          "signal_month": "1987-04",
+          "error": "404"
+        },
+        {
+          "signal_month": "1987-05",
+          "error": "404"
+        },
+        {
+          "signal_month": "1987-06",
+          "error": "404"
+        },
+        {
+          "signal_month": "1987-07",
+          "error": "404"
+        },
+        {
+          "signal_month": "1987-08",
+          "error": "404"
+        },
+        {
+          "signal_month": "1987-09",
+          "error": "404"
+        },
+        {
+          "signal_month": "1987-10",
+          "error": "404"
+        },
+        {
+          "signal_month": "1987-11",
+          "error": "404"
+        },
+        {
+          "signal_month": "1987-12",
+          "error": "404"
+        },
+        {
+          "signal_month": "1988-01",
+          "error": "404"
+        },
+        {
+          "signal_month": "1988-02",
+          "error": "404"
+        },
+        {
+          "signal_month": "1988-03",
+          "error": "404"
+        },
+        {
+          "signal_month": "1988-04",
+          "error": "404"
+        },
+        {
+          "signal_month": "1988-05",
+          "error": "404"
+        },
+        {
+          "signal_month": "1988-06",
+          "error": "404"
+        },
+        {
+          "signal_month": "1988-07",
+          "error": "404"
+        },
+        {
+          "signal_month": "1988-08",
+          "error": "404"
+        },
+        {
+          "signal_month": "1988-09",
+          "error": "404"
+        },
+        {
+          "signal_month": "1988-10",
+          "error": "404"
+        },
+        {
+          "signal_month": "1988-11",
+          "error": "404"
+        },
+        {
+          "signal_month": "1988-12",
+          "error": "404"
+        },
+        {
+          "signal_month": "1989-01",
+          "error": "404"
+        },
+        {
+          "signal_month": "1989-02",
+          "error": "404"
+        },
+        {
+          "signal_month": "1989-03",
+          "error": "404"
+        },
+        {
+          "signal_month": "1989-04",
+          "error": "404"
+        },
+        {
+          "signal_month": "1989-05",
+          "error": "404"
+        },
+        {
+          "signal_month": "1989-06",
+          "error": "404"
+        },
+        {
+          "signal_month": "1989-07",
+          "error": "404"
+        },
+        {
+          "signal_month": "1989-08",
+          "error": "404"
+        },
+        {
+          "signal_month": "1989-09",
+          "error": "404"
+        },
+        {
+          "signal_month": "1989-10",
+          "error": "404"
+        },
+        {
+          "signal_month": "1989-11",
+          "error": "404"
+        },
+        {
+          "signal_month": "1989-12",
+          "error": "404"
+        },
+        {
+          "signal_month": "1990-01",
+          "error": "404"
+        },
+        {
+          "signal_month": "1990-02",
+          "error": "404"
+        },
+        {
+          "signal_month": "1990-03",
+          "error": "404"
+        },
+        {
+          "signal_month": "1990-04",
+          "error": "404"
+        },
+        {
+          "signal_month": "1990-05",
+          "error": "404"
+        },
+        {
+          "signal_month": "1990-06",
+          "error": "404"
+        },
+        {
+          "signal_month": "1990-07",
+          "error": "404"
+        },
+        {
+          "signal_month": "1990-08",
+          "error": "404"
+        },
+        {
+          "signal_month": "1990-09",
+          "error": "404"
+        },
+        {
+          "signal_month": "1990-10",
+          "error": "404"
+        },
+        {
+          "signal_month": "1990-11",
+          "error": "404"
+        },
+        {
+          "signal_month": "1990-12",
+          "error": "404"
+        },
+        {
+          "signal_month": "1991-01",
+          "error": "404"
+        },
+        {
+          "signal_month": "1991-02",
+          "error": "404"
+        },
+        {
+          "signal_month": "1991-03",
+          "error": "404"
+        },
+        {
+          "signal_month": "1991-04",
+          "error": "404"
+        },
+        {
+          "signal_month": "1991-05",
+          "error": "404"
+        },
+        {
+          "signal_month": "1991-06",
+          "error": "404"
+        },
+        {
+          "signal_month": "1991-07",
+          "error": "404"
+        },
+        {
+          "signal_month": "1991-08",
+          "error": "404"
+        },
+        {
+          "signal_month": "1991-09",
+          "error": "404"
+        },
+        {
+          "signal_month": "1991-10",
+          "error": "404"
+        },
+        {
+          "signal_month": "1991-11",
+          "error": "404"
+        },
+        {
+          "signal_month": "1991-12",
+          "error": "404"
+        },
+        {
+          "signal_month": "1992-01",
+          "error": "404"
+        },
+        {
+          "signal_month": "1992-02",
+          "error": "404"
+        },
+        {
+          "signal_month": "1992-03",
+          "error": "404"
+        },
+        {
+          "signal_month": "1992-04",
+          "error": "404"
+        },
+        {
+          "signal_month": "1992-05",
+          "error": "404"
+        },
+        {
+          "signal_month": "1992-06",
+          "error": "404"
+        },
+        {
+          "signal_month": "1992-07",
+          "error": "404"
+        },
+        {
+          "signal_month": "1992-08",
+          "error": "404"
+        },
+        {
+          "signal_month": "1992-09",
+          "error": "404"
+        },
+        {
+          "signal_month": "1992-10",
+          "error": "404"
+        },
+        {
+          "signal_month": "1992-11",
+          "error": "404"
+        },
+        {
+          "signal_month": "1992-12",
+          "error": "404"
+        },
+        {
+          "signal_month": "1993-01",
+          "error": "404"
+        },
+        {
+          "signal_month": "1993-02",
+          "error": "404"
+        },
+        {
+          "signal_month": "1993-03",
+          "error": "404"
+        },
+        {
+          "signal_month": "1993-04",
+          "error": "404"
+        },
+        {
+          "signal_month": "1993-05",
+          "error": "404"
+        },
+        {
+          "signal_month": "1993-06",
+          "error": "404"
+        },
+        {
+          "signal_month": "1993-07",
+          "error": "404"
+        },
+        {
+          "signal_month": "1993-08",
+          "error": "404"
+        },
+        {
+          "signal_month": "1993-09",
+          "error": "404"
+        },
+        {
+          "signal_month": "1993-10",
+          "error": "404"
+        },
+        {
+          "signal_month": "1993-11",
+          "error": "404"
+        },
+        {
+          "signal_month": "1993-12",
+          "error": "404"
+        },
+        {
+          "signal_month": "1994-01",
+          "error": "404"
+        },
+        {
+          "signal_month": "1994-02",
+          "error": "404"
+        },
+        {
+          "signal_month": "1994-03",
+          "error": "404"
+        },
+        {
+          "signal_month": "1994-04",
+          "error": "404"
+        },
+        {
+          "signal_month": "1994-05",
+          "error": "404"
+        },
+        {
+          "signal_month": "1994-06",
+          "error": "404"
+        },
+        {
+          "signal_month": "1994-07",
+          "error": "404"
+        },
+        {
+          "signal_month": "1994-08",
+          "error": "404"
+        },
+        {
+          "signal_month": "1994-09",
+          "error": "404"
+        },
+        {
+          "signal_month": "1994-10",
+          "error": "404"
+        },
+        {
+          "signal_month": "1994-11",
+          "error": "404"
+        },
+        {
+          "signal_month": "1994-12",
+          "error": "404"
+        },
+        {
+          "signal_month": "1995-01",
+          "error": "404"
+        },
+        {
+          "signal_month": "1995-02",
+          "error": "404"
+        },
+        {
+          "signal_month": "1995-03",
+          "error": "404"
+        },
+        {
+          "signal_month": "1995-04",
+          "error": "404"
+        },
+        {
+          "signal_month": "1995-05",
+          "error": "404"
+        },
+        {
+          "signal_month": "1995-06",
+          "error": "404"
+        },
+        {
+          "signal_month": "1995-07",
+          "error": "404"
+        },
+        {
+          "signal_month": "1995-08",
+          "error": "404"
+        },
+        {
+          "signal_month": "1995-09",
+          "error": "404"
+        },
+        {
+          "signal_month": "1995-10",
+          "error": "404"
+        },
+        {
+          "signal_month": "1995-11",
+          "error": "404"
+        },
+        {
+          "signal_month": "1995-12",
+          "error": "404"
+        },
+        {
+          "signal_month": "1996-01",
+          "error": "404"
+        },
+        {
+          "signal_month": "1996-02",
+          "error": "404"
+        },
+        {
+          "signal_month": "1996-03",
+          "error": "404"
+        },
+        {
+          "signal_month": "1996-04",
+          "error": "404"
+        },
+        {
+          "signal_month": "1996-05",
+          "error": "404"
+        },
+        {
+          "signal_month": "1996-06",
+          "error": "404"
+        },
+        {
+          "signal_month": "1996-07",
+          "error": "404"
+        },
+        {
+          "signal_month": "1996-08",
+          "error": "404"
+        },
+        {
+          "signal_month": "1996-09",
+          "error": "404"
+        },
+        {
+          "signal_month": "1996-10",
+          "error": "404"
+        },
+        {
+          "signal_month": "1996-11",
+          "error": "404"
+        }
+      ],
+      "m1_not_published_by_t": [
+        {
+          "signal_month": "2025-11",
+          "signal_date": "2025-11-28",
+          "k_used": "2025-09"
+        }
+      ],
+      "m1_not_published_by_t_in_test_window": 0,
+      "m1_not_published_by_t_before_test_window": 0,
+      "m1_not_published_by_t_after_test_window": 1,
+      "sha256_of_all_vintage_responses": "737d7a6262a4500ee05f1c091566d40e98c31651693b29c2572553206f60a792",
+      "revision_check": {
+        "1996-12": {
+          "months_compared": 479,
+          "median_ratio_current_over_vintage": 1.0,
+          "months_beyond_rounding": 0,
+          "largest_relative_departure": 0.0,
+          "departures": []
+        },
+        "1997-12": {
+          "months_compared": 491,
+          "median_ratio_current_over_vintage": 1.0,
+          "months_beyond_rounding": 0,
+          "largest_relative_departure": 0.0,
+          "departures": []
+        },
+        "1998-12": {
+          "months_compared": 503,
+          "median_ratio_current_over_vintage": 1.0,
+          "months_beyond_rounding": 0,
+          "largest_relative_departure": 0.0,
+          "departures": []
+        },
+        "1999-12": {
+          "months_compared": 515,
+          "median_ratio_current_over_vintage": 1.0,
+          "months_beyond_rounding": 0,
+          "largest_relative_departure": 0.0,
+          "departures": []
+        },
+        "2000-12": {
+          "months_compared": 527,
+          "median_ratio_current_over_vintage": 1.0,
+          "months_beyond_rounding": 0,
+          "largest_relative_departure": 0.0,
+          "departures": []
+        },
+        "2001-12": {
+          "months_compared": 539,
+          "median_ratio_current_over_vintage": 1.0,
+          "months_beyond_rounding": 0,
+          "largest_relative_departure": 0.0,
+          "departures": []
+        },
+        "2002-12": {
+          "months_compared": 551,
+          "median_ratio_current_over_vintage": 1.0,
+          "months_beyond_rounding": 0,
+          "largest_relative_departure": 0.0,
+          "departures": []
+        },
+        "2003-12": {
+          "months_compared": 563,
+          "median_ratio_current_over_vintage": 1.0,
+          "months_beyond_rounding": 0,
+          "largest_relative_departure": 0.0,
+          "departures": []
+        },
+        "2004-12": {
+          "months_compared": 575,
+          "median_ratio_current_over_vintage": 1.0,
+          "months_beyond_rounding": 0,
+          "largest_relative_departure": 0.0,
+          "departures": []
+        },
+        "2005-12": {
+          "months_compared": 587,
+          "median_ratio_current_over_vintage": 1.0,
+          "months_beyond_rounding": 0,
+          "largest_relative_departure": 0.0,
+          "departures": []
+        },
+        "2006-12": {
+          "months_compared": 599,
+          "median_ratio_current_over_vintage": 1.0,
+          "months_beyond_rounding": 0,
+          "largest_relative_departure": 0.0,
+          "departures": []
+        },
+        "2007-12": {
+          "months_compared": 611,
+          "median_ratio_current_over_vintage": 1.0,
+          "months_beyond_rounding": 0,
+          "largest_relative_departure": 0.0,
+          "departures": []
+        },
+        "2008-12": {
+          "months_compared": 623,
+          "median_ratio_current_over_vintage": 1.0,
+          "months_beyond_rounding": 0,
+          "largest_relative_departure": 0.0,
+          "departures": []
+        },
+        "2009-12": {
+          "months_compared": 635,
+          "median_ratio_current_over_vintage": 1.0,
+          "months_beyond_rounding": 0,
+          "largest_relative_departure": 0.0,
+          "departures": []
+        },
+        "2010-12": {
+          "months_compared": 647,
+          "median_ratio_current_over_vintage": 1.0,
+          "months_beyond_rounding": 0,
+          "largest_relative_departure": 0.0,
+          "departures": []
+        },
+        "2011-12": {
+          "months_compared": 659,
+          "median_ratio_current_over_vintage": 1.0,
+          "months_beyond_rounding": 0,
+          "largest_relative_departure": 0.0,
+          "departures": []
+        },
+        "2012-12": {
+          "months_compared": 671,
+          "median_ratio_current_over_vintage": 1.0,
+          "months_beyond_rounding": 0,
+          "largest_relative_departure": 0.0,
+          "departures": []
+        },
+        "2013-12": {
+          "months_compared": 683,
+          "median_ratio_current_over_vintage": 1.0,
+          "months_beyond_rounding": 0,
+          "largest_relative_departure": 0.0,
+          "departures": []
+        },
+        "2014-12": {
+          "months_compared": 695,
+          "median_ratio_current_over_vintage": 1.0,
+          "months_beyond_rounding": 0,
+          "largest_relative_departure": 0.0,
+          "departures": []
+        },
+        "2015-12": {
+          "months_compared": 707,
+          "median_ratio_current_over_vintage": 1.0,
+          "months_beyond_rounding": 0,
+          "largest_relative_departure": 0.0,
+          "departures": []
+        },
+        "2016-12": {
+          "months_compared": 719,
+          "median_ratio_current_over_vintage": 1.0,
+          "months_beyond_rounding": 0,
+          "largest_relative_departure": 0.0,
+          "departures": []
+        },
+        "2017-12": {
+          "months_compared": 731,
+          "median_ratio_current_over_vintage": 1.0,
+          "months_beyond_rounding": 0,
+          "largest_relative_departure": 0.0,
+          "departures": []
+        },
+        "2018-12": {
+          "months_compared": 743,
+          "median_ratio_current_over_vintage": 1.0,
+          "months_beyond_rounding": 0,
+          "largest_relative_departure": 0.0,
+          "departures": []
+        }
+      },
+      "revision_years_with_any_month_beyond_rounding": []
+    }
+  },
+  "finished_utc": "2026-10-25T18:25:33Z",
+  "cache": {
+    "dir": "data/raw/alfred (git-ignored)",
+    "workers": 4,
+    "retries": 3,
+    "unresolved_accepted": []
+  }
+}

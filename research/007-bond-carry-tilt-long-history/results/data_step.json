@@ -1,0 +1,70 @@
+{
+  "run_at_utc": "2026-10-25T11:25:57Z",
+  "windows": {
+    "calendar_file": "research/001-slope-duration-switch/results/execution_calendar.csv",
+    "calendar_sha256": "266d0ae8296eaca9ed29ed71186381a7341574f75326f9e8d3689b8e14f15343",
+    "calendar_rows": 688,
+    "calendar_month_gaps": [
+      [
+        "2018-12",
+        "2018-12"
+      ]
+    ],
+    "test_window": {
+      "execution_dates": [
+        "1974-07-01",
+        "2018-12-31"
+      ],
+      "periods": 534,
+      "first_signal_month": "1974-06",
+      "first_signal_date": "1974-06-28",
+      "first_execution_date": "1974-07-01",
+      "last_signal_month": "2018-11",
+      "last_period_end": "2019-01-02"
+    },
+    "t1b_window": {
+      "execution_dates": [
+        "1979-07-01",
+        "2018-12-31"
+      ],
+      "periods": 474,
+      "first_signal_month": "1979-06",
+      "first_execution_date": "1979-07-02",
+      "last_period_end": "2019-01-02"
+    },
+    "first_signal_month_by_minimum_history": {
+      "T1": "1974-06",
+      "T1a": "1972-06",
+      "T1b": "1979-06",
+      "T2_T3_trend": "1970-07"
+    },
+    "note": "Counted from the calendar's rows: the m-th month-end carry is the m-th calendar row from 1969-07. Whether DGS7 is present on every signal date (a carry undefined on a date is handled at the code step, Study 006 section 16 (c)) is not read here."
+  },
+  "vendor_plan_inherited_from_006": {
+    "overlap_periods": 192,
+    "first_execution_date": "2003-01-02",
+    "last_period_end": "2019-01-02",
+    "ief_tiingo_periods": 156,
+    "ief_alpaca_periods": 36,
+    "ief_missing_periods": [],
+    "first_bil_period": {
+      "signal_month": "2007-05",
+      "execution_date": "2007-06-01",
+      "period_end": "2007-07-02",
+      "ief": "tiingo",
+      "bil": "tiingo"
+    },
+    "periods_with_synthetic_cash_both_sides": 53,
+    "bil_tiingo_periods": 103,
+    "bil_alpaca_periods": 36,
+    "bil_missing_after_first": [],
+    "first_alpaca_ief_period": {
+      "signal_month": "2015-12",
+      "execution_date": "2016-01-04",
+      "period_end": "2016-02-01",
+      "ief": "alpaca",
+      "bil": "alpaca"
+    },
+    "matches_study_006_data_step_json": true
+  }
+}

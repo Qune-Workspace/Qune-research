@@ -78,13 +78,13 @@ Study 002's copied engine also writes Study 001's three sub-periods by signal mo
 
 ## Charts (§9.6, added 2026-10-25 04:2x London; descriptive, no decision weight)
 
-Drawn by [`charts/make_charts.py`](charts/make_charts.py) from the committed history files only (`results/history/monthly_base.csv`, `metrics_base.csv`); every title is computed from the numbers, which are listed with the input hashes in [`charts/manifest.json`](charts/manifest.json). Nothing was re-run. Tester chart check not yet run.
+Drawn by [`charts/make_charts.py`](charts/make_charts.py) from the committed history files only (`results/history/monthly_base.csv`, `metrics_base.csv`); every title is computed from the numbers, which are listed with the input hashes in [`charts/manifest.json`](charts/manifest.json). Nothing was re-run. Tester chart check not yet run. *(2026-10-25 05:2x GMT: Tester chart check run, no chart passed (three must-fix, one should-fix: "beat" in the growth title, a drawdown cut quoted against holding the bond only, "came from 1969–79" where 1969–89 carries the edge, "never left the bond"); all fixed and re-rendered from the same files, see the third section of [CHART_REVIEW.md](../../CHART_REVIEW.md). The titles below are the corrected ones.)*
 
-![The curve was inverted at 77 of 593 month ends](charts/history_spread_and_holdings.png)
+![The curve inverted at 77 of 593 month ends](charts/history_spread_and_holdings.png)
 
 ![Growth of the spread switch against holding the bond and the same-exposure mix](charts/history_growth.png)
 
-![Drawdown of the spread switch against holding the bond](charts/history_drawdown.png)
+![Drawdown of the spread switch against the same-exposure mix and holding the bond](charts/history_drawdown.png)
 
 ![The switch's edge over the same-exposure mix by decade](charts/history_differential_by_decade.png)
 

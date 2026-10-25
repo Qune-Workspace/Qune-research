@@ -92,6 +92,10 @@ PROGRAMME_FAMILY = (
     ("2026-10-25", "Study 007 T1, T1a, T1b, T2, T3, synthetic leg 1974-2018", "trials.md", 5),
     ("this study", "Study 008 T1, T1a, T1b", "trials.md", 3),
 )
+# Re-count before the history run (§14 step 7), 2026-10-25 21:2x GMT: desk
+# registry ops/trading/research/trials.jsonl 562 rows (unchanged since Study
+# 007's re-count), none on a bond or rates leg; public trial logs touched since
+# registration: this study's only. Family = 17, unchanged (trials.md row).
 FAMILY_COUNT_AT_REGISTRATION = sum(row[3] for row in PROGRAMME_FAMILY)
 assert FAMILY_COUNT_AT_REGISTRATION == 17
 DSR_ALSO_AT = (3, 10)

@@ -29,6 +29,7 @@ Nothing here reads data or computes a number.
 
 from __future__ import annotations
 
+import math
 import textwrap
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
@@ -221,14 +222,21 @@ def label_line_ends(ax: Axes, labels: Sequence[EndLabel], x: float | None = None
     """Write each label just right of the axes at its line's final y, nudged apart.
 
     Labels are placed at their own y, then pushed apart in axes fractions so no
-    two are closer than ``min_gap``.  Returns the y positions used (data units).
+    two are closer than ``min_gap``.  On a log y-axis the fractions are taken in
+    log space, as drawn; linear spacing there lets close lines' labels touch.
+    Returns the y positions used (data units).
     """
     if not labels:
         return []
-    y0, y1 = ax.get_ylim()
+    log = ax.get_yscale() == "log"
+
+    def fwd(v: float) -> float:
+        return math.log10(v) if log else v
+
+    y0, y1 = (fwd(v) for v in ax.get_ylim())
     span = (y1 - y0) or 1.0
     order = sorted(range(len(labels)), key=lambda i: labels[i].y)
-    frac = [(labels[i].y - y0) / span for i in order]
+    frac = [(fwd(labels[i].y) - y0) / span for i in order]
     for k in range(1, len(frac)):
         if frac[k] - frac[k - 1] < min_gap:
             frac[k] = frac[k - 1] + min_gap
@@ -239,6 +247,8 @@ def label_line_ends(ax: Axes, labels: Sequence[EndLabel], x: float | None = None
     xpos = ax.get_xlim()[1] if x is None else x
     for k, i in enumerate(order):
         y = y0 + frac[k] * span
+        if log:
+            y = 10.0 ** y
         placed[i] = y
         ax.annotate(labels[i].text, xy=(xpos, y), xytext=(pad_points, 0), textcoords="offset points",
                     ha="left", va="center", fontsize=fontsize, color=labels[i].color,

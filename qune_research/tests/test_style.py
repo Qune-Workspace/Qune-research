@@ -97,6 +97,21 @@ def test_end_labels_are_pushed_apart():
     plt.close(fig)
 
 
+def test_end_labels_on_a_log_axis_are_spaced_as_drawn():
+    # Linear spacing put 520 at about 550 here: 0.014 apart on the drawn axis, so the labels touched.
+    fig, ax = style.figure()
+    ax.set_yscale("log")
+    ax.set_ylim(1, 1000)
+    ys = style.label_line_ends(ax, [style.EndLabel("a", 500.0, style.ACCENT),
+                                    style.EndLabel("b", 520.0, style.GREY),
+                                    style.EndLabel("c", 3.0, style.GREY_LIGHT)], min_gap=0.05)
+    drawn = [ax.transAxes.inverted().transform(ax.transData.transform((0.5, y)))[1] for y in ys]
+    assert ys[0] == pytest.approx(500.0) and ys[2] == pytest.approx(3.0)
+    assert drawn[1] - drawn[0] == pytest.approx(0.05)
+    assert max(drawn) <= 1.0
+    plt.close(fig)
+
+
 def test_sorted_bars_sort_and_highlight():
     fig, ax = style.figure()
     names = style.sorted_bars(ax, {"c": 3.0, "a": 1.0, "b": 2.0}, highlight=["b"])

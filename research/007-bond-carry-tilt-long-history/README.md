@@ -112,7 +112,7 @@ Carry ranked low against its own history for most of the episode, so the tilt he
 - **The mechanism is not monotone** (Q4 negative), so the level component of carry is supported only at the top of its range.
 - **A wrong sentence in the published outcome row.** The history run's outcome row in [`trials.md`](trials.md), written straight after the run, says the realised dispersion makes the MDE "about 1.6 × the registered 1.6% a year at sd 0.5". In the units the row uses (a year of mean difference) that is the wrong way round: the realised MDE is about 1.14% a year (see Power, after the fact). The row is not rewritten; a dated correction is appended below it. No verdict depends on the sentence.
 
-## Charts (§9.6, added 2026-10-25 13:3x GMT; descriptive, no decision weight; Tester chart check pending)
+## Charts (§9.6, added 2026-10-25 13:28 GMT; descriptive, no decision weight; Tester chart check pending)
 
 Drawn from the committed history files by [`charts/make_charts.py`](charts/make_charts.py); every number in a title is computed by the script and listed with the input hashes in [`charts/manifest.json`](charts/manifest.json). SVG beside each PNG.
 
@@ -129,6 +129,6 @@ Drawn from the committed history files by [`charts/make_charts.py`](charts/make_
 ## Next
 
 1. ~~The 2019–2026 episode~~: run once 2026-10-25 13:23Z, above.
-2. ~~Charts~~: drawn 2026-10-25 13:3x GMT (above); the Tester chart check is next.
+2. ~~Charts~~: drawn 2026-10-25 13:28 GMT (above); the Tester chart check is next.
 3. A separate-session recomputation of every figure on this page from the raw files (§14 step 10).
 4. The forward-record code (`forward007.py`, before step 11), first record at the 2026-10-30 month end, scored once after 60 months; no paper order.

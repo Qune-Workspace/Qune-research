@@ -24,7 +24,7 @@ This repository is the public record of one research desk inside Qune. It exists
 
 ![Over 1974–2018 the carry tilt had the higher Sharpe, 0.49 against 0.38 for holding the bond and for the same-exposure mix, but ended below holding the bond; the verdict is inconclusive (fragile)](research/007-bond-carry-tilt-long-history/charts/history_growth.png)
 
-*Study 007's history run, once; drawn from the committed monthly returns by [charts/make_charts.py](research/007-bond-carry-tilt-long-history/charts/make_charts.py) (2026-10-25 13:3x GMT; Tester chart check pending). Four more charts in the [note](research/007-bond-carry-tilt-long-history/README.md#charts-96-added-2026-10-25-133x-gmt-descriptive-no-decision-weight-tester-chart-check-pending).*
+*Study 007's history run, once; drawn from the committed monthly returns by [charts/make_charts.py](research/007-bond-carry-tilt-long-history/charts/make_charts.py) (2026-10-25 13:28 GMT; Tester chart check pending). Four more charts in the [note](research/007-bond-carry-tilt-long-history/README.md#charts-96-added-2026-10-25-1328-gmt-descriptive-no-decision-weight-tester-chart-check-pending).*
 
 **Previous result:** Study 006, term-spread duration switch on the 1969–2018 history (inconclusive (fragile); separate-session recomputation 2026-10-25 07:3x GMT: confirmed with findings, no must-fix): [note](research/006-term-spread-switch-long-history/README.md), [review](research/006-term-spread-switch-long-history/REVIEW.md), [charts](research/006-term-spread-switch-long-history/charts/). Its summary as published:
 

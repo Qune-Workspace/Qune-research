@@ -102,7 +102,7 @@ WAITS_CSV = PAPER_LOG_DIR / "waits.csv"
 INTERIM_JSON = PAPER_LOG_DIR / "interim.json"
 
 STUDY = "008-bond-value-tilt-long-history"
-HISTORY_VERDICT = "inconclusive (fragile)"
+HISTORY_VERDICT = "not supported"  # results/history/summary.json, T1 (README.md); a test reads it
 LABEL = f"forward record, no paper order (section 11); history verdict: {HISTORY_VERDICT}"
 NOT_YET_SCORED = "Not yet scored"
 SHADOW_COLUMNS = (["signal_date", "execution_date", "period_end", "start_bar", "end_bar", "r_IEF", "r_BIL", "B1", "B2"]

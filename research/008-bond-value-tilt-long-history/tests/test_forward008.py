@@ -234,6 +234,12 @@ def test_main_refuses_and_writes_nothing(tmp_path, monkeypatch):
     assert list(tmp_path.iterdir()) == []
 
 
+def test_label_carries_the_committed_history_verdict():
+    summary = json.loads((STUDY_DIR / "results" / "history" / "summary.json").read_text())
+    assert fw.HISTORY_VERDICT == summary["verdict"]["T1"] == "not supported"
+    assert fw.LABEL.endswith("history verdict: not supported")
+
+
 @pytest.mark.skipif(not (RAW_DIR / "fred_CPIAUCNS.csv").exists(), reason="study raw files not present")
 def test_rank_history_reproduces_the_episode_starting_weights():
     """The rank history the forward record extends is the episode's: 686

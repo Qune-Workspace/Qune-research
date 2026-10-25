@@ -45,6 +45,10 @@ SECONDARY = ("T2", "T3")
 # --- Gate and volatility bounds, inherited from Study 006 (§5.3.2, §5.4) ---
 G1_MAX_007 = G1_MAX
 G2_OBSERVED_006 = 0.131  # Study 006 results/gate/gate.json, inherited as observed; reproduced as a check
+# The committed full-precision figure (Study 006 results/gate/gate.json, key gate_T1.G2_noise_ratio,
+# commit 2026-10-25) that the copied files must reproduce, and the tolerance of that check (§5.3.2).
+G2_OBSERVED_006_FULL = 0.13140878732605116
+G2_REPRODUCTION_TOLERANCE = 1e-12
 G2_MAX_007 = G2_MAX
 VOL_BAR_007 = VOL_BAR
 VOL_BAR_ONE_PERCENT_007 = VOL_BAR_ONE_PERCENT

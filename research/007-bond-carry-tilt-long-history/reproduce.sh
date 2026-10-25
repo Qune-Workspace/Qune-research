@@ -11,8 +11,9 @@
 # No data are fetched: the inputs are Study 006's files, copied after a
 # SHA-256 check against results/data_manifest.json (§5.1).
 #
-# State of the build (§14 step 3): the run modules are not built yet; every
-# mode stops after the two gates with "not built yet". Nothing runs on data.
+# State of the build (§14 step 3): --gate and --volcheck are built (src/gate007.py,
+# src/volcheck007.py); --history and --episode stop after the two gates with
+# "not built yet". Nothing has run on data.
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")"
 
@@ -57,5 +58,10 @@ print(f"  {len(manifest)} files verified")
 PY
 
 echo "[2/2] run $mode"
-echo "refused: $mode is not built yet (PREREGISTRATION.md §14 step 3 in progress); nothing was run." >&2
-exit 1
+case "$mode" in
+  --gate)     exec "$PYTHON" -m src.gate007 ;;
+  --volcheck) exec "$PYTHON" -m src.volcheck007 ;;
+  *)
+    echo "refused: $mode is not built yet (PREREGISTRATION.md §14 step 3 in progress); nothing was run." >&2
+    exit 1 ;;
+esac

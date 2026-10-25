@@ -31,7 +31,8 @@ STUDIES := research/001-slope-duration-switch \
            research/004-xasset-trend-voltarget \
            research/005-duration-trend-regime \
            research/006-term-spread-switch-long-history \
-           research/007-bond-carry-tilt-long-history
+           research/007-bond-carry-tilt-long-history \
+           research/008-bond-value-tilt-long-history
 SUITES  := $(STUDIES) qune_research desk-view
 
 # review_recompute.py scripts that run from the committed outputs alone.  Rows
@@ -91,7 +92,7 @@ reproduce-raw:
 	done
 
 charts:
-	@set -e; for d in $(STUDIES); do echo "== $$d/charts"; (cd $$d/charts && $(PYTHON) make_charts.py); done
+	@set -e; for d in $(STUDIES); do echo "== $$d/charts"; if [ ! -f $$d/charts/make_charts.py ]; then echo "   none yet"; continue; fi; (cd $$d/charts && $(PYTHON) make_charts.py); done
 	@git diff --stat -- '*/charts/*' || true
 
 tearsheets:

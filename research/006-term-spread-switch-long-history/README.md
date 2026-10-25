@@ -74,4 +74,4 @@ Study 002's copied engine also writes Study 001's three sub-periods by signal mo
 
 1. ~~The 2019–2026 episode~~ run once on 2026-10-25 (section above).
 2. Separate-session recomputation (`review_recompute.py`, `REVIEW.md`), as Studies 001–005; house-style charts with a chart check.
-3. The forward record (§11): decision records from the 2026-10-30 month end, shadow lines after each execution, scored once after 60 periods. Its code is not built yet; it must be before 2026-10-30.
+3. The forward record (§11): decision records from the 2026-10-30 month end, shadow lines after each execution, scored once after 60 periods. Its code is not built yet; it must be before 2026-10-30. *(2026-10-25 04:2x London: built and tested, `src/forward.py`, 16 tests; see `paper-log/README.md` and the §16 entry of the same time. Not yet run on a forward month.)*

@@ -1,12 +1,13 @@
 # Paper dashboard: the forward records, as committed
 
-Generated 2026-10-24T20:21:08Z from the files at commit `897cba1` by `tools/make_paper_dashboard.py`. Each study's forward code writes its own record once a month and never rewrites it; this page only counts and draws what is on disk at generation time, so an empty row means no record exists yet, not that one was missed. Nothing here is a backtest: every value is a forward observation after the study's publication. No study has a supported verdict; no order has been placed. Not advice.
+Generated 2026-10-25T06:23:02Z from the files at commit `df477ba` by `tools/make_paper_dashboard.py`. Each study's forward code writes its own record once a month and never rewrites it; this page only counts and draws what is on disk at generation time, so an empty row means no record exists yet, not that one was missed. Nothing here is a backtest: every value is a forward observation after the study's publication. No study has a supported verdict; no order has been placed. Not advice.
 
 | Study | Kind | Records | Shadow lines | Next record due |
 |---|---|---|---|---|
 | Study 003 | paper sleeve, not supported; paper record of a not-supported rule; orders only once Independent Risk clears the sleeve | 0 | 0 | 30 Oct 2026 |
 | Study 004 | shadow record, not supported; no paper order | 0 | 0 | 30 Oct 2026 |
 | Study 005 | shadow record, refuted in-sample; no paper order | 0 | 0 | 30 Oct 2026 |
+| Study 006 | shadow record, inconclusive (fragile) on 1969–2018; forward record, scored once after 60 periods; no paper order | 0 | 0 | 30 Oct 2026 |
 
 ## Study 003 (paper sleeve)
 
@@ -40,6 +41,19 @@ No chart yet: the first shadow line follows the record after 30 Oct 2026.
 ## Study 005 (shadow record)
 
 **Label: refuted in-sample; no paper order.** Folder `research/005-duration-trend-regime/paper-log/`.
+
+| | |
+|---|---|
+| Decision records | 0 |
+| Last record | none yet |
+| Shadow lines (holding periods ended) | 0 |
+| Next record due (signal date) | 30 Oct 2026 |
+
+No chart yet: the first shadow line follows the record after 30 Oct 2026.
+
+## Study 006 (shadow record)
+
+**Label: inconclusive (fragile) on 1969–2018; forward record, scored once after 60 periods; no paper order.** Folder `research/006-term-spread-switch-long-history/paper-log/`.
 
 | | |
 |---|---|

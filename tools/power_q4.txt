@@ -1,0 +1,36 @@
+Agenda question 4: minimum detectable edge of volatility management on the approved ETFs, committed before the
+question is fixed or retired (inputs: committed result files of Studies 003 and 004 only; nothing fetched, no managed
+book computed)
+
+Anchors reproduced before anything is reported
+  003 in-sample: 185 months, NW t 0.37 (published 0.37), w 0.692 (published 0.692); NW / i.i.d. 0.972; product form / actual 1.193; IEF excess-return volatility 6.26% a year
+  004 signal_vol rms (power_next.txt): SHY 1.37%, IEF 6.51%, TLT 13.45% (published 1.37%, 6.51%, 13.45%)
+  calibration: 003 realised IEF / 004 ex-ante IEF = 0.962
+
+Test: long-only book w_t x leg + (1 - w_t) x bills, 0 <= w_t <= 1, against B3 = w-bar x leg held throughout;
+C2 bar (NW t >= 2.0) at 80% power over Study 004's 180 in-sample months; MDE = K x nw x sd(w) x sigma_leg / sqrt(12 N).
+
+In Sharpe units of the leg (leg-independent), worst case sd(w) = 0.5: 0.356
+
+  leg   trailing vol (004, rms; min-max)   proxy sigma   MDE sd 0.5 cons.   calib.   sd(w) for 2%/yr   months for 2%/yr at sd 0.5
+  IWM   23.19% (9.2%-75.6%, n 181)       22.30%         7.95%           6.66%        0.126                2843
+  IEF    6.51% (3.1%-12.6%, n 181)        6.26%         2.23%           1.87%        0.448                 224
+  TLT   13.45% (5.8%-30.7%, n 181)       12.93%         4.61%           3.86%        0.217                 956
+
+Reading (inferred from the figures above; no managed return computed):
+  - Equities: at the worst-case dispersion the C2 test on IWM can see about 7.95% a year, far above the 2% bar;
+    it clears the bar only if the weight's sd stays below 0.126, and a weight that moves that little can
+    carry only a proportionally small edge, so in Sharpe units the test is no stronger (the 007 caveat). SPY's volatility is
+    not committed; it is lower than a small-cap ETF's (inferred), which would lower the return figure, not the Sharpe one.
+  - Treasuries: IEF 2.23% and TLT 4.61% a year at sd 0.5 (power_next.txt gave 2.20% and 4.55% over 185 months); neither clears the bar
+    at the worst case under the conservative form. IEF clears it at sd(w) <= 0.448 and on the calibrated figure (1.87%), so a
+    volatility-managed IEF is the one form of the question inside the bar; its only window, IEF 2003-2018, is the one
+    Studies 003 and 005 already tested trend exits on (and Study 006's gate compared its synthetic leg with).
+  - No untouched window: 2019-2026 is spent for IWM, IEF and TLT (Study 004's out-of-sample run, METHODS section 2.5).
+    A long equity history needs index data outside the approved ETF universe, and long US market histories are the kind
+    of sample the papers it tests used [MM17, COWY20], so a run there would largely re-measure published work (inferred).
+  - The desk's no-margin rule caps w at 1, so a managed book can only de-risk below full exposure; the scaling up in calm
+    months that the published volatility-managed portfolios allow is not available here (inferred from their design).
+Assumptions stated now: the NW/i.i.d. factor and the product form carry over from Study 003 (for a weight set from
+trailing volatility, w and the leg's variance are not independent, so the product form may misstate the dispersion in
+either direction; not measured); leg volatilities are ex-ante proxies calibrated on IEF, not realised monthly figures.

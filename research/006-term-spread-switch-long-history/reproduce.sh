@@ -57,7 +57,6 @@ echo "[2/2] run $mode"
 case "$mode" in
   --gate)     "$PYTHON" -m src.gate ;;
   --volcheck) "$PYTHON" -m src.volcheck ;;
-  --history|--episode)
-    echo "refused: $mode is not implemented yet (§14 step 3 is incomplete)." >&2
-    exit 1 ;;
+  --history)  "$PYTHON" -m src.history ;;
+  --episode)  "$PYTHON" -m src.episode ;;
 esac

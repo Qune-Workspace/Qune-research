@@ -1,6 +1,6 @@
 {
-  "commit": "1b43c08",
-  "generated_at_utc": "2026-10-25T14:22:57Z",
+  "commit": "98f1604",
+  "generated_at_utc": "2026-10-25T23:24:17Z",
   "outputs_sha256": {},
   "studies": [
     {
@@ -44,6 +44,14 @@
       "records": 0,
       "shadow_lines": 0,
       "study": "Study 007"
+    },
+    {
+      "executions": 0,
+      "inputs_sha256": {},
+      "next_record_due": "2026-10-30",
+      "records": 0,
+      "shadow_lines": 0,
+      "study": "Study 008"
     }
   ]
 }

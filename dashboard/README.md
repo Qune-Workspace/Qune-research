@@ -1,6 +1,6 @@
 # Paper dashboard: the forward records, as committed
 
-Generated 2026-10-25T14:22:57Z from the files at commit `1b43c08` by `tools/make_paper_dashboard.py`. Each study's forward code writes its own record once a month and never rewrites it; this page only counts and draws what is on disk at generation time, so an empty row means no record exists yet, not that one was missed. Nothing here is a backtest: every value is a forward observation after the study's publication. No study has a supported verdict; no order has been placed. Not advice.
+Generated 2026-10-25T23:24:17Z from the files at commit `98f1604` by `tools/make_paper_dashboard.py`. Each study's forward code writes its own record once a month and never rewrites it; this page only counts and draws what is on disk at generation time, so an empty row means no record exists yet, not that one was missed. Nothing here is a backtest: every value is a forward observation after the study's publication. No study has a supported verdict; no order has been placed. Not advice.
 
 | Study | Kind | Records | Shadow lines | Next record due |
 |---|---|---|---|---|
@@ -9,6 +9,7 @@ Generated 2026-10-25T14:22:57Z from the files at commit `1b43c08` by `tools/make
 | Study 005 | shadow record, refuted in-sample; no paper order | 0 | 0 | 30 Oct 2026 |
 | Study 006 | shadow record, inconclusive (fragile) on 1969–2018; forward record, scored once after 60 periods; no paper order | 0 | 0 | 30 Oct 2026 |
 | Study 007 | shadow record, inconclusive (fragile) on 1974–2018; forward record, scored once after 60 periods; no paper order | 0 | 0 | 30 Oct 2026 |
+| Study 008 | shadow record, not supported on 1974–2018; forward record, scored once after 60 periods; no paper order | 0 | 0 | 30 Oct 2026 |
 
 ## Study 003 (paper sleeve)
 
@@ -68,6 +69,19 @@ No chart yet: the first shadow line follows the record after 30 Oct 2026.
 ## Study 007 (shadow record)
 
 **Label: inconclusive (fragile) on 1974–2018; forward record, scored once after 60 periods; no paper order.** Folder `research/007-bond-carry-tilt-long-history/paper-log/`.
+
+| | |
+|---|---|
+| Decision records | 0 |
+| Last record | none yet |
+| Shadow lines (holding periods ended) | 0 |
+| Next record due (signal date) | 30 Oct 2026 |
+
+No chart yet: the first shadow line follows the record after 30 Oct 2026.
+
+## Study 008 (shadow record)
+
+**Label: not supported on 1974–2018; forward record, scored once after 60 periods; no paper order.** Folder `research/008-bond-value-tilt-long-history/paper-log/`.
 
 | | |
 |---|---|

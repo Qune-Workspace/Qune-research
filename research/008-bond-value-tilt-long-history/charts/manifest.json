@@ -1,0 +1,164 @@
+{
+  "made_at_utc": "2026-10-25T22:19:51+00:00",
+  "repository_commit_at_run": "a7a515d641976493a86c5d93745059cf87ad31c9",
+  "inputs_sha256": {
+    "research/008-bond-value-tilt-long-history/results/history/monthly_base.csv": "e54e9c5930919bac0189d5298ff375e6cb2ae3aed92d917bb15ecf59ff698dc6",
+    "research/008-bond-value-tilt-long-history/results/history/metrics_base.csv": "da5ce721f526933490e3c2e314de762aab3fdef57bc2647dd3f3a12520c732d5",
+    "research/008-bond-value-tilt-long-history/results/history/summary.json": "ae688e34ce5049080ecca3998f0f3dec62e7bd0d2d74af006358b3f6cba65863"
+  },
+  "outputs": [
+    "research/008-bond-value-tilt-long-history/charts/history_differential_by_decade.png",
+    "research/008-bond-value-tilt-long-history/charts/history_differential_by_decade.svg",
+    "research/008-bond-value-tilt-long-history/charts/history_drawdown.png",
+    "research/008-bond-value-tilt-long-history/charts/history_drawdown.svg",
+    "research/008-bond-value-tilt-long-history/charts/history_growth.png",
+    "research/008-bond-value-tilt-long-history/charts/history_growth.svg",
+    "research/008-bond-value-tilt-long-history/charts/history_real_yield_and_weight.png",
+    "research/008-bond-value-tilt-long-history/charts/history_real_yield_and_weight.svg",
+    "research/008-bond-value-tilt-long-history/charts/history_trials_by_window.png",
+    "research/008-bond-value-tilt-long-history/charts/history_trials_by_window.svg"
+  ],
+  "numbers_in_titles": {
+    "real_yield_month_ends": 534,
+    "real_yield_le_zero": 76,
+    "weight_ge_0_9": 48,
+    "weight_lt_0_3": 186,
+    "weight_mean": 0.46617591365525995,
+    "weight_sd": 0.2700507154271432,
+    "real_yield_min": -0.0480766233766233,
+    "real_yield_max": 0.0960612903225805,
+    "growth_sharpe_annual": {
+      "T1": 0.4146186534805565,
+      "B1": 0.38179365856122083,
+      "B3": 0.38124388395491965
+    },
+    "growth_final": {
+      "T1": 17.604182592022894,
+      "B1": 25.569646785463863,
+      "B3": 13.995071123095922
+    },
+    "growth_B3_weight": 0.46617591365525995,
+    "growth_ledoit_wolf_p_vs_B3": 0.7004,
+    "drawdown_monthly_max": {
+      "T1": -0.0629015764930212,
+      "B1": -0.151520869058147,
+      "B3": -0.0382824877844693
+    },
+    "drawdown_trough_holding_period": {
+      "T1": "1987-09",
+      "B3": "1980-02",
+      "B1": "1980-02"
+    },
+    "decade_mean_d_annual": {
+      "1974–79": 0.008750252849206991,
+      "1980s": 0.0258199026556365,
+      "1990s": 0.007207010547034142,
+      "2000s": -0.004539017430011218,
+      "2010–18": -0.009095359408964243
+    },
+    "decade_periods": {
+      "1974–79": 66,
+      "1980s": 120,
+      "1990s": 120,
+      "2000s": 120,
+      "2010–18": 108
+    },
+    "decade_nw_t": {
+      "1974–79": 1.286398006148565,
+      "1980s": 1.8374979457916027,
+      "1990s": 2.1609309107958983,
+      "2000s": -0.8129707674356019,
+      "2010–18": -1.5106777234205286
+    },
+    "decade_abs_t_ge_2": [
+      "1990s"
+    ],
+    "window_mean_d_annual": {
+      "T1": {
+        "1974-07 to 2002-12 (before any ETF)": 0.01357395597485106,
+        "2003-01 to 2018-12 (the gate's overlap)": -0.008481914472918644,
+        "1974-07 to 1985-12 (complement of the era window)": 0.02342829219479573,
+        "1974-07 to 1981-12": 0.011366599030573117,
+        "1982-01 to 2008-12": 0.008671966427478073,
+        "2009-01 to 2018-12": -0.006824547255464957
+      },
+      "T1a": {
+        "1974-07 to 2002-12 (before any ETF)": 0.013330238092052122,
+        "2003-01 to 2018-12 (the gate's overlap)": -0.0038129309146297734,
+        "1974-07 to 1985-12 (complement of the era window)": 0.02249721392387651,
+        "1974-07 to 1981-12": 0.009018444805742907,
+        "1982-01 to 2008-12": 0.010718275864000851,
+        "2009-01 to 2018-12": -0.0038126893381685845
+      },
+      "T1b": {
+        "1974-07 to 2002-12 (before any ETF)": 0.011856551486453638,
+        "2003-01 to 2018-12 (the gate's overlap)": -0.006642565243574651,
+        "1974-07 to 1985-12 (complement of the era window)": 0.03789864046187624,
+        "1974-07 to 1981-12": 0.020631678042482934,
+        "1982-01 to 2008-12": 0.005952635490333358,
+        "2009-01 to 2018-12": -0.003995243731074196
+      }
+    },
+    "window_nw_t": {
+      "T1": {
+        "1974-07 to 2002-12 (before any ETF)": 2.4671950536330485,
+        "2003-01 to 2018-12 (the gate's overlap)": -1.8064779381884513,
+        "1974-07 to 1985-12 (complement of the era window)": 1.9208404217622554,
+        "1974-07 to 1981-12": 1.1576084336811616,
+        "1982-01 to 2008-12": 1.541036229833582,
+        "2009-01 to 2018-12": -1.19852326703044
+      },
+      "T1a": {
+        "1974-07 to 2002-12 (before any ETF)": 2.3213302780054783,
+        "2003-01 to 2018-12 (the gate's overlap)": -1.0144026607273406,
+        "1974-07 to 1985-12 (complement of the era window)": 1.7709785426039846,
+        "1974-07 to 1981-12": 0.908510642397776,
+        "1982-01 to 2008-12": 1.910823848411409,
+        "2009-01 to 2018-12": -0.7020107258302555
+      },
+      "T1b": {
+        "1974-07 to 2002-12 (before any ETF)": 1.6629801425590676,
+        "2003-01 to 2018-12 (the gate's overlap)": -1.4229726579148954,
+        "1974-07 to 1985-12 (complement of the era window)": 1.7356688517443413,
+        "1974-07 to 1981-12": 0.7835062117084466,
+        "1982-01 to 2008-12": 0.9690955799538437,
+        "2009-01 to 2018-12": -0.8354641603107913
+      }
+    },
+    "window_periods": {
+      "T1": {
+        "1974-07 to 2002-12 (before any ETF)": 342,
+        "2003-01 to 2018-12 (the gate's overlap)": 192,
+        "1974-07 to 1985-12 (complement of the era window)": 138,
+        "1974-07 to 1981-12": 90,
+        "1982-01 to 2008-12": 324,
+        "2009-01 to 2018-12": 120
+      },
+      "T1a": {
+        "1974-07 to 2002-12 (before any ETF)": 342,
+        "2003-01 to 2018-12 (the gate's overlap)": 192,
+        "1974-07 to 1985-12 (complement of the era window)": 138,
+        "1974-07 to 1981-12": 90,
+        "1982-01 to 2008-12": 324,
+        "2009-01 to 2018-12": 120
+      },
+      "T1b": {
+        "1974-07 to 2002-12 (before any ETF)": 282,
+        "2003-01 to 2018-12 (the gate's overlap)": 192,
+        "1974-07 to 1985-12 (complement of the era window)": 78,
+        "1974-07 to 1981-12": 30,
+        "1982-01 to 2008-12": 324,
+        "2009-01 to 2018-12": 120
+      }
+    },
+    "window_companions_same_signs_before_and_overlap": [
+      "T1a",
+      "T1b"
+    ],
+    "era_row_T1": {
+      "periods": 396,
+      "mean_d_annual": -0.000553886258290734,
+      "pass": false
+    }
+  }
+}

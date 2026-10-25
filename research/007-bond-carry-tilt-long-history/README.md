@@ -112,9 +112,23 @@ Carry ranked low against its own history for most of the episode, so the tilt he
 - **The mechanism is not monotone** (Q4 negative), so the level component of carry is supported only at the top of its range.
 - **A wrong sentence in the published outcome row.** The history run's outcome row in [`trials.md`](trials.md), written straight after the run, says the realised dispersion makes the MDE "about 1.6 × the registered 1.6% a year at sd 0.5". In the units the row uses (a year of mean difference) that is the wrong way round: the realised MDE is about 1.14% a year (see Power, after the fact). The row is not rewritten; a dated correction is appended below it. No verdict depends on the sentence.
 
+## Charts (§9.6, added 2026-10-25 13:3x GMT; descriptive, no decision weight; Tester chart check pending)
+
+Drawn from the committed history files by [`charts/make_charts.py`](charts/make_charts.py); every number in a title is computed by the script and listed with the input hashes in [`charts/manifest.json`](charts/manifest.json). SVG beside each PNG.
+
+![The carry tilt held at least 0.9 of the bond in 131 of 534 months and less than 0.3 in 119; carry itself was at or below zero at 61 month ends](charts/history_carry_and_weight.png)
+
+![Over 1974–2018 the carry tilt had the higher Sharpe, 0.49 against 0.38 for holding the bond and for the same-exposure mix, but ended below holding the bond; the verdict is inconclusive (fragile)](charts/history_growth.png)
+
+![The tilt's deepest monthly drawdown was −7.6%, against −6.5% for the same-exposure mix and −15.2% for holding the bond](charts/history_drawdown.png)
+
+![The tilt's edge over the same-exposure mix was positive in every decade, from +0.3% a year in the 2000s to +1.5% in 1974–79](charts/history_differential_by_decade.png)
+
+![Carry alone was ahead of the same-exposure mix in all five windows, but no window alone reached t = 2 (highest 1.91); adding trend raised it in 1974–81 and 1982–2008 and lowered it in 2009–18](charts/history_trials_by_window.png)
+
 ## Next
 
 1. ~~The 2019–2026 episode~~: run once 2026-10-25 13:23Z, above.
-2. Charts to the house standard from the committed monthly files (§9.6): the carry with T1's weight path; T1 against B1 and B3, growth and drawdown; the differential by decade; T1, T2 and T3 by sub-window; then the Tester chart check.
+2. ~~Charts~~: drawn 2026-10-25 13:3x GMT (above); the Tester chart check is next.
 3. A separate-session recomputation of every figure on this page from the raw files (§14 step 10).
 4. The forward-record code (`forward007.py`, before step 11), first record at the 2026-10-30 month end, scored once after 60 months; no paper order.

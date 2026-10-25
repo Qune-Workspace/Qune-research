@@ -1,0 +1,113 @@
+{
+  "made_at_utc": "2026-10-25T13:27:44+00:00",
+  "repository_commit_at_run": "ab0f01ad898a9a47f86b84804298878ccfe56363",
+  "inputs_sha256": {
+    "research/007-bond-carry-tilt-long-history/results/history/monthly_base.csv": "ca0aabe5deda9871f14bd8a71a25b6d45d3f4dd05c8cba0002ec9688fb387a3b",
+    "research/007-bond-carry-tilt-long-history/results/history/metrics_base.csv": "a517bb5a1f383c8ac7cc8f51dfdae1ef55b45805c865225cf5001788dd62705a",
+    "research/007-bond-carry-tilt-long-history/results/history/summary.json": "6c2dac55a4adbcd03704d6937b54c7e5c7d45db9d89dbbc7df0f775fc5a2e0d4"
+  },
+  "outputs": [
+    "research/007-bond-carry-tilt-long-history/charts/history_carry_and_weight.png",
+    "research/007-bond-carry-tilt-long-history/charts/history_carry_and_weight.svg",
+    "research/007-bond-carry-tilt-long-history/charts/history_differential_by_decade.png",
+    "research/007-bond-carry-tilt-long-history/charts/history_differential_by_decade.svg",
+    "research/007-bond-carry-tilt-long-history/charts/history_drawdown.png",
+    "research/007-bond-carry-tilt-long-history/charts/history_drawdown.svg",
+    "research/007-bond-carry-tilt-long-history/charts/history_growth.png",
+    "research/007-bond-carry-tilt-long-history/charts/history_growth.svg",
+    "research/007-bond-carry-tilt-long-history/charts/history_trials_by_window.png",
+    "research/007-bond-carry-tilt-long-history/charts/history_trials_by_window.svg"
+  ],
+  "numbers_in_titles": {
+    "carry_month_ends": 534,
+    "carry_le_zero": 61,
+    "weight_ge_0_9": 131,
+    "weight_lt_0_3": 119,
+    "weight_mean": 0.605610516964197,
+    "weight_sd": 0.30344508853091223,
+    "growth_sharpe_annual": {
+      "T1": 0.4929599148630137,
+      "B1": 0.38179365856122083,
+      "B3": 0.3813877618639647
+    },
+    "growth_final": {
+      "T1": 23.643291962895606,
+      "B1": 25.569646785463863,
+      "B3": 16.49861553646605
+    },
+    "drawdown_monthly_max": {
+      "T1": -0.07554995434581258,
+      "B1": -0.151520869058147,
+      "B3": -0.06475197709086844
+    },
+    "drawdown_B1_trough_holding_period": "1980-02",
+    "decade_mean_d_annual": {
+      "1974–79": 0.014983181302936117,
+      "1980s": 0.01116763996297154,
+      "1990s": 0.004303535326914916,
+      "2000s": 0.002892963118608381,
+      "2010–18": 0.012224608367574127
+    },
+    "decade_periods": {
+      "1974–79": 66,
+      "1980s": 120,
+      "1990s": 120,
+      "2000s": 120,
+      "2010–18": 108
+    },
+    "window_mean_d_annual": {
+      "T1": {
+        "1974-07 to 2002-12 (before any ETF)": 0.007858662042473975,
+        "2003-01 to 2018-12 (the gate's overlap)": 0.009506155521797436,
+        "1974-07 to 1981-12": 0.01720965586363027,
+        "1982-01 to 2008-12": 0.005758735720206921,
+        "2009-01 to 2018-12": 0.00915120731364533
+      },
+      "T2": {
+        "1974-07 to 2002-12 (before any ETF)": 0.009264164899234862,
+        "2003-01 to 2018-12 (the gate's overlap)": 0.007497274754787148,
+        "1974-07 to 1981-12": 0.021272746028023985,
+        "1982-01 to 2008-12": 0.006214547403435366,
+        "2009-01 to 2018-12": 0.005664672060185319
+      },
+      "T3": {
+        "1974-07 to 2002-12 (before any ETF)": 0.010633035648471817,
+        "2003-01 to 2018-12 (the gate's overlap)": 0.005464697674097298,
+        "1974-07 to 1981-12": 0.025311769529663505,
+        "1982-01 to 2008-12": 0.006629905051920433,
+        "2009-01 to 2018-12": 0.002163097089267563
+      }
+    },
+    "window_nw_t": {
+      "T1": {
+        "1974-07 to 2002-12 (before any ETF)": 1.3992218741208942,
+        "2003-01 to 2018-12 (the gate's overlap)": 1.9145842101756683,
+        "1974-07 to 1981-12": 1.2389411688044418,
+        "1982-01 to 2008-12": 1.1805569439394115,
+        "2009-01 to 2018-12": 1.5112829930827736
+      },
+      "T2": {
+        "1974-07 to 2002-12 (before any ETF)": 1.6063501408193641,
+        "2003-01 to 2018-12 (the gate's overlap)": 1.5108968996435184,
+        "1974-07 to 1981-12": 1.4026283052320785,
+        "1982-01 to 2008-12": 1.3237292538808947,
+        "2009-01 to 2018-12": 0.9008641254182232
+      },
+      "T3": {
+        "1974-07 to 2002-12 (before any ETF)": 1.3824354388602849,
+        "2003-01 to 2018-12 (the gate's overlap)": 0.8228907282153027,
+        "1974-07 to 1981-12": 1.364847491820227,
+        "1982-01 to 2008-12": 0.9957999292427082,
+        "2009-01 to 2018-12": 0.2610110778153453
+      }
+    },
+    "window_T1_max_t": 1.9145842101756683,
+    "rate_eras_T2_above_T1": [
+      "1974–81",
+      "1982–2008"
+    ],
+    "rate_eras_T2_not_above_T1": [
+      "2009–18"
+    ]
+  }
+}

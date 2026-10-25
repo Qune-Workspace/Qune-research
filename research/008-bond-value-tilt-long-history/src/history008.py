@@ -316,10 +316,17 @@ def compute(
     expected_periods: tuple[int, int, int] | None = None,
     n_family: int | None = None,
     monthly_007: pd.DataFrame | None = None,
+    dropped: tuple[str, ...] = (),
 ) -> dict:
     """The history run on the given windows (the registered ones from
     ``main``; toy windows from the tests).  ``expected_periods`` is (test,
-    T1b, era); ``monthly_007`` feeds the after-the-fact overlap row."""
+    T1b, era); ``monthly_007`` feeds the after-the-fact overlap row.
+    ``dropped`` lists the trials the gate dropped (§5.3, gate.json
+    ``dropped_trials``): no return of theirs is computed, their own row is
+    'inconclusive (gate)', and the companion clause does not fire on them."""
+    if PRIMARY in dropped or not set(dropped) <= set(COMPANIONS):
+        raise ValueError(f"only companions can be dropped at a passed gate (§5.3), got {sorted(dropped)}")
+    trials = tuple(k for k in TRIAL_IDS if k not in dropped)
     out_dir.mkdir(parents=True, exist_ok=True)
     indices = synthetic_indices(fred["DGS10"], fred["DTB3"], fred["DGS7"])
     full = build_schedule(fred["DGS10"], fred["DTB3"], real_yield_first_month, last_month)
@@ -336,7 +343,7 @@ def compute(
         if got != tuple(expected_periods):
             raise ValueError(f"periods {got}, expected {tuple(expected_periods)}")
     weights = {}
-    for k in TRIAL_IDS:
+    for k in trials:
         w = paths[WEIGHT_COLUMNS[k]].reindex(returns[k].index)
         if pd.isna(w.iloc[0]):
             raise ValueError(f"{k} has no weight on the first period of its window (§7, data step)")
@@ -354,7 +361,9 @@ def compute(
         "first_execution_date": {k: str(schedules[k]["execution_date"].iloc[0].date()) for k in TRIAL_IDS},
         "last_period_end": str(schedules[PRIMARY]["period_end"].iloc[-2].date()),
         "months_without_signal": int(full.attrs.get("months_without_signal", 0)),
-        "hold_periods": {k: [str(m) for m in weights[k].index[weights[k].isna().to_numpy()]] for k in TRIAL_IDS},
+        "trials_run": list(trials),
+        "dropped_at_gate": list(dropped),
+        "hold_periods": {k: [str(m) for m in weights[k].index[weights[k].isna().to_numpy()]] for k in trials},
         "availability": {k: availability_counts(availability, paths, returns[k].index) for k in TRIAL_IDS},
         "weight_b3": {},
         "family": {"n_family": n_family, "rows": [list(r) for r in PROGRAMME_FAMILY], "decides_C3": True},
@@ -362,17 +371,17 @@ def compute(
     }
     for case, cost in COST_CASES.items():
         rng = np.random.default_rng(SEED)
-        results = {k: run_trial(weights[k], returns[k], cost) for k in TRIAL_IDS}
+        results = {k: run_trial(weights[k], returns[k], cost) for k in trials}
         desc = {
             k: {
                 name: (tilt_descriptives(f, results[k]["B0"]["r"], returns[k]) if name == "T"
                        else report.descriptive_metrics(f, results[k]["B0"]["r"], returns[k]))
                 for name, f in results[k].items()
             }
-            for k in TRIAL_IDS
+            for k in trials
         }
-        infer = {k: report.inference_metrics(k, results[k]["T"], results[k], rng) for k in TRIAL_IDS}
-        variance, floored = stats.trial_variance([desc[k]["T"]["sharpe_monthly"] for k in TRIAL_IDS])
+        infer = {k: report.inference_metrics(k, results[k]["T"], results[k], rng) for k in trials}
+        variance, floored = stats.trial_variance([desc[k]["T"]["sharpe_monthly"] for k in trials])
         dsr = {
             k: {
                 f"N{n}": stats.deflated_sharpe(
@@ -381,10 +390,13 @@ def compute(
                 )
                 for n in dsr_ns
             }
-            for k in TRIAL_IDS
+            for k in trials
         }
-        d = {k: results[k]["T"]["r"] - results[k]["B3"]["r"] for k in TRIAL_IDS}
+        d = {k: results[k]["T"]["r"] - results[k]["B3"]["r"] for k in trials}
+        # T1 on T1b's periods, descriptive (§2.5, §9.6): T1's own path and T1's own B3 (at T1's
+        # full-window w̄), restricted to those periods; cash is B0 on the same periods.
         t1_on_t1b = results[PRIMARY]["T"].reindex(returns["T1b"].index)
+        cash_t1b = backtest.run_static(0.0, returns["T1b"], 0.0)["r"]
         d_t1_on_t1b = d[PRIMARY].reindex(returns["T1b"].index)
         summary["cost_cases"][case] = {
             "cost_per_side": cost,
@@ -393,28 +405,29 @@ def compute(
             "deflated_sharpe": dsr,
             "deflation_inputs": {"variance_across_trials": variance, "floor_applied": floored, "n_family": n_family},
             "era_row_T1": era_row(d[PRIMARY], era_mask),
-            "sub_windows": {k: subwindow_metrics(results[k], returns[k], schedules[k], SUB_WINDOWS) for k in TRIAL_IDS},
-            "rate_eras": {k: subwindow_metrics(results[k], returns[k], schedules[k], RATE_ERAS_008) for k in TRIAL_IDS},
+            "sub_windows": {k: subwindow_metrics(results[k], returns[k], schedules[k], SUB_WINDOWS) for k in trials},
+            "rate_eras": {k: subwindow_metrics(results[k], returns[k], schedules[k], RATE_ERAS_008) for k in trials},
             "mechanism": mechanism(weights[PRIMARY], r_head, returns[PRIMARY]),
-            "power_realised": {k: realised_power(d[k], weights[k]) for k in TRIAL_IDS},
+            "power_realised": {k: realised_power(d[k], weights[k]) for k in trials},
             "T1_on_T1b_window_descriptive": {
-                **tilt_descriptives(t1_on_t1b, results["T1b"]["B0"]["r"], returns["T1b"]),
+                "B3_used": "T1's own B3 at T1's full-window mean weight",
+                **tilt_descriptives(t1_on_t1b, cash_t1b, returns["T1b"]),
                 "T_minus_own_B3": {"mean_monthly": float(d_t1_on_t1b.mean()), **stats.newey_west_mean(d_t1_on_t1b)},
             },
             "overlap_after_the_fact": (differential_correlation_with_007(d[PRIMARY], monthly_007)
                                        if monthly_007 is not None else None),
         }
         if case == "base":
-            summary["weight_b3"] = {k: tilt.mean_weight(weights[k]) for k in TRIAL_IDS}
-            summary["total_turnover"] = {k: tilt.total_turnover(results[k]["T"]) for k in TRIAL_IDS}
-        pd.DataFrame({k: desc[k]["T"] for k in TRIAL_IDS}).T.to_csv(out_dir / f"metrics_{case}.csv")
+            summary["weight_b3"] = {k: tilt.mean_weight(weights[k]) for k in trials}
+            summary["total_turnover"] = {k: tilt.total_turnover(results[k]["T"]) for k in trials}
+        pd.DataFrame({k: desc[k]["T"] for k in trials}).T.to_csv(out_dir / f"metrics_{case}.csv")
         monthly = pd.concat(
-            {**{k: results[k]["T"]["r"] for k in TRIAL_IDS},
-             **{f"B3_{k}": results[k]["B3"]["r"] for k in TRIAL_IDS},
+            {**{k: results[k]["T"]["r"] for k in trials},
+             **{f"B3_{k}": results[k]["B3"]["r"] for k in trials},
              **{b: results[PRIMARY][b]["r"] for b in ("B0", "B1", "B2")}},
             axis=1,
         )
-        for k in reversed(TRIAL_IDS):
+        for k in reversed(trials):
             monthly.insert(0, f"w_{k}", results[k]["T"]["weight"])
         for s in sorted(set(CPI_SERIES.values()), reverse=True):
             monthly.insert(0, f"r_{s}", paths[f"r_{s}"].reindex(monthly.index))
@@ -428,13 +441,13 @@ def compute(
     crit = {
         k: criteria(base["descriptive"][k], base["inference"][k], base["deflated_sharpe"][k][f"N{n_family}"],
                     stress["inference"][k])
-        for k in TRIAL_IDS
+        for k in trials
     }
-    own = {k: companion_verdict(gate_ok, crit[k]) for k in TRIAL_IDS}
+    own = {k: (companion_verdict(gate_ok, crit[k]) if k in trials else "inconclusive (gate)") for k in TRIAL_IDS}
     verdicts = {PRIMARY: primary_verdict(gate_ok, crit[PRIMARY], base["era_row_T1"]["pass"],
                                          {c: own[c] for c in COMPANIONS}, sigma)}
     verdicts.update({k: own[k] for k in COMPANIONS})
-    labels = {k: turnover_label(summary["total_turnover"][k]) for k in TRIAL_IDS}
+    labels = {k: turnover_label(summary["total_turnover"][k]) for k in trials}
     summary.update(
         {
             "criteria": crit,
@@ -467,6 +480,10 @@ def write_verdict(summary: dict, out_dir: Path) -> None:
         "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|",
     ]
     for k in TRIAL_IDS:
+        if k not in summary["criteria"]:
+            lines.append(f"| {k} | {summary['roles'][k]} | {summary['verdict_rows_on_own_criteria'][k]} (dropped at the gate; "
+                         "no return computed) |" + " – |" * 13)
+            continue
         c, d, i = summary["criteria"][k], base["descriptive"][k], base["inference"][k]
         dsr = base["deflated_sharpe"][k]
         label = f" ({summary['turnover_labels'][k]})" if summary["turnover_labels"][k] else ""
@@ -529,6 +546,7 @@ def main(
     if out_dir.exists():
         raise SystemExit(f"refused: {out_dir.name}/ exists; the history run is executed once (§8.1)")
     sigma = float(json.loads(vol_path.read_text())["sigma_annual"])
+    dropped = tuple(sorted(json.loads((gate_dir / "gate.json").read_text()).get("dropped_trials", {})))
     summary = compute(
         report.load_fred(),
         {s: load_series(s) for s in sorted(set(CPI_SERIES.values()))},
@@ -541,6 +559,7 @@ def main(
         out_dir,
         expected_periods=(TEST_PERIODS, T1B_PERIODS, ERA_PERIODS),
         monthly_007=read_007_differential(),
+        dropped=dropped,
     )
     summary["run_at_utc"] = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
     summary["provenance"] = report.provenance()

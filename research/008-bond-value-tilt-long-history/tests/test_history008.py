@@ -285,3 +285,102 @@ def test_main_refuses_without_gate_volcheck_or_with_existing_output(tmp_path):
     out.mkdir()
     with pytest.raises(SystemExit, match="executed once"):
         history008.main([], gate_dir=gate, volcheck_dir=vol, out_dir=out)
+
+
+# --- after the separate code review (2026-10-25): gate-dropped trials, C3 wiring, column reads -------
+
+
+def test_c3_is_decided_at_the_family_count_in_the_run(toy_history):
+    _, _, s = toy_history
+    dsr = s["cost_cases"]["base"]["deflated_sharpe"]
+    for k in TRIAL_IDS:
+        assert s["criteria"][k]["C3"] == (dsr[k]["N17"]["dsr"] >= 0.95)
+
+
+def test_t1_on_t1b_periods_uses_t1s_own_b3(toy_history):
+    _, out, s = toy_history
+    monthly = pd.read_csv(out / "monthly_base.csv", index_col=0)
+    on = monthly[monthly["T1b"].notna()]
+    got = s["cost_cases"]["base"]["T1_on_T1b_window_descriptive"]
+    assert got["B3_used"].startswith("T1's own B3")
+    assert got["T_minus_own_B3"]["mean"] == pytest.approx(float((on["T1"] - on["B3_T1"]).mean()), abs=1e-15)
+    assert got["T_minus_own_B3"]["n"] == s["holding_periods"]["T1b"]
+
+
+def test_a_companion_dropped_at_the_gate_has_no_return_and_no_clause(tmp_path):
+    fred = toy_yields()
+    cpi, availability = _toy_cpi_and_availability(fred)
+    s = history008.compute(fred, cpi, availability, sigma=0.05, out_dir=tmp_path / "h", rank_n=TOY_RANK_N,
+                           era=TOY_ERA, dropped=("T1a",), **TOY)
+    assert s["trials_run"] == ["T1", "T1b"] and s["dropped_at_gate"] == ["T1a"]
+    assert "T1a" not in s["criteria"] and "T1a" not in s["weight_b3"]
+    assert "T1a" not in s["cost_cases"]["base"]["descriptive"]
+    assert s["verdict"]["T1a"] == s["verdict_rows_on_own_criteria"]["T1a"] == "inconclusive (gate)"
+    assert s["verdict"]["T1"] != "inconclusive (fragile)" or s["verdict"]["T1b"] == "not supported"
+    monthly = pd.read_csv(tmp_path / "h" / "monthly_base.csv", index_col=0)
+    assert "T1a" not in monthly.columns and "w_T1a" not in monthly.columns
+    s = {**s, "run_at_utc": "2026-01-01T00:00:00Z", "provenance": {"git_commit": "0000000"}}
+    history008.write_verdict(s, tmp_path)
+    assert "dropped at the gate" in (tmp_path / "verdict.md").read_text()
+    with pytest.raises(ValueError, match="only companions"):
+        history008.compute(fred, cpi, availability, sigma=0.05, out_dir=tmp_path / "x", rank_n=TOY_RANK_N,
+                           era=TOY_ERA, dropped=("T1",), **TOY)
+
+
+def test_main_passes_the_gates_dropped_trials_to_the_run(tmp_path, monkeypatch):
+    gate, vol, out = tmp_path / "gate", tmp_path / "volcheck", tmp_path / "history"
+    gate.mkdir()
+    vol.mkdir()
+    (gate / "gate.json").write_text(json.dumps({"outcome": "PASS", "dropped_trials": {"T1a": "inconclusive (gate)"}}))
+    (vol / "volcheck.json").write_text(json.dumps({"sigma_annual": 0.07}))
+    seen = {}
+
+    class Stop(Exception):
+        pass
+
+    def fake_compute(*args, **kwargs):
+        seen.update(kwargs)
+        raise Stop
+
+    for name in ("load_fred",):
+        monkeypatch.setattr(history008.report, name, lambda: {})
+    monkeypatch.setattr(history008, "load_series", lambda s: None)
+    monkeypatch.setattr(history008.pd, "read_csv", lambda *a, **k: None)
+    monkeypatch.setattr(history008, "read_007_differential", lambda: None)
+    monkeypatch.setattr(history008, "compute", fake_compute)
+    with pytest.raises(Stop):
+        history008.main([], gate_dir=gate, volcheck_dir=vol, out_dir=out)
+    assert seen["dropped"] == ("T1a",)
+
+
+def test_read_007_differential_reads_only_month_t1_and_its_b3(tmp_path, monkeypatch):
+    path = tmp_path / "monthly_base.csv"
+    path.write_text("month,execution_date,w_T1,T1,B3_T1,B1\n1974-06,1974-07-01,0.25,0.01,0.005,x\n")
+    calls = []
+    real = pd.read_csv
+
+    def spy(*args, **kwargs):
+        calls.append(kwargs.get("usecols"))
+        return real(*args, **kwargs)
+
+    monkeypatch.setattr(history008.pd, "read_csv", spy)
+    frame = history008.read_007_differential(path)
+    assert calls == [["month", "T1", "B3_T1"]]
+    assert list(frame.columns) == ["T1", "B3_T1"] and frame.index[0] == pd.Period("1974-06", "M")
+
+
+def test_c3_reads_the_family_count_column_not_n3_or_n10(tmp_path, monkeypatch):
+    """The toy DSRs lie on the same side of 0.95 at every N, so the test above
+    cannot tell N17 from N3; here the DSR is pinned to depend on N only."""
+    monkeypatch.setattr(history008.stats, "deflated_sharpe",
+                        lambda sr, n_obs, skew, kurt, n, variance: {"dsr": 1.0 if n == 17 else 0.0})
+    fred = toy_yields()
+    cpi, availability = _toy_cpi_and_availability(fred)
+    s = history008.compute(fred, cpi, availability, sigma=0.05, out_dir=tmp_path / "h", rank_n=TOY_RANK_N,
+                           era=TOY_ERA, **TOY)
+    assert all(s["criteria"][k]["C3"] for k in TRIAL_IDS)
+    monkeypatch.setattr(history008.stats, "deflated_sharpe",
+                        lambda sr, n_obs, skew, kurt, n, variance: {"dsr": 0.0 if n == 17 else 1.0})
+    s = history008.compute(fred, cpi, availability, sigma=0.05, out_dir=tmp_path / "h2", rank_n=TOY_RANK_N,
+                           era=TOY_ERA, **TOY)
+    assert not any(s["criteria"][k]["C3"] for k in TRIAL_IDS)

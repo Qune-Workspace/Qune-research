@@ -60,28 +60,38 @@ KNOWN_WINDOW_NOTE = (
 
 
 def frozen_weights(history_dir: Path = HISTORY_DIR) -> dict[str, float]:
-    """Each trial's B3 weight as frozen by the history run (§8.1)."""
-    w = json.loads((history_dir / "summary.json").read_text(encoding="utf-8"))["weight_b3"]
-    missing = [k for k in TRIAL_IDS if k not in w]
+    """Each trial's B3 weight as frozen by the history run (§8.1), for every
+    trial the gate did not drop (the history summary's ``dropped_at_gate``,
+    §5.3: a dropped trial has no return anywhere, the episode included)."""
+    summary = json.loads((history_dir / "summary.json").read_text(encoding="utf-8"))
+    w, dropped = summary["weight_b3"], set(summary.get("dropped_at_gate", []))
+    expected = [k for k in TRIAL_IDS if k not in dropped]
+    missing = [k for k in expected if k not in w]
     if missing:
         raise ValueError(f"history summary has no frozen weight for {missing}")
-    return {k: float(w[k]) for k in TRIAL_IDS}
+    extra = [k for k in w if k not in expected]
+    if extra:
+        raise ValueError(f"history summary has a frozen weight for a trial dropped at the gate: {extra}")
+    return {k: float(w[k]) for k in expected}
 
 
 def run_side(label: str, paths: pd.DataFrame, returns: pd.DataFrame, schedule: pd.DataFrame,
              frozen: dict[str, float], out_dir: Path) -> dict:
-    """Three trials and their benchmarks on one side (actual or synthetic),
-    both cost cases, metrics and monthly files; no criterion."""
+    """The trials in ``frozen`` (those the gate did not drop) and their
+    benchmarks on one side (actual or synthetic), both cost cases, metrics and
+    monthly files; no criterion."""
     out_dir.mkdir(parents=True, exist_ok=True)
-    w = {k: paths[WEIGHT_COLUMNS[k]].reindex(returns.index) for k in TRIAL_IDS}
+    trials = tuple(k for k in TRIAL_IDS if k in frozen)
+    w = {k: paths[WEIGHT_COLUMNS[k]].reindex(returns.index) for k in trials}
     summary = {
         "label": label,
         "holding_periods": int(len(returns)),
         "first_execution_date": str(schedule["execution_date"].iloc[0].date()),
         "last_period_end": str(schedule["period_end"].iloc[-2].date()),
         "weight_b3_frozen_from_history": frozen,
-        "hold_periods": {k: [str(m) for m in w[k].index[w[k].isna().to_numpy()]] for k in TRIAL_IDS},
-        "mean_signal_weight_in_episode": {k: float(w[k].mean()) for k in TRIAL_IDS},
+        "trials_run": list(trials),
+        "hold_periods": {k: [str(m) for m in w[k].index[w[k].isna().to_numpy()]] for k in trials},
+        "mean_signal_weight_in_episode": {k: float(w[k].mean()) for k in trials},
         "cost_cases": {},
     }
     if "days_slipped" in schedule:
@@ -91,7 +101,7 @@ def run_side(label: str, paths: pd.DataFrame, returns: pd.DataFrame, schedule: p
     for case, cost in COST_CASES.items():
         rng = np.random.default_rng(SEED)
         results = {}
-        for k in TRIAL_IDS:
+        for k in trials:
             res = backtest.benchmarks(returns, frozen[k], cost)
             res["T"] = run_tilt_hold(w[k], returns, cost)
             results[k] = res
@@ -101,26 +111,26 @@ def run_side(label: str, paths: pd.DataFrame, returns: pd.DataFrame, schedule: p
                        else report.descriptive_metrics(f, results[k]["B0"]["r"], returns))
                 for name, f in results[k].items()
             }
-            for k in TRIAL_IDS
+            for k in trials
         }
-        infer = {k: report.inference_metrics(k, results[k]["T"], results[k], rng) for k in TRIAL_IDS}
+        infer = {k: report.inference_metrics(k, results[k]["T"], results[k], rng) for k in trials}
         summary["cost_cases"][case] = {
             "cost_per_side": cost,
             "descriptive": desc,
             "inference": infer,
-            "total_turnover": {k: tilt.total_turnover(results[k]["T"]) for k in TRIAL_IDS},
+            "total_turnover": {k: tilt.total_turnover(results[k]["T"]) for k in trials},
             "T_minus_B3_mean_annual": {
-                k: float((results[k]["T"]["r"] - results[k]["B3"]["r"]).mean()) * 12.0 for k in TRIAL_IDS
+                k: float((results[k]["T"]["r"] - results[k]["B3"]["r"]).mean()) * 12.0 for k in trials
             },
         }
-        pd.DataFrame({k: desc[k]["T"] for k in TRIAL_IDS}).T.to_csv(out_dir / f"metrics_{case}.csv")
+        pd.DataFrame({k: desc[k]["T"] for k in trials}).T.to_csv(out_dir / f"metrics_{case}.csv")
         monthly = pd.concat(
-            {**{k: results[k]["T"]["r"] for k in TRIAL_IDS},
-             **{f"B3_{k}": results[k]["B3"]["r"] for k in TRIAL_IDS},
+            {**{k: results[k]["T"]["r"] for k in trials},
+             **{f"B3_{k}": results[k]["B3"]["r"] for k in trials},
              **{b: results[PRIMARY][b]["r"] for b in ("B0", "B1", "B2")}},
             axis=1,
         )
-        for k in reversed(TRIAL_IDS):
+        for k in reversed(trials):
             monthly.insert(0, f"hold_{k}", results[k]["T"]["hold"])
             monthly.insert(0, f"w_{k}", results[k]["T"]["weight"])
         monthly.insert(0, "period_end", schedule["period_end"].reindex(monthly.index).dt.date)

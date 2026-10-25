@@ -202,3 +202,22 @@ def test_overlap_correlations_refuse_gaps_and_unknown_labels():
         gate008.overlap_correlations(w, w007.iloc[1:], pd.Series(["IEF"] * 10, index=months), months)
     with pytest.raises(ValueError, match="labels"):
         gate008.overlap_correlations(w, w007, pd.Series(["IEF"] * 9 + ["SPY"], index=months), months)
+
+
+def test_read_overlap_column_passes_usecols_to_the_reader(tmp_path, monkeypatch):
+    """After the separate code review (2026-10-25): the test above passes even
+    without ``usecols``; this one fails unless only the month and the one
+    column are requested from the reader."""
+    path = tmp_path / "research" / "007-x" / "results" / "history" / "monthly_base.csv"
+    path.parent.mkdir(parents=True)
+    path.write_text("month,w_T1,T1\n1974-06,0.25,0.01\n")
+    calls = []
+    real = pd.read_csv
+
+    def spy(*args, **kwargs):
+        calls.append(kwargs.get("usecols"))
+        return real(*args, **kwargs)
+
+    monkeypatch.setattr(gate008.pd, "read_csv", spy)
+    gate008.read_overlap_column(path, "w_T1")
+    assert calls == [["month", "w_T1"]]

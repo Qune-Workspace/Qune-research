@@ -123,3 +123,25 @@ def test_main_needs_history_and_the_committed_note_and_runs_once(tmp_path):
     out.mkdir()
     with pytest.raises(SystemExit, match="once"):
         episode008.main([], hist, out, study)
+
+
+def test_frozen_weights_follow_the_gates_dropped_trials(tmp_path):
+    """After the separate code review (2026-10-25): a trial dropped at the gate
+    has no frozen weight and no episode return; a weight for it is refused."""
+    two = {"T1": 0.6, "T1b": 0.65}
+    (tmp_path / "summary.json").write_text(json.dumps({"weight_b3": two, "dropped_at_gate": ["T1a"]}))
+    assert episode008.frozen_weights(tmp_path) == two
+    (tmp_path / "summary.json").write_text(json.dumps({"weight_b3": FROZEN, "dropped_at_gate": ["T1a"]}))
+    with pytest.raises(ValueError, match="dropped at the gate"):
+        episode008.frozen_weights(tmp_path)
+
+
+def test_run_side_runs_only_the_trials_with_a_frozen_weight(tmp_path):
+    fred = toy_yields()
+    cpi, availability = _toy_cpi_and_availability(fred)
+    synthetic = synthetic_indices(fred["DGS10"], fred["DTB3"], fred["DGS7"])
+    s = episode008.compute(fred, cpi, availability, synthetic, {"T1": 0.6, "T1b": 0.65}, *TOY_EPISODE,
+                           tmp_path / "e", rank_n=TOY_RANK_N)
+    for side in ("actual", "synthetic"):
+        assert s[side]["trials_run"] == ["T1", "T1b"]
+        assert "T1a" not in s[side]["cost_cases"]["base"]["descriptive"]

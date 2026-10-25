@@ -42,5 +42,8 @@ long constant-maturity history: carry (yield over bills plus roll-down) read fro
 holds, on 006's frozen synthetic 7-10y leg over 1969-2018, MDE 1.52% a year at w = 0.5. That window is not untouched for
 the instrument (006's three trend/spread trials ran on it; programme family count would rise from 3), and the 2019-2026
 IEF/BIL window is spent (METHODS section 2.5), so the test would be the long history plus a forward record, as for 006.
+Precision (same run): a carry-SIGN switch on that leg is already published as Study 006's trial T3 (Study 001's
+'carry including roll-down' rule; Sharpe 0.468, NW t 1.91 vs B3, C2 fail), so the powered form of question 2 must be a
+different rule (a carry tilt by level, carry across maturities, or carry combined with the unseen long-history trend).
 Assumptions stated now: the NW/i.i.d. factor (0.972) and the product form carry over; SHY and TLT volatilities are
 ex-ante proxies calibrated on IEF, not realised monthly-return volatilities; a carry rule's w is unknown, 0.5 is the worst case.

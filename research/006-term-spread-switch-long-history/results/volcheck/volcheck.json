@@ -1,0 +1,9 @@
+{
+  "sigma_annual": 0.07754184217817527,
+  "mde_annual": 0.015234153669582567,
+  "periods": 593,
+  "bar": 0.1018,
+  "consequence": "sigma at or below the bar: the criteria stand as registered (\u00a75.4); the study cannot see an edge of 1% a year or less (1% bar: sigma <= 5.09%)",
+  "run_at_utc": "2026-10-25T03:23:04Z",
+  "code_commit": "ff50d9f44fb673037de6c8d4d093e19418168522"
+}

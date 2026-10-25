@@ -57,6 +57,10 @@ Study 002's copied engine also writes Study 001's three sub-periods by signal mo
 
 **Mechanism check (§9.6).** The spread was at or below zero at 77 month ends in 14 episodes (mean 5.5 months). In those months the synthetic bond returned 0.38% a month on average and synthetic bills 0.76%; bills beat the bond in 55% of them. That is the hypothesis's mechanism (an inverted curve precedes poor bond excess returns), and it is what the late-1970s and early-1980s episodes supply.
 
+## 2019–2026 episode (no decision weight)
+
+*Added 2026-10-25 03:3x London, after the episode was run once at 03:29 (`results/episode/`, logged and pushed first, `d1ffbbd`); nothing above was changed.* This window is the programme's shared held-back window, but it is not a test here: the 2022–24 inversion is common knowledge and the author's general knowledge covers it (§8.2). With actual IEF and BIL over 93 months (January 2019 to October 2026) and B3 at the frozen w 0.870, **T1 lost to its benchmarks**: Sharpe −0.494 against −0.259 for holding IEF and for B3; mean T1 − B3 −0.065% a month (Newey–West t −0.61); deepest daily drawdown −22.6% against −23.9% for IEF. The curve was inverted at 37 month ends in 5 episodes; in those months IEF returned 0.46% a month and bills 0.36%, the opposite of the mechanism in the long history. T2 (t +0.20) and T3 (t +0.97) were closer to flat. The synthetic series gives the same picture (T1 − B3 −0.074% a month, t −0.69), as the gate implied. The episode carries no decision weight and changes no verdict; it is reported because a reader would ask, and it is the most recent evidence against the rule.
+
 ## What did not work
 
 - **The fragility rule bit.** The registered variants, which change only how the spread is read (a 21-day average; adding roll-down), missed C2 at t 1.97 and 1.91. A timing edge that depends on the exact definition of the signal is the case the rule was written for; the note does not re-weight it after seeing how close they came.
@@ -68,6 +72,6 @@ Study 002's copied engine also writes Study 001's three sub-periods by signal mo
 
 ## Next
 
-1. The 2019–2026 episode, once, under the heading "2019–2026 episode (no decision weight)", with actual IEF and BIL (§8.2; `reproduce.sh --episode`, which refuses until this note is committed).
+1. ~~The 2019–2026 episode~~ run once on 2026-10-25 (section above).
 2. Separate-session recomputation (`review_recompute.py`, `REVIEW.md`), as Studies 001–005; house-style charts with a chart check.
 3. The forward record (§11): decision records from the 2026-10-30 month end, shadow lines after each execution, scored once after 60 periods. Its code is not built yet; it must be before 2026-10-30.

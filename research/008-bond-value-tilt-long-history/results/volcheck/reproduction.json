@@ -1,0 +1,12 @@
+{
+  "committed_007": {
+    "file": "research/007-bond-carry-tilt-long-history/results/volcheck/volcheck.json",
+    "sha256": "20067992106542dcc4a4454e1bc7d465c119d7d3de93b49c2f3d35f4acadec1a",
+    "sigma_annual": 0.07812366592678396,
+    "periods": 534,
+    "code_commit": "ae0cfa7f9814a89fb289af0e4a4c249d814fea41"
+  },
+  "reproduced_here": 0.07812366592678396,
+  "abs_difference": 0.0,
+  "tolerance": 1e-12
+}

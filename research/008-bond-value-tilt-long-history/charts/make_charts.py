@@ -116,11 +116,18 @@ def real_yield_chart(monthly: pd.DataFrame, numbers: dict) -> None:
     n = int(len(w))
     hi, lo = int((w >= 0.9).sum()), int((w < 0.3).sum())
     n_neg = int((ry <= 0).sum())
+    hi_dates = w.index[w >= 0.9]
+    lo_2000 = int(((w < 0.3) & (w.index.year >= 2000)).sum())
+    ry_peak = ry.idxmax()
     numbers.update(real_yield_month_ends=n, real_yield_le_zero=n_neg, weight_ge_0_9=hi, weight_lt_0_3=lo,
-                   weight_mean=float(w.mean()), weight_sd=float(w.std(ddof=0)),
-                   real_yield_min=float(ry.min()), real_yield_max=float(ry.max()))
-    finding = (f"The value tilt held at least 0.9 of the bond in {hi} of {n} months and less than 0.3 in {lo}; "
-               f"the real yield was at or below zero at {n_neg} month ends")
+                   weight_lt_0_3_from_2000=lo_2000, weight_ge_0_9_first=hi_dates.min().strftime("%Y-%m"),
+                   weight_ge_0_9_last=hi_dates.max().strftime("%Y-%m"), weight_mean=float(w.mean()),
+                   weight_sd=float(w.std(ddof=0)), real_yield_min=float(ry.min()), real_yield_max=float(ry.max()),
+                   real_yield_max_month=ry_peak.strftime("%Y-%m"))
+    peak = (f", when the real yield peaked at {style.pct(float(ry.max()))}"
+            if hi_dates.min() <= ry_peak <= hi_dates.max() else "")
+    finding = (f"The value tilt held 0.9 or more of the bond only between {hi_dates.min():%B %Y} and "
+               f"{hi_dates.max():%B %Y}{peak}, and less than 0.3 in {lo} of {n} months, {lo_2000} of them from 2000")
     fig, (ax1, ax2) = style.figure(width=8.0, height=5.6, nrows=2, sharex=True,
                                    gridspec_kw={"height_ratios": [1.0, 1.0], "hspace": 0.18})
     style.title(fig, finding, "Top: real yield at each signal date (10-year yield less trailing 12-month headline "
@@ -141,7 +148,9 @@ def real_yield_chart(monthly: pd.DataFrame, numbers: dict) -> None:
     style.label_line_ends(ax1, [style.EndLabel("Real yield", float(ry.iloc[-1]), style.GREY_DARK)], min_gap=0.07)
     style.label_line_ends(ax2, [style.EndLabel("T1 weight", float(w.iloc[-1]), style.ACCENT)], min_gap=0.07)
     style.source(fig, SOURCE, PERIOD, STUDY_ID, note=f"Run once; results/history/monthly_base.csv (r_CPIAUCNS, "
-                                                     f"w_T1), plotted at each period's execution date. {VERDICT}")
+                                                     f"w_T1), plotted at each period's execution date; the real "
+                                                     f"yield was at or below zero at {n_neg} of {n} month ends. "
+                                                     f"{VERDICT}")
     style.save(fig, HERE / "history_real_yield_and_weight")
 
 
@@ -155,6 +164,7 @@ def growth_chart(monthly: pd.DataFrame, metrics: pd.DataFrame, numbers: dict) ->
                    growth_B3_weight=w_b3)
     p_lw = numbers["_lw_p_vs_B3"]
     numbers["growth_ledoit_wolf_p_vs_B3"] = p_lw
+    numbers["growth_ledoit_wolf_p_vs_B1"] = numbers["_lw_p_vs_B1"]
     same = (f"{num(sr_b['B1'])} for the bond and the same-exposure mix" if num(sr_b["B1"]) == num(sr_b["B3"])
             else f"{num(sr_b['B1'])} for the bond and {num(sr_b['B3'])} for the same-exposure mix")
     ends = ("but it ended below the bond" if last["T1"] < last["B1"] and sr > sr_b["B1"]
@@ -195,8 +205,11 @@ def drawdown_chart(monthly: pd.DataFrame, numbers: dict) -> None:
         t = dd[k].idxmin()
         troughs[k] = monthly.loc[monthly["period_end"] == t, "execution_date"].iloc[0]
     numbers["drawdown_trough_holding_period"] = {k: v.strftime("%Y-%m") for k, v in troughs.items()}
-    finding = (f"The tilt's deepest monthly drawdown was {style.pct(worst['T1'])}, against "
-               f"{style.pct(worst['B3'])} for the same-exposure mix and {style.pct(worst['B1'])} for holding the bond")
+    vs_mix = "deeper than" if worst["T1"] < worst["B3"] else "no deeper than"
+    vs_bond = ("less than half the bond's" if abs(worst["T1"]) < 0.5 * abs(worst["B1"])
+               else ("less than the bond's" if worst["T1"] > worst["B1"] else "as deep as the bond's or deeper:"))
+    finding = (f"The tilt's deepest drawdown was {style.pct(worst['T1'])}, {vs_mix} the same-exposure mix's "
+               f"{style.pct(worst['B3'])} but {vs_bond} {style.pct(worst['B1'])} (month-end marks)")
     when = ", ".join(f"{k} with the {v.strftime('%B %Y')} holding period" for k, v in troughs.items())
     fig, ax = style.figure(width=8.0, height=5.2)
     fig.subplots_adjust(bottom=0.21)
@@ -245,9 +258,22 @@ def decade_chart(monthly: pd.DataFrame, numbers: dict) -> None:
     top = max(means, key=means.get)
     low = min(means, key=means.get)
 
-    count = "every decade" if len(pos) == len(means) else f"{len(pos)} of {len(means)} decades"
-    finding = (f"The tilt's edge over the same-exposure mix was positive in {count} ({signed_pct(means[low])} a "
-               f"year in {name(low)} to {signed_pct(means[top])} in {name(top)}){qual}")
+    order = [k for k, _lo, _hi in DECADES]
+    neg = [k for k in order if means[k] <= 0]
+    numbers["decade_title_form"] = "sign change" if pos and neg and order[:len(pos)] == pos else "count"
+    if numbers["decade_title_form"] == "sign change":
+        # The message is the change of sign (Tester chart check of 008, should-fix 3), not one decade's t.
+        last_pos = dict((k, hi) for k, _lo, hi in DECADES)[pos[-1]]
+        pos_rng = (f"{signed_pct(min(means[k] for k in pos))} to {signed_pct(max(means[k] for k in pos))}"
+                   if len(pos) > 1 else signed_pct(means[pos[0]]))
+        words = {1: "one", 2: "two", 3: "three", 4: "four"}
+        finding = (f"The tilt's edge over the same-exposure mix was positive in the {words[len(pos)]} decades to "
+                   f"{last_pos} ({pos_rng} a year) and negative in " + " and ".join(name(k) for k in neg) + " ("
+                   + " and ".join(signed_pct(means[k]) for k in neg) + ")")  # the t range is in the subtitle
+    else:
+        count = "every decade" if len(pos) == len(means) else f"{len(pos)} of {len(means)} decades"
+        finding = (f"The tilt's edge over the same-exposure mix was positive in {count} ({signed_pct(means[low])} a "
+                   f"year in {name(low)} to {signed_pct(means[top])} in {name(top)}){qual}")
     fig, ax = style.figure(width=8.0, height=5.4)
     fig.subplots_adjust(bottom=0.25)
     style.title(fig, finding, "Mean monthly difference T1 − B3, annualised (× 12), %, by decade of the execution "
@@ -294,32 +320,35 @@ def window_chart(summary: dict, numbers: dict) -> None:
 
     b, o = vals["T1"][BEFORE], vals["T1"][OVERLAP]
     agree = [t for t in TRIALS[1:] if np.sign(vals[t][BEFORE]) == np.sign(b) and np.sign(vals[t][OVERLAP]) == np.sign(o)]
-    comp = ("T1a and T1b showed the same signs" if len(agree) == 2
-            else (f"of the companions only {agree[0]} had the same signs" if agree else "neither companion had the same signs"))
+    comp = ("T1a and T1b alike" if len(agree) == 2
+            else (f"of the companions only {agree[0]} alike" if agree else "neither companion alike"))
     numbers["window_companions_same_signs_before_and_overlap"] = agree
-    finding = (f"The value tilt was {side(b)} the same-exposure mix before 2003 ({signed_pct(b, 2)} a year, "
-               f"t {num(tstat['T1'][BEFORE])}) and {side(o)} it over 2003–18 ({signed_pct(o, 2)}, "
-               f"t {num(tstat['T1'][OVERLAP])}); {comp}")
-    fig, ax = style.figure(width=8.6, height=5.8)
-    fig.subplots_adjust(bottom=0.25)
+    t_all = numbers["_t_vs_B3"]
+    numbers["window_title_whole_window_nw_t"] = t_all
+    finding = (f"The value tilt was {side(b)} the same-exposure mix before 2003 ({signed_pct(b, 2)} a year) and "
+               f"{side(o)} it over 2003–18 ({signed_pct(o, 2)}), {comp}; whole period not supported "
+               f"(t {num(t_all)})")
+    fig, ax = style.figure(width=8.6, height=6.0)
+    fig.subplots_adjust(bottom=0.29)
     style.title(fig, finding, "Mean monthly difference to each trial's own B3, annualised (× 12), %, by sub-window "
                               "(registered) and rate era (by execution month). Value tilt T1 on headline CPI "
-                              "(accent), T1a on core CPI and T1b on a trailing 120-month rank (greys). Descriptive, "
-                              "no decision weight.")
+                              "(accent), T1a on core CPI and T1b on a trailing 120-month rank (greys), Jul 1974 to "
+                              "Dec 2018 (T1b from Jul 1979). Descriptive, no decision weight.")
     x = np.array([0.0, 1.0, 2.0, 3.6, 4.6, 5.6])  # a gap between the two splits of the same months
     width = 0.26
     colors = {"T1": style.ACCENT, "T1a": style.GREY, "T1b": style.GREY_LIGHT}
     for j, t in enumerate(TRIALS):
         heights = [vals[t][k] for k in keys]
         ax.bar(x + (j - 1) * width, heights, width=width * 0.92, color=colors[t])
-    # A direct key in the empty upper right (three bars per window are too narrow for their names).
-    names = {"T1": "T1 headline CPI, expanding rank", "T1a": "T1a core CPI, expanding rank",
-             "T1b": "T1b headline CPI, 120-month rank"}
-    for j, t in enumerate(TRIALS):
-        ax.annotate("■", (0.575, 0.97 - j * 0.065), xycoords="axes fraction", ha="left", va="top",
-                    fontsize=style.LABEL_SIZE, color=colors[t])
-        ax.annotate(names[t], (0.600, 0.97 - j * 0.065), xycoords="axes fraction", ha="left", va="top",
-                    fontsize=style.LABEL_SIZE, color=style.TEXT if t == "T1" else style.TEXT_MUTED)
+    # One key under the axis for both groups (three bars per window are too narrow for their names;
+    # Tester chart check of 008: a key under one group's heading reads as that group's only).
+    names = {"T1": "T1 headline CPI", "T1a": "T1a core CPI", "T1b": "T1b 120-month rank"}
+    for t, xk in zip(TRIALS, (0.0, 0.3, 0.57), strict=True):
+        ax.annotate("■", (xk, -0.2), xycoords="axes fraction", ha="left", va="top",
+                    fontsize=style.LABEL_SIZE, color=colors[t], annotation_clip=False)
+        ax.annotate(names[t], (xk + 0.025, -0.2), xycoords="axes fraction", ha="left", va="top",
+                    fontsize=style.LABEL_SIZE, color=style.TEXT if t == "T1" else style.TEXT_MUTED,
+                    annotation_clip=False)
     ax.axhline(0.0, color=style.GREY, lw=0.8)
     ax.axvline(2.8, color=style.GREY_FAINT, lw=0.8)
     for xc, cap in ((1.0, "Registered sub-windows"), (4.6, "Rate eras")):
@@ -349,7 +378,10 @@ def main() -> int:
     era = base["era_row_T1"]
     numbers: dict = {"_benchmark_sharpe": {"B1": float(desc["B1"]["sharpe_annual"]),
                                            "B3": float(desc["B3"]["sharpe_annual"])},
-                     "_lw_p_vs_B3": float(lw), "_weight_b3": float(summary["weight_b3"]["T1"]),
+                     "_lw_p_vs_B3": float(lw),
+                     "_t_vs_B3": float(base["inference"]["T1"]["vs_B3"]["newey_west"]["t"]),
+                     "_lw_p_vs_B1": float(base["inference"]["T1"]["vs_B1"]["ledoit_wolf"]["p_value"]),
+                     "_weight_b3": float(summary["weight_b3"]["T1"]),
                      "_era_row": {"periods": int(era["periods"]), "mean_d_annual": float(era["mean_d_annual"]),
                                   "pass": bool(era["pass"])}}
     real_yield_chart(monthly, numbers)
@@ -358,7 +390,7 @@ def main() -> int:
     decade_chart(monthly, numbers)
     window_chart(summary, numbers)
     numbers["era_row_T1"] = numbers.pop("_era_row")
-    for k in ("_benchmark_sharpe", "_lw_p_vs_B3", "_weight_b3"):
+    for k in ("_benchmark_sharpe", "_lw_p_vs_B3", "_lw_p_vs_B1", "_t_vs_B3", "_weight_b3"):
         numbers.pop(k)
     outputs = sorted(str(p.relative_to(ROOT)) for p in HERE.glob("history_*.*"))
     commit = subprocess.run(["git", "rev-parse", "HEAD"], cwd=ROOT, capture_output=True, text=True).stdout.strip()

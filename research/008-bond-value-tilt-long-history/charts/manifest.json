@@ -1,6 +1,6 @@
 {
-  "made_at_utc": "2026-10-25T22:19:51+00:00",
-  "repository_commit_at_run": "a7a515d641976493a86c5d93745059cf87ad31c9",
+  "made_at_utc": "2026-10-25T22:25:59+00:00",
+  "repository_commit_at_run": "e4f3e4192851d428a618621c5d0697fa9b33ee3f",
   "inputs_sha256": {
     "research/008-bond-value-tilt-long-history/results/history/monthly_base.csv": "e54e9c5930919bac0189d5298ff375e6cb2ae3aed92d917bb15ecf59ff698dc6",
     "research/008-bond-value-tilt-long-history/results/history/metrics_base.csv": "da5ce721f526933490e3c2e314de762aab3fdef57bc2647dd3f3a12520c732d5",
@@ -23,10 +23,14 @@
     "real_yield_le_zero": 76,
     "weight_ge_0_9": 48,
     "weight_lt_0_3": 186,
+    "weight_lt_0_3_from_2000": 144,
+    "weight_ge_0_9_first": "1981-05",
+    "weight_ge_0_9_last": "1985-05",
     "weight_mean": 0.46617591365525995,
     "weight_sd": 0.2700507154271432,
     "real_yield_min": -0.0480766233766233,
     "real_yield_max": 0.0960612903225805,
+    "real_yield_max_month": "1984-07",
     "growth_sharpe_annual": {
       "T1": 0.4146186534805565,
       "B1": 0.38179365856122083,
@@ -39,6 +43,7 @@
     },
     "growth_B3_weight": 0.46617591365525995,
     "growth_ledoit_wolf_p_vs_B3": 0.7004,
+    "growth_ledoit_wolf_p_vs_B1": 0.6985,
     "drawdown_monthly_max": {
       "T1": -0.0629015764930212,
       "B1": -0.151520869058147,
@@ -73,6 +78,7 @@
     "decade_abs_t_ge_2": [
       "1990s"
     ],
+    "decade_title_form": "sign change",
     "window_mean_d_annual": {
       "T1": {
         "1974-07 to 2002-12 (before any ETF)": 0.01357395597485106,
@@ -155,6 +161,7 @@
       "T1a",
       "T1b"
     ],
+    "window_title_whole_window_nw_t": 1.3812890970147107,
     "era_row_T1": {
       "periods": 396,
       "mean_d_annual": -0.000553886258290734,

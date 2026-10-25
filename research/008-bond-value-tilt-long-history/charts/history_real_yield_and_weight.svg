@@ -4056,9 +4056,9 @@ L 449.28 334.656
    </g>
   </g>
   <g id="qune-title">
-   <text style="font-weight: 700; font-size: 13.5px; font-family: 'DejaVu Sans', sans-serif; fill: #1f1f1f" transform="translate(11.52 26.907469)">The value tilt held at least 0.9 of the bond in 48 of 534</text>
-   <text style="font-weight: 700; font-size: 13.5px; font-family: 'DejaVu Sans', sans-serif; fill: #1f1f1f" transform="translate(11.52 41.071922)">months and less than 0.3 in 186; the real yield was at or</text>
-   <text style="font-weight: 700; font-size: 13.5px; font-family: 'DejaVu Sans', sans-serif; fill: #1f1f1f" transform="translate(11.52 57.957469)">below zero at 76 month ends</text>
+   <text style="font-weight: 700; font-size: 13.5px; font-family: 'DejaVu Sans', sans-serif; fill: #1f1f1f" transform="translate(11.52 25.546922)">The value tilt held 0.9 or more of the bond only between May</text>
+   <text style="font-weight: 700; font-size: 13.5px; font-family: 'DejaVu Sans', sans-serif; fill: #1f1f1f" transform="translate(11.52 41.071922)">1981 and May 1985, when the real yield peaked at 9.6%, and</text>
+   <text style="font-weight: 700; font-size: 13.5px; font-family: 'DejaVu Sans', sans-serif; fill: #1f1f1f" transform="translate(11.52 57.094734)">less than 0.3 in 186 of 534 months, 144 of them from 2000</text>
   </g>
   <g id="qune-subtitle">
    <text style="font-size: 10px; font-family: 'DejaVu Sans', sans-serif; fill: #6b6b6b" transform="translate(11.52 75.446375)">Top: real yield at each signal date (10-year yield less trailing 12-month headline CPI inflation</text>
@@ -4068,8 +4068,8 @@ L 449.28 334.656
   <g id="qune-source-line">
    <text style="font-size: 8px; font-family: 'DejaVu Sans', sans-serif; fill: #6b6b6b" transform="translate(11.52 363.7435)">Source: FRED DGS10, DGS7, DTB3, CPIAUCNS (ALFRED release dates); synthetic 8.5-year par bond and bill legs (Study 002's</text>
    <text style="font-size: 8px; font-family: 'DejaVu Sans', sans-serif; fill: #6b6b6b" transform="translate(11.52 373.3435)">construction, frozen). Sample Jul 1974 to Dec 2018, 534 monthly holding periods (T1b from Jul 1979, 474). Qune Research,</text>
-   <text style="font-size: 8px; font-family: 'DejaVu Sans', sans-serif; fill: #6b6b6b" transform="translate(11.52 382.83225)">Study 008. Run once; results/history/monthly_base.csv (r_CPIAUCNS, w_T1), plotted at each period's execution date.</text>
-   <text style="font-size: 8px; font-family: 'DejaVu Sans', sans-serif; fill: #6b6b6b" transform="translate(11.52 392.5435)">Verdict: not supported (section 9.5).</text>
+   <text style="font-size: 8px; font-family: 'DejaVu Sans', sans-serif; fill: #6b6b6b" transform="translate(11.52 382.83225)">Study 008. Run once; results/history/monthly_base.csv (r_CPIAUCNS, w_T1), plotted at each period's execution date; the</text>
+   <text style="font-size: 8px; font-family: 'DejaVu Sans', sans-serif; fill: #6b6b6b" transform="translate(11.52 392.5435)">real yield was at or below zero at 76 of 534 month ends. Verdict: not supported (section 9.5).</text>
   </g>
  </g>
  <defs>

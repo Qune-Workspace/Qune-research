@@ -1,0 +1,79 @@
+{
+  "fred_DGS10.csv": {
+    "downloaded_at_utc": "2026-10-25T08:21:41Z",
+    "first_bar": "1962-01-02",
+    "last_bar": "2026-10-22",
+    "last_valid": "2026-10-22",
+    "rows": 16908,
+    "series_id": "DGS10",
+    "sha256": "19f98e90edb98a9e861f534980d7f6189fe69c771159197585a057589b65327d",
+    "source": "FRED (fredgraph.csv)",
+    "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=DGS10"
+  },
+  "fred_DGS2.csv": {
+    "downloaded_at_utc": "2026-10-25T08:21:40Z",
+    "first_bar": "1976-06-01",
+    "last_bar": "2026-10-22",
+    "last_valid": "2026-10-22",
+    "rows": 13148,
+    "series_id": "DGS2",
+    "sha256": "709efc3c9cbd7826d960a8cfd052cc2cd39eee4a4b209443b74fd48be1d1ab1a",
+    "source": "FRED (fredgraph.csv)",
+    "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=DGS2"
+  },
+  "fred_DGS3MO.csv": {
+    "downloaded_at_utc": "2026-10-25T08:21:40Z",
+    "first_bar": "1981-09-01",
+    "last_bar": "2026-10-22",
+    "last_valid": "2026-10-22",
+    "rows": 11778,
+    "series_id": "DGS3MO",
+    "sha256": "53893b1f0465ed5139953adcfbe9576702e841f2ef3a9b19fa48e1760e5c6308",
+    "source": "FRED (fredgraph.csv)",
+    "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=DGS3MO"
+  },
+  "fred_DTB4WK.csv": {
+    "downloaded_at_utc": "2026-10-25T08:21:40Z",
+    "first_bar": "2001-07-31",
+    "last_bar": "2026-10-22",
+    "last_valid": "2026-10-22",
+    "rows": 6583,
+    "series_id": "DTB4WK",
+    "sha256": "cd684ef0e87011d5f644034249801e446440d093343ea8fcd4bc93ac93dd91c2",
+    "source": "FRED (fredgraph.csv)",
+    "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=DTB4WK"
+  },
+  "fred_EFFR.csv": {
+    "downloaded_at_utc": "2026-10-25T08:21:40Z",
+    "first_bar": "2000-07-03",
+    "last_bar": "2026-10-22",
+    "last_valid": "2026-10-22",
+    "rows": 6864,
+    "series_id": "EFFR",
+    "sha256": "762265f17d0fceb737df20c4bf681d7ca14aefec1a76eccc87450f71c4936ab3",
+    "source": "FRED (fredgraph.csv)",
+    "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=EFFR"
+  },
+  "fred_SP500.csv": {
+    "downloaded_at_utc": "2026-10-25T08:21:41Z",
+    "first_bar": "2016-10-24",
+    "last_bar": "2026-10-21",
+    "last_valid": "2026-10-21",
+    "rows": 2608,
+    "series_id": "SP500",
+    "sha256": "e9bcd388470935a8131bc8101271205f83ee953aecc527822e64365669b38cc2",
+    "source": "FRED (fredgraph.csv)",
+    "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=SP500"
+  },
+  "fred_T10YIE.csv": {
+    "downloaded_at_utc": "2026-10-25T08:21:40Z",
+    "first_bar": "2003-01-02",
+    "last_bar": "2026-10-23",
+    "last_valid": "2026-10-23",
+    "rows": 6212,
+    "series_id": "T10YIE",
+    "sha256": "c0dbadd5d65203258a19678b24d2fd846c9d432f609b9158327fdd7ebcea3f6d",
+    "source": "FRED (fredgraph.csv)",
+    "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=T10YIE"
+  }
+}

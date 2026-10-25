@@ -8,9 +8,23 @@ Files:
 - `score.py`: scores every due, unscored call against the public series, once, and appends to `outcomes.csv` with the observed value, the observation date and the hash of the data file it used. It never writes to the ledger and refuses to score an id twice. Test kinds are defined in its docstring.
 - `outcomes.csv`: created by the first scoring run. A miss is written like a hit.
 - `manifest.json`, `raw/`: provenance of each scoring fetch; `raw/` is not committed.
+- `baseline.py`, `baselines.csv` (added 2026-10-25): a second, market-anchored probability for every call, computed by the frozen method in `baseline.py` from public data as of the last observation the view used, written before the outcome; **append-only**, one row per id, a second attempt is refused. `baseline.py --summary` writes `SKILL.md`: the desk's Brier score beside the baseline's, so the ledger is judged on skill over the market, not on a bare hit rate.
 
 The desk's confidence figures are honest probabilities, not hedges: over many calls, those marked 0.65 should come true about two times in three. With five calls nothing can be said about calibration yet; the ledger is built to be judged once it is long enough.
 
-The calls themselves, and the reading of the data behind them, are in [`../desk-view/DESK_VIEW.md`](../desk-view/DESK_VIEW.md). The view is updated weekly; each update appends new calls here and runs `score.py` for any that are due.
+The calls themselves, and the reading of the data behind them, are in [`../desk-view/DESK_VIEW.md`](../desk-view/DESK_VIEW.md). The view is updated weekly; each update appends new calls here, writes their baseline rows with `baseline.py --asof <view's market-data date> --ids <new ids>` in the same commit, and runs `score.py` for any that are due, then `baseline.py --summary`.
 
 Nothing here is investment advice. The calls are written to be falsified, and some will be.
+
+## Market-anchored baseline (dated addition, 2026-10-25)
+
+The [cold read](../COLD_READ.md) (point 3) said a hit rate on range calls means little when the market already prices them. Agreed. From 2026-10-25 every call carries a second probability in `baselines.csv`, computed by `baseline.py` by a method fixed in that file before any later call was written:
+
+- policy-rate calls: the 4-week bill minus the effective funds rate, scaled to the meeting day and divided by the hike step (FRED has no futures; the bill-funds basis is ignored, which is the method's main weakness);
+- yield and slope levels on a date: a normal distribution centred on the forward level read off the par curve, with the trailing-year realised daily volatility as the scale (realised, not option-implied: FRED carries no implied-volatility series, so the width is a proxy);
+- "stays inside a band every day": seeded random-walk paths with the same scale;
+- the stock-bond correlation proxy, which has no market price: the historical persistence of its sign, labelled a base rate.
+
+Every input, the observation dates and the hash of each file used are in the row. `SKILL.md` lists desk and baseline probabilities side by side and, once calls are scored, both Brier scores and their difference; with fewer than about thirty scored calls the difference is descriptive.
+
+**Disclosure.** The method was designed on 2026-10-25, two days after the first five calls were logged, so their baselines are retrospective: computed from observations to 2026-10-21 only (the view's market-data date), but by a method chosen after the calls existed. A reader may discount them for that. For calls from the 2026-10-30 view onward the baseline row is written in the same commit as the call. What the retrospective rows say: the 4-week bill on 2026-10-21 (3.92% against funds at 3.88%) priced about a one-in-five chance of the 28 October hike the desk put at 0.70, so V1 is a call against the market, scored on 2026-10-29; the forward curve put V2 and V3 close to the desk's figures (0.66 and 0.59 against 0.65 and 0.60); the breakeven band of V4 is wide against realised volatility (baseline 0.95 against the desk's 0.75, so a hit there earns little); the correlation call V5 has a base rate of 0.70 against the desk's 0.65.

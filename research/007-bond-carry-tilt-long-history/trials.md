@@ -43,3 +43,9 @@ None of the five has been run. No carry, rank, trend or weight value has been co
 *Dated correction, 2026-10-25 13:4x London (appended; the outcome row above is not rewritten):* the outcome row's sentence "so the realised MDE is about 1.6 × the registered 1.6% a year at sd 0.5" is wrong in the units it uses. A less dispersed weight makes the minimum detectable mean difference smaller in return units, not larger. From the committed Newey–West standard error of T1 − B3 (0.0335% a month, `summary.json`, `cost_cases.base.inference.T1.vs_B3`): t = 2.0 sits at about 0.80% a year and the 80%-power MDE (K = 2.842, as registered) at about 1.14% a year, between the registered uniform-rank 0.93% and the 1.6% at sd 0.5. No criterion, verdict or trial count changes. Found while writing the note (README.md, "Power, after the fact").
 
 *Precision, added 2026-10-25 13:2x GMT (London equals UTC on this date):* the correction above is labelled "13:4x London"; it was written between 13:1x and 13:21, read from the machine clock afterwards. The label was estimated, not read. Nothing else changes.
+
+## Episode log (§8.2, §14 step 9; no decision weight)
+
+| Step | Date | Outcome |
+|---|---|---|
+| **2019–2026 episode (§14 step 9), logged before the run** | 2026-10-25 13:2x London (this commit, pushed before the run) | `./reproduce.sh --episode`, **once**, after the note was committed (`6cbfa6c`, precisions `4c19353`): T1, T1a, T1b, T2, T3 and B0–B3 on the episode's periods (January 2019 to the last complete month of 2026), actual IEF and BIL from Alpaca with the synthetic series alongside, the carry rank still expanding (no re-estimation), the trend from ETF closes on the actual side, each trial's B3 at its frozen w̄ from the history run. No criterion, no verdict; never quoted in a verdict sentence. For T2 and T3 the trend part of this window is published (Studies 003 and 004), so for them the episode is a recomputation on a known window (§8.2). N stays 5. |

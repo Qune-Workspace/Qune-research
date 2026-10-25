@@ -34,6 +34,21 @@ def test_missing_value_on_last_weekday_moves_t_back_once_the_row_exists():
     assert state == "final" and t == pd.Timestamp("2026-10-29")
 
 
+def test_last_weekday_t_waits_for_its_own_dgs7_row():
+    # Found by the code review of Study 007's forward007.py (2026-10-25): with t on the last weekday
+    # there are no later days to check, so a DGS7 not yet posted would have held T3 for good.
+    fred = _fred("2026-10-30")
+    fred["DGS7"] = fred["DGS7"].loc[:"2026-10-29"]
+    state, t, why = forward.signal_status(fred, "2026-10")
+    assert state == "wait" and t == pd.Timestamp("2026-10-30") and "DGS7" in why
+
+
+def test_periods_to_scoring_is_zero_at_a_full_block():
+    shadow = pd.DataFrame({c: [0.0] * 60 for c in forward.SHADOW_COLUMNS})
+    shadow["T1_switched"] = False
+    assert forward.interim(shadow, "x")["periods_to_scoring"] == 0
+
+
 def test_nyse_holiday_after_t_needs_no_row():
     # 2027-05-31 is Memorial Day (NYSE closed); FRED shows no value that day.
     state, t, _ = forward.signal_status(_fred("2027-05-28", start="2027-03-01"), "2027-05")
@@ -82,7 +97,7 @@ def test_decision_record_waits_then_ok_then_unavailable():
 
 def test_t3_undefined_holds_its_position():
     fred = _fred("2026-10-30", inverted=True)
-    fred["DGS7"] = fred["DGS7"].loc[:"2026-10-29"]
+    fred["DGS7"].loc["2026-10-30"] = np.nan  # an empty row on t (a row not yet posted waits: test above)
     record = forward.decision_record(fred, "2026-10", START, 0, "2026-10-31T09:00:00Z")
     assert record["targets"]["T3"]["target"] is None and record["holding_after"]["T3"] == "IEF"
     assert record["switch"]["T3"] is False

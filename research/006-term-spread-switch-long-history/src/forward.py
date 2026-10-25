@@ -122,6 +122,9 @@ def signal_status(fred: dict[str, pd.Series], month: str) -> tuple[str, pd.Times
     if pd.isna(t):
         return "wait", None, f"FRED has no day in {month} with both DGS10 and DTB3"
     t = pd.Timestamp(t)
+    for name in FRED_IDS:  # a row on t itself (possibly empty: an empty DGS7 then holds T3, §16 (c))
+        if t not in fred[name].index:
+            return "wait", t, f"{name} has no row yet for t = {t.date()}"
     later = pd.bdate_range(t + pd.Timedelta(days=1), period.to_timestamp(how="end").normalize())
     open_days = later.intersection(nyse_trading_days(later[0], later[-1])) if len(later) else later
     for name in ("DGS10", "DTB3"):
@@ -318,7 +321,7 @@ def interim(shadow: pd.DataFrame, now_utc: str | None = None) -> dict:
     t-statistic and no verdict sentence before the block is complete."""
     n = int(len(shadow))
     out = {"heading": NOT_YET_SCORED, "label": LABEL, "holding_periods": n, "written_at_utc": now_utc or utc_now(),
-           "scored_after": f"{BLOCK_PERIODS} holding periods", "periods_to_scoring": BLOCK_PERIODS - n % BLOCK_PERIODS,
+           "scored_after": f"{BLOCK_PERIODS} holding periods", "periods_to_scoring": (-n) % BLOCK_PERIODS,
            "T1_switches": int(_flags(shadow["T1_switched"]).sum()) if n else 0, "cumulative": {}, "mean_d": None}
     if n:
         out["mean_d"] = float(shadow["d"].astype(float).mean())

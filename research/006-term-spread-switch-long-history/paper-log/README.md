@@ -8,7 +8,7 @@ First signal month: **2026-10** (signal date 2026-10-30 if FRED holds both yield
 
 | Piece | Command (from the study folder) | When | Status (2026-10-25) |
 |---|---|---|---|
-| Decision record `decisions/<signal_date>.json` (§11.2) | `./reproduce.sh --forward decide --signal-month YYYY-MM --fetch` | after 21:15 UTC on the month's last weekday, before the close of the execution date | **built, tested** (16 tests in `tests/test_forward.py`); refused on the real clock on 2026-10-25 (observed); not yet run on a forward month |
+| Decision record `decisions/<signal_date>.json` (§11.2) | `./reproduce.sh --forward decide --signal-month YYYY-MM --fetch` | after 21:15 UTC on the month's last weekday, before the close of the execution date | **built, tested** (18 tests in `tests/test_forward.py`; t-row check added 2026-10-25 after the code review of Study 007's forward code); refused on the real clock on 2026-10-25 (observed); not yet run on a forward month |
 | Wait log `waits.csv` | written by `decide` when FRED does not yet hold the final signal date | each re-check | **built, tested** |
 | Shadow line in `shadow.csv` (§11.3) | `./reproduce.sh --forward shadow --signal-month YYYY-MM --fetch` | after the close of that month's execution date; the first line (period from the 2026-10 record's execution date) follows the 2026-11 record | **built, tested** against the frozen engine; not yet run |
 | Interim figures `interim.json` | `./reproduce.sh --forward interim` (also rewritten by `shadow`) | every month | **built, tested**; heading "Not yet scored", no statistic |
@@ -18,7 +18,7 @@ First signal month: **2026-10** (signal date 2026-10-30 if FRED holds both yield
 ## Rules the code enforces (each has a test)
 
 - No record for a month before 2026-10; none before 21:15 UTC on the month's last weekday. A refused run writes nothing and exits 1.
-- t (Study 001 §6.3) is final only when every later weekday of the month has a FRED row or is an NYSE holiday; until then a wait line, no record.
+- t (Study 001 §6.3) is final only when DGS10, DTB3 and DGS7 have a row on t and on every later weekday of the month that is an NYSE day; until then a wait line, no record.
 - Only observations dated on or before t enter a record (tested: identical with and without later data).
 - The execution date is the first NYSE day after t whose close follows the record; at most the third. Past that, a `signal unavailable` record: positions held, the period runs on, never filled later.
 - A record is never rewritten; a shadow line is appended once per period and only for the period that follows the last one.

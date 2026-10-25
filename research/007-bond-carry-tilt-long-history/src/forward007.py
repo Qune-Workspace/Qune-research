@@ -83,7 +83,7 @@ from .forward import (
     utc_now,
     write_record,
 )
-from .fred import fetch_series, load_series
+from .fred import fetch_series, load_series, sha256_of
 
 assert FIRST_SIGNAL_MONTH == "2026-10"  # §11.1: the note (6cbfa6c) was committed on 2026-10-25, before 2026-10-30
 STARTING_MONTH = EPISODE_LAST_SIGNAL_MONTH  # "2026-09"
@@ -140,6 +140,9 @@ def signal_status(fred: dict[str, pd.Series], bars: dict[str, pd.Series], month:
     if pd.isna(t):
         return "wait", None, f"FRED has no day in {month} with both DGS10 and DTB3"
     t = pd.Timestamp(t)
+    for name in FRED_IDS:  # a row on t itself (possibly empty: then §16 (e)'s hold applies)
+        if t not in fred[name].index:
+            return "wait", t, f"{name} has no row yet for t = {t.date()}"
     later = pd.bdate_range(t + pd.Timedelta(days=1), period.to_timestamp(how="end").normalize())
     open_days = later.intersection(nyse_trading_days(later[0], later[-1])) if len(later) else later
     for name in FRED_IDS:
@@ -184,15 +187,20 @@ def weights_at(frozen: dict[str, pd.Series], fred: dict[str, pd.Series], bars: d
             pass
     carry = pd.concat([old_carry, new_carry])
     out: dict = {"carry": None, "n": None, "trend": None,
+                 "forward_carries": {str(m): (None if pd.isna(c) else float(c)) for m, c in new_carry.items()},
                  "weights": {k: None for k in TRIAL_IDS}, "notes": []}
-    if new_carry.isna().any():
-        missing = [str(m) for m in new_carry.index[new_carry.isna()]]
-        out["notes"].append(f"carry undefined in {missing} (DGS7 missing): T1, T1a, T1b and T2 hold their positions")
+    earlier_gaps = [str(m) for m in new_carry.index[:-1][new_carry.iloc[:-1].isna()]]
+    if earlier_gaps:
+        out["notes"].append(f"carry undefined in {earlier_gaps} (DGS7 empty on that signal date): "
+                            "left out of the rank history (n counts defined carries only)")
+    if pd.isna(new_carry.iloc[-1]):
+        out["notes"].append(f"carry undefined on t (DGS7 empty on {t.date()}): T1, T1a, T1b and T2 hold their positions")
     else:
-        out["carry"] = float(carry.iloc[-1])
-        out["n"] = int(len(carry))
+        defined = carry.dropna()
+        out["carry"] = float(defined.iloc[-1])
+        out["n"] = int(len(defined))
         for k, m in MIN_HISTORY.items():
-            out["weights"][k] = round(float(expanding_rank(carry, m).iloc[-1]), DECIMALS)
+            out["weights"][k] = round(float(expanding_rank(defined, m).iloc[-1]), DECIMALS)
     last = dates.iloc[-(TREND_LAG_ROWS + 1):]
     tri = {leg: total_return_index(pd.DataFrame({"close": bars[leg]})) for leg in (DURATION_LEG, CASH_LEG)}
     read = {leg: tri[leg].sort_index().reindex(pd.DatetimeIndex(last.values), method="ffill") for leg in tri}
@@ -259,6 +267,7 @@ def decision_record(frozen: dict[str, pd.Series], fred: dict[str, pd.Series], ba
     record = {**base, "status": "ok", "signal_date": str(t.date()), "execution_date": str(execution.date()),
               "days_slipped": int(slipped), "inputs_on_signal_date": inputs_at(fred, t),
               "carry": w["carry"], "rank_history_n": w["n"], "trend": w["trend"], "weights_after": after,
+              "forward_carries_used": w["forward_carries"],
               "notes": " ".join(["T1 on trial; T1a and T1b its fragility companions; T2 and T3 registered "
                                  "secondary trials. A weight of null means the trial holds its position (no "
                                  "trade). No order is placed for any of them."] + w["notes"])}
@@ -349,7 +358,7 @@ def interim(shadow: pd.DataFrame, now_utc: str | None = None) -> dict:
     t-statistic and no verdict sentence before the block is complete."""
     n = int(len(shadow))
     out = {"heading": NOT_YET_SCORED, "label": LABEL, "holding_periods": n, "written_at_utc": now_utc or utc_now(),
-           "scored_after": f"{BLOCK_PERIODS} holding periods", "periods_to_scoring": BLOCK_PERIODS - n % BLOCK_PERIODS,
+           "scored_after": f"{BLOCK_PERIODS} holding periods", "periods_to_scoring": (-n) % BLOCK_PERIODS,
            "T1_turnover": float(shadow[f"traded_{PRIMARY}"].astype(float).sum()) if n else 0.0,
            "cumulative": {}, "mean_d": None}
     if n:
@@ -359,8 +368,11 @@ def interim(shadow: pd.DataFrame, now_utc: str | None = None) -> dict:
 
 
 def forward_verdict(d: pd.Series, t1_weights: pd.Series, t1_turnover: float) -> dict:
-    """§11.4 on one block of 60 periods."""
-    if float(np.std(t1_weights.astype(float).to_numpy())) == 0.0:
+    """§11.4 on one block of 60 periods.  ``t1_weights``: T1's targets as
+    written in the records (holds left out), so a block in which the rule
+    never set a weight is "not testable"."""
+    w = t1_weights.dropna().astype(float).to_numpy()
+    if len(w) == 0 or float(np.std(w)) == 0.0:
         row, nw = VERDICT_NOT_TESTABLE, None
     else:
         nw = stats.newey_west_mean(d)
@@ -384,7 +396,8 @@ def score(shadow: pd.DataFrame, records: list[dict], block: int = 1) -> dict:
     if len(ok) <= end or ok[end].get("scoring", {}).get("block") != block:
         raise RuntimeError("the decision record that ends the block carries no scoring date (section 11.3)")
     rows = shadow.iloc[end - BLOCK_PERIODS:end]
-    out = forward_verdict(rows["d"].astype(float).reset_index(drop=True), rows[f"w_{PRIMARY}"],
+    targets = pd.Series([r["weights_after"][PRIMARY] for r in ok[end - BLOCK_PERIODS:end]], dtype=float)
+    out = forward_verdict(rows["d"].astype(float).reset_index(drop=True), targets,
                           float(rows[f"traded_{PRIMARY}"].astype(float).sum()))
     out.update(block=block, periods=BLOCK_PERIODS, scoring_date=ok[end]["scoring"]["scoring_date"],
                history_verdict=HISTORY_VERDICT)
@@ -417,7 +430,7 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     now = utc_now()
     if args.step == "interim":
-        payload = interim(read_shadow(), now)
+        payload = interim(read_shadow(SHADOW_CSV), now)
         print(json.dumps(payload, indent=2))
         if not args.dry_run:
             INTERIM_JSON.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
@@ -435,12 +448,14 @@ def main(argv: list[str] | None = None) -> int:
             print(f"refused: a record for {args.signal_month} exists")
             return 1
         if args.fetch and not args.dry_run:
-            fetch_inputs()
-        fred, bars = load_inputs()
+            fetch_inputs(FORWARD_RAW_DIR, FORWARD_MANIFEST)
+        fred, bars = load_inputs(FORWARD_RAW_DIR)
         frozen = {name: load_series(name, RAW_DIR) for name in FRED_IDS}
         held = weights_before(records, start)
         earlier_ok = sum(r["status"] == "ok" for r in records)
-        hashes = {**file_hashes(FORWARD_RAW_DIR, "fred_"), **file_hashes(FORWARD_RAW_DIR, "alpaca_")}
+        hashes = {**file_hashes(FORWARD_RAW_DIR, "fred_"), **file_hashes(FORWARD_RAW_DIR, "alpaca_"),
+                  **{f"frozen/{k}": v for k, v in file_hashes(RAW_DIR, "fred_").items()},
+                  "frozen/results/episode/summary.json": sha256_of(EPISODE_DIR / "summary.json")}
         record = decision_record(frozen, fred, bars, args.signal_month, held, start, earlier_ok, now, hashes)
         if record is None:
             reason = signal_status(fred, bars, args.signal_month)[2]
@@ -461,13 +476,13 @@ def main(argv: list[str] | None = None) -> int:
         print("refused: the line is written after the execution date's close")
         return 1
     if args.fetch and not args.dry_run:
-        fetch_inputs()
+        fetch_inputs(FORWARD_RAW_DIR, FORWARD_MANIFEST)
     indices = {leg: total_return_index(load_bars(leg, FORWARD_RAW_DIR)) for leg in (DURATION_LEG, CASH_LEG)}
-    line = shadow_line(indices, upto, read_shadow(), start, frozen_weights(), now_utc=now)
+    line = shadow_line(indices, upto, read_shadow(SHADOW_CSV), start, frozen_weights(), now_utc=now)
     print(json.dumps(line, indent=2, default=str))
     if not args.dry_run:
-        print(f"appended: {append_shadow(line).relative_to(STUDY_DIR)}")
-        INTERIM_JSON.write_text(json.dumps(interim(read_shadow(), now), indent=2) + "\n", encoding="utf-8")
+        print(f"appended: {append_shadow(line, SHADOW_CSV).relative_to(STUDY_DIR)}")
+        INTERIM_JSON.write_text(json.dumps(interim(read_shadow(SHADOW_CSV), now), indent=2) + "\n", encoding="utf-8")
     return 0
 
 

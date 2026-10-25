@@ -88,12 +88,36 @@ def test_no_look_ahead_in_fred_or_bars():
     later_bars = {k: pd.concat([v, pd.Series(1.0, index=pd.bdate_range("2026-11-02", "2026-12-31"))])
                   for k, v in _bars().items()}
     assert fw.weights_at(FROZEN, later_fred, later_bars, t, "2026-10") == base
+    # t before the month's last FRED row (as when the last weekday's row is empty): rows after t are cut
+    t29 = pd.Timestamp("2026-10-29")
+    upto = {k: v.loc[:t29] for k, v in _forward().items()}
+    assert (fw.weights_at(FROZEN, _forward(), _bars(), t29, "2026-10")
+            == fw.weights_at(FROZEN, upto, {k: v.loc[:t29] for k, v in _bars().items()}, t29, "2026-10"))
+
+
+def test_last_weekday_t_waits_for_its_own_dgs7_row():
+    fred = _forward()
+    fred["DGS7"] = fred["DGS7"].loc[:"2026-10-29"]  # DGS10 and DTB3 have 10-30; DGS7 not yet
+    state, t, why = fw.signal_status(fred, _bars(), "2026-10")
+    assert state == "wait" and t == pd.Timestamp("2026-10-30") and "DGS7" in why
 
 
 def test_trend_reads_the_etf_closes_twelve_signal_dates_back():
     t = pd.Timestamp("2026-10-30")
     assert fw.weights_at(FROZEN, _forward(), _bars(ief_drift=0.0), t, "2026-10")["trend"] == 0
     assert fw.weights_at(FROZEN, _forward(), _bars(ief_drift=0.0), t, "2026-10")["weights"]["T3"] == 0.0
+    # IEF 120 up to t-13, 95 at t-12, 100 after: the 12-row lag gives h = 1 (11 or 13 rows would give 0)
+    dates = fw.forward_signal_dates(FROZEN, _forward(), "2026-10").iloc[-14:]
+    bars = _bars(ief_drift=0.0)
+    ief = bars[DURATION_LEG].copy()
+    ief.loc[:] = 100.0
+    ief.loc[:dates.iloc[-13]] = 95.0
+    ief.loc[:dates.iloc[-14]] = 120.0
+    assert fw.weights_at(FROZEN, _forward(), {DURATION_LEG: ief, CASH_LEG: bars[CASH_LEG]}, t, "2026-10")["trend"] == 1
+    # no bar on t-12: the last close before it is read (here 120, so h = 0)
+    gap = {DURATION_LEG: ief.drop(dates.iloc[-13]).copy(), CASH_LEG: bars[CASH_LEG].drop(dates.iloc[-13])}
+    gap[DURATION_LEG].loc[:dates.iloc[-13]] = 120.0
+    assert fw.weights_at(FROZEN, _forward(), gap, t, "2026-10")["trend"] == 0
 
 
 def test_dgs7_missing_on_t_holds_the_carry_trials():
@@ -102,6 +126,16 @@ def test_dgs7_missing_on_t_holds_the_carry_trials():
     w = fw.weights_at(FROZEN, fred, _bars(), pd.Timestamp("2026-10-30"), "2026-10")
     assert [w["weights"][k] for k in ("T1", "T1a", "T1b", "T2")] == [None] * 4
     assert w["weights"]["T3"] == 1.0 and "DGS7" in w["notes"][0]
+
+
+def test_an_earlier_empty_carry_does_not_hold_later_months():
+    fred = _forward("2026-11-30")
+    fred["DGS7"].loc["2026-10-30"] = np.nan
+    w = fw.weights_at(FROZEN, fred, _bars("2026-11-30"), pd.Timestamp("2026-11-30"), "2026-11")
+    assert w["weights"]["T1"] is not None and w["forward_carries"]["2026-10"] is None
+    carry = _direct_carry(_forward("2026-11-30"), "2026-11").drop(pd.Period("2026-10", "M"))
+    assert w["n"] == len(carry) == 688
+    assert w["weights"]["T1"] == round(float(expanding_rank(carry, 60).iloc[-1]), 4)
 
 
 def test_decision_record_waits_then_ok_then_unavailable():
@@ -138,7 +172,7 @@ def test_a_hold_trades_nothing_and_drifts():
     expected_w1 = 0.6 * (1 + returns[DURATION_LEG].iloc[0]) / (1 + res["r_gross"].iloc[0])
     assert res["weight"].iloc[1] == pytest.approx(expected_w1, abs=1e-15)
     plain = tilt.run_tilt(pd.Series([0.6, 0.3, 0.2, 0.9], index=returns.index), returns, 2e-4, 0.4)
-    assert np.allclose(fw.run_with_holds([0.6, 0.3, 0.2, 0.9], returns, 2e-4, 0.4)["r"], plain["r"], atol=0)
+    np.testing.assert_array_equal(fw.run_with_holds([0.6, 0.3, 0.2, 0.9], returns, 2e-4, 0.4)["r"], plain["r"])
 
 
 def _ok(month: str, execution: str, w: dict) -> dict:
@@ -163,23 +197,33 @@ def test_shadow_line_equals_the_engine_and_benchmarks(tmp_path):
     shadow = fw.read_shadow(path)
     assert len(shadow) == 3
     returns = pd.DataFrame({DURATION_LEG: shadow["r_IEF"], CASH_LEG: shadow["r_BIL"]})
+    r_ief = returns[DURATION_LEG].to_numpy()
     for k in TRIAL_IDS:
-        expected = fw.run_with_holds([r["weights_after"][k] for r in records[:-1]], returns, 2e-4, START[k])
-        assert np.allclose(shadow[k], expected["r"], atol=1e-15)
-        assert np.allclose(shadow[f"B3_{k}"], backtest.run_static(frozen[k], returns, 2e-4)["r"], atol=1e-15)
+        path_w = [r["weights_after"][k] for r in records[:-1]]
+        if path_w[1] is None:  # the hold: the first weight after drift, by hand
+            gross0 = path_w[0] * r_ief[0] + (1 - path_w[0]) * returns[CASH_LEG].iloc[0]
+            path_w[1] = path_w[0] * (1 + r_ief[0]) / (1 + gross0)
+        expected = tilt.run_tilt(pd.Series(path_w, index=returns.index), returns, 2e-4, START[k])
+        np.testing.assert_allclose(shadow[k], expected["r"], rtol=0, atol=1e-15)
+        np.testing.assert_allclose(shadow[f"B3_{k}"], backtest.run_static(frozen[k], returns, 2e-4)["r"], rtol=0, atol=1e-15)
+    np.testing.assert_allclose(shadow["B1"], backtest.run_static(1.0, returns, 0.0)["r"], rtol=0, atol=1e-15)
+    np.testing.assert_allclose(shadow["B2"], backtest.run_static(0.5, returns, 2e-4)["r"], rtol=0, atol=1e-15)
     assert shadow["traded_T1"].iloc[0] == pytest.approx(0.7 - 0.4111, abs=1e-12)
     assert shadow["traded_T1a"].iloc[1] == 0.0
-    assert np.allclose(shadow["d"], shadow["T1"] - shadow["B3_T1"], atol=1e-15)
+    np.testing.assert_allclose(shadow["d"], shadow["T1"] - shadow["B3_T1"], rtol=0, atol=1e-15)
     with pytest.raises(FileExistsError):
         fw.append_shadow(shadow.iloc[0].to_dict() | {"execution_date": str(shadow["execution_date"].iloc[0])}, path)
     with pytest.raises(ValueError):
         fw.shadow_line(indices, records[:3], fw.read_shadow(path), START, frozen)
+    with pytest.raises(ValueError):  # a period that does not follow the last one
+        fw.append_shadow(shadow.iloc[0].to_dict() | {"execution_date": "2027-03-01"}, path)
 
 
 def test_interim_has_no_statistic_and_scoring_refuses_early():
     shadow = pd.DataFrame({c: [0.01, 0.02] for c in fw.SHADOW_COLUMNS})
     out = fw.interim(shadow, "x")
     assert out["heading"] == "Not yet scored" and out["periods_to_scoring"] == 58 and "t" not in out
+    assert fw.interim(pd.DataFrame({c: [0.01] * 60 for c in fw.SHADOW_COLUMNS}), "x")["periods_to_scoring"] == 0
     with pytest.raises(RuntimeError):
         fw.score(shadow, [])
 
@@ -192,6 +236,19 @@ def test_forward_verdict_rows():
     assert up["verdict"] == "supported (forward)" and up["labels"] == []
     down = fw.forward_verdict(pd.Series(-0.004 + rng.normal(0, 0.002, 60)), pd.Series(rng.uniform(0, 1, 60)), 12.0)
     assert down["verdict"] == "refuted (forward)"
+    held = fw.forward_verdict(pd.Series(rng.normal(0, 0.01, 60)), pd.Series([None] * 60, dtype=float), 0.0)
+    assert held["verdict"] == "not testable"  # the rule never set a weight in the block
+
+
+def test_main_refuses_and_writes_nothing(tmp_path, monkeypatch):
+    for name in ("DECISIONS_DIR", "FORWARD_RAW_DIR", "SHADOW_CSV", "WAITS_CSV", "INTERIM_JSON", "FORWARD_MANIFEST"):
+        monkeypatch.setattr(fw, name, tmp_path / name)
+    monkeypatch.setattr(fw, "utc_now", lambda: "2026-10-25T14:00:00Z")
+    assert fw.main(["decide", "--signal-month", "2026-10", "--fetch"]) == 1
+    assert fw.main(["decide", "--signal-month", "2026-09"]) == 1
+    assert fw.main(["shadow", "--signal-month", "2026-10"]) == 1
+    assert fw.main(["interim", "--dry-run"]) == 0
+    assert list(tmp_path.iterdir()) == []
 
 
 def test_starting_weights_are_the_episodes():

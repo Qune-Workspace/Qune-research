@@ -188,3 +188,50 @@ All findings fixed in `charts/make_charts.py` and redrawn; checked by eye; no re
 - Notes on chart 1 (signal vs execution date, one day) accepted as they are.
 
 Not done: the reviewer did not see the re-rendered charts; the fixes are checked by the author only.
+
+
+## Fifth review: Study 008 charts (Tester, 2026-10-25, after the 22:20:04Z push of e4f3e41)
+
+Brief: chart standard of 2026-10-23, the five §9.6 charts of Study 008 as committed in `e4f3e41`, with three questions from the author (the window chart's key, the decade title naming the one decade with |t| ≥ 2, the window title quoting a descriptive sub-window t). Reviewer: a separate Tester agent on Opus 5.5, isolated, read-only, 221 s by the harness; it recomputed every title number with its own code from the three committed inputs (its script in /tmp, not committed).
+
+### Reviewer's report (unedited)
+
+**Study 008 chart check: no must-fix, 4 charts with should-fix.** Read-only. The input hashes in the manifest match the committed files (sha256 e54e9c59…, da5ce721…, ae688e34…). I viewed all five PNGs (all 2x, 1600 px or 1720 px wide) and read `make_charts.py` and `style.py`. Every title and subtitle number was recomputed with my own code (`/tmp/tester008/recompute.py`), which uses its own Bartlett Newey–West at 6 lags and does not import the study or chart code. Each number matches both the manifest and the results files.
+
+| Chart | Verdict | Failures and exact fix |
+|---|---|---|
+| charts/history_real_yield_and_weight.png | should-fix | **1/2:** the title lists two counts (weight, real yield) rather than one finding. Fix: change the title to "The value tilt held 0.9 or more of the bond only between May 1981 and May 1985, when the real yield peaked at 9.6%, and less than 0.3 in 186 of 534 months, 144 of them from 2000". Add `weight_ge_0_9_span`, `real_yield_max` and `weight_lt_0_3_from_2000` = 144 to the manifest. |
+| charts/history_growth.png | pass | Note: the source line says "Ledoit–Wolf test vs B3", but the title puts p next to both benchmarks. That happens to hold, because p vs B1 is 0.6985, which also rounds to 0.70. Add `growth_ledoit_wolf_p_vs_B1` = 0.6985 to the manifest so the shared "(p = 0.70)" is backed by a recorded number. |
+| charts/history_drawdown.png | should-fix | **1:** the title gives three numbers but not the comparison that matters: the tilt fell further than the mix it is tested against. "Deepest monthly drawdown" can also be read as the worst single month. Fix: change the title to "The tilt's deepest drawdown was −6.3%, deeper than the same-exposure mix's −3.8% but less than half the bond's −15.2% (month-end marks)". |
+| charts/history_differential_by_decade.png | should-fix | **1:** "positive in 3 of 5 decades (−0.9% … to +2.6%)" puts a negative range after "positive", and "only … alone significant" is redundant and gives a descriptive t inferential weight (see b). The positive-to-negative split falls exactly at 2000. Fix: change the title to "The tilt's edge over the same-exposure mix was positive in the three decades to 1999 (+0.7% to +2.6% a year) and negative in the 2000s and 2010–18 (−0.5% and −0.9%); descriptive t −1.5 to 2.2". In code, replace the `count`/`qual` branch for mixed signs. |
+| charts/history_trials_by_window.png | should-fix | **1:** the subtitle has no period. Fix: append ", Jul 1974 to Dec 2018 (T1b from Jul 1979)". **1:** the title quotes descriptive t's but not the decision t (see c). Fix: change the title to "The value tilt was ahead of the same-exposure mix before 2003 (+1.36% a year) and behind it over 2003–18 (−0.85%), as were T1a and T1b; over the whole period not supported (t 1.38)", with the t taken from `inference.T1.vs_B3.newey_west.t` into the manifest. **3:** the key sits under the "Rate eras" heading, so it reads as that group's key, and its last line runs past the plot's right edge. Fix: drop the key and label the three bars of the first cluster directly ("T1", "T1a", "T1b", 10 pt, above each bar). The subtitle already gives the full names. |
+
+**(a)** Acceptable under checklist 3. The rule is "no legend when end labels work", and they do not work for clustered bars. The placement is the problem, not the key itself: it is inside the second group. The fix is in the table: direct labels on the first cluster, or move the key above both group captions.
+
+**(b)** The title is numerically correct: the 1990s t is 2.161, or 2.152 with an n/(n−1) correction, the only |t| ≥ 2, and the 1980s t is 1.837. It is not clear, though. Naming a "significant" decade on a statistic the subtitle calls "no decision weight", one of five looks, puts the reader's eye on the smallest positive bar and on inference. The clear and fair message is the sign change at 2000, which also matches the failed 1986–2018 era row. Use the t range, not a significance label (fix above).
+
+**(c)** It does not read as a claim that the tilt works, because it is paired with the reversal (t −1.81) and the split at 2003 is registered. Still, t 2.47 is the largest |t| on the figure, and it is the only inference in the title, while the decision statistic (t 1.38) and the verdict are absent. A reader sees a significant edge that later broke, which is a regime story the study did not test. My own split shows 1986-01 to 2002-12 at +0.69% a year, t 2.07 (204 periods), so the edge before 2003 is not only a 1974–85 effect. Should-fix: drop the sub-window t's and add the whole-period t 1.38 and "not supported" (fix above).
+
+**Numbers checked (recomputed = manifest = results):**
+- Real yield: 534 month ends. Real yield ≤ 0 at 76 (< 0 also 76). Weight ≥ 0.9 in 48 (May 1981 to May 1985). Weight < 0.3 in 186 (42 before 2000, 144 from 2000). w̄ 0.466176, sd 0.270051 (ddof 0). Real yield min −4.808%, max 9.606% (signal month 1984-06).
+- Growth: Sharpe T1 0.414619, B1 0.381794, B3 0.381244 (excess over B0, ddof 1, ×√12; matches metrics_base and summary descriptive). Final values 17.604 / 25.570 / 13.995. B3 weight 0.466176. Ledoit–Wolf p vs B3 0.7004 (vs B1 0.6985). Whole-period NW t vs B3 1.381.
+- Drawdown: T1 −6.290%, B3 −3.828%, B1 −15.152% (= metrics max_drawdown_monthly). Troughs: T1 in the period executed 1987-09, B3 and B1 in the period executed 1980-02.
+- Decades (T1 − B3_T1, annualised mean / NW t / n): 1974–79 +0.875% / 1.286 / 66; 1980s +2.582% / 1.837 / 120; 1990s +0.721% / 2.161 / 120; 2000s −0.454% / −0.813 / 120; 2010–18 −0.910% / −1.511 / 108. The 1990s is the only |t| ≥ 2. The t range in the subtitle is −1.5 to 2.2. Era row 1986–2018: −0.0554% a year, t −0.184, 396 periods, fail.
+- Windows: all 18 trial × window means, t's and n's, recomputed from monthly_base by execution month, equal summary.json and the manifest (e.g. T1 before 2003 +1.357% / t 2.467 / 342; 2003–18 −0.848% / −1.806 / 192). T1a and T1b have the same signs in both (+1.333 / −0.381 and +1.186 / −0.664). T1b n = 282 / 78 / 30 as in the footnote.
+
+Layout checks pass on all five: one accent series with greys; no top or right spines and one baseline; faint horizontal grid; title 13.5 pt and labels 10 pt in one family, left-aligned; source line at the bottom left with source, period, Qune Research, Study 008 and the verdict; unsorted bars state why; SVG and 2x PNG committed.
+
+Charts passed: 1 (growth)
+Must-fix: 0
+Should-fix: 4 charts (real yield, drawdown, decade, window; 6 items)
+
+### Author's response (Qune, commit c2d4164, 22:26:23Z by git)
+
+Before accepting, Qune recomputed the three numbers the reviewer proposed for titles from `monthly_base.csv` (weight ≥ 0.9 in 48 months, all between the periods executed 1981-05 and 1985-05; real-yield maximum 9.61% in the period executed 1984-07, inside that span; weight < 0.3 in 186 months, 144 of them from 2000). All six should-fix items answered in `charts/make_charts.py` and redrawn; every phrase is chosen by the script from computed numbers; no result file touched, nothing re-run, no verdict changed.
+- **Real yield and weight:** title now one finding, "The value tilt held 0.9 or more of the bond only between May 1981 and May 1985, when the real yield peaked at 9.6%, and less than 0.3 in 186 of 534 months, 144 of them from 2000"; the peak clause is printed only if the peak falls inside the span; the count of month ends with a real yield at or below zero (76) moved to the source note; span, peak month and the 144 written to the manifest.
+- **Drawdown:** "The tilt's deepest drawdown was −6.3%, deeper than the same-exposure mix's −3.8% but less than half the bond's −15.2% (month-end marks)"; both comparisons chosen by code.
+- **Decade:** the title states the sign change, "positive in the three decades to 1999 (+0.7% to +2.6% a year) and negative in the 2000s and 2010–18 (−0.5% and −0.9%)", used only when the positive decades all precede the negative ones (otherwise the earlier count form); the Newey–West t range (−1.5 to 2.2) moved to the subtitle with "Descriptive, no decision weight". The reviewer's extra figure for 1986–2002 (+0.69% a year, t 2.07) is not a registered window and is not used.
+- **Window:** sub-window t's dropped from the title and the whole-period Newey–West t against B3 added from `summary.json`: "…before 2003 (+1.36% a year) and behind it over 2003–18 (−0.85%), T1a and T1b alike; whole period not supported (t 1.38)"; period added to the subtitle. The key was **not** replaced by direct labels on the first group as the reviewer proposed: drawn that way in the first version, "T1", "T1a" and "T1b" overlap at 10 pt over bars about 19 pt wide. Following the reviewer's answer (a), the key moved instead from under the "Rate eras" heading to one row under the axis spanning both groups, with shorter names (the subtitle carries the rank types).
+- **Growth (note):** the Ledoit–Wolf p against B1 (0.6985) is now in the manifest beside the one against B3.
+
+Not done: the reviewer did not see the re-rendered charts; the fixes are checked by the author only.

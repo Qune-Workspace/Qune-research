@@ -116,9 +116,23 @@ Tester, a separate agent session on the same model family that did not write the
 - **Process slips in this study, all caught and disclosed before the result they could affect:** a wrong FRED series ID in the pre-registration (found by a 404 before any CPI data were received, corrected by a §16 amendment); a data-step script that labelled its ALFRED probe as a finished check (disclosed; the real check followed as its own logged step); a history module that ignored the gate's dropped trials (caught by the separate code review before any run; no trial was dropped in the event); several time labels written ahead of the clock (each corrected by a dated precision, including the two pre-run rows of this history run, labelled 21:2x and committed at 21:18:23Z, before the run).
 - *Dated addition, 2026-10-25, after the separate-session recomputation ([`REVIEW.md`](REVIEW.md)), should-fix 3 and §7 of the review:* two limitations the note did not state. (1) No public monthly inflation-forecast series covers 1969–2018 (Michigan expectations from 1978-01; Livingston semiannual; SPF quarterly from 1981), so the real yield here subtracts trailing 12-month CPI inflation as a proxy for expected inflation, and no forecast-based real yield was tested (PREREGISTRATION §5.5). (2) ALFRED holds no core-CPI vintage before 1996-12, so T1a's release dates for signal months 1969-07 to 1996-11 (329 months) follow the headline release, as the §16 clarification of 18:3x GMT set out.
 
+## Charts (§9.6, added 2026-10-25, commits e4f3e41 22:20:04Z and c2d4164 22:26:23Z by git; descriptive, no decision weight; Tester chart check done: CHART_REVIEW.md, fifth section)
+
+Drawn from the committed history files by [`charts/make_charts.py`](charts/make_charts.py) (adapted from Study 007's); every number in a title is computed by the script and listed with the input hashes in [`charts/manifest.json`](charts/manifest.json). SVG beside each PNG. A separate Tester (Opus, isolated) recomputed every title number: all match; no must-fix, six should-fix, all answered ([CHART_REVIEW.md](../../CHART_REVIEW.md), fifth section).
+
+![The value tilt held 0.9 or more of the bond only between May 1981 and May 1985, when the real yield peaked at 9.6%, and less than 0.3 in 186 of 534 months, 144 of them from 2000](charts/history_real_yield_and_weight.png)
+
+![Over 1974–2018 the value tilt's Sharpe was 0.41 against 0.38 for the bond and the same-exposure mix (p = 0.70), but it ended below the bond; verdict not supported](charts/history_growth.png)
+
+![The tilt's deepest drawdown was −6.3%, deeper than the same-exposure mix's −3.8% but less than half the bond's −15.2% (month-end marks)](charts/history_drawdown.png)
+
+![The tilt's edge over the same-exposure mix was positive in the three decades to 1999 (+0.7% to +2.6% a year) and negative in the 2000s and 2010–18 (−0.5% and −0.9%)](charts/history_differential_by_decade.png)
+
+![The value tilt was ahead of the same-exposure mix before 2003 (+1.36% a year) and behind it over 2003–18 (−0.85%), T1a and T1b alike; whole period not supported (t 1.38)](charts/history_trials_by_window.png)
+
 ## Next
 
 - *(Done the same evening: the 2019–2026 episode, above.)*
-- Charts to the house standard and the Tester chart check. *(Step 10, the separate-session recomputation, done the same evening: above.)*
+- ~~Charts to the house standard and the Tester chart check~~: done the same evening (above; commits e4f3e41 and c2d4164). *(Step 10, the separate-session recomputation, done the same evening: above.)*
 - `forward008.py` before the first forward signal at the 2026-10-30 month end (§11.1), separating "not yet in the fetched file" from "never published" (code-review note 8); signal month 2026-11 will hold, because its k − 12 month is the unpublished October 2025 index.
 - Not done and not planned: any further trial on this question. The verdict is fixed by the pre-registered table.

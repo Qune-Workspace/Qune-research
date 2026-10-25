@@ -14,7 +14,8 @@ What happened, in order (every step is a dated commit; times are London, which l
 4. 03:22: `APPROVED` and the gate's trial-log row, pushed (`392b7e1`); then **the gate, run once: PASS** (`8286e25`).
 5. 03:23: the volatility check's row (`ff50d9f`), then **the volatility check, run once: σ 7.75%, criteria stand** (`9e9d9b5`).
 6. 03:23–03:24: T1–T3 run dates and the programme-family re-count logged and pushed (`abb7023`); then **the history run, once** (03:24:57Z), committed as written (`662630c`).
-7. This note: the publication (the commit carrying this line).
+7. This note: the publication (the commit carrying this line). *Precision, added 2026-10-25 07:4x GMT: 03:27 London, `3663b77`.*
+8. 2026-10-25, 03:29: the episode, run once (`94be69f`). 04:2x: forward-record code (`016fa69`). 04:26: charts (`b868f5d`); 05:22: charts after the Tester chart check (`2d0889a`, `6d32efb`). 07:18–07:35 GMT: separate-session recomputation published (`REVIEW.md`, §14 step 10): **confirmed with findings, no must-fix**; answered in the Independent review section below.
 
 ## The gate (§5.3; instrument returns and the signal path only, no rule return)
 
@@ -73,8 +74,16 @@ Study 002's copied engine also writes Study 001's three sub-periods by signal mo
 ## Next
 
 1. ~~The 2019–2026 episode~~ run once on 2026-10-25 (section above).
-2. Separate-session recomputation (`review_recompute.py`, `REVIEW.md`), as Studies 001–005; house-style charts with a chart check. *(2026-10-25 04:2x London: charts drawn; chart check and recomputation still to come.)*
+2. Separate-session recomputation (`review_recompute.py`, `REVIEW.md`), as Studies 001–005; house-style charts with a chart check. *(2026-10-25 04:2x London: charts drawn; chart check and recomputation still to come.)* *(2026-10-25 07:4x GMT: both done; chart check in [`CHART_REVIEW.md`](../../CHART_REVIEW.md), recomputation in the Independent review section below.)*
 3. The forward record (§11): decision records from the 2026-10-30 month end, shadow lines after each execution, scored once after 60 periods. Its code is not built yet; it must be before 2026-10-30. *(2026-10-25 04:2x London: built and tested, `src/forward.py`, 16 tests; see `paper-log/README.md` and the §16 entry of the same time. Not yet run on a forward month.)*
+
+## Independent review (§14 step 10)
+
+*Added 2026-10-25 07:4x GMT.* A separate Tester agent session that did not write the code, the pre-registration or this note reviewed the study at commit `df477ba` (07:18–07:35 GMT, Fable 5.1, isolated, no network) and published [`REVIEW.md`](REVIEW.md) with [`review_recompute.py`](review_recompute.py): **confirmed with findings, no must-fix.** The reviewer rebuilt the synthetic legs, the NYSE calendar, the spread, the holdings and every monthly return of B0–B3 and T1–T3 from the raw FRED, Tiingo and Alpaca files with its own engine (max abs diff 1e−13), recomputed the gate statistics, σ, the twelve metrics, the Newey–West t-statistics, the bootstrap intervals with the pre-registered seed, the DSR, the sub-windows, the mechanism check, the episode and the four chart titles, applied the §9.5 rows itself (inconclusive (fragile) for T1) and checked that every trial-log row and amendment was committed before the result it governs. 1,854 compared rows: 1,842 match, 0 mismatch, 12 informational. The author reran the script and both suites before this commit (exit 0; study 179, library 134 tests). "Independent" here means a separate session on the same model and machine, as the review's §2 says.
+
+- **Should-fix 1 (time labels).** Corrected readings from git: the §16 entry labelled "03:3x London, clarification during implementation" was committed at **03:21:42** (`2f1884f`), and this note quoted the same label; the episode section's "Added 03:3x" was committed at **03:29:42** (`94be69f`); the question note's two commits were both at **01:20** (+01:00), inside the "01:1x–01:4x" range given above and in `trials.md`. Dated corrections are appended to §16 and to `trials.md`; the order of events is unchanged (review §5).
+- **Should-fix 2 (trial-log rows rewritten in place).** In `abb7023` and `662630c` the three T1–T3 rows of `trials.md` changed from "registered, not run" to their run date, code commit and outputs, and the closing sentence was replaced, where §7 says additions are appended with a date. The pre-run text is in git (`a67ef8d`); a dated note under the table now says so. Future studies append an outcome row instead.
+- **Notes 3–8.** The charts were rendered a third time in `df477ba` (SVG id salt only; PNGs byte-identical), stated in that commit and in the BUILD_LOG, now here too. Four episode Ledoit–Wolf p-values against B1 differ from the reviewer's by one resample in 10,000 (no decision weight). `NaN` literals in `summary.json` and empty cells in `metrics_*.csv` are left as written. The first-period cost convention is inherited from Study 001 §6.6. The 2008–2018 split's G1 of exactly 0 is the disclosed limit, not evidence of fidelity. Later commits edited this note by dated notes only (verified by the reviewer). Recorded, nothing to change.
 
 ## Charts (§9.6, added 2026-10-25 04:2x London; descriptive, no decision weight)
 

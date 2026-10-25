@@ -165,7 +165,9 @@ def cpi_reading(cpi: pd.Series, month: str) -> dict:
     s_k = _status(cpi_m, k, last)
     s_k12 = _status(cpi_m, k - 12, last)
     out = {"k": str(k), "k_minus_12": str(k - 12), "status_m_minus_1": s_m1, "status_k": s_k,
-           "status_k_minus_12": s_k12, "last_month_in_file": str(last), "pi": None}
+           "status_k_minus_12": s_k12, "last_month_in_file": str(last),
+           "cpi_k": None if pd.isna(cpi_m.get(k, np.nan)) else float(cpi_m[k]),
+           "cpi_k_minus_12": None if pd.isna(cpi_m.get(k - 12, np.nan)) else float(cpi_m[k - 12]), "pi": None}
     if s_m1 != NEVER and s_k == IN_FILE and s_k12 == IN_FILE:
         out["pi"] = float(cpi_m[k] / cpi_m[k - 12] - 1.0)
     return out
@@ -197,13 +199,15 @@ def weights_at(episode_r: pd.DataFrame, fred: dict[str, pd.Series], cpi: dict[st
         raise ValueError(f"the last signal date is not t = {t.date()}")
     recorded = {r["signal_month"]: r for r in (earlier or []) if r.get("status") == "ok" and "real_yield" in r}
     notes: list[str] = []
+    recomputed: dict[str, dict] = {}
     forward_r = {s: {} for s in CPI_IDS}
     for period, t_i in dates.iloc[:-1].items():
         key = str(period)
         if key in recorded:
             values = recorded[key]["real_yield"]
         else:
-            values = forward_month_reading(fred, cpi, pd.Timestamp(t_i), key)["real_yield"]
+            recomputed[key] = forward_month_reading(fred, cpi, pd.Timestamp(t_i), key)
+            values = recomputed[key]["real_yield"]
             notes.append(f"{key}: no ok record; its real yields computed from this fetch at its signal date "
                          f"{pd.Timestamp(t_i).date()}")
         for s in CPI_IDS:
@@ -211,8 +215,9 @@ def weights_at(episode_r: pd.DataFrame, fred: dict[str, pd.Series], cpi: dict[st
     now = forward_month_reading(fred, cpi, t, month)
     for s in CPI_IDS:
         forward_r[s][month] = now["real_yield"][s]
-    out = {**now, "n": {}, "weights": {k: None for k in TRIAL_IDS},
-           "forward_real_yields": {s: dict(v) for s, v in forward_r.items()}, "notes": notes}
+    out = {**now, "n": {}, "weights": {k: None for k in TRIAL_IDS}, "rank_unrounded": {k: None for k in TRIAL_IDS},
+           "forward_real_yields": {s: dict(v) for s, v in forward_r.items()},
+           "recomputed_months": recomputed, "notes": notes}
     for s in CPI_IDS:
         extra = pd.Series([np.nan if v is None else v for v in forward_r[s].values()],
                           index=pd.PeriodIndex(list(forward_r[s]), freq="M"), dtype=float)
@@ -231,7 +236,9 @@ def weights_at(episode_r: pd.DataFrame, fred: dict[str, pd.Series], cpi: dict[st
                          f"[{now['cpi'][s]['status_k_minus_12']}]): holds its position (sections 6.1, 6.4, 16 (b))")
             continue
         w = rank_defined(out[f"_history_{s}"], RANK_KIND[k], RANK_N[k]).iloc[-1]
-        out["weights"][k] = None if pd.isna(w) else round(float(w), DECIMALS)
+        if not pd.isna(w):
+            out["rank_unrounded"][k] = float(w)
+            out["weights"][k] = round(float(w), DECIMALS)
     for s in CPI_IDS:
         del out[f"_history_{s}"]
     return out
@@ -253,7 +260,7 @@ def weights_before(records: list[dict], start: dict) -> dict:
 
 def decision_record(episode_r: pd.DataFrame, fred: dict[str, pd.Series], cpi: dict[str, pd.Series],
                     bars: dict[str, pd.Series], month: str, held: dict, start: dict, earlier: list[dict],
-                    now_utc: str, input_sha256: dict | None = None) -> dict | None:
+                    now_utc: str, input_sha256: dict | None = None, cpi_fetched_at: dict | None = None) -> dict | None:
     """The record for ``month``, or None when the run must wait (nothing is
     written).  ``earlier`` = the earlier records, in order."""
     earlier_ok = sum(r["status"] == "ok" for r in earlier)
@@ -284,10 +291,16 @@ def decision_record(episode_r: pd.DataFrame, fred: dict[str, pd.Series], cpi: di
                           f"holding period runs on (section 11.2, Study 001 section 11.2). {why}").strip()}
     assert t is not None
     w = weights_at(episode_r, fred, cpi, t, month, earlier)
+    late = sorted(s for s, at in (cpi_fetched_at or {}).items() if at and _utc(at).tz_localize(None).normalize() > t.normalize())
+    if late:
+        w["notes"].append(f"{late} fetched after the day of t (see cpi_fetched_at_utc): an index first released "
+                          "between t and the fetch would be in the file; check the BLS release date of k")
     record = {**base, "status": "ok", "signal_date": str(t.date()), "execution_date": str(execution.date()),
               "days_slipped": int(slipped), "inputs_on_signal_date": inputs_at(fred, t),
               "cpi": w["cpi"], "real_yield": w["real_yield"], "rank_history_n": w["n"],
-              "weights_after": dict(w["weights"]), "forward_real_yields_used": w["forward_real_yields"],
+              "weights_after": dict(w["weights"]), "rank_unrounded": w["rank_unrounded"],
+              "forward_real_yields_used": w["forward_real_yields"], "recomputed_months": w["recomputed_months"],
+              "cpi_fetched_at_utc": dict(cpi_fetched_at or {}),
               "notes": " ".join(["T1 on trial (headline CPI, expanding rank); T1a (core CPI) and T1b (trailing "
                                  "120-month rank) its fragility companions. A weight of null means the trial "
                                  "holds its position (no trade). No order is placed for any of them."] + w["notes"])}
@@ -460,14 +473,23 @@ def main(argv: list[str] | None = None) -> int:
             return 1
         if args.fetch and not args.dry_run:
             fetch_inputs(FORWARD_RAW_DIR, FORWARD_MANIFEST)
-        fred, cpi, bars = load_inputs(FORWARD_RAW_DIR)
+        elif args.fetch:
+            print("note: --dry-run does not fetch; paper-log/raw/ is read as it is")
+        try:
+            fred, cpi, bars = load_inputs(FORWARD_RAW_DIR)
+        except FileNotFoundError as missing:
+            print(f"refused: an input is not in paper-log/raw/ ({Path(missing.filename).name}); run with --fetch")
+            return 1
+        manifest = json.loads(FORWARD_MANIFEST.read_text(encoding="utf-8")) if FORWARD_MANIFEST.exists() else {}
+        fetched_at = {s: manifest.get(f"fred_{s}.csv", {}).get("downloaded_at_utc") for s in CPI_IDS}
         episode_r = load_episode_real_yields()
         held = weights_before(records, start)
         hashes = {**file_hashes(FORWARD_RAW_DIR, "fred_"), **file_hashes(FORWARD_RAW_DIR, "alpaca_"),
                   **{f"frozen/{k}": v for k, v in file_hashes(RAW_DIR, "fred_").items()},
                   "frozen/results/cpi_availability.csv": sha256_of(CPI_AVAILABILITY_PATH),
                   "frozen/results/episode/summary.json": sha256_of(EPISODE_DIR / "summary.json")}
-        record = decision_record(episode_r, fred, cpi, bars, args.signal_month, held, start, records, now, hashes)
+        record = decision_record(episode_r, fred, cpi, bars, args.signal_month, held, start, records, now, hashes,
+                                 fetched_at)
         if record is None:
             reason = signal_status(fred, bars, args.signal_month)[2]
             print(f"wait: {reason}; re-check on the next run")

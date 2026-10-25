@@ -255,3 +255,28 @@ def test_rank_history_reproduces_the_episode_starting_weights():
     assert round(float(expanding_rank(episode_r[HEAD].dropna(), 60).iloc[-1]), 4) == START["T1"]
     assert round(float(expanding_rank(episode_r[CORE].dropna(), 60).iloc[-1]), 4) == START["T1a"]
     assert round(float(trailing_rank(episode_r[HEAD].dropna(), 120).iloc[-1]), 4) == START["T1b"]
+
+
+def test_record_writes_the_cpi_values_the_unrounded_rank_and_recomputed_months():
+    fred, cpi = _fred("2026-12-31"), _cpi(last="2026-11")
+    at = {HEAD: "2026-12-31T21:30:00Z", CORE: "2027-01-04T10:00:00Z"}  # the core file fetched days after t
+    rec = fw.decision_record(EP, fred, cpi, _bars("2026-12-31"), "2026-12", START, START, [], "2027-01-01T09:00:00Z",
+                             cpi_fetched_at=at)
+    c = rec["cpi"][HEAD]
+    assert c["cpi_k"] == float(cpi[HEAD].loc["2026-11-01"]) and c["cpi_k_minus_12"] == float(cpi[HEAD].loc["2025-11-01"])
+    assert c["pi"] == pytest.approx(c["cpi_k"] / c["cpi_k_minus_12"] - 1.0, abs=0)
+    for k in TRIAL_IDS:
+        assert rec["weights_after"][k] == round(rec["rank_unrounded"][k], 4)
+    assert set(rec["recomputed_months"]) == {"2026-10", "2026-11"}  # no ok record for either
+    assert rec["recomputed_months"]["2026-11"]["cpi"][HEAD]["status_k_minus_12"] == fw.NEVER
+    assert rec["cpi_fetched_at_utc"] == at and "['CPILFENS'] fetched after the day of t" in rec["notes"]
+    nov_gap = fw.cpi_reading(_cpi(last="2026-10")[HEAD], "2026-11")
+    assert nov_gap["cpi_k_minus_12"] is None and nov_gap["cpi_k"] is not None
+
+
+def test_dry_run_without_inputs_refuses_and_writes_nothing(tmp_path, monkeypatch):
+    for name in ("DECISIONS_DIR", "FORWARD_RAW_DIR", "SHADOW_CSV", "WAITS_CSV", "INTERIM_JSON", "FORWARD_MANIFEST"):
+        monkeypatch.setattr(fw, name, tmp_path / name)
+    monkeypatch.setattr(fw, "utc_now", lambda: "2026-10-31T09:00:00Z")
+    assert fw.main(["decide", "--signal-month", "2026-10", "--fetch", "--dry-run"]) == 1
+    assert list(tmp_path.iterdir()) == []

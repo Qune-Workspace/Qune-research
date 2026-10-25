@@ -119,6 +119,9 @@ def rc_params() -> dict:
         "savefig.dpi": 2 * BASE_DPI,
         "savefig.facecolor": "white",
         "savefig.edgecolor": "white",
+        # Fixed salt: SVG element ids repeat run to run, so a re-render of
+        # unchanged inputs leaves `git diff` empty.
+        "svg.hashsalt": "qune-research",
         "grid.color": GRID,
         "grid.linewidth": 0.6,
         "grid.linestyle": "-",

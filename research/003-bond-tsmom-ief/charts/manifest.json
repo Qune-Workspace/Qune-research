@@ -1,6 +1,6 @@
 {
-  "made_at_utc": "2026-10-23T22:18:22+00:00",
-  "repository_commit_at_run": "e4eebde49517e1415afd6e53ef2fd1765a076912",
+  "made_at_utc": "2026-10-25T06:21:30+00:00",
+  "repository_commit_at_run": "adf97de4514abbb0a34505ab1657f842ca028f35",
   "inputs_sha256": {
     "research/003-bond-tsmom-ief/results/insample/monthly_base.csv": "73dc805aa3cb2f74f20670a1f3708710e8c820bbd9af75b558766103d2b959c0",
     "research/003-bond-tsmom-ief/results/insample/metrics_base.csv": "73bccfdd4c91df987092abf530e0b83417c86e2fcff292349c229ed8a1458de7",

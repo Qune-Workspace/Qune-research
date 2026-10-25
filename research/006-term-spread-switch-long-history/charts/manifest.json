@@ -1,6 +1,6 @@
 {
-  "made_at_utc": "2026-10-25T05:21:29+00:00",
-  "repository_commit_at_run": "c178c2333d2f86a0c00d6dfeb58c799ed1734f94",
+  "made_at_utc": "2026-10-25T06:21:38+00:00",
+  "repository_commit_at_run": "adf97de4514abbb0a34505ab1657f842ca028f35",
   "inputs_sha256": {
     "research/006-term-spread-switch-long-history/results/history/monthly_base.csv": "775a5a8f4d93c320106d54b333a412a468e37455f1a23c140a89c77488d48848",
     "research/006-term-spread-switch-long-history/results/history/metrics_base.csv": "4ba00cc29b4f6f9e7233207e004f7d2f181a6732f34a54b065aab43040076c1b"

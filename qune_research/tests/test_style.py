@@ -97,6 +97,17 @@ def test_end_labels_are_pushed_apart():
     plt.close(fig)
 
 
+def test_svg_output_is_byte_identical_run_to_run(tmp_path):
+    style.apply()
+    outputs = []
+    for run in ("a", "b"):
+        fig, _ = _finished_figure()
+        svg, _png = style.save(fig, tmp_path / run / "chart")
+        outputs.append(svg.read_bytes())
+        plt.close(fig)
+    assert outputs[0] == outputs[1]
+
+
 def test_end_labels_on_a_log_axis_are_spaced_as_drawn():
     # Linear spacing put 520 at about 550 here: 0.014 apart on the drawn axis, so the labels touched.
     fig, ax = style.figure()

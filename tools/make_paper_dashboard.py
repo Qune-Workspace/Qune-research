@@ -1,4 +1,4 @@
-"""Paper dashboard for Studies 003 to 006 from their committed paper-log folders.
+"""Paper dashboard for Studies 003 to 007 from their committed paper-log folders.
 
 Descriptive only.  This script reads each study's ``paper-log/`` exactly as
 committed (decision records, shadow lines, execution records, runner and
@@ -65,6 +65,16 @@ SPECS = [
         return_columns={"T1": "T1", "B3": "B3", "B1": "B1"},
         labels={"T1": "Term-spread switch T1", "B3": "Same-exposure mix B3", "B1": "Hold IEF B1"},
         data_source="FRED DGS10, DTB3 and DGS7 (signals) and Alpaca daily IEF and BIL bars (adjustment='all') "
+                    "read by the study's forward code",
+    ),
+    paperlog.LogSpec(
+        study="Study 007", folder="research/007-bond-carry-tilt-long-history", kind="shadow record",
+        label="inconclusive (fragile) on 1974–2018; forward record, scored once after 60 periods; no paper order",
+        first_signal_date="2026-10-30",
+        strategy="T1", benchmarks=("B3_T1", "B1"),
+        return_columns={"T1": "T1", "B3_T1": "B3_T1", "B1": "B1"},
+        labels={"T1": "Carry tilt T1", "B3_T1": "Same-exposure mix B3", "B1": "Hold IEF B1"},
+        data_source="FRED DGS10, DTB3 and DGS7 (carry) and Alpaca daily IEF and BIL bars (adjustment='all') "
                     "read by the study's forward code",
     ),
 ]

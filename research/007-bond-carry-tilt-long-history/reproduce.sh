@@ -5,6 +5,8 @@
 #   ./reproduce.sh --volcheck   §5.4 volatility check, once          -> results/volcheck/
 #   ./reproduce.sh --history    §8.1 test window 1974-2018, once     -> results/history/
 #   ./reproduce.sh --episode    §8.2 2019-2026 episode, once         -> results/episode/
+#   ./reproduce.sh --forward decide|shadow|interim --signal-month YYYY-MM [--fetch] [--dry-run]
+#                               §11 forward record, monthly          -> paper-log/ (no paper order)
 #
 # Every mode refuses without a file named APPROVED in this folder (§14 step 4)
 # and refuses when its output folder already exists (each runs once).
@@ -22,9 +24,15 @@ if [ -z "${PYTHON:-}" ]; then
   if [ -x ../../.venv/bin/python ]; then PYTHON=../../.venv/bin/python; else PYTHON=python3; fi
 fi
 
-usage() { echo "usage: $0 --gate | --volcheck | --history | --episode" >&2; exit 2; }
-[ $# -eq 1 ] || usage
+usage() { echo "usage: $0 --gate | --volcheck | --history | --episode | --forward <step> [args]" >&2; exit 2; }
+[ $# -ge 1 ] || usage
 mode="$1"
+if [ "$mode" = "--forward" ]; then
+  shift
+  # §11: monthly and append-only; the module refuses every run its gates do not allow.
+  exec "$PYTHON" -m src.forward007 "$@"
+fi
+[ $# -eq 1 ] || usage
 case "$mode" in --gate|--volcheck|--history|--episode) ;; *) usage ;; esac
 
 if [ ! -s APPROVED ]; then

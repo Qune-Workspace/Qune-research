@@ -29,7 +29,8 @@ STUDIES := research/001-slope-duration-switch \
            research/002-slope-duration-switch-r \
            research/003-bond-tsmom-ief \
            research/004-xasset-trend-voltarget \
-           research/005-duration-trend-regime
+           research/005-duration-trend-regime \
+           research/006-term-spread-switch-long-history
 SUITES  := $(STUDIES) qune_research desk-view
 
 # review_recompute.py scripts that run from the committed outputs alone.  Rows

@@ -1,0 +1,164 @@
+{
+  "run_at_utc": "2026-10-25T17:25:07Z",
+  "windows": {
+    "calendar_file": "research/001-slope-duration-switch/results/execution_calendar.csv",
+    "calendar_sha256": "266d0ae8296eaca9ed29ed71186381a7341574f75326f9e8d3689b8e14f15343",
+    "calendar_rows": 688,
+    "test_window": {
+      "execution_dates": [
+        "1974-07-01",
+        "2018-12-31"
+      ],
+      "periods": 534,
+      "first_signal_month": "1974-06",
+      "first_execution_date": "1974-07-01",
+      "last_signal_month": "2018-11",
+      "last_period_end": "2019-01-02"
+    },
+    "t1b_window": {
+      "execution_dates": [
+        "1979-07-01",
+        "2018-12-31"
+      ],
+      "periods": 474,
+      "first_signal_month": "1979-06",
+      "first_execution_date": "1979-07-02"
+    },
+    "era_window": {
+      "execution_dates": [
+        "1986-01-01",
+        "2018-12-31"
+      ],
+      "periods": 396,
+      "first_execution_date": "1986-01-02",
+      "last_period_end": "2019-01-02"
+    },
+    "by_trial": {
+      "T1": {
+        "cpi_series": "CPIAUCNS",
+        "defined_signal_months": 686,
+        "undefined_signal_months": [
+          "2025-11"
+        ],
+        "undefined_to_2018_12": [],
+        "undefined_2019_01_to_2026_09": [
+          "2025-11"
+        ],
+        "first_signal_month_with_weight": "1974-06",
+        "availability_branch_counts": {
+          "release_date_read": 0,
+          "assumed_known": 686
+        }
+      },
+      "T1a": {
+        "cpi_series": "CPILFENS",
+        "defined_signal_months": 686,
+        "undefined_signal_months": [
+          "2025-11"
+        ],
+        "undefined_to_2018_12": [],
+        "undefined_2019_01_to_2026_09": [
+          "2025-11"
+        ],
+        "first_signal_month_with_weight": "1974-06",
+        "availability_branch_counts": {
+          "release_date_read": 0,
+          "assumed_known": 686
+        }
+      },
+      "T1b": {
+        "cpi_series": "CPIAUCNS",
+        "defined_signal_months": 686,
+        "undefined_signal_months": [
+          "2025-11"
+        ],
+        "undefined_to_2018_12": [],
+        "undefined_2019_01_to_2026_09": [
+          "2025-11"
+        ],
+        "first_signal_month_with_weight": "1979-06",
+        "availability_branch_counts": {
+          "release_date_read": 0,
+          "assumed_known": 686
+        }
+      }
+    }
+  },
+  "alfred_check": {
+    "CPIAUCNS": {
+      "attempts": [
+        {
+          "url": "https://alfred.stlouisfed.org/graph/alfredgraph.csv?id=CPIAUCNS&vintage_date=2000-01-14",
+          "http_status": 200,
+          "content_type": "application/csv",
+          "csv_with_data": true
+        },
+        {
+          "url": "https://alfred.stlouisfed.org/graph/fredgraph.csv?id=CPIAUCNS&vintage_date=2000-01-14",
+          "http_status": 404,
+          "content_type": "text/html",
+          "csv_with_data": false
+        },
+        {
+          "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=CPIAUCNS&vintage_date=2000-01-14",
+          "http_status": 200,
+          "content_type": "application/csv",
+          "csv_with_data": true
+        }
+      ],
+      "check_done": true,
+      "consequence": "a keyless ALFRED vintage answered; the comparison is a separate, logged step"
+    },
+    "CPILFENS": {
+      "attempts": [
+        {
+          "url": "https://alfred.stlouisfed.org/graph/alfredgraph.csv?id=CPILFENS&vintage_date=2000-01-14",
+          "http_status": 200,
+          "content_type": "application/csv",
+          "csv_with_data": true
+        },
+        {
+          "url": "https://alfred.stlouisfed.org/graph/fredgraph.csv?id=CPILFENS&vintage_date=2000-01-14",
+          "http_status": 404,
+          "content_type": "text/html",
+          "csv_with_data": false
+        },
+        {
+          "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=CPILFENS&vintage_date=2000-01-14",
+          "http_status": 200,
+          "content_type": "application/csv",
+          "csv_with_data": true
+        }
+      ],
+      "check_done": true,
+      "consequence": "a keyless ALFRED vintage answered; the comparison is a separate, logged step"
+    }
+  },
+  "vendor_plan_inherited_from_006": {
+    "overlap_periods": 192,
+    "first_execution_date": "2003-01-02",
+    "last_period_end": "2019-01-02",
+    "ief_tiingo_periods": 156,
+    "ief_alpaca_periods": 36,
+    "ief_missing_periods": [],
+    "first_bil_period": {
+      "signal_month": "2007-05",
+      "execution_date": "2007-06-01",
+      "period_end": "2007-07-02",
+      "ief": "tiingo",
+      "bil": "tiingo"
+    },
+    "periods_with_synthetic_cash_both_sides": 53,
+    "bil_tiingo_periods": 103,
+    "bil_alpaca_periods": 36,
+    "bil_missing_after_first": [],
+    "first_alpaca_ief_period": {
+      "signal_month": "2015-12",
+      "execution_date": "2016-01-04",
+      "period_end": "2016-02-01",
+      "ief": "alpaca",
+      "bil": "alpaca"
+    },
+    "matches_study_006_data_step_json": true
+  }
+}

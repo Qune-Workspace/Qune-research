@@ -1,0 +1,164 @@
+{
+  "alpaca_BIL_1Day_all.csv": {
+    "downloaded_at_utc": "2026-10-21T20:22:32Z",
+    "first_bar": "2016-01-04",
+    "first_date_read_here": "2016-01-04",
+    "last_bar": "2026-10-21",
+    "last_date_read_here": "2026-10-21",
+    "params": {
+      "adjustment": "all",
+      "end": "2026-10-21T20:07:32Z",
+      "feed": "sip",
+      "limit": 10000,
+      "start": "2016-01-04",
+      "timeframe": "1Day"
+    },
+    "reused_at_utc": "2026-10-25T17:25:04Z",
+    "reused_from": "Study 006 data/raw (same bytes; SHA-256 verified against Study 006 results/data_manifest.json)",
+    "rows": 2716,
+    "rows_read_here": 2716,
+    "sha256": "56f5058022079bb01a29e00a5a80f79122d4e0b9722de4291b91b9182a17f5dd",
+    "source": "Alpaca market data (licensed, not redistributed)",
+    "symbol": "BIL",
+    "url": "https://data.alpaca.markets/v2/stocks/BIL/bars"
+  },
+  "alpaca_IEF_1Day_all.csv": {
+    "downloaded_at_utc": "2026-10-21T20:22:32Z",
+    "first_bar": "2016-01-04",
+    "first_date_read_here": "2016-01-04",
+    "last_bar": "2026-10-21",
+    "last_date_read_here": "2026-10-21",
+    "params": {
+      "adjustment": "all",
+      "end": "2026-10-21T20:07:32Z",
+      "feed": "sip",
+      "limit": 10000,
+      "start": "2016-01-04",
+      "timeframe": "1Day"
+    },
+    "reused_at_utc": "2026-10-25T17:25:03Z",
+    "reused_from": "Study 006 data/raw (same bytes; SHA-256 verified against Study 006 results/data_manifest.json)",
+    "rows": 2716,
+    "rows_read_here": 2716,
+    "sha256": "c8b27e189c7b4215c3c0d03ad9bba09bb767a680eb12fabbed52a7d224c1af81",
+    "source": "Alpaca market data (licensed, not redistributed)",
+    "symbol": "IEF",
+    "url": "https://data.alpaca.markets/v2/stocks/IEF/bars"
+  },
+  "fred_CPIAUCNS.csv": {
+    "downloaded_at_utc": "2026-10-25T17:25:04Z",
+    "first_month": "1913-01",
+    "last_month": "2026-09",
+    "month_gaps": [],
+    "months_with_empty_value": [
+      "2025-10"
+    ],
+    "note": "dates and value presence only; no CPI level read or printed by the data step",
+    "rows": 1365,
+    "sha256": "cfab9b9be4a5d4f06253c4dcc3f7e0b28b1d58837e710dd7cb1fd54a49e7ad7c",
+    "source": "FRED",
+    "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=CPIAUCNS"
+  },
+  "fred_CPILFENS.csv": {
+    "downloaded_at_utc": "2026-10-25T17:25:06Z",
+    "first_month": "1957-01",
+    "last_month": "2026-09",
+    "month_gaps": [],
+    "months_with_empty_value": [
+      "2025-10"
+    ],
+    "note": "dates and value presence only; no CPI level read or printed by the data step",
+    "rows": 837,
+    "sha256": "15fb27ab0a444bc2e68eb5301987bd57890254910b20a87d54dacac55486efa5",
+    "source": "FRED",
+    "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=CPILFENS"
+  },
+  "fred_DGS10.csv": {
+    "downloaded_at_utc": "2026-10-21T11:16:57Z",
+    "first_date_read_here": "1962-01-02",
+    "first_valid": "1962-01-02",
+    "last_date_read_here": "2026-10-19",
+    "last_valid": "2026-10-19",
+    "missing": 721,
+    "reused_at_utc": "2026-10-25T17:25:03Z",
+    "reused_from": "Study 006 data/raw (same bytes; SHA-256 verified against Study 006 results/data_manifest.json)",
+    "rows": 16905,
+    "rows_read_here": 16905,
+    "series_id": "DGS10",
+    "sha256": "ffc712cda8ff329de0f07ea6d5d9b97a094fe40da0486319ae12bbbe19d7381d",
+    "source": "FRED",
+    "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=DGS10"
+  },
+  "fred_DGS7.csv": {
+    "downloaded_at_utc": "2026-10-21T11:16:57Z",
+    "first_date_read_here": "1969-07-01",
+    "first_valid": "1969-07-01",
+    "last_date_read_here": "2026-10-19",
+    "last_valid": "2026-10-19",
+    "missing": 636,
+    "reused_at_utc": "2026-10-25T17:25:03Z",
+    "reused_from": "Study 006 data/raw (same bytes; SHA-256 verified against Study 006 results/data_manifest.json)",
+    "rows": 14950,
+    "rows_read_here": 14950,
+    "series_id": "DGS7",
+    "sha256": "15e58680bd6283eba25615c69091640f21b292b1e6dade7b6701cff271c2e2fc",
+    "source": "FRED",
+    "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=DGS7"
+  },
+  "fred_DTB3.csv": {
+    "downloaded_at_utc": "2026-10-21T11:16:57Z",
+    "first_date_read_here": "1954-01-04",
+    "first_valid": "1954-01-04",
+    "last_date_read_here": "2026-10-19",
+    "last_valid": "2026-10-19",
+    "missing": 801,
+    "reused_at_utc": "2026-10-25T17:25:03Z",
+    "reused_from": "Study 006 data/raw (same bytes; SHA-256 verified against Study 006 results/data_manifest.json)",
+    "rows": 18991,
+    "rows_read_here": 18991,
+    "series_id": "DTB3",
+    "sha256": "0ba63bf126e01aa6d6f0d54dde125e9d7b6125d835b26f2608c95b3f7d943892",
+    "source": "FRED",
+    "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=DTB3"
+  },
+  "tiingo_BIL_daily.csv": {
+    "downloaded_at_utc": "2026-10-22T05:26:59Z",
+    "first_bar": "2007-05-30",
+    "first_date_read_here": "2007-05-30",
+    "last_bar": "2026-10-21",
+    "last_date_read_here": "2026-10-21",
+    "params": {
+      "format": "json",
+      "resampleFreq": "daily",
+      "startDate": "2007-05-01"
+    },
+    "reused_at_utc": "2026-10-25T17:25:04Z",
+    "reused_from": "Study 006 data/raw (same bytes; SHA-256 verified against Study 006 results/data_manifest.json)",
+    "rows": 4881,
+    "rows_read_here": 4881,
+    "sha256": "3701cdcf6294fd7a70556a141cee1b2fabdd878e691481cf44291fc5ee062869",
+    "source": "Tiingo end-of-day prices (licensed, not redistributed); adjClose = split- and distribution-adjusted close",
+    "symbol": "BIL",
+    "url": "https://api.tiingo.com/tiingo/daily/bil/prices"
+  },
+  "tiingo_IEF_daily.csv": {
+    "downloaded_at_utc": "2026-10-21T23:18:29Z",
+    "first_bar": "2002-07-26",
+    "first_date_read_here": "2002-07-26",
+    "last_bar": "2026-10-21",
+    "last_date_read_here": "2026-10-21",
+    "params": {
+      "format": "json",
+      "resampleFreq": "daily",
+      "startDate": "2002-07-22"
+    },
+    "reused_at_utc": "2026-10-25T17:25:03Z",
+    "reused_from": "Study 006 data/raw (same bytes; SHA-256 verified against Study 006 results/data_manifest.json)",
+    "rows": 6099,
+    "rows_read_here": 6099,
+    "sha256": "a15abb3dfb242ff5e08c0724a4df82c35269d6541dbc451b9cd0a7230f58cc06",
+    "source": "Tiingo end-of-day prices (licensed, not redistributed); adjClose = split- and distribution-adjusted close",
+    "symbol": "IEF",
+    "url": "https://api.tiingo.com/tiingo/daily/ief/prices"
+  }
+}

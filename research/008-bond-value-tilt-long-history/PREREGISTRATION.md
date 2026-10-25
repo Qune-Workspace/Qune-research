@@ -285,3 +285,5 @@ As Study 007 §15, plus: it does not change the inflation measure, the lag rule,
 ## 16. Amendments
 
 (Append dated entries here; each must state what changed, why, which results had already been seen at the time, and the trial count N.)
+
+- **2026-10-25 17:2x GMT, correction of a series ID before the data step's first CPI fetch (§14 step 2); results seen: none (the first data-step attempt stopped at an HTTP 404 before any CPI data was received; `trials.md`, data-step rows); N unchanged (3); family count unchanged (17).** Everywhere this document and `QUESTION.md` write `CPIAUCNSA`, read **`CPIAUCNS`**: FRED's ID for the consumer price index for all urban consumers, all items in U.S. city average, not seasonally adjusted, index 1982–84 = 100 (series page read 2026-10-25 17:24 GMT). The series meant was described in words in both documents and is unchanged; only the identifier was wrong (the author's error, not checked against FRED before the commit). `CPILFENS` was checked the same way and is correct. Original wording left as written; the code uses `CPIAUCNS`.

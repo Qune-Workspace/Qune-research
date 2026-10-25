@@ -1,6 +1,6 @@
 {
-  "made_at_utc": "2026-10-25T13:27:44+00:00",
-  "repository_commit_at_run": "ab0f01ad898a9a47f86b84804298878ccfe56363",
+  "made_at_utc": "2026-10-25T13:32:47+00:00",
+  "repository_commit_at_run": "91367d8c9347c720132f5ba55abdcf55b9357d14",
   "inputs_sha256": {
     "research/007-bond-carry-tilt-long-history/results/history/monthly_base.csv": "ca0aabe5deda9871f14bd8a71a25b6d45d3f4dd05c8cba0002ec9688fb387a3b",
     "research/007-bond-carry-tilt-long-history/results/history/metrics_base.csv": "a517bb5a1f383c8ac7cc8f51dfdae1ef55b45805c865225cf5001788dd62705a",
@@ -35,6 +35,7 @@
       "B1": 25.569646785463863,
       "B3": 16.49861553646605
     },
+    "growth_ledoit_wolf_p_vs_B3": 0.1535,
     "drawdown_monthly_max": {
       "T1": -0.07554995434581258,
       "B1": -0.151520869058147,
@@ -54,6 +55,13 @@
       "1990s": 120,
       "2000s": 120,
       "2010–18": 108
+    },
+    "decade_nw_t": {
+      "1974–79": 1.728011967479754,
+      "1980s": 0.96463435231678,
+      "1990s": 0.5995404703487728,
+      "2000s": 0.37279983295902935,
+      "2010–18": 1.9047420006362636
     },
     "window_mean_d_annual": {
       "T1": {
@@ -108,6 +116,15 @@
     ],
     "rate_eras_T2_not_above_T1": [
       "2009–18"
-    ]
+    ],
+    "attribution_mean_d_annual": {
+      "T1": 0.008451019248522856,
+      "T2": 0.008628878555163772
+    },
+    "attribution_nw_t": {
+      "T1": 2.1018794297897965,
+      "T2": 2.1012071767852074
+    },
+    "trend_little_threshold_annual": 0.001
   }
 }

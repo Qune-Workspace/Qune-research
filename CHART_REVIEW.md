@@ -138,3 +138,53 @@ Accepted in full: no chart passed. Every title number the reviewer recomputed ag
 - **Spread (should-fix):** "never left the bond" read as permanent; the title now bounds the stretch by the window ("from September 2007 to December 2018 the rule held the bond"). The bill shading is one step darker (`GREY_FAINT`) on both shaded charts, so the 1989, 2000–01 and 2006–07 spells are visible.
 
 Nothing in `results/` was touched; no study was re-run; no verdict changed. Not done: the reviewer did not see the re-rendered charts; the fixes are checked by the author only.
+
+## Fourth review: Study 007 charts (Tester, 2026-10-25, between the 13:28 push and 13:32 GMT)
+
+Brief: chart standard of 2026-10-23, the five §9.6 charts of Study 007 as committed in `9d2d317` (time labels `91367d8`). Reviewer: a separate Tester agent on Opus 5.5 (the owner's instruction of 2026-10-25: no Fable), isolated, read-only, 166 s by the harness; it recomputed every title number with its own code from the three committed inputs.
+
+### Reviewer's report (unedited)
+
+**Study 007 chart check: FAIL (1 must-fix)**
+
+I looked at all five PNGs, read `make_charts.py` and `style.py`, and recomputed every title number with my own code from the three committed inputs, without importing `make_charts.py`. The input hashes in `manifest.json` match the committed files. All five charts use one font (DejaVu Sans), with the title at 13.5 pt and labels at 10 pt. Each has an SVG and a 2x PNG, and all ten files are committed. The period convention (rows dated by execution month, first holding period executed Jul 1974, last Dec 2018) is applied consistently. Running the windows by signal month instead would change the numbers, so the subtitle wording "by execution month" is correct and needed.
+
+**1. history_carry_and_weight: PASS**
+- note: carry is plotted at `execution_date`, not at the month-end signal date the subtitle names. That is a one-day shift and is not visible.
+- note: the chart has two panels, but they make one point (how the rule positions itself), so it is acceptable.
+
+**2. history_growth**
+- should-fix: "had the higher Sharpe" reads close to "beat", and the title gives no measure of noise. The house `report.headline` rule quotes a test statistic so the reader can weigh the verb. The study's own test of T1's Sharpe against B3 gives p = 0.15. The title also runs to four lines. Fix, as the title string: "Over 1974–2018 the carry tilt's Sharpe was 0.49 against 0.38 for the bond and the same-exposure mix (p = 0.15), but it ended below the bond; verdict inconclusive (fragile)".
+- note: minor tick marks show on the log y-axis. Fix: `ax.tick_params(axis="y", which="minor", length=0)`.
+
+**3. history_drawdown: PASS**
+- The footnote "bottomed with the February 1980 holding period" is correct: the trough is the period executed 1980-02-01 and ending 1980-03-03, signal month 1980-01. B3 also bottoms in that period.
+
+**4. history_differential_by_decade**
+- should-fix: "positive in every decade" reads as a consistent edge, yet no single decade is significant (t ranges from 0.37 in the 2000s to 1.90 in 2010–18). Fix: add to the title "; none alone significant (t 0.4 to 1.9)".
+- should-fix: there are two baselines. The 0% `axhline` sits just above the bottom spine at −0.1%. Fix: set the y-axis floor to 0 when every bar is positive (`ax.set_ylim(0, …)`), or call `despine(ax, keep=())` and keep the `axhline`.
+- note: the bar value labels are 9 pt; set them to `style.LABEL_SIZE` (10 pt).
+
+**5. history_trials_by_window**
+- **must-fix:** "adding trend raised it in 1974–81 and 1982–2008" overstates the result. The 1982–2008 gap is 0.05 percentage points a year (+0.62% for T2 against +0.58% for T1, t 1.32 against 1.18), which is noise. The README's attribution section concludes that trend adds nothing (+0.86% against +0.85% a year, both t 2.10). The script calls any positive difference "raised", with no noise threshold. Fix: replace the tail of the title with "adding trend changed little over the whole window (+0.86% against +0.85% a year, both t 2.10)". In the code, build that tail from `summary["cost_cases"]["base"]["attribution"]`, or apply a threshold the way `MATCHED_SHARPE_GAP` does.
+- should-fix: "all five windows" counts every month twice, because the two sub-windows and the three rate eras are two different splits of the same 534 months. Fix: "in both registered sub-windows and all three rate eras".
+- should-fix: the x-axis gives no visual cue that the two splits are separate. Fix: insert an empty slot or a faint vertical separator between group 2 and group 3, with small group captions "Registered sub-windows" and "Rate eras".
+- should-fix: the chart carries two messages (carry against the mix, and the trend increment), and T3 is shown but never mentioned in the title. If the trend tail is replaced as above, T3 can stay as context.
+- should-fix: the same double baseline as chart 4. The fix is the same.
+- note: the T1, T2 and T3 labels are the only series key and are 9 pt; set them to 10 pt.
+
+Title numbers: 22 values recomputed (carry 131 / 534 / 119 / 61; growth Sharpe 0.49296 / 0.38179 / 0.38139, end values 23.643 / 25.570 / 16.499, w 0.6056; drawdown −7.555% / −6.475% / −15.152%, trough period executed 1980-02; decade +0.289% / +1.498%, all five positive, 66 / 120 / 120 / 120 / 108 months; windows T1 positive in all five, highest t 1.9146, T2 > T1 in 1974–81 (2.13 vs 1.72) and 1982–2008 (0.62 vs 0.58, noise), T2 < T1 in 2009–18 (0.57 vs 0.92)): every one matches. "Every number in a title is arithmetically correct. The failures are in wording and layout, not in the data."
+
+**Overall verdict: FAIL (1 must-fix)**, plus 8 should-fix items.
+
+*(The reviewer's title-number table is given above as one paragraph with the same values; nothing in it was changed.)*
+
+### Author's response (Qune, 2026-10-25 13:3x GMT)
+
+All findings fixed in `charts/make_charts.py` and redrawn; checked by eye; no result file touched, nothing re-run, no verdict changed.
+- **Window chart (must-fix):** the trend clause is now built from the whole-window attribution rows in `summary.json` ("over the whole window adding trend changed little (+0.86% against +0.85% a year, both t 2.10)"), with "changed little" below a 0.1-point-a-year gap fixed in the script (`TREND_LITTLE`, written to the manifest). "All five windows" is now "both registered sub-windows and all three rate eras"; a gap, a faint separator and the two group captions split the axis; one baseline; series keys at 10 pt.
+- **Growth (should-fix):** title now "the carry tilt's Sharpe was 0.49 against 0.38 for the bond and the same-exposure mix (p = 0.15), but it ended below the bond; verdict inconclusive (fragile)", p from the study's own Ledoit–Wolf test against B3; minor ticks removed.
+- **Decade (should-fix):** "; none alone significant (t 0.4 to 1.9)" added, the t-statistics computed with the study's own Newey–West function (6 lags) and written to the manifest; one baseline; bar labels at 10 pt.
+- Notes on chart 1 (signal vs execution date, one day) accepted as they are.
+
+Not done: the reviewer did not see the re-rendered charts; the fixes are checked by the author only.

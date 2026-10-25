@@ -37,6 +37,13 @@ sys.path.insert(0, str(ROOT))
 
 from qune_research import style  # noqa: E402
 
+sys.path.insert(0, str(STUDY))
+from src.stats import newey_west_mean  # noqa: E402  (the study's own Newey-West, 6 lags)
+
+# Below this gap in the whole-window mean difference (a year) the trend increment is called
+# "little" (Tester chart check, 2026-10-25: a 0.05-point gap is noise, not "raised").
+TREND_LITTLE = 0.001
+
 STUDY_ID = "Study 007"
 SOURCE = "FRED DGS10, DGS7, DTB3; synthetic 8.5-year par bond and bill legs (Study 002's construction, frozen)"
 PERIOD = "Jul 1974 to Dec 2018, 534 monthly holding periods"
@@ -138,15 +145,14 @@ def growth_chart(monthly: pd.DataFrame, metrics: pd.DataFrame, numbers: dict) ->
     last = idx.iloc[-1]
     numbers.update(growth_sharpe_annual={"T1": float(sr["T1"]), **sr_b},
                    growth_final={k: float(v) for k, v in last.items()})
-    gap = float(sr["T1"]) - max(sr_b["B1"], sr_b["B3"])
-    verb = ("had the higher Sharpe" if gap >= 0.05 else
-            ("matched on Sharpe" if gap > -0.05 else "had the lower Sharpe"))
-    same = (f"{num(sr_b['B1'])} for holding the bond and for the same-exposure mix"
-            if num(sr_b["B1"]) == num(sr_b["B3"])
-            else f"{num(sr_b['B1'])} for holding the bond and {num(sr_b['B3'])} for the same-exposure mix")
-    ends = "ended below holding the bond" if last["T1"] < last["B1"] else "ended above holding the bond"
-    finding = (f"Over 1974–2018 the carry tilt {verb}, {num(float(sr['T1']))} against {same}, but {ends}; "
-               f"the verdict is inconclusive (fragile)")
+    p_lw = numbers["_lw_p_vs_B3"]
+    numbers["growth_ledoit_wolf_p_vs_B3"] = p_lw
+    same = (f"{num(sr_b['B1'])} for the bond and the same-exposure mix" if num(sr_b["B1"]) == num(sr_b["B3"])
+            else f"{num(sr_b['B1'])} for the bond and {num(sr_b['B3'])} for the same-exposure mix")
+    ends = "it ended below the bond" if last["T1"] < last["B1"] else "it ended above the bond"
+    # The Sharpe gap with its test, never a verb that reads as "beat" (Tester chart check, 2026-10-25).
+    finding = (f"Over 1974–2018 the carry tilt's Sharpe was {num(float(sr['T1']))} against {same} "
+               f"(p = {num(p_lw)}), but {ends}; verdict inconclusive (fragile)")
     fig, ax = style.figure(width=8.0, height=4.6)
     style.title(fig, finding, "Growth of 1 unit, log scale, Jul 1974 to Dec 2018: the carry tilt (T1), holding the "
                               "bond (B1), the same average exposure held throughout (B3, w 0.606). Sharpe over bills, "
@@ -158,6 +164,7 @@ def growth_chart(monthly: pd.DataFrame, metrics: pd.DataFrame, numbers: dict) ->
     ax.yaxis.set_major_locator(FixedLocator([1, 2, 5, 10, 20]))
     ax.yaxis.set_major_formatter(style.FuncFormatter(lambda v, _p: f"{v:,.0f}"))
     ax.yaxis.set_minor_formatter(style.FuncFormatter(lambda v, _p: ""))
+    ax.tick_params(axis="y", which="minor", length=0)
     ax.set_xlim(idx.index[0], idx.index[-1])
     log_end_labels(ax, [
         style.EndLabel(f"T1 {last['T1']:.1f}", float(last["T1"]), style.ACCENT),
@@ -202,12 +209,17 @@ def drawdown_chart(monthly: pd.DataFrame, numbers: dict) -> None:
 def decade_chart(monthly: pd.DataFrame, numbers: dict) -> None:
     d = monthly["T1"] - monthly["B3_T1"]
     year = monthly["execution_date"].dt.year
-    means, counts = {}, {}
+    means, counts, tstats = {}, {}, {}
     for label, lo, hi in DECADES:
         mask = (year >= lo) & (year <= hi)
         means[label], counts[label] = float(d[mask].mean() * 12.0), int(mask.sum())
+        tstats[label] = float(newey_west_mean(d[mask].reset_index(drop=True))["t"])
     assert sum(counts.values()) == len(monthly)
-    numbers.update(decade_mean_d_annual=means, decade_periods=counts)
+    numbers.update(decade_mean_d_annual=means, decade_periods=counts, decade_nw_t=tstats)
+    t_lo, t_hi = min(tstats.values()), max(tstats.values())
+    sig = ("none alone significant" if t_hi < 2.0 else
+           f"{sum(v >= 2.0 for v in tstats.values())} alone significant")
+    qual = f"; {sig} (t {num(t_lo, 1)} to {num(t_hi, 1)})"
     pos = [k for k in means if means[k] > 0]
     top = max(means, key=means.get)
     low = min(means, key=means.get)
@@ -217,10 +229,11 @@ def decade_chart(monthly: pd.DataFrame, numbers: dict) -> None:
 
     if len(pos) == len(means):
         finding = (f"The tilt's edge over the same-exposure mix was positive in every decade, from "
-                   f"{signed_pct(means[low])} a year in {name(low)} to {signed_pct(means[top])} in {name(top)}")
+                   f"{signed_pct(means[low])} a year in {name(low)} to {signed_pct(means[top])} in {name(top)}{qual}")
     else:
         finding = (f"The tilt's edge over the same-exposure mix was positive in {len(pos)} of {len(means)} decades, "
-                   f"from {signed_pct(means[low])} a year in {name(low)} to {signed_pct(means[top])} in {name(top)}")
+                   f"from {signed_pct(means[low])} a year in {name(low)} to {signed_pct(means[top])} in {name(top)}"
+                   f"{qual}")
     fig, ax = style.figure(width=8.0, height=4.8)
     style.title(fig, finding, "Mean monthly difference T1 − B3, annualised (× 12), %, by decade of the execution "
                               "date, Jul 1974 to Dec 2018. Descriptive, no decision weight.")
@@ -231,10 +244,11 @@ def decade_chart(monthly: pd.DataFrame, numbers: dict) -> None:
     for bar, k in zip(bars, labels, strict=True):
         ax.annotate(f"{signed_pct(means[k])} ({counts[k]} mo)", (bar.get_x() + bar.get_width() / 2,
                     max(means[k], 0.0)), xytext=(0, 4), textcoords="offset points", ha="center", va="bottom",
-                    fontsize=style.TICK_SIZE, color=style.TEXT)
-    ax.set_ylim(min(min(means.values()) * 1.6, -0.001), max(means.values()) * 1.2)
+                    fontsize=style.LABEL_SIZE, color=style.TEXT)
+    floor = 0.0 if min(means.values()) > 0 else min(means.values()) * 1.6
+    ax.set_ylim(floor, max(means.values()) * 1.2)
     style.percent_axis(ax, decimals=1)
-    style.despine(ax, keep=("bottom",))
+    style.despine(ax, keep=())  # one baseline: the zero line drawn above
     style.source(fig, SOURCE, PERIOD, STUDY_ID, note="Bars in time order (decades are ordered, not ranked). Run once; "
                                                      f"results/history/monthly_base.csv. {VERDICT}")
     style.save(fig, HERE / "history_differential_by_decade")
@@ -258,17 +272,23 @@ def window_chart(summary: dict, numbers: dict) -> None:
     up = [eras[k].split("\n")[0] for k in eras if vals["T2"][k] > vals["T1"][k]]
     down = [eras[k].split("\n")[0] for k in eras if vals["T2"][k] <= vals["T1"][k]]
     numbers.update(window_T1_max_t=t1_max_t, rate_eras_T2_above_T1=up, rate_eras_T2_not_above_T1=down)
-    lead = ("Carry alone was ahead of the same-exposure mix in all five windows" if t1_all_pos
-            else "Carry alone was not ahead of the same-exposure mix in every window")
-    tail = (f"adding trend raised it in {' and '.join(up) if up else 'no rate era'}"
-            + (f" and lowered it in {' and '.join(down)}" if down else ""))
-    finding = f"{lead}, but no window alone reached t = 2 (highest {num(t1_max_t)}); {tail}"
+    lead = ("Carry alone was ahead of the same-exposure mix in both registered sub-windows and all three rate eras"
+            if t1_all_pos else "Carry alone was not ahead of the same-exposure mix in every window")
+    att = summary["cost_cases"]["base"]["attribution"]
+    a1, a2 = float(att["T1"]["mean_d_annual"]), float(att["T2"]["mean_d_annual"])
+    t1w, t2w = float(att["T1"]["t"]), float(att["T2"]["t"])
+    numbers.update(attribution_mean_d_annual={"T1": a1, "T2": a2}, attribution_nw_t={"T1": t1w, "T2": t2w},
+                   trend_little_threshold_annual=TREND_LITTLE)
+    ts = f"both t {num(t1w)}" if num(t1w) == num(t2w) else f"t {num(t2w)} and {num(t1w)}"
+    change = "changed little" if abs(a2 - a1) < TREND_LITTLE else ("raised it" if a2 > a1 else "lowered it")
+    finding = (f"{lead}, but none alone reached t = 2 (highest {num(t1_max_t)}); over the whole window adding trend "
+               f"{change} ({signed_pct(a2, 2)} against {signed_pct(a1, 2)} a year, {ts})")
     fig, ax = style.figure(width=8.6, height=5.8)
     fig.subplots_adjust(bottom=0.24)
     style.title(fig, finding, "Mean monthly difference to each trial's own B3, annualised (× 12), %, by sub-window "
                               "(registered) and rate era (by execution month). Carry tilt T1 (accent), carry + "
                               "trend T2 and trend alone T3 (greys). Descriptive, no decision weight.")
-    x = np.arange(len(keys))
+    x = np.array([0.0, 1.0, 2.6, 3.6, 4.6])  # a gap between the two splits of the same 534 months
     width = 0.26
     colors = {"T1": style.ACCENT, "T2": style.GREY, "T3": style.GREY_LIGHT}
     for j, t in enumerate(trials):
@@ -276,17 +296,22 @@ def window_chart(summary: dict, numbers: dict) -> None:
         bars = ax.bar(x + (j - 1) * width, heights, width=width * 0.92, color=colors[t])
         first = bars[0]
         ax.annotate(t, (first.get_x() + first.get_width() / 2, max(heights[0], 0.0)), xytext=(0, 3),
-                    textcoords="offset points", ha="center", va="bottom", fontsize=style.TICK_SIZE,
+                    textcoords="offset points", ha="center", va="bottom", fontsize=style.LABEL_SIZE,
                     color=style.TEXT if t == "T1" else style.TEXT_MUTED)
     ax.axhline(0.0, color=style.GREY, lw=0.8)
+    ax.axvline(1.8, color=style.GREY_FAINT, lw=0.8)
+    for xc, cap in ((0.5, "Registered sub-windows"), (3.6, "Rate eras")):
+        ax.text(xc, 1.0, cap, transform=ax.get_xaxis_transform(), ha="center", va="bottom",
+                fontsize=style.LABEL_SIZE, color=style.TEXT_MUTED)
     ax.set_xticks(x, [s for _k, s in WINDOWS])
     ax.tick_params(axis="x", length=0)
     style.percent_axis(ax, decimals=1)
     allv = [v for t in trials for v in vals[t].values()]
-    ax.set_ylim(min(min(allv) * 1.3, -0.001), max(allv) * 1.2)
-    style.despine(ax, keep=("bottom",))
-    style.source(fig, SOURCE, PERIOD, STUDY_ID, note="Windows in time order within each group (not ranked); the first "
-                                                     "two partition the window, the last three are the rate eras. Run "
+    ax.set_ylim(0.0 if min(allv) > 0 else min(allv) * 1.3, max(allv) * 1.2)
+    style.despine(ax, keep=())  # one baseline: the zero line drawn above
+    style.source(fig, SOURCE, PERIOD, STUDY_ID, note="Windows in time order within each group (not ranked); the two "
+                                                     "groups are two splits of the same 534 months. Whole-window figures: "
+                                                     "summary.json, attribution. Run "
                                                      f"once; results/history/summary.json. {VERDICT}")
     style.save(fig, HERE / "history_trials_by_window")
 
@@ -295,14 +320,17 @@ def main() -> int:
     style.apply()
     monthly, metrics, summary, hashes = load()
     desc = summary["cost_cases"]["base"]["descriptive"]["T1"]
+    lw = summary["cost_cases"]["base"]["inference"]["T1"]["vs_B3"]["ledoit_wolf"]["p_value"]
     numbers: dict = {"_benchmark_sharpe": {"B1": float(desc["B1"]["sharpe_annual"]),
-                                           "B3": float(desc["B3"]["sharpe_annual"])}}
+                                           "B3": float(desc["B3"]["sharpe_annual"])},
+                     "_lw_p_vs_B3": float(lw)}
     carry_chart(monthly, numbers)
     growth_chart(monthly, metrics, numbers)
     drawdown_chart(monthly, numbers)
     decade_chart(monthly, numbers)
     window_chart(summary, numbers)
     numbers.pop("_benchmark_sharpe")
+    numbers.pop("_lw_p_vs_B3")
     outputs = sorted(str(p.relative_to(ROOT)) for p in HERE.glob("history_*.*"))
     commit = subprocess.run(["git", "rev-parse", "HEAD"], cwd=ROOT, capture_output=True, text=True).stdout.strip()
     manifest = {"made_at_utc": datetime.now(UTC).isoformat(timespec="seconds"), "repository_commit_at_run": commit,

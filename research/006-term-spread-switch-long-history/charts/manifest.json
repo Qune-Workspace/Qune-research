@@ -1,0 +1,59 @@
+{
+  "made_at_utc": "2026-10-25T04:25:46+00:00",
+  "repository_commit_at_run": "abac75df44f1b7f2f10976a8ec071c78ad4b70b4",
+  "inputs_sha256": {
+    "research/006-term-spread-switch-long-history/results/history/monthly_base.csv": "775a5a8f4d93c320106d54b333a412a468e37455f1a23c140a89c77488d48848",
+    "research/006-term-spread-switch-long-history/results/history/metrics_base.csv": "4ba00cc29b4f6f9e7233207e004f7d2f181a6732f34a54b065aab43040076c1b"
+  },
+  "outputs": [
+    "research/006-term-spread-switch-long-history/charts/history_differential_by_decade.png",
+    "research/006-term-spread-switch-long-history/charts/history_differential_by_decade.svg",
+    "research/006-term-spread-switch-long-history/charts/history_drawdown.png",
+    "research/006-term-spread-switch-long-history/charts/history_drawdown.svg",
+    "research/006-term-spread-switch-long-history/charts/history_growth.png",
+    "research/006-term-spread-switch-long-history/charts/history_growth.svg",
+    "research/006-term-spread-switch-long-history/charts/history_spread_and_holdings.png",
+    "research/006-term-spread-switch-long-history/charts/history_spread_and_holdings.svg"
+  ],
+  "numbers_in_titles": {
+    "spread_month_ends": 593,
+    "spread_inverted_month_ends": 77,
+    "spread_inverted_before_1982": 54,
+    "spread_last_inverted_execution": "2007-08-01",
+    "growth_sharpe_annual": {
+      "T1": 0.4633307128679601,
+      "B1": 0.3383793911732068,
+      "B3": 0.3382463013753583
+    },
+    "growth_final": {
+      "T1": 44.41411605927124,
+      "B1": 32.730228155713704,
+      "B3": 28.65731637335485
+    },
+    "drawdown_monthly_max": {
+      "T1": -0.09756657868624696,
+      "B1": -0.151520869058147,
+      "B3": -0.12360899448239593
+    },
+    "drawdown_B1_trough": "1980-03-03",
+    "drawdown_cut_share_vs_B1": 0.35608487931253063,
+    "decade_mean_d_annual": {
+      "1969–79": 0.0194444794170466,
+      "1980s": 0.01742456434628278,
+      "1990s": 0.003684129910725538,
+      "2000s": -0.0010493082536634007,
+      "2010–18": 0.004843705161427278
+    },
+    "decade_periods": {
+      "1969–79": 125,
+      "1980s": 120,
+      "1990s": 120,
+      "2000s": 120,
+      "2010–18": 108
+    },
+    "decade_without_a_bill_month": [
+      "1990s",
+      "2010–18"
+    ]
+  }
+}

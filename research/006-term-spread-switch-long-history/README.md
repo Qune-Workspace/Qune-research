@@ -68,10 +68,25 @@ Study 002's copied engine also writes Study 001's three sub-periods by signal mo
 - **Against simply holding the bond the gain is not distinguishable from zero** (t 1.16). C2 is defined against the exposure-matched B3 on purpose, but a reader comparing with B1 should know this.
 - **The effect is below the design size.** The observed +0.9% a year sits under the 1.5% a year the test could detect with 80% power; an estimate that clears t = 2 at below-design size is likely to overstate the true effect (inferred, not measured).
 - **The gate is thinner than its pass suggests** (12 cash months behind G1; fidelity before 2003 assumed).
-- **Charts:** the engine's diagnostic chart ([`results/history/main_chart.png`](results/history/main_chart.png)) is Study 002's unchanged code and not to the house standard; the §9.6 charts in house style are not drawn yet.
+- **Charts:** the engine's diagnostic chart ([`results/history/main_chart.png`](results/history/main_chart.png)) is Study 002's unchanged code and not to the house standard; the §9.6 charts in house style are not drawn yet. *(2026-10-25 04:2x London: drawn, see the Charts section below; Tester chart check not yet run.)*
 
 ## Next
 
 1. ~~The 2019–2026 episode~~ run once on 2026-10-25 (section above).
-2. Separate-session recomputation (`review_recompute.py`, `REVIEW.md`), as Studies 001–005; house-style charts with a chart check.
+2. Separate-session recomputation (`review_recompute.py`, `REVIEW.md`), as Studies 001–005; house-style charts with a chart check. *(2026-10-25 04:2x London: charts drawn; chart check and recomputation still to come.)*
 3. The forward record (§11): decision records from the 2026-10-30 month end, shadow lines after each execution, scored once after 60 periods. Its code is not built yet; it must be before 2026-10-30. *(2026-10-25 04:2x London: built and tested, `src/forward.py`, 16 tests; see `paper-log/README.md` and the §16 entry of the same time. Not yet run on a forward month.)*
+
+## Charts (§9.6, added 2026-10-25 04:2x London; descriptive, no decision weight)
+
+Drawn by [`charts/make_charts.py`](charts/make_charts.py) from the committed history files only (`results/history/monthly_base.csv`, `metrics_base.csv`); every title is computed from the numbers, which are listed with the input hashes in [`charts/manifest.json`](charts/manifest.json). Nothing was re-run. Tester chart check not yet run.
+
+![The curve was inverted at 77 of 593 month ends](charts/history_spread_and_holdings.png)
+
+![Growth of the spread switch against holding the bond and the same-exposure mix](charts/history_growth.png)
+
+![Drawdown of the spread switch against holding the bond](charts/history_drawdown.png)
+
+![The switch's edge over the same-exposure mix by decade](charts/history_differential_by_decade.png)
+
+The decade chart separates timing from exposure: in the 1990s and 2010–2018 the rule never held bills, so those two bars are only the gap between holding the bond and the 87% mix, (1 − w)(bond − bill). The timing advantage sits in 1969–1989 (+1.9% and +1.7% a year against the same-exposure mix); in the 2000s, the only later decade with bill months, it was −0.1%.
+

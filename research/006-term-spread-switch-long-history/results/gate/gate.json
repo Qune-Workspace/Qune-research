@@ -1,0 +1,88 @@
+{
+  "study": "006",
+  "section": "PREREGISTRATION.md \u00a75.3",
+  "outcome": "PASS",
+  "bounds": {
+    "G1_max_annual": 0.0018,
+    "G2_max": 0.32
+  },
+  "gate_T1": {
+    "periods": 192,
+    "w_o": 0.9375,
+    "G1_bias_annual": 7.627286918677556e-05,
+    "G1_pass": true,
+    "G2_noise_ratio": 0.13140878732605116,
+    "G2_pass": true,
+    "mean_e_annual_signed": 7.627286918677556e-05,
+    "mean_g_annual": 2.2031566745107922e-05,
+    "corr_g_x_etf": 0.22312141731673127,
+    "switches": 6
+  },
+  "descriptive_no_decision_weight": {
+    "split_2003_2007": {
+      "periods": 60,
+      "w_o": 0.8,
+      "G1_bias_annual": 0.0006436332128424516,
+      "G1_pass": true,
+      "G2_noise_ratio": 0.11522630364775072,
+      "G2_pass": true,
+      "mean_e_annual_signed": 0.0006436332128424516,
+      "mean_g_annual": 0.0020198317239689565,
+      "corr_g_x_etf": 0.6811079074716059,
+      "switches": 6
+    },
+    "split_2008_2018": {
+      "periods": 132,
+      "w_o": 1.0,
+      "G1_bias_annual": 0.0,
+      "G1_pass": true,
+      "G2_noise_ratio": 0.13772710448750516,
+      "G2_pass": true,
+      "mean_e_annual_signed": 0.0,
+      "mean_g_annual": -0.0008860594138111869,
+      "corr_g_x_etf": 0.06275409267012023,
+      "switches": 0
+    },
+    "T2": {
+      "periods": 192,
+      "w_o": 0.9479166666666666,
+      "G1_bias_annual": 9.144852842796132e-05,
+      "G1_pass": true,
+      "G2_noise_ratio": 0.13140878732605116,
+      "G2_pass": true,
+      "mean_e_annual_signed": -9.144852842796132e-05,
+      "mean_g_annual": 2.2031566745107922e-05,
+      "corr_g_x_etf": 0.22312141731673127,
+      "switches": 2
+    },
+    "T3": {
+      "periods": 192,
+      "w_o": 0.9479166666666666,
+      "G1_bias_annual": 0.00013588902498452913,
+      "G1_pass": true,
+      "G2_noise_ratio": 0.13140878732605116,
+      "G2_pass": true,
+      "mean_e_annual_signed": 0.00013588902498452913,
+      "mean_g_annual": 2.2031566745107922e-05,
+      "corr_g_x_etf": 0.22312141731673127,
+      "switches": 4
+    }
+  },
+  "descriptive_note": "Splits and T2/T3 use their own w (each computed as the gate would be on that subset or signal).",
+  "overlap": {
+    "first_execution": "2003-01-02",
+    "last_period_end": "2019-01-02",
+    "ief_vendor_counts": {
+      "tiingo": 156,
+      "alpaca": 36
+    },
+    "bil_vendor_counts": {
+      "tiingo": 103,
+      "synthetic cash": 53,
+      "alpaca": 36
+    },
+    "first_bil_execution": "2007-06-01"
+  },
+  "run_at_utc": "2026-10-25T03:22:29Z",
+  "code_commit": "392b7e1acfc3ddbf65325ce203ecdbf08cfe38f2"
+}

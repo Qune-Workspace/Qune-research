@@ -11,9 +11,10 @@
 # No data are fetched: the inputs are Study 006's files, copied after a
 # SHA-256 check against results/data_manifest.json (§5.1).
 #
-# State of the build (§14 step 3): --gate and --volcheck are built (src/gate007.py,
-# src/volcheck007.py); --history and --episode stop after the two gates with
-# "not built yet". Nothing has run on data.
+# Each mode runs its module after the two gates (src/gate007.py, src/volcheck007.py,
+# src/history007.py, src/episode007.py); the modules add their own refusals
+# (a passed gate before the volatility check and the history, the committed
+# note before the episode).
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")"
 
@@ -61,7 +62,6 @@ echo "[2/2] run $mode"
 case "$mode" in
   --gate)     exec "$PYTHON" -m src.gate007 ;;
   --volcheck) exec "$PYTHON" -m src.volcheck007 ;;
-  *)
-    echo "refused: $mode is not built yet (PREREGISTRATION.md §14 step 3 in progress); nothing was run." >&2
-    exit 1 ;;
+  --history)  exec "$PYTHON" -m src.history007 ;;
+  --episode)  exec "$PYTHON" -m src.episode007 ;;
 esac

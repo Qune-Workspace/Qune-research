@@ -1,0 +1,46 @@
+Agenda questions 2 and 5: minimum detectable timing edge of the C2 test, committed before either question is fixed
+(inputs: committed result files of Studies 003, 004 and 006 only; nothing fetched, no yield series read)
+
+Anchors reproduced before anything is reported
+  003 in-sample: 185 months, NW t 0.37 (published 0.37), w 0.692 (published 0.692); NW / i.i.d. 0.972; product form / actual 1.193; IEF excess-return volatility 6.26% a year
+  006 history: 593 periods, 77 bill months, w 0.8702 (published 0.8702), synthetic 7-10y leg sigma 7.75% (published 7.75%)
+  004 signal_vol (trailing close-to-close, ex-ante, rms over 181 signal dates): SHY 1.37%, IEF 6.51%, TLT 13.45%
+  calibration: 003 realised IEF / 004 ex-ante IEF = 0.962; proxies used below: SHY 1.32%, IEF 6.26%, TLT 12.93% a year
+
+MDE = (2.0 + 0.842) x 12 x NW standard error of the mean monthly differential (C2 bar, 80% power), product form
+sd(T1 - B3) = sqrt(w(1-w)) x sigma_leg; 'conservative' keeps the product form, 'calibrated' divides by the 003 factor.
+
+Question 5: the term-spread switch on IEF, 2003-07 to 2018-11 (the 185 months Study 003 used)
+  Signal path already published (Study 006, results/history/monthly_base.csv): 12 bill months of 185, w 0.935
+  bill months: 2006-02, 2006-07, 2006-08, 2006-09, 2006-10, 2006-11, 2006-12, 2007-01, 2007-02, 2007-03, 2007-04, 2007-07
+  C2-bar MDE at that w and 185 months: conservative 1.08%, calibrated 0.91% a year
+  Upper bound on the timing part of the mean differential, |(1/N) sum over bill months of x|, at the ETF-era rms(x) 1.831% a month: 1.42% a year
+  Reading: the MDE clears the 2% bar only because the rule hardly ever leaves the bond; the largest edge twelve bill months
+  could carry is about the same size as the MDE, so the test could at best just see a perfect call. Study 006 has already
+  published this window on synthetic legs that passed a fidelity gate against IEF over these same months (G1 bias 0.008% a
+  year): the 2000s decade bar is -0.1% a year and 2010-2018 is exposure only. Not computed here: the differential on actual
+  IEF over the twelve months, which would be question 5's result.
+
+Question 2: bond carry, and carry plus trend, in Treasuries (SHY, IEF, TLT against bills)
+  Leg against bills, worst case w = 0.5, ETF era (185 months) and the long history (593 months) at the same leg volatility:
+  leg     sigma (proxy)   MDE 185 cons.   MDE 185 calib.   MDE 593 cons.   months for 2%/yr (cons.)   months for 1%/yr (cons.)
+  SHY        1.32%         0.46%           0.39%            0.26%                10                         40
+  IEF        6.26%         2.20%           1.84%            1.23%               224                        897
+  TLT       12.93%         4.55%           3.81%            2.54%               956                       3824
+  006 synthetic 7-10y leg, sigma 7.75%, 593 months, w = 0.5: MDE 1.52% a year (006's volcheck.json committed 1.52% at its data step)
+  Switch between maturities (TLT against SHY, duration timing inside Treasuries), w = 0.5, 185 months, conservative:
+    sigma(TLT - SHY) lies between 11.61% and 14.25% (no committed correlation), so the MDE lies between 4.08% and 5.01% a year
+
+The bar in return units is leg-independent in Sharpe units: MDE / sigma_leg = K x nw x sqrt(w(1-w)) / sqrt(12 N):
+  185 months, w = 0.5: 0.352; 593 months, w = 0.5: 0.196
+  so the 2% a year bar is weak for a low-volatility leg (SHY passes it with an edge the leg can hardly carry) and strict
+  for TLT. A Sharpe-unit statement belongs beside the return-unit one in any pre-registration that follows.
+
+Reading for question 2: on the ETF era alone no carry design on IEF or TLT clears the 2% a year bar under the committed
+conservative form at w = 0.5 (IEF 2.20%, TLT 4.55%); IEF's calibrated figure (1.84%) does. A powered version needs the
+long constant-maturity history: carry (yield over bills plus roll-down) read from the same FRED curve Study 006 already
+holds, on 006's frozen synthetic 7-10y leg over 1969-2018, MDE 1.52% a year at w = 0.5. That window is not untouched for
+the instrument (006's three trend/spread trials ran on it; programme family count would rise from 3), and the 2019-2026
+IEF/BIL window is spent (METHODS section 2.5), so the test would be the long history plus a forward record, as for 006.
+Assumptions stated now: the NW/i.i.d. factor (0.972) and the product form carry over; SHY and TLT volatilities are
+ex-ante proxies calibrated on IEF, not realised monthly-return volatilities; a carry rule's w is unknown, 0.5 is the worst case.

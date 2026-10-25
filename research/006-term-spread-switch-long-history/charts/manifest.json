@@ -1,6 +1,6 @@
 {
-  "made_at_utc": "2026-10-25T04:25:46+00:00",
-  "repository_commit_at_run": "abac75df44f1b7f2f10976a8ec071c78ad4b70b4",
+  "made_at_utc": "2026-10-25T05:21:29+00:00",
+  "repository_commit_at_run": "c178c2333d2f86a0c00d6dfeb58c799ed1734f94",
   "inputs_sha256": {
     "research/006-term-spread-switch-long-history/results/history/monthly_base.csv": "775a5a8f4d93c320106d54b333a412a468e37455f1a23c140a89c77488d48848",
     "research/006-term-spread-switch-long-history/results/history/metrics_base.csv": "4ba00cc29b4f6f9e7233207e004f7d2f181a6732f34a54b065aab43040076c1b"
@@ -20,6 +20,7 @@
     "spread_inverted_month_ends": 77,
     "spread_inverted_before_1982": 54,
     "spread_last_inverted_execution": "2007-08-01",
+    "spread_bond_only_from_execution": "2007-09-04",
     "growth_sharpe_annual": {
       "T1": 0.4633307128679601,
       "B1": 0.3383793911732068,
@@ -36,7 +37,9 @@
       "B3": -0.12360899448239593
     },
     "drawdown_B1_trough": "1980-03-03",
+    "drawdown_B1_trough_holding_period": "1980-02",
     "drawdown_cut_share_vs_B1": 0.35608487931253063,
+    "drawdown_cut_share_vs_B3": 0.21068382527662954,
     "decade_mean_d_annual": {
       "1969–79": 0.0194444794170466,
       "1980s": 0.01742456434628278,
@@ -54,6 +57,13 @@
     "decade_without_a_bill_month": [
       "1990s",
       "2010–18"
-    ]
+    ],
+    "decade_share_of_summed_edge": {
+      "1969–79": 0.45339446037057113,
+      "1980s": 0.3900435053235343,
+      "1990s": 0.08246811316996976,
+      "2000s": -0.023488442023005342,
+      "2010–18": 0.09758236315893011
+    }
   }
 }

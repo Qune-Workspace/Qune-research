@@ -1,0 +1,10 @@
+# Direct dependencies of Study 001 (PREREGISTRATION.md §13), pinned to the
+# versions the tests were run with.  scipy is a dependency of statsmodels and
+# is used directly for the normal distribution in src/stats.py.
+numpy==2.5.4
+pandas==3.0.6
+matplotlib==3.11.2
+statsmodels==0.15.0
+scipy==1.18.1
+requests==2.34.2
+pytest==9.1.1

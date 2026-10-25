@@ -26,6 +26,7 @@ jobs:
           - research/004-xasset-trend-voltarget
           - research/005-duration-trend-regime
           - research/006-term-spread-switch-long-history
+          - research/007-bond-carry-tilt-long-history
           - qune_research
           - desk-view
     steps:

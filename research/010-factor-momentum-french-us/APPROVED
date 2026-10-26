@@ -1,0 +1,2 @@
+Approved by the orchestrator (Qune) under the owner's delegation of 2026-10-21, after the separate-session code review and its re-check (CODE_REVIEW.md: first review FAIL with one must-fix at 1839e5a; fixes 55aa9e3; re-check PASS).
+PREREGISTRATION.md §14 step 4. Written 2026-10-26; the commit time is the record. Next: §14 step 5 (programme-wide re-count and the history-run row in trials.md, committed and pushed), then step 6 (./reproduce.sh --history, once).

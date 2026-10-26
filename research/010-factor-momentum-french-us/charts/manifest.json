@@ -1,0 +1,148 @@
+{
+  "made_at_utc": "2026-10-26T11:18:43+00:00",
+  "repository_commit_at_run": "5eec86a319f2e13c72796d2b70d1f03c4943d462",
+  "inputs_sha256": {
+    "research/010-factor-momentum-french-us/results/history/monthly_base.csv": "cd08c42f5495c6b368d4d35385acf7eda0e77db79ab8d35b9e77fb4001b46dac",
+    "research/010-factor-momentum-french-us/results/history/summary.json": "8dddc2841fdc51baf473ebd4d4a6ed058999a7e6726088f43eab27c74a6a3ddd"
+  },
+  "outputs": [
+    "research/010-factor-momentum-french-us/charts/history_cumulative_d.png",
+    "research/010-factor-momentum-french-us/charts/history_cumulative_d.svg",
+    "research/010-factor-momentum-french-us/charts/history_d_by_decade.png",
+    "research/010-factor-momentum-french-us/charts/history_d_by_decade.svg",
+    "research/010-factor-momentum-french-us/charts/history_factor_contributions.png",
+    "research/010-factor-momentum-french-us/charts/history_factor_contributions.svg",
+    "research/010-factor-momentum-french-us/charts/history_trials_by_window.png",
+    "research/010-factor-momentum-french-us/charts/history_trials_by_window.svg"
+  ],
+  "numbers_in_titles": {
+    "cumulative_d_peak_pp": 278.1382092653963,
+    "cumulative_d_peak_month": "2000-02",
+    "cumulative_d_end_pp": 254.89728001341376,
+    "cumulative_d_given_back_pp": 23.24092925198255,
+    "window_mean_d_pct_a_year": {
+      "P1": 4.012084276355299,
+      "L": 2.0301212242643536,
+      "P2": 0.36383266788229385
+    },
+    "window_nw_t": {
+      "P1": 2.966342812917137,
+      "L": 2.6448252657026,
+      "P2": 0.18055466513953336
+    },
+    "decade_mean_d_pct_a_year": {
+      "1920s": 10.564024649859943,
+      "1930s": 5.341469956996884,
+      "1940s": 4.945920543851344,
+      "1950s": 1.0897164043082022,
+      "1960s": 2.801484347260031,
+      "1970s": 5.125578793348326,
+      "1980s": 1.5548697064741392,
+      "1990s": 2.7611425287016216,
+      "2000s": -0.8737074032429867,
+      "2010s": -0.22453300686471725,
+      "2020s": 0.4901699520653333
+    },
+    "decade_months": {
+      "1920s": 30,
+      "1930s": 120,
+      "1940s": 120,
+      "1950s": 120,
+      "1960s": 120,
+      "1970s": 120,
+      "1980s": 120,
+      "1990s": 120,
+      "2000s": 120,
+      "2010s": 120,
+      "2020s": 80
+    },
+    "decade_nw_t": {
+      "1920s": 1.9221525016202514,
+      "1930s": 1.3575730514260806,
+      "1940s": 2.458403996967773,
+      "1950s": 0.9761037143693263,
+      "1960s": 2.3792618600633415,
+      "1970s": 3.297375013166111,
+      "1980s": 1.0473684281982627,
+      "1990s": 1.3707818657958757,
+      "2000s": -0.44332167911318887,
+      "2010s": -0.14599001880044152,
+      "2020s": 0.17923490207133266
+    },
+    "decade_negative": [
+      "2000s",
+      "2010s"
+    ],
+    "factor_contribution_net_pct_a_year": {
+      "SMB": 0.6889817103311912,
+      "HML": 0.6065071675729115,
+      "ST_Rev": 0.3695468964056212,
+      "LT_Rev": 0.9053569653213398
+    },
+    "factor_contribution_net_nw_t": {
+      "SMB": 2.412648193776538,
+      "HML": 1.9486449114444813,
+      "ST_Rev": 1.239025894930866,
+      "LT_Rev": 2.961154258674343
+    },
+    "factor_contributions_sum_pct_a_year": 2.5703927396310635,
+    "factor_net_t_ge_2": [
+      "SMB",
+      "LT_Rev"
+    ],
+    "window_trials_mean_d_pct_a_year": {
+      "T1": {
+        "P1": 4.012084276355299,
+        "L": 2.0301212242643536,
+        "P2": 0.36383266788229385
+      },
+      "T1a": {
+        "P1": 3.3015882352941173,
+        "L": 2.3078857142857143,
+        "P2": 0.5696360294117649
+      },
+      "T1b": {
+        "P1": -0.5274838769327539,
+        "L": 1.1871052629808492,
+        "P2": 1.4337088871341002
+      }
+    },
+    "window_trials_nw_t": {
+      "T1": {
+        "P1": 2.966342812917137,
+        "L": 2.6448252657026,
+        "P2": 0.18055466513953336
+      },
+      "T1a": {
+        "P1": 1.9069046144374233,
+        "L": 2.2462144633692094,
+        "P2": 0.21595287216898557
+      },
+      "T1b": {
+        "P1": -0.35643830961928175,
+        "L": 1.549006753401543,
+        "P2": 0.7582548858330919
+      }
+    },
+    "window_trials_months": {
+      "T1": {
+        "P1": 432,
+        "L": 630,
+        "P2": 128
+      },
+      "T1a": {
+        "P1": 432,
+        "L": 630,
+        "P2": 128
+      },
+      "T1b": {
+        "P1": 432,
+        "L": 630,
+        "P2": 128
+      }
+    },
+    "window_companions_falling_in_order": [
+      "T1a"
+    ]
+  }
+}

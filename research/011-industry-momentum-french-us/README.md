@@ -104,7 +104,7 @@ Drawn from the committed history files by [`charts/make_charts.py`](charts/make_
 
 1. ~~Separate-session recomputation~~ done 2026-10-26 (above).
 2. ~~Charts (§14 step 9) and a Tester chart check~~: done 2026-10-26 (above).
-3. Forward record code (`forward011.py`) with tests and a separate code review, before the first forward month is due (§11); shadow only, scored once after 60 holding months as a low-power check (detectable Sharpe of d about 1.27).
+3. Forward record code (`forward011.py`) with tests and a separate code review, before the first forward month is due (§11); shadow only, scored once after 60 holding months as a low-power check (detectable Sharpe of d about 1.27). *Part 1 done 2026-10-26: monthly cohort records from the first release that contains t − 1; separate code review FAIL (must-fix: the release pattern did not match the 30-industry file's header, so the first record would have been refused) → fixed with eight more tests → first record 2026-09 from release 202608 in [`paper-log/`](paper-log/README.md), equal to the history's 2026-08 cohorts ([CODE_REVIEW.md](CODE_REVIEW.md), second part; §16 code decisions). Part 2 (fetch, interim, score) next.*
 
 ## References
 

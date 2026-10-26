@@ -1,0 +1,55 @@
+Cold-read point 3: synthetic leg (B1) vs Stocker (2025) Treasury Bulletin sector returns
+Source: doi:10.17632/j4c325yrgg.1 (CC BY 4.0); no decision weight; verdicts unchanged.
+
+returns_05_10.csv sha256 0bb2e94ee5df82dc4c42e95d04965f55c3ee98f3c2e9c19bb56033a7061b44ad
+  months parsed: 490 (1942-01..1982-10)
+  006: 1969-08..1982-10 n=159  mean(g)x12 -0.229%  sd(g)xsqrt12 2.614%  corr(B1,S) 0.960  corr(g,S) +0.210  G2-style 0.316 (bound 0.32)  G1-style 0.626% (bound 0.18%, w 0.6604; signed mean(e)x12 +0.626%, + = the synthetic leg flatters T1 - B3; as a share of the full 593-period window +0.168% a year if the other periods had none)  sector mod. duration mean 5.10, 8.5y par at sector yield 6.00
+  007: 1974-07..1982-10 n=100  mean(g)x12 -0.157%  sd(g)xsqrt12 3.066%  corr(B1,S) 0.954  corr(g,S) +0.177  G2-style 0.334 (bound 0.32)  G1-style 0.570% (bound 0.18%, w 0.5071; signed mean(e)x12 +0.570%, + = the synthetic leg flatters T1 - B3; as a share of the full 534-period window +0.107% a year if the other periods had none)  sector mod. duration mean 5.05, 8.5y par at sector yield 5.77
+  008: 1974-07..1982-10 n=100  mean(g)x12 -0.157%  sd(g)xsqrt12 3.066%  corr(B1,S) 0.954  corr(g,S) +0.177  G2-style 0.334 (bound 0.32)  G1-style 0.766% (bound 0.18%, w 0.4458; signed mean(e)x12 +0.766%, + = the synthetic leg flatters T1 - B3; as a share of the full 534-period window +0.143% a year if the other periods had none)  sector mod. duration mean 5.05, 8.5y par at sector yield 5.77
+  POST HOC, descriptive (chosen after the figures above were seen): sector excess over B0 scaled to the duration of an 8.5-year par bond at the sector's yield
+  006: 1969-08..1982-10 n=159  mean(g)x12 -0.102%  sd(g)xsqrt12 2.698%  corr(B1,S) 0.958  corr(g,S) -0.231  G2-style 0.286 (bound 0.32)  G1-style 0.282% (bound 0.18%, w 0.6604; signed mean(e)x12 +0.282%, + = the synthetic leg flatters T1 - B3; as a share of the full 593-period window +0.076% a year if the other periods had none)  sector mod. duration mean 5.10, 8.5y par at sector yield 6.00
+  007: 1974-07..1982-10 n=100  mean(g)x12 -0.066%  sd(g)xsqrt12 3.106%  corr(B1,S) 0.953  corr(g,S) -0.134  G2-style 0.306 (bound 0.32)  G1-style 0.367% (bound 0.18%, w 0.5071; signed mean(e)x12 +0.367%, + = the synthetic leg flatters T1 - B3; as a share of the full 534-period window +0.069% a year if the other periods had none)  sector mod. duration mean 5.05, 8.5y par at sector yield 5.77
+  008: 1974-07..1982-10 n=100  mean(g)x12 -0.066%  sd(g)xsqrt12 3.106%  corr(B1,S) 0.953  corr(g,S) -0.134  G2-style 0.306 (bound 0.32)  G1-style 0.589% (bound 0.18%, w 0.4458; signed mean(e)x12 +0.589%, + = the synthetic leg flatters T1 - B3; as a share of the full 534-period window +0.110% a year if the other periods had none)  sector mod. duration mean 5.05, 8.5y par at sector yield 5.77
+  calendar years by execution month (006 window; partial years marked *):
+    year  months  synthetic   Stocker     gap
+    1969       5*    -3.68%    -2.37%   -1.32%
+    1970      12    +17.17%   +16.34%   +0.83%
+    1971      12     +9.21%    +9.32%   -0.10%
+    1972      12     +3.27%    +3.99%   -0.73%
+    1973      12     +3.64%    +4.29%   -0.65%
+    1974      12     +3.88%    +5.24%   -1.36%
+    1975      12     +5.96%    +6.96%   -0.99%
+    1976      12    +15.48%   +14.86%   +0.62%
+    1977      12     +0.62%    +1.17%   -0.55%
+    1978      12     -0.26%    +0.28%   -0.54%
+    1979      12     +1.86%    +3.82%   -1.95%
+    1980      12     +0.60%    +2.70%   -2.10%
+    1981      12     +4.98%    +5.73%   -0.75%
+    1982      10*   +34.32%   +27.12%   +7.20%
+
+returns_03_10.csv sha256 987a7a1e3e85158708227665b9e17d858fbd6071f74ce4a0b560c8ba3314a748
+  months parsed: 490 (1942-01..1982-10)
+  006: 1969-08..1982-10 n=159  mean(g)x12 -0.486%  sd(g)xsqrt12 3.029%  corr(B1,S) 0.956  corr(g,S) +0.474  G2-style 0.413 (bound 0.32)  G1-style 0.922% (bound 0.18%, w 0.6604; signed mean(e)x12 +0.922%, + = the synthetic leg flatters T1 - B3; as a share of the full 593-period window +0.247% a year if the other periods had none)  sector mod. duration mean 4.11, 8.5y par at sector yield 6.01
+  007: 1974-07..1982-10 n=100  mean(g)x12 -0.510%  sd(g)xsqrt12 3.414%  corr(B1,S) 0.954  corr(g,S) +0.451  G2-style 0.418 (bound 0.32)  G1-style 0.853% (bound 0.18%, w 0.5071; signed mean(e)x12 +0.853%, + = the synthetic leg flatters T1 - B3; as a share of the full 534-period window +0.160% a year if the other periods had none)  sector mod. duration mean 4.10, 8.5y par at sector yield 5.77
+  008: 1974-07..1982-10 n=100  mean(g)x12 -0.510%  sd(g)xsqrt12 3.414%  corr(B1,S) 0.954  corr(g,S) +0.451  G2-style 0.418 (bound 0.32)  G1-style 0.936% (bound 0.18%, w 0.4458; signed mean(e)x12 +0.936%, + = the synthetic leg flatters T1 - B3; as a share of the full 534-period window +0.175% a year if the other periods had none)  sector mod. duration mean 4.10, 8.5y par at sector yield 5.77
+  POST HOC, descriptive (chosen after the figures above were seen): sector excess over B0 scaled to the duration of an 8.5-year par bond at the sector's yield
+  006: 1969-08..1982-10 n=159  mean(g)x12 -0.373%  sd(g)xsqrt12 3.129%  corr(B1,S) 0.953  corr(g,S) -0.468  G2-style 0.306 (bound 0.32)  G1-style 0.207% (bound 0.18%, w 0.6604; signed mean(e)x12 +0.207%, + = the synthetic leg flatters T1 - B3; as a share of the full 593-period window +0.056% a year if the other periods had none)  sector mod. duration mean 4.11, 8.5y par at sector yield 6.01
+  007: 1974-07..1982-10 n=100  mean(g)x12 -0.255%  sd(g)xsqrt12 3.387%  corr(B1,S) 0.951  corr(g,S) -0.381  G2-style 0.308 (bound 0.32)  G1-style 0.376% (bound 0.18%, w 0.5071; signed mean(e)x12 +0.376%, + = the synthetic leg flatters T1 - B3; as a share of the full 534-period window +0.070% a year if the other periods had none)  sector mod. duration mean 4.10, 8.5y par at sector yield 5.77
+  008: 1974-07..1982-10 n=100  mean(g)x12 -0.255%  sd(g)xsqrt12 3.387%  corr(B1,S) 0.951  corr(g,S) -0.381  G2-style 0.308 (bound 0.32)  G1-style 0.443% (bound 0.18%, w 0.4458; signed mean(e)x12 +0.443%, + = the synthetic leg flatters T1 - B3; as a share of the full 534-period window +0.083% a year if the other periods had none)  sector mod. duration mean 4.10, 8.5y par at sector yield 5.77
+  calendar years by execution month (006 window; partial years marked *):
+    year  months  synthetic   Stocker     gap
+    1969       5*    -3.68%    -2.14%   -1.54%
+    1970      12    +17.17%   +16.43%   +0.74%
+    1971      12     +9.21%    +8.87%   +0.35%
+    1972      12     +3.27%    +3.64%   -0.37%
+    1973      12     +3.64%    +4.60%   -0.97%
+    1974      12     +3.88%    +5.84%   -1.96%
+    1975      12     +5.96%    +7.60%   -1.64%
+    1976      12    +15.48%   +13.63%   +1.86%
+    1977      12     +0.62%    +1.76%   -1.14%
+    1978      12     -0.26%    +1.13%   -1.40%
+    1979      12     +1.86%    +4.94%   -3.08%
+    1980      12     +0.60%    +4.05%   -3.46%
+    1981      12     +4.98%    +7.86%   -2.88%
+    1982      10*   +34.32%   +25.27%   +9.05%
+

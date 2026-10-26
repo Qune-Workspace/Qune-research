@@ -61,6 +61,13 @@ STUDIES = {
 G1_BOUND, G2_BOUND = 0.0018, 0.32
 
 
+def par_mod_duration(y: float, years: float = 8.5) -> float:
+    """Modified duration of a par bond with semi-annual coupons at yield y (decimal)."""
+    c, n = y / 2, round(years * 2)
+    mac = sum(k / 2 * c / (1 + c) ** k for k in range(1, n + 1)) + n / 2 / (1 + c) ** n
+    return mac / (1 + c)
+
+
 def sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
@@ -70,41 +77,46 @@ def fetch() -> None:
     for name, (fid, digest) in FILES.items():
         dest = RAW / name
         if not dest.exists():
-            with urllib.request.urlopen(API.format(fid=fid), timeout=60) as r:
+            # The repository refuses urllib's default User-Agent (403, observed 2026-10-26).
+            req = urllib.request.Request(API.format(fid=fid), headers={"User-Agent": "qune-research/1.0"})
+            with urllib.request.urlopen(req, timeout=60) as r:
                 dest.write_bytes(r.read())
         if sha256(dest) != digest:
             sys.exit(f"hash mismatch for {name}: {sha256(dest)} != {digest}")
 
 
+MONTHS = {m: i for i, m in enumerate(
+    ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"], 1)}
+
+
 def parse_month(text: str) -> str:
-    """Return YYYY-MM from the file's month field (accepts YYYY-MM[-DD] or a decimal year)."""
-    text = text.strip()
-    if len(text) >= 7 and text[4] in "-/":
-        return f"{text[:4]}-{int(text[5:7]):02d}"
-    raise ValueError(f"unrecognised month field: {text!r}")
+    """Return YYYY-MM from a DD-Mon-YYYY date (the files' Start/End format)."""
+    d, mon, y = text.strip().split("-")
+    return f"{int(y):04d}-{MONTHS[mon]:02d}"
 
 
 def read_stocker(path: Path) -> dict[str, dict[str, float]]:
-    """Columns by position, as the dataset's ReadMe lists them: month, total return (%),
-    time to maturity (years), modified duration, yield to maturity (%), number of bonds.
-    Lines whose first field is not a month (a header, if any) are skipped."""
+    """Header (observed on first read; the ReadMe does not list the two date columns):
+    Start, End, Return(%), WgtMat(years), WgtModDur, WgtYtm(%), Nbonds. A row is keyed
+    by the month of End (after November 1942 the dates are month ends, so the row for
+    month M runs from the end of M-1 to the end of M)."""
     names = ["ret", "maturity", "duration", "ytm", "nbonds"]
     rows: dict[str, dict[str, float]] = {}
     with path.open(newline="") as f:
-        for rec in csv.reader(f, delimiter="\t"):
-            if not rec or not rec[0].strip():
-                continue
-            try:
-                m = parse_month(rec[0])
-            except ValueError:
+        reader = csv.reader(f, delimiter="\t")
+        header = [h.strip() for h in next(reader)]
+        if header[:3] != ["Start", "End", "Return(%)"]:
+            sys.exit(f"unexpected header in {path.name}: {header}")
+        for rec in reader:
+            if len(rec) < 7:
                 continue
             vals = {}
-            for h, v in zip(names, rec[1:]):
+            for h, v in zip(names, rec[2:]):
                 try:
                     vals[h] = float(v)
                 except ValueError:
                     vals[h] = float("nan")
-            rows[m] = vals
+            rows[parse_month(rec[1])] = vals
     return rows
 
 
@@ -123,7 +135,8 @@ def corr(a: list[float], b: list[float]) -> float:
     return st.correlation(a, b)
 
 
-def compare(sid: str, rows: list[dict[str, str]], stk: dict[str, dict[str, float]], ret_col: str) -> dict:
+def compare(sid: str, rows: list[dict[str, str]], stk: dict[str, dict[str, float]], ret_col: str,
+            duration_matched: bool = False) -> dict:
     g, x, s_list, e_parts, years = [], [], [], [], defaultdict(lambda: [1.0, 1.0, 0])
     months = []
     for r in rows:
@@ -132,6 +145,11 @@ def compare(sid: str, rows: list[dict[str, str]], stk: dict[str, dict[str, float
             continue
         s = stk[m][ret_col] / 100.0
         b1, b0 = float(r["B1"]), float(r["B0"])
+        if duration_matched:
+            # POST HOC (added after the primary figures were seen): scale the sector's return
+            # over the bill by D(8.5-year par bond at the sector's start-of-month yield) / D(sector).
+            d_leg = par_mod_duration(stk[m]["ytm"] / 100.0)
+            s = b0 + (s - b0) * d_leg / stk[m]["duration"]
         months.append(m)
         g.append(b1 - s)
         x.append(s - b0)
@@ -142,12 +160,13 @@ def compare(sid: str, rows: list[dict[str, str]], stk: dict[str, dict[str, float
         y[1] *= 1 + s
         y[2] += 1
     w = sum(h for h, _ in e_parts) / len(e_parts)
+    n_full = len(rows)
     e = [(h - w) * gg for h, gg in e_parts]
     return {
         "first": months[0], "last": months[-1], "n": len(months), "w": w,
         "mean_g_ann": st.mean(g) * 12, "sd_g_ann": st.stdev(g) * math.sqrt(12),
         "corr_g_s": corr(g, s_list), "corr_b1_s": corr([gg + ss for gg, ss in zip(g, s_list)], s_list),
-        "g2": st.stdev(g) / st.stdev(x), "g1": abs(st.mean(e)) * 12, "years": dict(years),
+        "g2": st.stdev(g) / st.stdev(x), "g1": abs(st.mean(e)) * 12, "e_signed": st.mean(e) * 12, "full_share": st.mean(e) * 12 * len(e) / n_full, "n_full": n_full, "years": dict(years),
     }
 
 
@@ -165,14 +184,21 @@ def main() -> None:
         stk = read_stocker(path)
         ret_col, dur_col = "ret", "duration"
         lines.append(f"  months parsed: {len(stk)} ({min(stk)}..{max(stk)})")
-        for sid in STUDIES:
-            c = compare(sid, read_study(sid), stk, ret_col)
-            durs = [stk[m][dur_col] for m in stk if c["first"] <= m <= c["last"]]
-            lines.append(
-                f"  {sid}: {c['first']}..{c['last']} n={c['n']}  mean(g)x12 {c['mean_g_ann']:+.3%}  "
-                f"sd(g)xsqrt12 {c['sd_g_ann']:.3%}  corr(B1,S) {c['corr_b1_s']:.3f}  corr(g,S) {c['corr_g_s']:+.3f}  "
-                f"G2-style {c['g2']:.3f} (bound {G2_BOUND})  G1-style {c['g1']:.3%} (bound {G1_BOUND:.2%}, w {c['w']:.4f})  "
-                f"Stocker mod. duration mean {st.mean(durs):.2f}")
+        for dm in (False, True):
+            if dm:
+                lines.append("  POST HOC, descriptive (chosen after the figures above were seen): sector excess over B0 "
+                             "scaled to the duration of an 8.5-year par bond at the sector's yield")
+            for sid in STUDIES:
+                c = compare(sid, read_study(sid), stk, ret_col, duration_matched=dm)
+                durs = [stk[m][dur_col] for m in stk if c["first"] <= m <= c["last"]]
+                legd = [par_mod_duration(stk[m]["ytm"] / 100.0) for m in stk if c["first"] <= m <= c["last"]]
+                lines.append(
+                    f"  {sid}: {c['first']}..{c['last']} n={c['n']}  mean(g)x12 {c['mean_g_ann']:+.3%}  "
+                    f"sd(g)xsqrt12 {c['sd_g_ann']:.3%}  corr(B1,S) {c['corr_b1_s']:.3f}  corr(g,S) {c['corr_g_s']:+.3f}  "
+                    f"G2-style {c['g2']:.3f} (bound {G2_BOUND})  G1-style {c['g1']:.3%} (bound {G1_BOUND:.2%}, w {c['w']:.4f}; "
+                    f"signed mean(e)x12 {c['e_signed']:+.3%}, + = the synthetic leg flatters T1 - B3; "
+                    f"as a share of the full {c['n_full']}-period window {c['full_share']:+.3%} a year if the other periods had none)  "
+                    f"sector mod. duration mean {st.mean(durs):.2f}, 8.5y par at sector yield {st.mean(legd):.2f}")
         c = compare("006", read_study("006"), stk, ret_col)
         lines.append("  calendar years by execution month (006 window; partial years marked *):")
         lines.append("    year  months  synthetic   Stocker     gap")

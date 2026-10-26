@@ -22,7 +22,8 @@ usage() { echo "usage: $0 --history | --forward" >&2; exit 2; }
 [ $# -eq 1 ] || usage
 case "$1" in
   --forward)
-    echo "§11 forward record (shadow only): code not yet written (PREREGISTRATION.md §11, §14 step 10)."
+    echo "§11 forward record (shadow only), part 1: append one month's cohorts from the first release that contains t − 1:"
+    echo "  \$PYTHON -m src.forward011 record --month YYYY-MM   # see paper-log/README.md; fetch / interim / score are part 2, not yet written"
     exit 0 ;;
   --history) ;;
   *) usage ;;

@@ -9,9 +9,10 @@ import numpy as np
 import pandas as pd
 import pytest
 from src import forward011 as fw
+from src import rule
 from src.data import FILES
 from src.history import TRIALS
-from src.rule import cohort_table
+from src.rule import cohort_table, formation_returns
 
 P = pd.Period
 
@@ -31,8 +32,9 @@ def write_release(tmp_path, ind: dict[int, pd.DataFrame], release: str = "202608
     """Two zips in the library's layout (value-weighted monthly section), with a manifest."""
     man = {"files": {}}
     for n, name in FILES.items():
-        head = f"This file was created using the {release} CRSP database."
-        zhead = f"This file was created using the {(zip_release or {}).get(n, release)} CRSP database."
+        by = "by CMPT_IND_RETS " if n == 30 else ""  # the library's own wording per file (data step)
+        head = f"This file was created {by}using the {release} CRSP database."
+        zhead = f"This file was created {by}using the {(zip_release or {}).get(n, release)} CRSP database."
         f = ind[n]
         lines = [zhead, "", "  Average Value Weighted Returns -- Monthly", "," + ",".join(f.columns)]
         lines += [p.strftime("%Y%m") + "," + ",".join(f"{v:.2f}" for v in row) for p, row in f.iterrows()]
@@ -158,3 +160,103 @@ def test_append_keeps_earlier_rows(tmp_path):
     text = out.read_text()
     assert text.startswith(first)
     assert [r["month"] for r in csv.DictReader(text.splitlines())] == ["2026-09"] * 3 + ["2026-10"] * 3
+
+
+# --- after the separate code review (CODE_REVIEW.md, fourth part) ---------------------------------------
+
+def test_crash_mid_write_leaves_the_file_whole(tmp_path, monkeypatch):
+    raw, mp = write_release(tmp_path, synthetic())
+    out = tmp_path / "c.csv"
+    out.write_text(",".join(fw.COLUMNS) + "\n")
+    before = out.read_bytes()
+
+    def boom(self, rows):
+        self.writerow(list(rows)[0])
+        raise OSError("disk full")
+
+    monkeypatch.setattr(csv.DictWriter, "writerows", boom)
+    with pytest.raises(OSError):
+        fw.record("2026-09", raw, mp, out)
+    assert out.read_bytes() == before
+    assert not out.with_suffix(".tmp").exists()
+
+
+def test_file_ending_after_t_minus_1_refused(tmp_path):
+    ind = synthetic("2026-09")
+    ind[30] = ind[30].iloc[:-1]  # 17 reaches 2026-09 under a release named 202608
+    raw, mp = write_release(tmp_path, ind, "202608")
+    with pytest.raises(SystemExit, match="must end at 2026-08"):
+        fw.record("2026-09", raw, mp, tmp_path / "c.csv")
+
+
+def test_formation_returns_exact_and_nan_left_out():
+    ind = synthetic()
+    ind[17].loc[P("2026-08", "M"), ind[17].columns[4]] = np.nan
+    for r in fw.cohorts_for(ind, "2026-09"):
+        spec = TRIALS[r["trial"]]
+        want = formation_returns(ind[spec["set"]], spec["F"]).loc[P("2026-08", "M")].dropna()
+        got = {k: float(v) for k, v in (x.split("=") for x in r["formation_returns"].split(";"))}
+        assert list(got) == list(want.index)
+        assert all(got[k] == float(want[k]) for k in got)  # exact, not rounded
+    assert "I17_04" not in fw.cohorts_for(ind, "2026-09")[0]["formation_returns"]
+
+
+def test_column_order_breaks_a_boundary_tie():
+    ind = synthetic()
+    f = ind[17]
+    m = P("2026-08", "M")
+    R = formation_returns(f, 6).loc[m].sort_values(ascending=False)
+    third, fourth = R.index[2], R.index[3]
+    lo, hi = sorted([third, fourth], key=list(f.columns).index)
+    f.loc[pd.period_range(m - 5, m, freq="M"), hi] = f.loc[pd.period_range(m - 5, m, freq="M"), lo].values
+    row = {r["trial"]: r for r in fw.cohorts_for(ind, "2026-09")}["M1"]
+    assert lo in row["winners"].split(";") and hi not in row["winners"].split(";")
+    assert row["boundary_ties"] == 1
+
+
+def test_metadata_columns(tmp_path):
+    raw, mp = write_release(tmp_path, synthetic())
+    out = tmp_path / "c.csv"
+    fw.record("2026-09", raw, mp, out, now_utc="2026-10-26T17:40:00Z")
+    got = list(csv.DictReader(out.open()))
+    assert {g["release_last_month"] for g in got} == {"2026-08"}
+    assert {g["manifest_sha256"] for g in got} == {hashlib.sha256(mp.read_bytes()).hexdigest()}
+    assert all("2026-10-26T15:31:23Z" in g["downloaded_at_utc"] for g in got)
+    assert {g["recorded_at_utc"] for g in got} == {"2026-10-26T17:40:00Z"}
+
+
+def test_missing_download_time_refused(tmp_path):
+    raw, mp = write_release(tmp_path, synthetic())
+    man = json.loads(mp.read_text())
+    del man["files"][FILES[30]]["downloaded_at_utc"]
+    mp.write_text(json.dumps(man))
+    with pytest.raises(SystemExit, match="no download time"):
+        fw.record("2026-09", raw, mp, tmp_path / "c.csv")
+
+
+@pytest.mark.parametrize("seed", [1, 2, 3])
+@pytest.mark.parametrize("month", ["2026-09", "2027-01", "2031-08"])
+def test_engine_agreement_sweep_and_windows(seed, month):
+    t = P(month, "M")
+    ind = synthetic(str(t), seed)
+    rows = {r["trial"]: r for r in fw.cohorts_for(ind, month)}
+    for tid, spec in TRIALS.items():
+        w, lo, _ = rule.cohort_table(ind[spec["set"]], spec["F"], spec["n"], t - 1)[str(t - 1)]
+        assert (rows[tid]["winners"].split(";"), rows[tid]["losers"].split(";")) == (w, lo)
+    g = {n: f.copy() for n, f in ind.items()}
+    for f in g.values():
+        f.loc[t - 13] = 80.0  # outside every formation window
+    assert fw.cohorts_for(g, month) == list(rows.values())
+    g = {n: f.copy() for n, f in ind.items()}
+    for f in g.values():
+        f.loc[t - 7, f.columns[0]] = 900.0  # inside M1b's window only
+    after = {r["trial"]: r for r in fw.cohorts_for(g, month)}
+    assert after["M1"] == rows["M1"] and after["M1a"] == rows["M1a"]
+    assert after["M1b"]["winners"].split(";")[0] == g[17].columns[0]
+
+
+def test_a_gap_is_refused(tmp_path):
+    ind = synthetic("2026-09")
+    raw, mp = write_release(tmp_path, ind, "202609")
+    with pytest.raises(SystemExit, match="2026-09 is not recorded"):
+        fw.record("2026-10", raw, mp, tmp_path / "c.csv")

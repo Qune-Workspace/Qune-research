@@ -29,3 +29,21 @@
 
 - Choices the pre-registration leaves open, fixed here before any run: the twelve worst months are taken from base-cost d over the full history; `turnover_per_year` is over the full history; the episodes report sum and mean (monthly values are in `monthly.csv`); DSR at N = 11 and at the programme counts uses the three-trial variance, as in Study 010.
 - The code does not check that the programme count is fresh; the re-count is run and committed immediately before the history run (§14 step 5), as a process step.
+
+# Second part: `forward011.py` part 1 (§11 cohort records), 2026-10-26
+
+Reviewer: a separate Opus 5.5 session, isolated, read-only in the repository (scratch copies under /tmp), 317 s by the harness, on commit `17940d2`; 25 mutations of the module run against the tests; the first record run on the real snapshot into a scratch path only. Brief: §11, Study 010's `forward010.py` part 1 and its review fixes as the template.
+
+## Verdict: FAIL (1 must-fix), then fixed before any record was written
+
+**Must-fix 1 (fixed).** The release pattern `created using the (\d{6}) CRSP database` did not match the 30-industry file's own header, "This file was created **by CMPT_IND_RETS** using the 202608 CRSP database." (recorded by the data step, `results/data_step.md`), so `record` would have stopped before writing the first forward month. The synthetic tests gave both files the 17-industry wording, so they missed it. Fixed: `created (?:by \S+ )?using the (\d{6}) CRSP database`; the test fixture now writes each file's real wording.
+
+**Should-fix 2 (taken).** 11 of the 25 mutants survived (files ending after t − 1, tie order, non-atomic write, fsync, lock, rounded formation returns, NaN industries kept, missing download time, wrong manifest hash, wrong `release_last_month`, ties forced to 0). Added tests: a crash inside the write leaves the file byte-identical with no temp file; a 17-industry file reaching 2026-09 under release 202608 is refused; every formation return equals the engine's exactly and a NaN industry is left out; a boundary tie at the n-th place is broken by column order and counted; the metadata columns (release month, manifest hash, download and record times); a manifest without a download time is refused; agreement with `cohort_table` over 3 seeds × 3 months, with t − 13 changing no trial and t − 7 changing only M1b. The lock and fsync mutants remain uncaught by unit tests; the reviewer ran six concurrent writers by hand (one write, five refusals).
+
+**Should-fix 3 (taken).** `.gitignore` now ignores Study 011's `paper-log/*.lock`.
+
+**Note 5 (taken).** A month after the first is now refused until t − 1 is recorded for every trial, because §11 takes the five earlier cohorts held in t from the earlier records; tested.
+
+**Notes 4 and 6 (recorded for part 2).** Each row carries everything scoring needs (ordered W and L, every eligible industry's formation return at full precision in file order, release, both hashes, both download times); the first five forward months' earlier cohorts come from the committed `results/history/cohorts.json`. Part 2 should check that a later release's industry names equal the snapshot's. The §16 code decisions are added with this part (below).
+
+**Real-snapshot check.** With the fix, the reviewer's scratch run and the committed record agree: the 2026-09 cohorts from release 202608 equal the history run's 2026-08 cohorts in `results/history/cohorts.json` for all three trials (M1: winners Machn, Oil, Finan; losers Steel, Cnstr, Clths; no boundary tie). Suite: 27 forward tests, all passing.

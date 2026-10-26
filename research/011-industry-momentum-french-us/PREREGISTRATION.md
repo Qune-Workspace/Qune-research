@@ -232,3 +232,10 @@ It does not change the industry sets, the share, the formation or holding length
 ## 16. Amendments
 
 None.
+
+*Dated addition, 2026-10-26 (Qune), after `forward011.py` part 1 and its separate code review. Code decisions on how §11 is carried out; no rule, threshold, trial or window changes, and no forward month had a return in any release the desk held.*
+
+1. **First release only.** A month t is recorded only from a release named t − 1 whose two files both end exactly at t − 1, read from the manifest and from each zip's own header; any other release is refused. If the first release was not archived, a further dated amendment is needed.
+2. **One row per month and trial**, never replaced; months are recorded in order (a month is refused until t − 1 is recorded for every trial). Each row carries the ordered winners and losers, the boundary-tie count and every eligible industry's formation return at full precision, so the ranking can be re-checked from the row.
+3. **"Late"** is written False at record time and set at scoring from the row's first commit time in git (part 2), as in Study 010's §16 item 1, with the same disclosed gaps.
+4. **The first five forward months' earlier cohorts** are the history run's, from `results/history/cohorts.json`; the first forward month's trade is measured from the history's last weights (§11).

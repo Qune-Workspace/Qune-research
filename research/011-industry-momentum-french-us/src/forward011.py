@@ -28,7 +28,9 @@ review:
   which this module cannot see, so ``late`` is written False here and set at
   scoring from git (part 2).
 - One record per (month, trial); a second is refused, so a record cannot be
-  replaced after the month's return is seen.  The append is atomic under a
+  replaced after the month's return is seen.  A month after the first is
+  refused until t − 1 has been recorded, because §11 takes the five earlier
+  cohorts held in t from the earlier records (code review note 5).  The append is atomic under a
   file lock.
 - Each row carries every eligible industry's formation return at full
   precision (``repr``), so the ranking can be re-checked from the row alone.
@@ -66,7 +68,8 @@ FIRST_FORWARD_MONTH = "2026-09"
 COLUMNS = ["month", "ranking_month", "trial", "industries", "formation_months", "n_side", "winners", "losers",
            "boundary_ties", "formation_returns", "release", "release_last_month", "files_sha256",
            "manifest_sha256", "downloaded_at_utc", "recorded_at_utc", "late"]
-_RELEASE = re.compile(r"created using the (\d{6}) CRSP database")
+# The 30-industry file reads "created by CMPT_IND_RETS using the ..." (data step; code review must-fix 1).
+_RELEASE = re.compile(r"created (?:by \S+ )?using the (\d{6}) CRSP database")
 
 
 def _names() -> list[str]:
@@ -180,9 +183,13 @@ def record(month: str, raw_dir: Path = SNAPSHOT_RAW, manifest_path: Path = SNAPS
     out.parent.mkdir(parents=True, exist_ok=True)
     with open(out.with_suffix(".lock"), "w") as lock:
         fcntl.flock(lock, fcntl.LOCK_EX)  # two runs at once cannot both pass the duplicate check
-        done = existing(out) & {(r["month"], r["trial"]) for r in rows}
+        have = existing(out)
+        done = have & {(r["month"], r["trial"]) for r in rows}
         if done:
             raise SystemExit(f"STOP: already recorded {sorted(done)}; a record is never replaced (§11)")
+        prev = str(t - 1)
+        if t > pd.Period(FIRST_FORWARD_MONTH, "M") and not all((prev, tid) in have for tid in TRIALS):
+            raise SystemExit(f"STOP: {prev} is not recorded for every trial; record the months in order (§11)")
         body = existing_body(out)
         tmp = out.with_suffix(".tmp")
         try:

@@ -1,0 +1,1130 @@
+{
+  "end": "2026-08",
+  "seed": 20261021,
+  "cost_cases": {
+    "base": {
+      "variance_across_trials": 0.00020833333333333337,
+      "floor_applied": true,
+      "trials": {
+        "M1": {
+          "O": {
+            "months": 806,
+            "months_I1": 433,
+            "months_I2": 373,
+            "mean_pct_a_year": 3.449098428453267,
+            "nw_t": 2.042447643183013,
+            "nw_se_pct_a_year": 1.6887083690811706,
+            "iid_t": 1.9410546535602313,
+            "sharpe_annual": 0.23684317040263092,
+            "power_realised": {
+              "nw_over_iid_se": 0.9503571168831686,
+              "sd_d_pct_a_year": 14.562794538638522,
+              "mde_t2_pct_a_year": 3.3774167381623412,
+              "mde_80_pct_a_year": 4.7993091849286875,
+              "mde_t2_sharpe_d": 0.23192092212804757,
+              "mde_80_sharpe_d": 0.32955963034395563
+            }
+          },
+          "O_series": {
+            "months": 806,
+            "vol_pct_a_year": 14.56279453863852,
+            "sharpe_annual": 0.23684317040263098,
+            "sharpe_monthly": 0.0683707340938417,
+            "positive_month_share": 0.5806451612903226,
+            "skewness": -1.2826223535919834,
+            "kurtosis_non_excess": 12.683432157355384,
+            "sharpe_ci": {
+              "sharpe_annual": 0.23684317040263098,
+              "ci_low": 0.005934826762573417,
+              "ci_high": 0.501723345886594,
+              "level": 0.95,
+              "resamples": 10000,
+              "resamples_dropped_degenerate": 0,
+              "expected_block": 12
+            }
+          },
+          "dsr": {
+            "N3": {
+              "sr_monthly": 0.0683707340938417,
+              "sr_star_monthly": 0.012309172635468173,
+              "n_trials": 3,
+              "variance_across_trials": 0.00020833333333333337,
+              "psr": 0.9677308354762568,
+              "dsr": 0.9351969493916144
+            },
+            "N11": {
+              "sr_monthly": 0.0683707340938417,
+              "sr_star_monthly": 0.023414445210790318,
+              "n_trials": 11,
+              "variance_across_trials": 0.00020833333333333337,
+              "psr": 0.9677308354762568,
+              "dsr": 0.8878969320463882
+            },
+            "N34": {
+              "sr_monthly": 0.0683707340938417,
+              "sr_star_monthly": 0.030664591257862455,
+              "n_trials": 34,
+              "variance_across_trials": 0.00020833333333333337,
+              "psr": 0.9677308354762568,
+              "dsr": 0.8459952426700534
+            },
+            "N598": {
+              "sr_monthly": 0.0683707340938417,
+              "sr_star_monthly": 0.044830272636154314,
+              "n_trials": 598,
+              "variance_across_trials": 0.00020833333333333337,
+              "psr": 0.9677308354762568,
+              "dsr": 0.7377519390447194
+            }
+          },
+          "windows": {
+            "I1": {
+              "months": 433,
+              "mean_pct_a_year": 3.0491608929946126,
+              "nw_t": 1.3076477855618946,
+              "nw_se_pct_a_year": 2.3317906600395384,
+              "sharpe_annual": 0.2248443173916264
+            },
+            "I2": {
+              "months": 373,
+              "mean_pct_a_year": 3.9133690795353013,
+              "nw_t": 1.6002149326705633,
+              "nw_se_pct_a_year": 2.4455271599074293,
+              "sharpe_annual": 0.24985110429115084
+            },
+            "M": {
+              "months": 385,
+              "mean_pct_a_year": 2.8662857142857163,
+              "nw_t": 1.330929419233866,
+              "nw_se_pct_a_year": 2.1535970825076953,
+              "sharpe_annual": 0.26688747245803895
+            },
+            "full": {
+              "months": 1191,
+              "mean_pct_a_year": 3.2606996921354616,
+              "nw_t": 2.435468471954488,
+              "nw_se_pct_a_year": 1.338838802342909,
+              "sharpe_annual": 0.24257514646376244
+            }
+          },
+          "turnover_per_year": 6.061013154212148,
+          "cost_pct_a_year_on_O": 0.6057899090157148
+        },
+        "M1a": {
+          "O": {
+            "months": 806,
+            "months_I1": 433,
+            "months_I2": 373,
+            "mean_pct_a_year": 5.029543424317618,
+            "nw_t": 2.7796709004065017,
+            "nw_se_pct_a_year": 1.809402481272906,
+            "iid_t": 2.696264105425452,
+            "sharpe_annual": 0.3289921475423113,
+            "power_realised": {
+              "nw_over_iid_se": 0.9699940036178916,
+              "sd_d_pct_a_year": 15.287730913610247,
+              "mde_t2_pct_a_year": 3.618804962545812,
+              "mde_80_pct_a_year": 5.1423218517775995,
+              "mde_t2_sharpe_d": 0.23671302059117807,
+              "mde_80_sharpe_d": 0.3363692022600641
+            }
+          },
+          "O_series": {
+            "months": 806,
+            "vol_pct_a_year": 15.287730913610249,
+            "sharpe_annual": 0.3289921475423114,
+            "sharpe_monthly": 0.09497185247241328,
+            "positive_month_share": 0.5744416873449132,
+            "skewness": -1.804317189268343,
+            "kurtosis_non_excess": 17.942705579860633,
+            "sharpe_ci": {
+              "sharpe_annual": 0.3289921475423114,
+              "ci_low": 0.07746706439101944,
+              "ci_high": 0.6236147174705565,
+              "level": 0.95,
+              "resamples": 10000,
+              "resamples_dropped_degenerate": 0,
+              "expected_block": 12
+            }
+          },
+          "dsr": {
+            "N3": {
+              "sr_monthly": 0.09497185247241328,
+              "sr_star_monthly": 0.012309172635468173,
+              "n_trials": 3,
+              "variance_across_trials": 0.00020833333333333337,
+              "psr": 0.9928585764913285,
+              "dsr": 0.983517926777792
+            },
+            "N11": {
+              "sr_monthly": 0.09497185247241328,
+              "sr_star_monthly": 0.023414445210790318,
+              "n_trials": 11,
+              "variance_across_trials": 0.00020833333333333337,
+              "psr": 0.9928585764913285,
+              "dsr": 0.9675558943637179
+            },
+            "N34": {
+              "sr_monthly": 0.09497185247241328,
+              "sr_star_monthly": 0.030664591257862455,
+              "n_trials": 34,
+              "variance_across_trials": 0.00020833333333333337,
+              "psr": 0.9928585764913285,
+              "dsr": 0.9514410261128281
+            },
+            "N598": {
+              "sr_monthly": 0.09497185247241328,
+              "sr_star_monthly": 0.044830272636154314,
+              "n_trials": 598,
+              "variance_across_trials": 0.00020833333333333337,
+              "psr": 0.9928585764913285,
+              "dsr": 0.9020887071536261
+            }
+          },
+          "windows": {
+            "I1": {
+              "months": 433,
+              "mean_pct_a_year": 4.5530993071593535,
+              "nw_t": 1.8704935183323927,
+              "nw_se_pct_a_year": 2.434170053269466,
+              "sharpe_annual": 0.3134108522464932
+            },
+            "I2": {
+              "months": 373,
+              "mean_pct_a_year": 5.582627345844504,
+              "nw_t": 2.067747889978079,
+              "nw_se_pct_a_year": 2.6998588043069836,
+              "sharpe_annual": 0.3458109371448869
+            },
+            "M": {
+              "months": 385,
+              "mean_pct_a_year": 5.17170909090909,
+              "nw_t": 2.5071235138076937,
+              "nw_se_pct_a_year": 2.0628058659362005,
+              "sharpe_annual": 0.47046937322335725
+            },
+            "full": {
+              "months": 1191,
+              "mean_pct_a_year": 5.075499580184719,
+              "nw_t": 3.637029726186545,
+              "nw_se_pct_a_year": 1.3955067630163207,
+              "sharpe_annual": 0.3615274174267651
+            }
+          },
+          "turnover_per_year": 6.05071368597817,
+          "cost_pct_a_year_on_O": 0.6035732009925558
+        },
+        "M1b": {
+          "O": {
+            "months": 800,
+            "months_I1": 427,
+            "months_I2": 373,
+            "mean_pct_a_year": 4.6341833333333335,
+            "nw_t": 2.2263487212830784,
+            "nw_se_pct_a_year": 2.0815172794056194,
+            "iid_t": 2.247545307157863,
+            "sharpe_annual": 0.2752669588161826,
+            "power_realised": {
+              "nw_over_iid_se": 1.0095207842653546,
+              "sd_d_pct_a_year": 16.835232798237662,
+              "mde_t2_pct_a_year": 4.163034558811239,
+              "mde_80_pct_a_year": 5.915672108070771,
+              "mde_t2_sharpe_d": 0.24728108061844156,
+              "mde_80_sharpe_d": 0.3513864155588055
+            }
+          },
+          "O_series": {
+            "months": 800,
+            "vol_pct_a_year": 16.835232798237662,
+            "sharpe_annual": 0.27526695881618257,
+            "sharpe_monthly": 0.07946272638576632,
+            "positive_month_share": 0.56875,
+            "skewness": -1.4624049680879891,
+            "kurtosis_non_excess": 13.19897265312774,
+            "sharpe_ci": {
+              "sharpe_annual": 0.27526695881618257,
+              "ci_low": 0.037078894013243865,
+              "ci_high": 0.5477434632179268,
+              "level": 0.95,
+              "resamples": 10000,
+              "resamples_dropped_degenerate": 0,
+              "expected_block": 12
+            }
+          },
+          "dsr": {
+            "N3": {
+              "sr_monthly": 0.07946272638576632,
+              "sr_star_monthly": 0.012309172635468173,
+              "n_trials": 3,
+              "variance_across_trials": 0.00020833333333333337,
+              "psr": 0.9824802239063258,
+              "dsr": 0.9625745288534163
+            },
+            "N11": {
+              "sr_monthly": 0.07946272638576632,
+              "sr_star_monthly": 0.023414445210790318,
+              "n_trials": 11,
+              "variance_across_trials": 0.00020833333333333337,
+              "psr": 0.9824802239063258,
+              "dsr": 0.9314645955511545
+            },
+            "N34": {
+              "sr_monthly": 0.07946272638576632,
+              "sr_star_monthly": 0.030664591257862455,
+              "n_trials": 34,
+              "variance_across_trials": 0.00020833333333333337,
+              "psr": 0.9824802239063258,
+              "dsr": 0.9022474018757134
+            },
+            "N598": {
+              "sr_monthly": 0.07946272638576632,
+              "sr_star_monthly": 0.044830272636154314,
+              "n_trials": 598,
+              "variance_across_trials": 0.00020833333333333337,
+              "psr": 0.9824802239063258,
+              "dsr": 0.8208716966504263
+            }
+          },
+          "windows": {
+            "I1": {
+              "months": 427,
+              "mean_pct_a_year": 4.321436377829819,
+              "nw_t": 1.588733399447266,
+              "nw_se_pct_a_year": 2.7200513184485735,
+              "sharpe_annual": 0.27377672885245197
+            },
+            "I2": {
+              "months": 373,
+              "mean_pct_a_year": 4.992207327971402,
+              "nw_t": 1.5607284908251235,
+              "nw_se_pct_a_year": 3.198639197860822,
+              "sharpe_annual": 0.2775952027518043
+            },
+            "M": {
+              "months": 385,
+              "mean_pct_a_year": 4.272450216450217,
+              "nw_t": 1.9474135236493677,
+              "nw_se_pct_a_year": 2.1939101092632005,
+              "sharpe_annual": 0.3393872667268161
+            },
+            "full": {
+              "months": 1185,
+              "mean_pct_a_year": 4.516658227848101,
+              "nw_t": 2.8653658076730384,
+              "nw_se_pct_a_year": 1.5762937547984759,
+              "sharpe_annual": 0.28994429096753965
+            }
+          },
+          "turnover_per_year": 4.276793248945149,
+          "cost_pct_a_year_on_O": 0.42316666666666614
+        }
+      }
+    },
+    "stress": {
+      "variance_across_trials": 0.00020833333333333337,
+      "floor_applied": true,
+      "trials": {
+        "M1": {
+          "O": {
+            "months": 806,
+            "months_I1": 433,
+            "months_I2": 373,
+            "mean_pct_a_year": 1.0259387923904053,
+            "nw_t": 0.6025685633809966,
+            "nw_se_pct_a_year": 1.7026092211546668,
+            "iid_t": 0.5771723999213771,
+            "sharpe_annual": 0.07042529215524346,
+            "power_realised": {
+              "nw_over_iid_se": 0.9578534875481685,
+              "sd_d_pct_a_year": 14.56776054444837,
+              "mde_t2_pct_a_year": 3.4052184423093337,
+              "mde_80_pct_a_year": 4.838815406521563,
+              "mde_t2_sharpe_d": 0.23375030306954275,
+              "mde_80_sharpe_d": 0.33215918066182026
+            }
+          },
+          "O_series": {
+            "months": 806,
+            "vol_pct_a_year": 14.567760544448372,
+            "sharpe_annual": 0.07042529215524346,
+            "sharpe_monthly": 0.020330030691793927,
+            "positive_month_share": 0.5471464019851117,
+            "skewness": -1.2727999768974698,
+            "kurtosis_non_excess": 12.632238084418487,
+            "sharpe_ci": {
+              "sharpe_annual": 0.07042529215524346,
+              "ci_low": -0.15614083436939322,
+              "ci_high": 0.31836174839114495,
+              "level": 0.95,
+              "resamples": 10000,
+              "resamples_dropped_degenerate": 0,
+              "expected_block": 12
+            }
+          },
+          "dsr": {
+            "N3": {
+              "sr_monthly": 0.020330030691793927,
+              "sr_star_monthly": 0.012309172635468173,
+              "n_trials": 3,
+              "variance_across_trials": 0.00020833333333333337,
+              "psr": 0.7153761702712225,
+              "dsr": 0.5888361216357536
+            },
+            "N11": {
+              "sr_monthly": 0.020330030691793927,
+              "sr_star_monthly": 0.023414445210790318,
+              "n_trials": 11,
+              "variance_across_trials": 0.00020833333333333337,
+              "psr": 0.7153761702712225,
+              "dsr": 0.4655935727480229
+            },
+            "N34": {
+              "sr_monthly": 0.020330030691793927,
+              "sr_star_monthly": 0.030664591257862455,
+              "n_trials": 34,
+              "variance_across_trials": 0.00020833333333333337,
+              "psr": 0.7153761702712225,
+              "dsr": 0.3861657599371452
+            },
+            "N598": {
+              "sr_monthly": 0.020330030691793927,
+              "sr_star_monthly": 0.044830272636154314,
+              "n_trials": 598,
+              "variance_across_trials": 0.00020833333333333337,
+              "psr": 0.7153761702712225,
+              "dsr": 0.24638519742867554
+            }
+          },
+          "windows": {
+            "I1": {
+              "months": 433,
+              "mean_pct_a_year": 0.6128252501924556,
+              "nw_t": 0.26110651740172663,
+              "nw_se_pct_a_year": 2.3470316110478033,
+              "sharpe_annual": 0.045181356269686224
+            },
+            "I2": {
+              "months": 373,
+              "mean_pct_a_year": 1.5055049151027708,
+              "nw_t": 0.6093514574942694,
+              "nw_se_pct_a_year": 2.470667619789733,
+              "sharpe_annual": 0.09607411423559506
+            },
+            "M": {
+              "months": 385,
+              "mean_pct_a_year": 0.43927272727272787,
+              "nw_t": 0.2012359899225429,
+              "nw_se_pct_a_year": 2.1828735875814615,
+              "sharpe_annual": 0.04083175311844154
+            },
+            "full": {
+              "months": 1191,
+              "mean_pct_a_year": 0.8362944304506015,
+              "nw_t": 0.6186517342797393,
+              "nw_se_pct_a_year": 1.3518016423638606,
+              "sharpe_annual": 0.06217609771531529
+            }
+          },
+          "turnover_per_year": 6.061013154212148,
+          "cost_pct_a_year_on_O": 3.0289495450785773
+        },
+        "M1a": {
+          "O": {
+            "months": 806,
+            "months_I1": 433,
+            "months_I2": 373,
+            "mean_pct_a_year": 2.6152506203473953,
+            "nw_t": 1.4366996055421775,
+            "nw_se_pct_a_year": 1.820318325597688,
+            "iid_t": 1.4022261600000208,
+            "sharpe_annual": 0.17109651639471798,
+            "power_realised": {
+              "nw_over_iid_se": 0.9760051124054236,
+              "sd_d_pct_a_year": 15.285235932647733,
+              "mde_t2_pct_a_year": 3.640636651195376,
+              "mde_80_pct_a_year": 5.173344681348629,
+              "mde_t2_sharpe_d": 0.23817994483286586,
+              "mde_80_sharpe_d": 0.3384537016075024
+            }
+          },
+          "O_series": {
+            "months": 806,
+            "vol_pct_a_year": 15.285235932647732,
+            "sharpe_annual": 0.17109651639471796,
+            "sharpe_monthly": 0.04939130989894882,
+            "positive_month_share": 0.5508684863523573,
+            "skewness": -1.787865229225121,
+            "kurtosis_non_excess": 17.824560592122417,
+            "sharpe_ci": {
+              "sharpe_annual": 0.17109651639471796,
+              "ci_low": -0.06441699653706179,
+              "ci_high": 0.44105411148761164,
+              "level": 0.95,
+              "resamples": 10000,
+              "resamples_dropped_degenerate": 0,
+              "expected_block": 12
+            }
+          },
+          "dsr": {
+            "N3": {
+              "sr_monthly": 0.04939130989894882,
+              "sr_star_monthly": 0.012309172635468173,
+              "n_trials": 3,
+              "variance_across_trials": 0.00020833333333333337,
+              "psr": 0.9093907023314058,
+              "dsr": 0.8422638532207094
+            },
+            "N11": {
+              "sr_monthly": 0.04939130989894882,
+              "sr_star_monthly": 0.023414445210790318,
+              "n_trials": 11,
+              "variance_across_trials": 0.00020833333333333337,
+              "psr": 0.9093907023314058,
+              "dsr": 0.7590307855774423
+            },
+            "N34": {
+              "sr_monthly": 0.04939130989894882,
+              "sr_star_monthly": 0.030664591257862455,
+              "n_trials": 34,
+              "variance_across_trials": 0.00020833333333333337,
+              "psr": 0.9093907023314058,
+              "dsr": 0.6938974496624195
+            },
+            "N598": {
+              "sr_monthly": 0.04939130989894882,
+              "sr_star_monthly": 0.044830272636154314,
+              "n_trials": 598,
+              "variance_across_trials": 0.00020833333333333337,
+              "psr": 0.9093907023314058,
+              "dsr": 0.549131078684041
+            }
+          },
+          "windows": {
+            "I1": {
+              "months": 433,
+              "mean_pct_a_year": 2.128341801385681,
+              "nw_t": 0.8703937868316887,
+              "nw_se_pct_a_year": 2.4452630907822033,
+              "sharpe_annual": 0.14663267047040202
+            },
+            "I2": {
+              "months": 373,
+              "mean_pct_a_year": 3.180482573726542,
+              "nw_t": 1.1690950044157926,
+              "nw_se_pct_a_year": 2.720465455513481,
+              "sharpe_annual": 0.1969124387683953
+            },
+            "M": {
+              "months": 385,
+              "mean_pct_a_year": 2.7388779220779216,
+              "nw_t": 1.3139056448678845,
+              "nw_se_pct_a_year": 2.0845316654022907,
+              "sharpe_annual": 0.2486905704592729
+            },
+            "full": {
+              "months": 1191,
+              "mean_pct_a_year": 2.6552141057934513,
+              "nw_t": 1.8892576005500061,
+              "nw_se_pct_a_year": 1.4054272456124877,
+              "sharpe_annual": 0.18908552740477017
+            }
+          },
+          "turnover_per_year": 6.05071368597817,
+          "cost_pct_a_year_on_O": 3.017866004962779
+        },
+        "M1b": {
+          "O": {
+            "months": 800,
+            "months_I1": 427,
+            "months_I2": 373,
+            "mean_pct_a_year": 2.9415166666666654,
+            "nw_t": 1.4073053835128062,
+            "nw_se_pct_a_year": 2.090176518279409,
+            "iid_t": 1.426363147315694,
+            "sharpe_annual": 0.17469309494168617,
+            "power_realised": {
+              "nw_over_iid_se": 1.0135420243723627,
+              "sd_d_pct_a_year": 16.83819653918528,
+              "mde_t2_pct_a_year": 4.180353036558818,
+              "mde_80_pct_a_year": 5.9402816649500805,
+              "mde_t2_sharpe_d": 0.24826607925798008,
+              "mde_80_sharpe_d": 0.3527860986255897
+            }
+          },
+          "O_series": {
+            "months": 800,
+            "vol_pct_a_year": 16.838196539185276,
+            "sharpe_annual": 0.17469309494168622,
+            "sharpe_monthly": 0.0504295526950757,
+            "positive_month_share": 0.55125,
+            "skewness": -1.4534251372298421,
+            "kurtosis_non_excess": 13.17010846061114,
+            "sharpe_ci": {
+              "sharpe_annual": 0.17469309494168622,
+              "ci_low": -0.05713905537124377,
+              "ci_high": 0.43804792164064915,
+              "level": 0.95,
+              "resamples": 10000,
+              "resamples_dropped_degenerate": 0,
+              "expected_block": 12
+            }
+          },
+          "dsr": {
+            "N3": {
+              "sr_monthly": 0.0504295526950757,
+              "sr_star_monthly": 0.012309172635468173,
+              "n_trials": 3,
+              "variance_across_trials": 0.00020833333333333337,
+              "psr": 0.9148132820479733,
+              "dsr": 0.8499831455917239
+            },
+            "N11": {
+              "sr_monthly": 0.0504295526950757,
+              "sr_star_monthly": 0.023414445210790318,
+              "n_trials": 11,
+              "variance_across_trials": 0.00020833333333333337,
+              "psr": 0.9148132820479733,
+              "dsr": 0.7686618875211821
+            },
+            "N34": {
+              "sr_monthly": 0.0504295526950757,
+              "sr_star_monthly": 0.030664591257862455,
+              "n_trials": 34,
+              "variance_across_trials": 0.00020833333333333337,
+              "psr": 0.9148132820479733,
+              "dsr": 0.7044839020864382
+            },
+            "N598": {
+              "sr_monthly": 0.0504295526950757,
+              "sr_star_monthly": 0.044830272636154314,
+              "n_trials": 598,
+              "variance_across_trials": 0.00020833333333333337,
+              "psr": 0.9148132820479733,
+              "dsr": 0.5604952742653019
+            }
+          },
+          "windows": {
+            "I1": {
+              "months": 427,
+              "mean_pct_a_year": 2.6340046838407485,
+              "nw_t": 0.9630479594762883,
+              "nw_se_pct_a_year": 2.7350711435733035,
+              "sharpe_annual": 0.16673399454236917
+            },
+            "I2": {
+              "months": 373,
+              "mean_pct_a_year": 3.2935478105451286,
+              "nw_t": 1.026713059019737,
+              "nw_se_pct_a_year": 3.2078561596262087,
+              "sharpe_annual": 0.18321354400149137
+            },
+            "M": {
+              "months": 385,
+              "mean_pct_a_year": 2.5242251082251093,
+              "nw_t": 1.1455332866402965,
+              "nw_se_pct_a_year": 2.203537110325567,
+              "sharpe_annual": 0.2007000120397436
+            },
+            "full": {
+              "months": 1185,
+              "mean_pct_a_year": 2.8059409282700414,
+              "nw_t": 1.7726019752148674,
+              "nw_se_pct_a_year": 1.582950356314433,
+              "sharpe_annual": 0.1801356592391696
+            }
+          },
+          "turnover_per_year": 4.276793248945149,
+          "cost_pct_a_year_on_O": 2.115833333333333
+        }
+      }
+    }
+  },
+  "criteria": {
+    "M1": {
+      "C1": true,
+      "C2": true,
+      "C3": false,
+      "C4": true,
+      "all": false
+    },
+    "M1a": {
+      "C1": true,
+      "C2": true,
+      "C3": true,
+      "C4": true,
+      "all": true
+    },
+    "M1b": {
+      "C1": true,
+      "C2": true,
+      "C3": true,
+      "C4": true,
+      "all": true
+    }
+  },
+  "window_row_M1": {
+    "I1_mean_pct_a_year": 3.0491608929946126,
+    "I1_nw_t": 1.3076477855618946,
+    "I2_mean_pct_a_year": 3.9133690795353013,
+    "I2_nw_t": 1.6002149326705633,
+    "rule": "mean(d^M1) > 0 over I1 and > 0 over I2, base costs",
+    "pass": true
+  },
+  "verdict": {
+    "M1": "not supported",
+    "M1a": "meets C1\u2013C4 (Sharpe units; the 2%-a-year bar not met)",
+    "M1b": "meets C1\u2013C4 (Sharpe units; the 2%-a-year bar not met)",
+    "return_unit_bar_not_met": true,
+    "mde_80_M1_pct_a_year": 4.7993091849286875
+  },
+  "descriptive_M1": {
+    "d_by_decade": {
+      "1920s": {
+        "months": 31,
+        "mean_pct_a_year": 18.558064516129033,
+        "nw_t": 3.6185917606401503,
+        "nw_se_pct_a_year": 5.1285322422903,
+        "sharpe_annual": 1.5817038290174834
+      },
+      "1930s": {
+        "months": 120,
+        "mean_pct_a_year": -4.922055555555555,
+        "nw_t": -0.7033963737432255,
+        "nw_se_pct_a_year": 6.997556056995471,
+        "sharpe_annual": -0.2257904932509505
+      },
+      "1940s": {
+        "months": 120,
+        "mean_pct_a_year": 2.563555555555555,
+        "nw_t": 1.0148117595343678,
+        "nw_se_pct_a_year": 2.52613899225193,
+        "sharpe_annual": 0.3287880016517512
+      },
+      "1950s": {
+        "months": 120,
+        "mean_pct_a_year": 5.2601666666666675,
+        "nw_t": 2.7851722488272763,
+        "nw_se_pct_a_year": 1.8886324423494858,
+        "sharpe_annual": 0.6578408066973674
+      },
+      "1960s": {
+        "months": 120,
+        "mean_pct_a_year": 8.175611111111113,
+        "nw_t": 3.1092396871378893,
+        "nw_se_pct_a_year": 2.6294566948091775,
+        "sharpe_annual": 1.0774081199056833
+      },
+      "1970s": {
+        "months": 120,
+        "mean_pct_a_year": 3.9929444444444444,
+        "nw_t": 1.0271565808540044,
+        "nw_se_pct_a_year": 3.8873765878271556,
+        "sharpe_annual": 0.3662054048874282
+      },
+      "1980s": {
+        "months": 120,
+        "mean_pct_a_year": 2.613000000000003,
+        "nw_t": 0.618366338323095,
+        "nw_se_pct_a_year": 4.225650456792358,
+        "sharpe_annual": 0.20444495466193233
+      },
+      "1990s": {
+        "months": 120,
+        "mean_pct_a_year": 2.113611111111111,
+        "nw_t": 0.5277935777064584,
+        "nw_se_pct_a_year": 4.004616957060879,
+        "sharpe_annual": 0.17169966615384383
+      },
+      "2000s": {
+        "months": 120,
+        "mean_pct_a_year": 2.0493333333333315,
+        "nw_t": 0.45935668177051686,
+        "nw_se_pct_a_year": 4.461311687977426,
+        "sharpe_annual": 0.10590271285967787
+      },
+      "2010s": {
+        "months": 120,
+        "mean_pct_a_year": 0.8725000000000034,
+        "nw_t": 0.2424542726926776,
+        "nw_se_pct_a_year": 3.5986167218671277,
+        "sharpe_annual": 0.07208364657082314
+      },
+      "2020s": {
+        "months": 80,
+        "mean_pct_a_year": 7.274416666666669,
+        "nw_t": 1.299389315654397,
+        "nw_se_pct_a_year": 5.598334986310962,
+        "sharpe_annual": 0.4920436352265649
+      }
+    },
+    "legs": {
+      "O": {
+        "winners_minus_ew": {
+          "months": 806,
+          "mean_pct_a_year": 1.965075658054784,
+          "nw_t": 2.1043667802720503,
+          "nw_se_pct_a_year": 0.9338085339860485,
+          "sharpe_annual": 0.2358920543453681
+        },
+        "losers_minus_ew": {
+          "months": 806,
+          "mean_pct_a_year": -2.089812679414197,
+          "nw_t": -2.2168298498252286,
+          "nw_se_pct_a_year": 0.9427032388520729,
+          "sharpe_annual": -0.2676817627128158
+        },
+        "ew": {
+          "months": 806,
+          "mean_pct_a_year": 11.844916070646622,
+          "nw_t": 4.60679205758015,
+          "nw_se_pct_a_year": 2.571185311296318,
+          "sharpe_annual": 0.5733601643366323
+        }
+      },
+      "I1": {
+        "winners_minus_ew": {
+          "months": 433,
+          "mean_pct_a_year": 1.7617171579948363,
+          "nw_t": 1.4559718176697605,
+          "nw_se_pct_a_year": 1.2099939961849073,
+          "sharpe_annual": 0.24130683239838477
+        },
+        "losers_minus_ew": {
+          "months": 433,
+          "mean_pct_a_year": -1.8965276457003126,
+          "nw_t": -1.4691342783093826,
+          "nw_se_pct_a_year": 1.290915114908867,
+          "sharpe_annual": -0.2599915624905771
+        },
+        "ew": {
+          "months": 433,
+          "mean_pct_a_year": 11.893987229995927,
+          "nw_t": 2.892112810321633,
+          "nw_se_pct_a_year": 4.112559920742921,
+          "sharpe_annual": 0.501423521923365
+        }
+      },
+      "I2": {
+        "winners_minus_ew": {
+          "months": 373,
+          "mean_pct_a_year": 2.201145981180675,
+          "nw_t": 1.5202757393833786,
+          "nw_se_pct_a_year": 1.447859703446598,
+          "sharpe_annual": 0.23429138126827212
+        },
+        "losers_minus_ew": {
+          "months": 373,
+          "mean_pct_a_year": -2.3141891394627563,
+          "nw_t": -1.6778692015987642,
+          "nw_se_pct_a_year": 1.3792428737935423,
+          "sharpe_annual": -0.2764119741043049
+        },
+        "ew": {
+          "months": 373,
+          "mean_pct_a_year": 11.787951427219683,
+          "nw_t": 4.147814739794458,
+          "nw_se_pct_a_year": 2.8419667142134286,
+          "sharpe_annual": 0.7172035942398161
+        }
+      },
+      "M": {
+        "winners_minus_ew": {
+          "months": 385,
+          "mean_pct_a_year": 2.556103896103897,
+          "nw_t": 2.145964428442297,
+          "nw_se_pct_a_year": 1.1911212796566766,
+          "sharpe_annual": 0.4347345359783803
+        },
+        "losers_minus_ew": {
+          "months": 385,
+          "mean_pct_a_year": -0.9169350649350647,
+          "nw_t": -0.8058800223261284,
+          "nw_se_pct_a_year": 1.1378059258602566,
+          "sharpe_annual": -0.15567199093351008
+        },
+        "ew": {
+          "months": 385,
+          "mean_pct_a_year": 12.1387012987013,
+          "nw_t": 4.241523999453164,
+          "nw_se_pct_a_year": 2.8618725958561773,
+          "sharpe_annual": 0.7727065948896813
+        }
+      },
+      "full": {
+        "winners_minus_ew": {
+          "months": 1191,
+          "mean_pct_a_year": 2.156130126273851,
+          "nw_t": 2.9100278468593164,
+          "nw_se_pct_a_year": 0.740931097481037,
+          "sharpe_annual": 0.2828552657424022
+        },
+        "losers_minus_ew": {
+          "months": 1191,
+          "mean_pct_a_year": -1.710670881282824,
+          "nw_t": -2.3203565956112318,
+          "nw_se_pct_a_year": 0.7372448202653079,
+          "sharpe_annual": -0.23620362196553835
+        },
+        "ew": {
+          "months": 1191,
+          "mean_pct_a_year": 11.939884427322568,
+          "nw_t": 6.058938230344551,
+          "nw_se_pct_a_year": 1.9706232302427007,
+          "sharpe_annual": 0.6221195456864836
+        }
+      }
+    },
+    "industry_share_in_W_and_L": {
+      "Food": {
+        "W": 0.1496655518394649,
+        "L": 0.13879598662207357
+      },
+      "Mines": {
+        "W": 0.23244147157190637,
+        "L": 0.26421404682274247
+      },
+      "Oil": {
+        "W": 0.2516722408026756,
+        "L": 0.2399665551839465
+      },
+      "Clths": {
+        "W": 0.19147157190635453,
+        "L": 0.21989966555183946
+      },
+      "Durbl": {
+        "W": 0.16471571906354515,
+        "L": 0.1948160535117057
+      },
+      "Chems": {
+        "W": 0.1262541806020067,
+        "L": 0.1505016722408027
+      },
+      "Cnsum": {
+        "W": 0.20986622073578595,
+        "L": 0.18561872909698995
+      },
+      "Cnstr": {
+        "W": 0.11789297658862877,
+        "L": 0.10785953177257525
+      },
+      "Steel": {
+        "W": 0.23244147157190637,
+        "L": 0.29180602006688966
+      },
+      "FabPr": {
+        "W": 0.1354515050167224,
+        "L": 0.13127090301003344
+      },
+      "Machn": {
+        "W": 0.18311036789297658,
+        "L": 0.10869565217391304
+      },
+      "Cars": {
+        "W": 0.25334448160535117,
+        "L": 0.2157190635451505
+      },
+      "Trans": {
+        "W": 0.15384615384615385,
+        "L": 0.17474916387959866
+      },
+      "Utils": {
+        "W": 0.19983277591973245,
+        "L": 0.22324414715719063
+      },
+      "Rtail": {
+        "W": 0.18645484949832775,
+        "L": 0.14130434782608695
+      },
+      "Finan": {
+        "W": 0.1505016722408027,
+        "L": 0.1354515050167224
+      },
+      "Other": {
+        "W": 0.061036789297658864,
+        "L": 0.07608695652173914
+      }
+    },
+    "twelve_worst_months_d": [
+      {
+        "month": "1932-07",
+        "d_pct": -34.05888888888889
+      },
+      {
+        "month": "1932-08",
+        "d_pct": -27.43944444444445
+      },
+      {
+        "month": "1939-09",
+        "d_pct": -21.905
+      },
+      {
+        "month": "1938-06",
+        "d_pct": -19.34444444444445
+      },
+      {
+        "month": "2009-04",
+        "d_pct": -15.752222222222224
+      },
+      {
+        "month": "2008-07",
+        "d_pct": -15.655555555555559
+      },
+      {
+        "month": "1999-04",
+        "d_pct": -14.467777777777776
+      },
+      {
+        "month": "2008-09",
+        "d_pct": -12.492777777777778
+      },
+      {
+        "month": "2001-01",
+        "d_pct": -11.116666666666665
+      },
+      {
+        "month": "1986-09",
+        "d_pct": -10.989444444444445
+      },
+      {
+        "month": "1987-10",
+        "d_pct": -10.466666666666665
+      },
+      {
+        "month": "1980-03",
+        "d_pct": -10.357777777777779
+      }
+    ],
+    "episodes_d": {
+      "1929-09 to 1932-12": {
+        "months": 40,
+        "sum_pct": -5.682222222222219,
+        "mean_pct_a_year": -1.7046666666666654
+      },
+      "2008-09 to 2009-12": {
+        "months": 16,
+        "sum_pct": -26.117222222222225,
+        "mean_pct_a_year": -19.58791666666667
+      }
+    },
+    "paper_comparison": {
+      "paper_pct_a_month": 0.43,
+      "M1_gross_over_M_pct_a_month": 0.2894199134199135,
+      "note": "the library's 17 four-digit-SIC industries, not the paper's 20; descriptive only (\u00a79.6)"
+    }
+  },
+  "data_events": {
+    "M1": {
+      "months_with_empty_legs": 0,
+      "boundary_ties_over_held_ranking_months": 0
+    },
+    "M1a": {
+      "months_with_empty_legs": 0,
+      "boundary_ties_over_held_ranking_months": 0
+    },
+    "M1b": {
+      "months_with_empty_legs": 0,
+      "boundary_ties_over_held_ranking_months": 0
+    }
+  },
+  "programme_count": {
+    "counted_at_utc": "2026-10-26T16:16:11Z",
+    "public_trials_md": 34,
+    "with_desk_registry": 598,
+    "public_by_study": {
+      "001-slope-duration-switch": 3,
+      "002-slope-duration-switch-r": 3,
+      "003-bond-tsmom-ief": 3,
+      "004-xasset-trend-voltarget": 4,
+      "005-duration-trend-regime": 3,
+      "006-term-spread-switch-long-history": 3,
+      "007-bond-carry-tilt-long-history": 5,
+      "008-bond-value-tilt-long-history": 3,
+      "009-pooled-forward-duration-timing": 1,
+      "010-factor-momentum-french-us": 3,
+      "011-industry-momentum-french-us": 3
+    },
+    "public_ids_by_study": {
+      "001-slope-duration-switch": [
+        "T1",
+        "T2",
+        "T3"
+      ],
+      "002-slope-duration-switch-r": [
+        "T1",
+        "T2",
+        "T3"
+      ],
+      "003-bond-tsmom-ief": [
+        "T1",
+        "T2",
+        "T3"
+      ],
+      "004-xasset-trend-voltarget": [
+        "T1",
+        "T2",
+        "T3",
+        "T4"
+      ],
+      "005-duration-trend-regime": [
+        "T1",
+        "T2",
+        "T3"
+      ],
+      "006-term-spread-switch-long-history": [
+        "T1",
+        "T2",
+        "T3"
+      ],
+      "007-bond-carry-tilt-long-history": [
+        "T1",
+        "T1a",
+        "T1b",
+        "T2",
+        "T3"
+      ],
+      "008-bond-value-tilt-long-history": [
+        "T1",
+        "T1a",
+        "T1b"
+      ],
+      "009-pooled-forward-duration-timing": [
+        "P1"
+      ],
+      "010-factor-momentum-french-us": [
+        "T1",
+        "T1a",
+        "T1b"
+      ],
+      "011-industry-momentum-french-us": [
+        "M1",
+        "M1a",
+        "M1b"
+      ]
+    },
+    "desk_registry": {
+      "rows": 564,
+      "correction_rows": 6,
+      "family_keyword_hits": 0
+    },
+    "family_keyword_pattern": "industr|momentum|french|sector|fama",
+    "method": "Every row of the registered-trials table (header '| ID |') in each research/*/trials.md, counted as written: rows never run (001, 002, 009 so far, this study's three until its history run) and rows carried over from another study (002's and 006's T1-T3 restate Study 001's rules; 006 ran them on a different sample) are all counted, so the figure is an upper bound on distinct rules. with_desk_registry adds every row of the desk's private registry (JSON lines), declaration and correction rows included, also an upper bound; that part cannot be checked by a reader. A case-insensitive search of every desk row for the family pattern finds whether any desk trial ranked industries or traded momentum. No decision weight: C3 is decided at N = 3 (\u00a79.4)."
+  },
+  "run_at_utc": "2026-10-26T16:17:35Z",
+  "eligibility_from_data_step": {
+    "17_Industry_Portfolios_CSV.zip F=6": {
+      "ranking_months": "1926-12 to 2026-07",
+      "min_eligible": 17,
+      "months_below_full_set": 0
+    },
+    "17_Industry_Portfolios_CSV.zip F=12": {
+      "ranking_months": "1927-06 to 2026-07",
+      "min_eligible": 17,
+      "months_below_full_set": 0
+    },
+    "30_Industry_Portfolios_CSV.zip F=6": {
+      "ranking_months": "1926-12 to 2026-07",
+      "min_eligible": 30,
+      "months_below_full_set": 0
+    }
+  }
+}

@@ -103,11 +103,14 @@ def cumulative_chart(monthly: pd.DataFrame, summary: dict, numbers: dict) -> Non
                    window_nw_t={k: float(win[k]["nw_t"]) for k in ("I1", "M", "I2")},
                    O_mean_d_pct_a_year=float(o["mean_pct_a_year"]), O_nw_t=float(o["nw_t"]),
                    dsr_N3=float(trial(summary, "M1")["dsr"]["N3"]["dsr"]))
-    signs = all(float(win[k]["mean_pct_a_year"]) > 0 for k in ("I1", "M", "I2"))
-    lead = "earned" if signs else "returned"
-    finding = (f"{EDGE} {lead} {spct(win['I1']['mean_pct_a_year'], 2)} a year before 1963, "
-               f"{spct(win['M']['mean_pct_a_year'], 2)} in the paper's sample and {spct(win['I2']['mean_pct_a_year'], 2)} "
-               f"after it, yet outside the paper's sample it is {verdict_clause(summary)}")
+    st = float(summary["cost_cases"]["stress"]["trials"]["M1"]["O"]["mean_pct_a_year"])
+    numbers["O_mean_d_stress_pct_a_year"] = st
+    # Lead with the decision row after costs and at stress, then the verdict (Tester chart check of 011, should-fix).
+    verb = "made" if float(o["mean_pct_a_year"]) > 0 else "lost"
+    finding = (f"Outside the paper's 1963–95 sample {EDGE[0].lower()}{EDGE[1:]} {verb} "
+               f"{spct(o['mean_pct_a_year'], 2)} a year after base costs ({spct(win['I1']['mean_pct_a_year'], 2)} "
+               f"before, {spct(win['I2']['mean_pct_a_year'], 2)} after), {spct(st, 2)} at 50 bp; "
+               f"{verdict_clause(summary)}")
     fig, ax = style.figure(width=8.0, height=5.0)
     fig.subplots_adjust(bottom=0.2)
     style.title(fig, finding, "Running sum of M1's monthly d (the long-short's return after base costs, 10 bp per "
@@ -149,21 +152,19 @@ def decade_chart(summary: dict, numbers: dict) -> None:
     if neg:
         head += (", negative in the " + " and ".join(neg) + " ("
                  + " and ".join(spct(means[k]) for k in neg) + " a year)")
-    # The tail names the longest run of decades, to the last, in which no decade's t reached C2's 2.0.
-    run: list[str] = []
-    for k in reversed(labels):
-        if tstats[k] >= 2.0:
-            break
-        run.insert(0, k)
-    numbers["decades_to_end_with_t_below_2"] = run
-    if len(run) >= 2:
-        t_lo, t_hi = min(tstats[k] for k in run), max(tstats[k] for k in run)
-        head += (f"; from the {run[0]} on no decade's Newey–West t reached 2 ({num(t_lo)} to {num(t_hi)})")
+    # No C2 bar applied to the descriptive decade t's and no split chosen by them (Tester chart check of 011,
+    # must-fix 1): the t's go to the subtitle with the mean each full decade needed for t 2 (2 x its NW s.e.).
+    full = [k for k in labels if months[k] == 120]
+    need = {k: 2.0 * float(dec[k]["nw_se_pct_a_year"]) for k in full}
+    numbers["full_decade_mean_needed_for_t2_pct_a_year"] = need
+    t_lo, t_hi = min(tstats.values()), max(tstats.values())
     fig, ax = style.figure(width=8.6, height=5.4)
     fig.subplots_adjust(bottom=0.24)
-    style.title(fig, head, "Mean monthly d of M1, annualised (× 12), %, base costs, by calendar decade of the "
+    style.title(fig, head, f"Mean monthly d of M1, annualised (× 12), %, base costs, by calendar decade of the "
                            "return month, Jun 1927 to Aug 2026, including the paper's sample (Jul 1963 to Jul "
-                           "1995, inside the 1960s to 1990s bars). Descriptive, no decision weight.")
+                           f"1995, inside the 1960s to 1990s bars). Newey–West t by decade {num(t_lo)} to {num(t_hi)}; a full "
+                           f"decade needed {spct(min(need.values()))} to {spct(max(need.values()))} a year to reach t 2, "
+                           "so each bar is a weak test. Descriptive, no decision weight.")
     colors = [style.ACCENT if means[k] > 0 else style.GREY_LIGHT for k in labels]
     bars = ax.bar(labels, [means[k] for k in labels], color=colors, width=0.62)
     ax.axhline(0.0, color=style.GREY, lw=0.8)
@@ -178,7 +179,6 @@ def decade_chart(summary: dict, numbers: dict) -> None:
     ax.set_ylim(min(lo * 1.6, -2.0), max(means.values()) * 1.25)
     ax.yaxis.set_major_formatter(style.FuncFormatter(lambda v, _p: f"{v:.0f}%".replace("-", "−")))
     style.despine(ax, keep=())  # one baseline: the zero line drawn above
-    full = [k for k in labels if months[k] == 120]
     style.source(fig, SOURCE, PERIOD, STUDY_ID,
                  note=f"Bars in time order (decades are ordered, not ranked); {len(full)} full decades of 120 months, "
                       f"the 1920s from Jun 1927 and the 2020s to Aug 2026 are partial. The 1960s and 1990s are split "
@@ -203,21 +203,17 @@ def window_chart(summary: dict, numbers: dict) -> None:
                    window_trials_dsr_N3=dsr)
     all_pos = all(v > 0 for t in TRIALS for v in vals[t].values())
     numbers["window_trials_all_positive"] = all_pos
-    lowest_o = min(TRIALS, key=lambda t: vals[t]["O"])
-    numbers["window_trials_lowest_O"] = lowest_o
-    head = ("All three trials earned more than zero before and after the paper's sample"
-            if all_pos else "The three trials did not all earn more than zero in I1, I2 and O")
-    if lowest_o == "M1":
-        head += (f"; the headline M1 had the lowest O figure ({spct(vals['M1']['O'], 2)} a year, deflated Sharpe "
-                 f"{num(dsr['M1'], 3)}) and is the one that decides: {summary['verdict']['M1']}")
-    else:
-        head += f"; the headline M1 decides: {summary['verdict']['M1']} (deflated Sharpe {num(dsr['M1'], 3)})"
+    head = ("All three trials made more than zero before and after the paper's sample"
+            if all_pos else "The three trials did not all make more than zero in I1, I2 and O")
+    head += (f"; the headline M1, which alone decides, is {summary['verdict']['M1']} ({spct(vals['M1']['O'], 2)} a "
+             f"year on O, deflated Sharpe {num(dsr['M1'], 3)} against 0.95); the companions are fragility checks, "
+             f"not alternatives")
     fig, ax = style.figure(width=9.4, height=6.2)
     fig.subplots_adjust(bottom=0.34)
     style.title(fig, head, "Mean monthly d of each trial, annualised (× 12), %, base costs, by registered row (§8): "
                            "I1 and I2 the stretches outside Moskowitz and Grinblatt's 1963–95 sample, O both together "
-                           "(the decision row). M1 in accent, the two companions in greys. Companions cannot lift "
-                           "the headline (§9.5).")
+                           "(the decision row). M1 in accent, the two companions in greys, Jun 1927 (M1b Dec "
+                           "1927) to Aug 2026 without Jul 1963 to Jul 1995. Companions cannot lift the headline (§9.5).")
     x = np.arange(len(keys), dtype=float)
     width = 0.26
     colors = {"M1": style.ACCENT, "M1a": style.GREY, "M1b": style.GREY_LIGHT}
@@ -246,9 +242,10 @@ def window_chart(summary: dict, numbers: dict) -> None:
     numbers["mde_80_M1_pct_a_year"] = mde
     style.source(fig, SOURCE, PERIOD, STUDY_ID,
                  note=f"Rows in time order, then the decision row (not ranked). M1b has {nper['M1b']['I1']} months in "
-                      f"I1 (12-month formation). Newey–West t on O: M1 {num(tst['M1']['O'])}, M1a "
+                      f"I1 and {nper['M1b']['O']} in O (12-month formation). Newey–West t on O: M1 {num(tst['M1']['O'])}, M1a "
                       f"{num(tst['M1a']['O'])}, M1b {num(tst['M1b']['O'])}; deflated Sharpe at N = 3: "
-                      f"{num(dsr['M1'], 3)}, {num(dsr['M1a'], 3)}, {num(dsr['M1b'], 3)} (bar 0.95). The registered "
+                      f"{num(dsr['M1'], 3)}, {num(dsr['M1a'], 3)}, {num(dsr['M1b'], 3)} (bar 0.95; M1a and M1b meet C1–C4 in Sharpe units, the 2%-a-year bar not "
+                      f"met, §9.5). The registered "
                       f"window rule for M1 ({p['rule']}): {'pass' if p['pass'] else 'fail'}. O can detect a mean d "
                       f"of about {num(mde, 1)}% a year at 80% power. Run once; results/history/summary.json. "
                       f"{verdict_note(summary)}")

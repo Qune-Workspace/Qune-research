@@ -1261,9 +1261,9 @@ L 449.28 288
    </g>
   </g>
   <g id="qune-title">
-   <text style="font-weight: 700; font-size: 13.5px; font-family: 'DejaVu Sans', sans-serif; fill: #1f1f1f" transform="translate(11.52 24.034922)">The industry momentum long-short (M1) earned +3.05% a year</text>
-   <text style="font-weight: 700; font-size: 13.5px; font-family: 'DejaVu Sans', sans-serif; fill: #1f1f1f" transform="translate(11.52 39.612656)">before 1963, +2.87% in the paper's sample and +3.91% after</text>
-   <text style="font-weight: 700; font-size: 13.5px; font-family: 'DejaVu Sans', sans-serif; fill: #1f1f1f" transform="translate(11.52 55.084922)">it, yet outside the paper's sample it is not supported:</text>
+   <text style="font-weight: 700; font-size: 13.5px; font-family: 'DejaVu Sans', sans-serif; fill: #1f1f1f" transform="translate(11.52 24.034922)">Outside the paper's 1963–95 sample the industry momentum</text>
+   <text style="font-weight: 700; font-size: 13.5px; font-family: 'DejaVu Sans', sans-serif; fill: #1f1f1f" transform="translate(11.52 39.559922)">long-short (M1) made +3.45% a year after base costs (+3.05%</text>
+   <text style="font-weight: 700; font-size: 13.5px; font-family: 'DejaVu Sans', sans-serif; fill: #1f1f1f" transform="translate(11.52 55.137656)">before, +3.91% after), +1.03% at 50 bp; not supported:</text>
    <text style="font-weight: 700; font-size: 13.5px; font-family: 'DejaVu Sans', sans-serif; fill: #1f1f1f" transform="translate(11.52 70.609922)">deflated Sharpe 0.935 against 0.95 at N = 3</text>
   </g>
   <g id="qune-subtitle">

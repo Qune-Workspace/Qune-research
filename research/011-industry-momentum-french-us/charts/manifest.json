@@ -1,6 +1,6 @@
 {
-  "made_at_utc": "2026-10-26T17:18:21+00:00",
-  "repository_commit_at_run": "73aa057bb1125ff2a3a01c86787553dd781a9d87",
+  "made_at_utc": "2026-10-26T17:23:48+00:00",
+  "repository_commit_at_run": "deffe4dafb75d93f4abd0be4ea65a69f5f6f18a7",
   "inputs_sha256": {
     "research/011-industry-momentum-french-us/results/history/monthly.csv": "e2bd45a41208cdd79e1952e6ced28e3366c3eff25d2e15c38f8406ba6f4d1d86",
     "research/011-industry-momentum-french-us/results/history/summary.json": "c14385c377ba7fa7d12f4ff372cf7bcd1faa69256ecdb3b814a6a4451e337682"
@@ -28,6 +28,7 @@
     "O_mean_d_pct_a_year": 3.449098428453267,
     "O_nw_t": 2.042447643183013,
     "dsr_N3": 0.9351969493916144,
+    "O_mean_d_stress_pct_a_year": 1.0259387923904053,
     "decade_mean_d_pct_a_year": {
       "1920s": 18.558064516129033,
       "1930s": -4.922055555555555,
@@ -70,14 +71,17 @@
     "decade_negative": [
       "1930s"
     ],
-    "decades_to_end_with_t_below_2": [
-      "1970s",
-      "1980s",
-      "1990s",
-      "2000s",
-      "2010s",
-      "2020s"
-    ],
+    "full_decade_mean_needed_for_t2_pct_a_year": {
+      "1930s": 13.995112113990942,
+      "1940s": 5.05227798450386,
+      "1950s": 3.7772648846989716,
+      "1960s": 5.258913389618355,
+      "1970s": 7.774753175654311,
+      "1980s": 8.451300913584715,
+      "1990s": 8.009233914121758,
+      "2000s": 8.922623375954853,
+      "2010s": 7.197233443734255
+    },
     "window_trials_mean_d_pct_a_year": {
       "M1": {
         "I1": 3.0491608929946126,
@@ -135,7 +139,6 @@
       "M1b": 0.9625745288534163
     },
     "window_trials_all_positive": true,
-    "window_trials_lowest_O": "M1",
     "mde_80_M1_pct_a_year": 4.7993091849286875
   }
 }

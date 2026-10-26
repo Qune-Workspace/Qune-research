@@ -75,8 +75,20 @@ In progress at the time of this note; its result is added below as a dated secti
 - **Notes:** no formation return was a tie (|R| ≤ 1e-12, in any factor, trial or cost case), so the tie rule (ties take −1) never acted; formation runs from t − 12 to t − 1 with no skipped month, which is this study's reading of the paper (§6), not a quoted rule; the raw zips are git-ignored and the library is rebuilt monthly, so a reader cannot download this snapshot again (the manifest's hashes identify it); the DSR at N = 10, 31 and 595 reuses the variance of Sharpe ratios across the three trials (the programme's convention; no weight); `summary.json` records no commit hash, so "code `eef348e`" is read from the commit order (the run's code is the HEAD the run started from; nothing in `src/` changed after `55aa9e3`).
 - **Not checked by the reviewer:** the 564 private desk rows behind the 595 count; whether the zips are byte-for-byte what the library served (no network).
 
+## Charts (§9.6, added 2026-10-26, commits be25445 11:18:56Z and 3f0c39e 11:24:54Z by git; descriptive, no decision weight; Tester chart check done: CHART_REVIEW.md, sixth section)
+
+Drawn from the committed history files by [`charts/make_charts.py`](charts/make_charts.py) (adapted from Study 008's); every number in a title is computed by the script and listed with the input hashes in [`charts/manifest.json`](charts/manifest.json). SVG beside each PNG. "Edge over its own average positions" is d, the rule's return less B3; it is not the rule's return over holding the factors, which was −0.36% a year. A separate Tester (Opus, isolated) recomputed every number on the four charts: all match except one wrong cost unit in a subtitle; four charts must-fix (title wording in all four, that cost unit, an accent chosen by a descriptive t), seven should-fix, all answered before this section was written ([CHART_REVIEW.md](../../CHART_REVIEW.md), sixth section).
+
+![T1's edge over its own average positions was +4.0% a year before 1963, +2.0% in the paper's window and +0.4% after it, yet the rule trailed holding the four factors (−0.36% a year; not supported)](charts/history_cumulative_d.png)
+
+![T1's edge over its own average positions was positive in every decade from the 1920s to the 1990s and negative in the 2000s and 2010s (−0.9% and −0.2% a year); +0.5% in the 2020s so far (80 months)](charts/history_d_by_decade.png)
+
+![Long-term reversal added most to T1's edge over its own average positions (+0.91% a year) and short-term reversal least (+0.37%); the four sum to +2.57%, but the rule trailed holding the factors (−0.36% a year)](charts/history_factor_contributions.png)
+
+![T1's edge over its own average positions fell from +4.0% a year before 1963 to +2.0% in the paper's window and +0.4% after it; T1a fell the same way; T1b's rose (−0.5%, +1.2%, +1.4%)](charts/history_trials_by_window.png)
+
 ## Next
 
-1. The separate-session recomputation of every figure on this page.
-2. Charts to the house standard, through the Tester chart check (§9.6).
+1. ~~The separate-session recomputation of every figure on this page~~: done 2026-10-26 (`d2ea8cc`; above).
+2. ~~Charts to the house standard, through the Tester chart check (§9.6)~~: done 2026-10-26 (above; commits be25445 and 3f0c39e).
 3. The forward record code (`forward010.py`, shadow only; §11), before the first forward month is due. Over 60 months it can see only a Sharpe of d of about 1.27, so its verdict will be worded as a low-power check.

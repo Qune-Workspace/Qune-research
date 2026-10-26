@@ -1,6 +1,6 @@
 {
-  "commit": "930db95",
-  "generated_at_utc": "2026-10-26T22:22:32Z",
+  "commit": "961d9c9",
+  "generated_at_utc": "2026-10-26T22:27:12Z",
   "outputs_sha256": {},
   "studies": [
     {
@@ -60,7 +60,7 @@
         "research/010-factor-momentum-french-us/paper-log/positions.csv": "2af9172ac8e91042e39fe29f3f6a6181f8136a5d513c00e05abca52dcb16a522",
         "research/010-factor-momentum-french-us/paper-log/releases/fetch_log.csv": "845f0dc9b49fa314bd78aaba813ade0ad4ac62504564c0f5b1fc39d67245d2c3"
       },
-      "next_record_due": "2026-10, from release 202609 once published",
+      "next_record_due": "2026-10, from release 202609 (not yet archived)",
       "records": 1,
       "shadow_lines": 0,
       "study": "Study 010"
@@ -71,7 +71,7 @@
         "research/011-industry-momentum-french-us/paper-log/cohorts.csv": "e1be5eb868c769c0952c0f7a445a5cf13d9aec89058231f4c32d6491eb634b9e",
         "research/011-industry-momentum-french-us/paper-log/releases/fetch_log.csv": "9215c438671de4c3483c62469075188c17905e7f8019e26b2055aa7a67bd8fee"
       },
-      "next_record_due": "2026-10, from release 202609 once published",
+      "next_record_due": "2026-10, from release 202609 (not yet archived)",
       "records": 1,
       "shadow_lines": 0,
       "study": "Study 011"

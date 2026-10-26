@@ -555,8 +555,14 @@ def own_release_loader(raw_root: Path = FORWARD_RAW, releases_dir: Path = RELEAS
     return load
 
 
-def check_rows(pos: pd.DataFrame, commit_times: dict, own_release) -> None:
-    """Each scored row equals its first commit and is reproduced from its own release (review must-fix 1, should-fix 2)."""
+def check_rows(pos: pd.DataFrame, commit_times: dict, own_release) -> list[str]:
+    """Each scored row equals its first commit and is reproduced from its own release (review must-fix 1, should-fix 2).
+
+    h must match exactly and the formation return to 1e-12 relative (a library upgrade by 2031 may move the last
+    digit; re-check should-fix 1).  If a release's raw files are no longer on disk (the library serves only the
+    latest release), its months are returned as not re-checked and listed in score.json; the rows themselves are
+    still held to their first commit (re-check should-fix 4)."""
+    not_rechecked = []
     for r in pos.to_dict("records"):
         key = (r["month"], r["trial"], r["factor"])
         if key not in commit_times:
@@ -565,15 +571,21 @@ def check_rows(pos: pd.DataFrame, commit_times: dict, own_release) -> None:
         if any(str(r[c]) != first[c] for c in first):
             raise SystemExit(f"STOP: {key} differs from its first commit; a record is never replaced (§11)")
     for month in sorted(pos["month"].unique()):
-        f, release, sha = own_release(month)
+        try:
+            f, release, sha = own_release(month)
+        except FileNotFoundError:
+            not_rechecked.append(month)
+            continue
         mine = pos[pos["month"] == month]
         if set(mine["release"]) != {release} or set(mine["files_sha256"]) != {sha}:
             raise SystemExit(f"STOP: {month}'s rows do not name release {release} and its files' SHA-256")
         again = {(x["trial"], x["factor"]): x for x in positions_for(f, month)}
         for r in mine.itertuples(index=False):
             x = again[(r.trial, r.factor)]
-            if int(r.h) != x["h"] or r.formation_return != x["formation_return"]:
+            a, b = float(r.formation_return), float(x["formation_return"])
+            if int(r.h) != x["h"] or abs(a - b) > 1e-12 * max(1.0, abs(b)):
                 raise SystemExit(f"STOP: {month} {r.trial} {r.factor} is not reproduced from release {release}")
+    return not_rechecked
 
 
 def scoring_release(months: pd.PeriodIndex, releases: dict[str, dict]) -> str:
@@ -590,7 +602,9 @@ def _ever_committed(path: Path) -> bool:
     cwd = next(d for d in [path.parent, *path.parent.parents] if d.exists())
     r = subprocess.run(["git", "log", "--all", "--format=%H", "--", str(path.resolve())], cwd=cwd,
                        capture_output=True, text=True)
-    return r.returncode == 0 and bool(r.stdout.strip())
+    if r.returncode != 0:
+        raise SystemExit(f"STOP: git could not say whether {path.name} was committed before ({r.stderr.strip()})")
+    return bool(r.stdout.strip())
 
 
 def _clean(o):
@@ -624,8 +638,8 @@ def score(release: str, pos: pd.DataFrame, commit_times: dict, raw_root: Path = 
     first = scoring_release(months, archived(releases_dir))
     if release != first:
         raise SystemExit(f"STOP: the scoring release is {first}, the first archived release containing {months[-1]}")
-    check_rows(pos, commit_times, own_release or own_release_loader(raw_root, releases_dir, snapshot_raw,
-                                                                    snapshot_manifest))
+    not_rechecked = check_rows(pos, commit_times, own_release or own_release_loader(raw_root, releases_dir,
+                                                                                   snapshot_raw, snapshot_manifest))
     f = _release_frame(release, raw_root, releases_dir)
     if any(f[k].last_valid_index() < months[-1] for k in FACTORS):
         raise SystemExit(f"STOP: release {release} does not contain {months[-1]} for every factor")
@@ -655,6 +669,7 @@ def score(release: str, pos: pd.DataFrame, commit_times: dict, raw_root: Path = 
               "scored_at_utc": now_utc or _utc_now(), "N_family": N_FAMILY,
               "variance_across_trials": var, "floor_applied": floored, "trials": trials,
               "headline": f"T1: {trials['T1']['verdict']['row']}",
+              "months_not_rechecked_raw_files_missing": not_rechecked,
               "vintage": vintage_row(f, f_snap, pos, months)}
     out.parent.mkdir(parents=True, exist_ok=True)
     with open(out.with_suffix(".lock"), "w") as lock:

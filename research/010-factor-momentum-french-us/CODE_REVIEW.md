@@ -145,3 +145,63 @@ With this, the code can write Study 010's first real record, the 2026-09 positio
 ## After the re-check (Qune)
 
 Both notes taken before the first record: `record()` also reads each zip's own header line and refuses unless all three name t − 1 (N1); `downloaded_at()` refuses a manifest without a download time, and the tests' synthetic manifests now carry one (N2). One test added for both; 13 tests in `test_forward010.py`, 44 in the study, `ruff` and `mypy` clean. Not re-reviewed: both changes only add refusals. The change to `tests/test_programme_count.py` is an import-order fix that `ruff check .` flagged on the committed file; it is committed separately.
+
+---
+
+# Forward record, part 2 (fetch, lateness, interim, scoring): separate-session code review
+
+The reviewer was a separate Opus 5.5 session, isolated, read-only, in its own clone at `2c5ccb9`, on synthetic data only and with no network. It ran nothing against the real `paper-log/` or `results/`. Its report is below, shortened only by dropping its scratch-file paths and by light formatting. My response follows, then the re-check.
+
+## Report (first review, HEAD `2c5ccb9`, 2026-10-26 12:23:59Z–12:29:27Z by the reviewer's `date -u`)
+
+**Verdict: FAIL (must-fix present).**
+
+**Must-fix**
+
+1. `score` / `row_commit_times` / `read_positions`: the h that gets scored is whatever is in the working tree, not the h that was committed. `row_commit_times` kept only the time of each key's first commit and threw away that commit's contents; `score` took h from the current file; nothing compared the two. Reproduced: a row committed on 2026-11-01 with h = +1 and rewritten to h = −1 in a commit dated 2031-10-01 kept the 2026-11-01 time, was scored at h = −1 and was not labelled late; an uncommitted edit behaved the same way. End to end, flipping every T1 h was accepted with `rows_late == 0` and showed only as `vintage.h_rows_differing == 85`. So a position picked after month t's return was known could be scored and labelled on time, which §11 rules out. Fix: keep the first-committed contents and refuse any difference; add a test.
+
+**Should-fix**
+
+1. "Scored once" rested only on `score.json` existing, and the release was a free choice: score with 203108, delete the output, score again with 203109, and mean d differs. Fix: the code picks the release itself (the first archived release named 203108 or later) and refuses a run if git has ever committed `score.json`.
+2. `score` did not check rows against their own release (release = month − 1, `files_sha256` against the release's json or the snapshot's manifest, h recomputed with `positions_for`). Fix: recompute and STOP on any mismatch.
+3. `fetch`: a crash between moving the files and writing `releases/<rel>.json` locked that release out for good. Fix: write the json to a temp file first, or treat files without their json as incomplete.
+4. `fetch`: two runs at once shared `_incoming`, each removing it at the start. Fix: `tempfile.mkdtemp` plus an flock.
+5. `score`: late rows were only counted, not listed. Fix: list them.
+6. Tests weak in places: the C2/C4 test would probably pass if `score` recomputed h; no test reached a "does not meet" row; DSR at N = 3 untested beyond the field; no rewrite or uncommitted-edit test.
+
+**Notes**
+
+1. `%cI` is the committer's clock; push or remote time is stronger evidence. A shallow clone would date rows at the shallow boundary (refuse it); no `--follow` if the file is renamed; use the minimum time rather than the first in topological order.
+2. Design (a), lateness against the desk's own first download, is acceptable: `record(t + 1)` needs release t archived, so release t is always downloaded before month t + 1 is recorded. Two gaps to disclose: refused fetches are never logged, and a desk that delays fetching can never be late.
+3. `results/forward/score.lock` and `score.tmp` are not git-ignored.
+4. Design (b), the first month's cost from h at H's end, matches the engine running straight through; (c) the wording is fine with the label attached; (d) the refusal rules are correct. All four need a §16 entry.
+5. `json.dumps(default=float)` would write NaN into `score.json`.
+
+**Checked and found correct (reviewer's own runs):** 54 tests pass; `forward_frame` against `rule.run` over 2026-09 to 2031-08, all three trials, base and stress, largest difference 0.0; `h_at_h_end()` on the committed monthly file; `forward_verdict` against `history.criteria` on a grid around every threshold; DSR call at N = 3; the B3-zero leg; second `score`, 59-month record, unarchived release, release ending 2031-07 and a missing LT_Rev month all stop and write nothing; UTC conversion of a `+01:00` commit; fetch refusals leave no staging; vintage row finds one changed HML month and none for SMB; interim has no t and no verdict; no part-2 test touches the real repository; part 1's `record` unchanged.
+
+## Response (fixes in `0cac41d`)
+
+| Item | Done |
+|---|---|
+| Must-fix 1 | `row_commit_times` returns, per row, the earliest commit time and the row as first committed; `score` refuses any row that differs from it or was never committed. Tests: rewrite in a later commit keeps the first contents; a rewritten or uncommitted row stops the scoring. |
+| Should-fix 1 | `scoring_release()` fixes the release as the first archived one containing 2031-08 and refuses any other; `score` refuses if `score.json` exists or git has ever committed it (`git log --all`). Test added. |
+| Should-fix 2 | `check_rows` reproduces every row (release name, files' SHA-256, h, formation return) from its own release (the snapshot for 2026-09, `releases/<t − 1>.json` after). Test added. |
+| Should-fix 3 | The json is written to a temp file, the files moved, then the json renamed; files left without their json are cleared and fetched again (no record existed, so no download is repeated on the record). Test added. |
+| Should-fix 4 | Own `mkdtemp` staging under an flock on `raw/.fetch.lock`. |
+| Should-fix 5 | `late_rows` listed per trial. |
+| Should-fix 6 | Tests added: T's mean rebuilt by hand from the committed h; a rule always wrong in sign gives "does not meet C2 and C4"; DSR equal to the library's at N = 3 to 1e-12. |
+| Note 1 | Shallow clone refused; earliest time taken; the committer-clock caveat is in §16 with the push events as stronger evidence. |
+| Note 2 | Every fetch attempt appended to `paper-log/releases/fetch_log.csv`; both gaps disclosed in §16. |
+| Note 3 | Lock and temp files git-ignored. |
+| Note 4 | PREREGISTRATION.md §16 dated addition (2026-10-26), items 1–6. |
+| Note 5 | NaN and infinities written as null, `allow_nan=False`. |
+
+## Re-check (same reviewer session, 2026-10-26 12:36:51Z–12:41:50Z by its `date -u`)
+
+**Verdict: PASS.** Every fix in `0cac41d` held against the earlier probes; nothing new at must-fix. The reviewer ran the real path end to end on synthetic data: snapshot 202608 and archived releases 202609 to 203108, 60 months written by `record`, committed in a temporary git repo, then `row_commit_times` and `score` with the default own-release loader: all 600 rows (240 T1, 120 T1a, 240 T1b) reproduced from their own releases, 2026-09 from the snapshot. M1 (rewrite and uncommitted edit stop, no output), S1 (203109 refused; a committed-then-deleted `score.json` stops), S3 (forced crash between the move and the json rename: next fetch clears the leftover and keeps the release), S4, S5 and the notes confirmed. Suite 59 passed.
+
+New should-fix: (1) the formation return was compared as an exact string, so a NumPy or pandas upgrade by 2031 could block every row: compare with a tolerance; (2) `_ever_committed` let scoring through when git failed: stop instead; (3) no repo test used the default own-release loader; (4) scoring needs all 60 sets of raw files, git-ignored and no longer served by the library: state a backup requirement. Note: a fetch that raises is not logged, and a re-fetch after a crash gets a later download time; disclose both.
+
+## After the re-check (Qune)
+
+All four should-fix items and the note taken: tolerance 1e-12 relative on the formation return, h exact; `_ever_committed` stops when git fails (test); a test of the default loader (snapshot for 2026-09, archive for 2026-10, `FileNotFoundError` when the raw files are gone); a missing release's raw files no longer stop the scoring for good: the month is listed in `score.json` under `months_not_rechecked_raw_files_missing` (rows still held to their first commit), and the five-year backup requirement and the two lateness gaps are in PREREGISTRATION.md §16 item 7. Study suite 61 passed; ruff clean.

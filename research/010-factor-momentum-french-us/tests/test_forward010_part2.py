@@ -12,6 +12,7 @@ from src.rule import COST_BASE, COST_STRESS, TRIALS, run
 from tests.test_forward010 import synthetic, write_release
 
 MONTHS = pd.period_range("2026-09", periods=60, freq="M")
+REAL_EVER_COMMITTED = fw._ever_committed
 
 
 class Resp:
@@ -182,6 +183,35 @@ def setup_score(tmp_path, f, release="203108", f_snap=None):
     return pos, times, kw
 
 
+@pytest.fixture(autouse=True)
+def _outside_git(monkeypatch):
+    """score() asks git whether score.json was ever committed; tmp_path is not a repo, so answer False here."""
+    monkeypatch.setattr(fw, "_ever_committed", lambda path: False)
+
+
+def test_ever_committed_stops_when_git_fails(tmp_path):
+    with pytest.raises(SystemExit, match="git could not say"):
+        REAL_EVER_COMMITTED(tmp_path / "score.json")
+
+
+def test_default_own_release_loader_uses_the_snapshot_then_the_archive(tmp_path):
+    f = synthetic("2026-09")
+    snap_dir, snap_man = snapshot(tmp_path, f.loc[: pd.Period("2026-08", "M")])
+    raw, rel = tmp_path / "raw", tmp_path / "releases"
+    (raw / "202609").mkdir(parents=True)
+    _, man = write_release(raw / "202609", f, "202609")
+    rel.mkdir()
+    man.rename(rel / "202609.json")
+    load = fw.own_release_loader(raw, rel, snap_dir, snap_man)
+    a, ra, sa = load("2026-09")
+    b, rb, sb = load("2026-10")
+    assert (ra, rb) == ("202608", "202609") and sa == fw.files_sha256(snap_man)
+    assert sb == fw.files_sha256(rel / "202609.json") and b.index[-1] == pd.Period("2026-09", "M")
+    shutil.rmtree(raw / "202609")
+    with pytest.raises(FileNotFoundError):  # raw files gone: check_rows lists the month as not re-checked
+        fw.own_release_loader(raw, rel, snap_dir, snap_man)("2026-10")
+
+
 def test_score_once_with_decision_rows_and_vintage(tmp_path):
     f = synthetic("2031-08", seed=7)
     snap = f.loc[: pd.Period("2026-08", "M")].copy()
@@ -198,6 +228,7 @@ def test_score_once_with_decision_rows_and_vintage(tmp_path):
     assert vin["per_factor_over_H"]["HML"]["months_differing"] == 1
     assert vin["per_factor_over_H"]["SMB"]["months_differing"] == 0
     assert vin["h_rows_compared"] == len(pos) and vin["h_rows_differing"] == 0
+    assert res["months_not_rechecked_raw_files_missing"] == []
     with pytest.raises(SystemExit, match="scored once"):
         fw.score("203108", pos, times, **kw)
 

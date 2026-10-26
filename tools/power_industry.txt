@@ -1,0 +1,21 @@
+Power first for industry momentum [MG99] on the library's industry portfolios (tools/power_industry.py)
+K = 2.842 (t >= 2.0 at 80% power); nw 1.00 / largest observed 1.108; library 1926-07..2026-08
+no return read; months from the paper's stated sample and the library's detail pages only
+
+Check first: 128 months reproduce tools/power_mined.txt (0.870 / 0.964)
+  S_MDE(128) = 0.870 / 0.964
+Paper's window 1963-07..1995-07 (raw industry profits): 385 calendar months, all counted as used
+
+  id     window                                      months             N    S_MDE          x pool 0.321
+  I1     before the paper's sample (return months)   1927-06..1963-06    433  0.473 / 0.524  1.47x / 1.63x
+  I2     after the paper's sample                    1995-08..2026-08    373  0.510 / 0.565  1.59x / 1.76x
+  I1+I2  all months outside the paper's sample       both                806  0.347 / 0.384  1.08x / 1.20x
+  full   whole library history (mined in part)       1927-06..2026-08   1191  0.285 / 0.316  0.89x / 0.98x
+
+Comparison with the rows already decided (committed outputs):
+  Study 010 outside its paper's window, 560 months: 0.416 / 0.461 (tools/power_study010.txt)
+  vol-managed / dynamic momentum after their samples, 128-161 months: 0.776-0.964 (tools/power_mined.txt);
+  not fixed (RESEARCH_AGENDA.md, dated addition 2026-10-26 13:2xZ)
+
+Months needed to see the pool's Sharpe(d) 0.321 (nw 1.00 / largest observed):
+    941 /  1155

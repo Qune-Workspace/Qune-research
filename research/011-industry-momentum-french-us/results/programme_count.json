@@ -1,0 +1,83 @@
+{
+  "counted_at_utc": "2026-10-26T16:16:11Z",
+  "public_trials_md": 34,
+  "with_desk_registry": 598,
+  "public_by_study": {
+    "001-slope-duration-switch": 3,
+    "002-slope-duration-switch-r": 3,
+    "003-bond-tsmom-ief": 3,
+    "004-xasset-trend-voltarget": 4,
+    "005-duration-trend-regime": 3,
+    "006-term-spread-switch-long-history": 3,
+    "007-bond-carry-tilt-long-history": 5,
+    "008-bond-value-tilt-long-history": 3,
+    "009-pooled-forward-duration-timing": 1,
+    "010-factor-momentum-french-us": 3,
+    "011-industry-momentum-french-us": 3
+  },
+  "public_ids_by_study": {
+    "001-slope-duration-switch": [
+      "T1",
+      "T2",
+      "T3"
+    ],
+    "002-slope-duration-switch-r": [
+      "T1",
+      "T2",
+      "T3"
+    ],
+    "003-bond-tsmom-ief": [
+      "T1",
+      "T2",
+      "T3"
+    ],
+    "004-xasset-trend-voltarget": [
+      "T1",
+      "T2",
+      "T3",
+      "T4"
+    ],
+    "005-duration-trend-regime": [
+      "T1",
+      "T2",
+      "T3"
+    ],
+    "006-term-spread-switch-long-history": [
+      "T1",
+      "T2",
+      "T3"
+    ],
+    "007-bond-carry-tilt-long-history": [
+      "T1",
+      "T1a",
+      "T1b",
+      "T2",
+      "T3"
+    ],
+    "008-bond-value-tilt-long-history": [
+      "T1",
+      "T1a",
+      "T1b"
+    ],
+    "009-pooled-forward-duration-timing": [
+      "P1"
+    ],
+    "010-factor-momentum-french-us": [
+      "T1",
+      "T1a",
+      "T1b"
+    ],
+    "011-industry-momentum-french-us": [
+      "M1",
+      "M1a",
+      "M1b"
+    ]
+  },
+  "desk_registry": {
+    "rows": 564,
+    "correction_rows": 6,
+    "family_keyword_hits": 0
+  },
+  "family_keyword_pattern": "industr|momentum|french|sector|fama",
+  "method": "Every row of the registered-trials table (header '| ID |') in each research/*/trials.md, counted as written: rows never run (001, 002, 009 so far, this study's three until its history run) and rows carried over from another study (002's and 006's T1-T3 restate Study 001's rules; 006 ran them on a different sample) are all counted, so the figure is an upper bound on distinct rules. with_desk_registry adds every row of the desk's private registry (JSON lines), declaration and correction rows included, also an upper bound; that part cannot be checked by a reader. A case-insensitive search of every desk row for the family pattern finds whether any desk trial ranked industries or traded momentum. No decision weight: C3 is decided at N = 3 (\u00a79.4)."
+}

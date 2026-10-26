@@ -197,31 +197,31 @@ L 482.976 268.608123
 " clip-path="url(#pd8b25a69e9)" style="fill: none; stroke: #8a8a8a; stroke-width: 0.8; stroke-linecap: round"/>
    </g>
    <g id="text_9">
-    <text style="font-size: 9px; font-family: 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #1f1f1f" x="91.984225" y="139.771744" transform="rotate(-0 91.984225 139.771744)">4.0</text>
+    <text style="font-size: 10px; font-family: 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #1f1f1f" x="91.984225" y="139.53151" transform="rotate(-0 91.984225 139.53151)">+4.0%</text>
    </g>
    <g id="text_10">
-    <text style="font-size: 9px; font-family: 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #1f1f1f" x="232.7523" y="200.86663" transform="rotate(-0 232.7523 200.86663)">2.0</text>
+    <text style="font-size: 10px; font-family: 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #1f1f1f" x="232.7523" y="200.626396" transform="rotate(-0 232.7523 200.626396)">+2.0%</text>
    </g>
    <g id="text_11">
-    <text style="font-size: 9px; font-family: 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #1f1f1f" x="373.520376" y="252.230711" transform="rotate(-0 373.520376 252.230711)">0.4</text>
+    <text style="font-size: 10px; font-family: 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #1f1f1f" x="373.520376" y="251.990476" transform="rotate(-0 373.520376 251.990476)">+0.4%</text>
    </g>
    <g id="text_12">
-    <text style="font-size: 9px; font-family: 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #6b6b6b" x="128.583925" y="161.673098" transform="rotate(-0 128.583925 161.673098)">3.3</text>
+    <text style="font-size: 10px; font-family: 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #6b6b6b" x="128.583925" y="161.432864" transform="rotate(-0 128.583925 161.432864)">+3.3%</text>
    </g>
    <g id="text_13">
-    <text style="font-size: 9px; font-family: 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #6b6b6b" x="269.352" y="192.304417" transform="rotate(-0 269.352 192.304417)">2.3</text>
+    <text style="font-size: 10px; font-family: 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #6b6b6b" x="269.352" y="192.064183" transform="rotate(-0 269.352 192.064183)">+2.3%</text>
    </g>
    <g id="text_14">
-    <text style="font-size: 9px; font-family: 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #6b6b6b" x="410.120075" y="245.886731" transform="rotate(-0 410.120075 245.886731)">0.6</text>
+    <text style="font-size: 10px; font-family: 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #6b6b6b" x="410.120075" y="245.646497" transform="rotate(-0 410.120075 245.646497)">+0.6%</text>
    </g>
    <g id="text_15">
-    <text style="font-size: 9px; font-family: 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #6b6b6b" x="165.183624" y="294.705937" transform="rotate(-0 165.183624 294.705937)">−0.5</text>
+    <text style="font-size: 10px; font-family: 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #6b6b6b" x="165.183624" y="295.465702" transform="rotate(-0 165.183624 295.465702)">−0.5%</text>
    </g>
    <g id="text_16">
-    <text style="font-size: 9px; font-family: 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #6b6b6b" x="305.9517" y="226.85297" transform="rotate(-0 305.9517 226.85297)">1.2</text>
+    <text style="font-size: 10px; font-family: 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #6b6b6b" x="305.9517" y="226.612735" transform="rotate(-0 305.9517 226.612735)">+1.2%</text>
    </g>
    <g id="text_17">
-    <text style="font-size: 9px; font-family: 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #6b6b6b" x="446.719775" y="219.251304" transform="rotate(-0 446.719775 219.251304)">1.4</text>
+    <text style="font-size: 10px; font-family: 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #6b6b6b" x="446.719775" y="219.01107" transform="rotate(-0 446.719775 219.01107)">+1.4%</text>
    </g>
    <g id="text_18">
     <text style="font-size: 10px; font-family: 'DejaVu Sans', sans-serif; text-anchor: start; fill: #0b5394" x="55.728" y="349.316406" transform="rotate(-0 55.728 349.316406)">■</text>
@@ -243,20 +243,20 @@ L 482.976 268.608123
    </g>
   </g>
   <g id="qune-title">
-   <text style="font-weight: 700; font-size: 13.5px; font-family: 'DejaVu Sans', sans-serif; fill: #1f1f1f" transform="translate(12.384 27.058922)">T1's gain fell from +4.0% a year before 1963 to +2.0% in the</text>
-   <text style="font-weight: 700; font-size: 13.5px; font-family: 'DejaVu Sans', sans-serif; fill: #1f1f1f" transform="translate(12.384 42.583922)">paper's window and +0.4% after it; T1a fell the same way; T1b was</text>
-   <text style="font-weight: 700; font-size: 13.5px; font-family: 'DejaVu Sans', sans-serif; fill: #1f1f1f" transform="translate(12.384 58.108922)">negative before 1963 (−0.5% a year)</text>
+   <text style="font-weight: 700; font-size: 13.5px; font-family: 'DejaVu Sans', sans-serif; fill: #1f1f1f" transform="translate(12.384 27.058922)">T1's edge over its own average positions fell from +4.0% a year</text>
+   <text style="font-weight: 700; font-size: 13.5px; font-family: 'DejaVu Sans', sans-serif; fill: #1f1f1f" transform="translate(12.384 42.636656)">before 1963 to +2.0% in the paper's window and +0.4% after it; T1a</text>
+   <text style="font-weight: 700; font-size: 13.5px; font-family: 'DejaVu Sans', sans-serif; fill: #1f1f1f" transform="translate(12.384 58.108922)">fell the same way; T1b's rose (−0.5%, +1.2%, +1.4%)</text>
   </g>
   <g id="qune-subtitle">
    <text style="font-size: 10px; font-family: 'DejaVu Sans', sans-serif; fill: #6b6b6b" transform="translate(12.384 76.958375)">Mean monthly d of each trial, annualised (× 12), %, base costs, by registered window (§8): P1 before the</text>
    <text style="font-size: 10px; font-family: 'DejaVu Sans', sans-serif; fill: #6b6b6b" transform="translate(12.384 88.958375)">source paper's data, L its US data window, P2 after its sample. T1 in accent, the two companions in</text>
-   <text style="font-size: 10px; font-family: 'DejaVu Sans', sans-serif; fill: #6b6b6b" transform="translate(12.384 100.958375)">greys. Descriptive, no decision weight.</text>
+   <text style="font-size: 10px; font-family: 'DejaVu Sans', sans-serif; fill: #6b6b6b" transform="translate(12.384 100.958375)">greys, Jul 1927 to Aug 2026. Descriptive, no decision weight.</text>
   </g>
   <g id="qune-source-line">
    <text style="font-size: 8px; font-family: 'DejaVu Sans', sans-serif; fill: #6b6b6b" transform="translate(12.384 396.4795)">Source: Kenneth R. French Data Library, US research factors SMB, HML, short-term and long-term reversal, monthly, release 202608</text>
    <text style="font-size: 8px; font-family: 'DejaVu Sans', sans-serif; fill: #6b6b6b" transform="translate(12.384 405.96825)">(one snapshot). Sample Jul 1927 to Aug 2026, 1,190 months (LT_Rev held by T1 from Jan 1932). Qune Research, Study 010. Windows in</text>
-   <text style="font-size: 8px; font-family: 'DejaVu Sans', sans-serif; fill: #6b6b6b" transform="translate(12.384 415.6795)">time order (not ranked). Bar labels in % a year. The registered window rule uses P = P1 and P2 together for T1 only: +3.18% a year,</text>
-   <text style="font-size: 8px; font-family: 'DejaVu Sans', sans-serif; fill: #6b6b6b" transform="translate(12.384 425.2795)">t 2.76, 560 months, pass. P2 can detect only a Sharpe of d of about 0.87 at 80% power, so its figure is a weak test. Run once;</text>
+   <text style="font-size: 8px; font-family: 'DejaVu Sans', sans-serif; fill: #6b6b6b" transform="translate(12.384 415.6795)">time order (not ranked). The registered window rule uses P = P1 and P2 together for T1 only: +3.18% a year, t 2.76, 560 months,</text>
+   <text style="font-size: 8px; font-family: 'DejaVu Sans', sans-serif; fill: #6b6b6b" transform="translate(12.384 425.2795)">pass. P2 can detect only a Sharpe of d of about 0.87 at 80% power, so its figure is a weak test. Run once;</text>
    <text style="font-size: 8px; font-family: 'DejaVu Sans', sans-serif; fill: #6b6b6b" transform="translate(12.384 434.8795)">results/history/summary.json. Verdict: not supported (section 9.5); the rule did not beat holding the four factors (C1).</text>
   </g>
  </g>

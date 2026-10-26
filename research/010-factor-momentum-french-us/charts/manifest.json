@@ -1,6 +1,6 @@
 {
-  "made_at_utc": "2026-10-26T11:18:43+00:00",
-  "repository_commit_at_run": "5eec86a319f2e13c72796d2b70d1f03c4943d462",
+  "made_at_utc": "2026-10-26T11:24:22+00:00",
+  "repository_commit_at_run": "be25445179a077c3fcba15a9520bad201931588c",
   "inputs_sha256": {
     "research/010-factor-momentum-french-us/results/history/monthly_base.csv": "cd08c42f5495c6b368d4d35385acf7eda0e77db79ab8d35b9e77fb4001b46dac",
     "research/010-factor-momentum-french-us/results/history/summary.json": "8dddc2841fdc51baf473ebd4d4a6ed058999a7e6726088f43eab27c74a6a3ddd"
@@ -16,10 +16,8 @@
     "research/010-factor-momentum-french-us/charts/history_trials_by_window.svg"
   ],
   "numbers_in_titles": {
-    "cumulative_d_peak_pp": 278.1382092653963,
-    "cumulative_d_peak_month": "2000-02",
     "cumulative_d_end_pp": 254.89728001341376,
-    "cumulative_d_given_back_pp": 23.24092925198255,
+    "cumulative_T_minus_B1_pct_a_year": -0.35732773109243693,
     "window_mean_d_pct_a_year": {
       "P1": 4.012084276355299,
       "L": 2.0301212242643536,
@@ -86,10 +84,7 @@
       "LT_Rev": 2.961154258674343
     },
     "factor_contributions_sum_pct_a_year": 2.5703927396310635,
-    "factor_net_t_ge_2": [
-      "SMB",
-      "LT_Rev"
-    ],
+    "factor_T_minus_B1_pct_a_year": -0.35732773109243693,
     "window_trials_mean_d_pct_a_year": {
       "T1": {
         "P1": 4.012084276355299,

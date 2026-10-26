@@ -1,0 +1,8 @@
+# Direct dependencies of Study 009's scoring code (src/pool.py imports the
+# shared library's newey_west_mean), pinned to the versions the tests were run
+# with; the same pins as qune_research/requirements.txt.
+numpy==2.5.4
+pandas==3.0.6
+scipy==1.18.1
+statsmodels==0.15.0
+pytest==9.1.1

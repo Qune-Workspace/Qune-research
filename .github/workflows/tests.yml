@@ -28,6 +28,7 @@ jobs:
           - research/006-term-spread-switch-long-history
           - research/007-bond-carry-tilt-long-history
           - research/008-bond-value-tilt-long-history
+          - research/009-pooled-forward-duration-timing
           - qune_research
           - desk-view
     steps:

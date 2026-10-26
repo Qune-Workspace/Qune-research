@@ -2,6 +2,8 @@
 
 **Verdict: not supported** (pre-registered row, §9.5; history run once on 2026-10-26 at 16:17:35Z). The rule is a variant of [MG99]'s on the Kenneth French Data Library's industries, not a replication. **Read the disclosure first:** before choosing this question the author knew [MG99]'s result on 1963–1995, that later work has used the library's pre-1963 industry months for related rules (known from abstracts and search summaries only), momentum's crashes in 1932 and 2009, the 1929–32 fall and that published anomalies tend to earn less after publication; the author had not seen any industry's six- or twelve-month return over 1926–1963 or 1995–2026, nor any ranking on them, and no episode was used to choose anything (§2.4 of the pre-registration). The question was chosen after ten earlier studies; only N = 3, this study's own three trials, decides the deflated Sharpe criterion.
 
+*Dated addition, 2026-10-26, after the separate-session recomputation (must-fix M1; the paragraph above is unchanged):* the disclosure above omits one item of §2.4, given here: the later work known from search summaries **includes a ranking study on the library's 10 industries from 1926**, the closest known prior use of these months (`QUESTION.md` §3.1).
+
 The rule ranks the library's 17 value-weighted US industries at each month end on their compounded return over the previous six months (no skipped month), buys the top three and sells the bottom three, equal weight within each leg, and holds each such cohort for six months, so six overlapping cohorts are held at once, 1/6 each (Moskowitz and Grinblatt, *Journal of Finance* 1999, [MG99], used 20 industries of their own on 1963–1995). It is a zero-investment long-short, so the decision difference d is the rule's return itself, against zero. Costs are charged on the netted change in industry weights each month: 10 bp per unit traded in the base case, 50 bp under stress; the drift within a month and the industries' own rebalancing are not charged, which flatters every figure on this page. The decision row O is the months **outside** the paper's sample: I1 (1927-06 to 1963-06, 433 months) and I2 (1995-08 to 2026-08, 373 months), 806 months together.
 
 **What it does and does not show.** Outside the paper's window the rule earned **+3.45% a year, Newey–West t 2.04, Sharpe of d 0.237**, positive on both sides (I1 +3.05%, t 1.31; I2 +3.91%, t 1.60). That passes C1, C2 (just: the bar is t 2.0) and C4, but **fails C3: the deflated Sharpe ratio at N = 3 is 0.935 against 0.95**, so the pre-registered verdict is **not supported**. The DSR is computed with the series' own skewness and kurtosis, and d has a fat left tail (skewness −1.28, kurtosis 12.7; worst month 1932-07, −34.1%). The two fragility companions, judged on their own C1–C4, each meet them (30 industries, five a side: +5.03% a year, t 2.78, DSR 0.984; twelve-month formation: +4.63% a year, t 2.23, DSR 0.963), but a companion cannot lift the headline under the precedence of §9.5, and their rows carry the return-unit label (below). At **50 bp stress costs** the headline falls to **+1.03% a year, t 0.60**. By decade the gain is weak from the 1970s on (t between 0.24 and 1.30 in every decade from the 1970s to 2020–2026). The test can see only a large edge in return units: the minimum detectable mean at 80% power on O is **4.80% a year**, so a decayed edge of about 2% a year would not be found, and every row that is not "not supported" says "(Sharpe units; the 2%-a-year bar not met)".
@@ -75,7 +77,18 @@ On O, M1's d has an annualised volatility of **14.56%** and a Newey–West to ii
 
 ## Separate-session recomputation (§14 step 8)
 
-To follow, from the committed outputs only.
+A separate Opus session on a clean clone of `9e2bfab` rebuilt the rule from `results/history/industries_17.csv` and `industries_30.csv` alone, without the study's `src/` ([REVIEW.md](REVIEW.md), script [`review_recompute.py`](review_recompute.py)). **Confirmed with findings, no wrong number:** every monthly series of the three trials matches `monthly.csv` (largest difference 7.1e-15), all 3,585 ranking months match `cohorts.json`, and every figure on this page and in the root README's Study 011 text matches to the printed precision; the verdict stands. One must-fix (the disclosure, answered above) and seven should-fix (four on the root README, fixed there in place; three here, answered below). Not checked by the reviewer: the push before the run (no remote access) and the desk-registry part of the count (private).
+
+*Dated additions, 2026-10-26, answering the review (the text above is unchanged):*
+
+1. **The paper comparison** (should-fix 2): "a weaker version of the paper's 20, not a stronger one" claims more than the figures show. M1's 0.29% a month over M has a Newey–West standard error of about 0.18% a month, so the paper's 0.43% is under one standard error away. Read instead: the variant earned less than the paper on the paper's window; whether the industry set is weaker is not shown.
+2. **The twelve worst months** (should-fix 3) are taken over the full history, not O. On O alone the first nine are the same; the tenth to twelfth are 2002-11 −10.14%, 2023-01 −10.03% and 2012-01 −9.60% (1986-09, 1987-10 and 1980-03 fall in M). The skewness −1.28 and kurtosis 12.7 are on O; over the full history they are −1.14 and 12.3.
+3. **"Before 1962 the library's universe is NYSE firms only"** (should-fix 4) is general knowledge, not read from the library's files in this study; pre-registration §10 row 6 labels it so.
+4. **Turnover** (note): the 6.1 and 4.3 units a year are over the full history; on O they are 6.06, 6.04 and 4.23. The cost figures beside them are on O.
+5. **The bootstrap interval** (note) treats O as one series, so a block can span the 1963/1995 join; the two-stretch Newey–West does not (and moves t only from 2.0417 to 2.0424).
+6. **Without the variance floor** (note) M1's DSR at N = 3 would be 0.945, still below 0.95: the floor does not decide the verdict. The DSR rows at N = 11, 34 and 598 use the variance across this study's three trials (floored), not across those trials.
+7. **"Flatters every figure on this page"** (note) is not true of the gross paper comparison or of the equal-weight mean; it holds for every after-cost figure.
+8. **Tests** (note): of the 21, five are data-step tests from `c7753a5` and one came with the review fixes in `8ccf310`; `0ab2ab2` had 20.
 
 ## Charts (§9.6)
 
@@ -83,7 +96,7 @@ To follow (§14 step 9), reviewed against the chart standard.
 
 ## Next
 
-1. Separate-session recomputation of every figure on this page from `results/history/` (§14 step 8); findings answered by dated additions, this text unchanged.
+1. ~~Separate-session recomputation~~ done 2026-10-26 (above).
 2. Charts (§14 step 9) and a Tester chart check.
 3. Forward record code (`forward011.py`) with tests and a separate code review, before the first forward month is due (§11); shadow only, scored once after 60 holding months as a low-power check (detectable Sharpe of d about 1.27).
 

@@ -1,9 +1,8 @@
 """Programme-wide re-count (§9.4, §14 step 5) on synthetic files."""
 import json
 
-import pytest
-
 import programme_count as pc
+import pytest
 
 TABLE = """# Trial log
 

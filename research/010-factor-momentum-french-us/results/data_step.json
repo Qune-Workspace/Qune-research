@@ -1,0 +1,178 @@
+{
+  "run_at_utc": "2026-10-26T09:17:58Z",
+  "parse_only": false,
+  "files": {
+    "F-F_Research_Data_Factors_CSV.zip": {
+      "column_header": [
+        "Mkt-RF",
+        "SMB",
+        "HML",
+        "RF"
+      ],
+      "first_month": "1926-07",
+      "last_month": "2026-08",
+      "rows": 1202,
+      "month_gaps": [],
+      "rows_with_wrong_field_count": [],
+      "marker_months_by_column": {
+        "Mkt-RF": [],
+        "SMB": [],
+        "HML": [],
+        "RF": []
+      }
+    },
+    "F-F_ST_Reversal_Factor_CSV.zip": {
+      "column_header": [
+        "ST_Rev"
+      ],
+      "first_month": "1926-02",
+      "last_month": "2026-08",
+      "rows": 1207,
+      "month_gaps": [],
+      "rows_with_wrong_field_count": [],
+      "marker_months_by_column": {
+        "ST_Rev": []
+      }
+    },
+    "F-F_LT_Reversal_Factor_CSV.zip": {
+      "column_header": [
+        "LT_Rev"
+      ],
+      "first_month": "1931-01",
+      "last_month": "2026-08",
+      "rows": 1148,
+      "month_gaps": [],
+      "rows_with_wrong_field_count": [],
+      "marker_months_by_column": {
+        "LT_Rev": []
+      }
+    }
+  },
+  "last_month_by_file": {
+    "F-F_Research_Data_Factors_CSV.zip": "2026-08",
+    "F-F_ST_Reversal_Factor_CSV.zip": "2026-08",
+    "F-F_LT_Reversal_Factor_CSV.zip": "2026-08"
+  },
+  "h_end": "2026-08",
+  "window_months": {
+    "H": {
+      "from": "1927-07",
+      "to": "2026-08",
+      "months": 1190
+    },
+    "P1": {
+      "from": "1927-07",
+      "to": "1963-06",
+      "months": 432
+    },
+    "L": {
+      "from": "1963-07",
+      "to": "2015-12",
+      "months": 630
+    },
+    "P2": {
+      "from": "2016-01",
+      "to": "2026-08",
+      "months": 128
+    },
+    "P": {
+      "from": "P1 and P2",
+      "months": 560
+    }
+  },
+  "used_columns": {
+    "SMB": {
+      "file": "F-F_Research_Data_Factors_CSV.zip",
+      "months_used": "1926-07 to 2026-08",
+      "markers_in_use": [],
+      "gaps_in_use": []
+    },
+    "HML": {
+      "file": "F-F_Research_Data_Factors_CSV.zip",
+      "months_used": "1926-07 to 2026-08",
+      "markers_in_use": [],
+      "gaps_in_use": []
+    },
+    "ST_Rev": {
+      "file": "F-F_ST_Reversal_Factor_CSV.zip",
+      "months_used": "1926-07 to 2026-08",
+      "markers_in_use": [],
+      "gaps_in_use": []
+    },
+    "LT_Rev": {
+      "file": "F-F_LT_Reversal_Factor_CSV.zip",
+      "months_used": "1931-01 to 2026-08",
+      "markers_in_use": [],
+      "gaps_in_use": []
+    }
+  },
+  "trials": {
+    "T1": {
+      "formation_months": 12,
+      "factors": {
+        "SMB": {
+          "first_holding_month": "1927-07",
+          "first_formation_month": "1926-07",
+          "holding_months_in_H": 1190
+        },
+        "HML": {
+          "first_holding_month": "1927-07",
+          "first_formation_month": "1926-07",
+          "holding_months_in_H": 1190
+        },
+        "ST_Rev": {
+          "first_holding_month": "1927-07",
+          "first_formation_month": "1926-07",
+          "holding_months_in_H": 1190
+        },
+        "LT_Rev": {
+          "first_holding_month": "1932-01",
+          "first_formation_month": "1931-01",
+          "holding_months_in_H": 1136
+        }
+      }
+    },
+    "T1a": {
+      "formation_months": 12,
+      "factors": {
+        "SMB": {
+          "first_holding_month": "1927-07",
+          "first_formation_month": "1926-07",
+          "holding_months_in_H": 1190
+        },
+        "HML": {
+          "first_holding_month": "1927-07",
+          "first_formation_month": "1926-07",
+          "holding_months_in_H": 1190
+        }
+      }
+    },
+    "T1b": {
+      "formation_months": 6,
+      "factors": {
+        "SMB": {
+          "first_holding_month": "1927-07",
+          "first_formation_month": "1927-01",
+          "holding_months_in_H": 1190
+        },
+        "HML": {
+          "first_holding_month": "1927-07",
+          "first_formation_month": "1927-01",
+          "holding_months_in_H": 1190
+        },
+        "ST_Rev": {
+          "first_holding_month": "1927-07",
+          "first_formation_month": "1927-01",
+          "holding_months_in_H": 1190
+        },
+        "LT_Rev": {
+          "first_holding_month": "1931-07",
+          "first_formation_month": "1931-01",
+          "holding_months_in_H": 1142
+        }
+      }
+    }
+  },
+  "stops": [],
+  "outcome": "pass: no \u00a75.4 stop rule met"
+}

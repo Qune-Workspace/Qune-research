@@ -1,0 +1,68 @@
+{
+  "files": {
+    "F-F_LT_Reversal_Factor_CSV.zip": {
+      "bytes": 5333,
+      "csv_bytes": 20815,
+      "csv_member": "F-F_LT_Reversal_Factor.csv",
+      "csv_sha256": "68544047c9890c0599ed940d7dd9e0a8a3da590ace6ad9195325498e4c7ff8e1",
+      "downloaded_at_utc": "2026-10-26T09:17:57Z",
+      "preamble_lines": [
+        "This file was created using the 202608 CRSP database.  It",
+        "contains a momentum factor, constructed from six value-weight portfolios formed",
+        "using independent sorts on size and prior return of NYSE, AMEX, and NASDAQ stocks.",
+        "LT_Rev is the average of the returns on two (big and small) low prior return portfolios",
+        "minus the average of the returns on two high prior return portfolios.  The portfolios",
+        "are constructed monthly.  Big means a firm is above the median market cap on the NYSE",
+        "at the end of the previous month; small firms are below the median NYSE market cap.",
+        "Prior return is measured from month -60 to -13.  Firms in the low prior return",
+        "portfolio are below the 30th NYSE percentile.  Those in the high portfolio are above",
+        "the 70th NYSE percentile.",
+        "Missing data are indicated by -99.99 or -999."
+      ],
+      "sha256": "f4432f4c1dfc32adaae95648bb2dbca23a50511d1dd4855d3c35ca50b1849f4f",
+      "url": "https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/ftp/F-F_LT_Reversal_Factor_CSV.zip"
+    },
+    "F-F_Research_Data_Factors_CSV.zip": {
+      "bytes": 13065,
+      "csv_bytes": 52493,
+      "csv_member": "F-F_Research_Data_Factors.csv",
+      "csv_sha256": "d7d7fe37b150b5b15c9c069b3ba101dfe1af568c6d7b5db6e73cd0a6c0c9e5e5",
+      "downloaded_at_utc": "2026-10-26T09:17:57Z",
+      "preamble_lines": [
+        "This file was created using the 202608 CRSP database.",
+        "The 1-month TBill rate data until 202405 are from Ibbotson Associates. Starting from 202406, the 1-month TBill rate is from ICE BofA US 1-Month Treasury Bill Index.",
+        "The annual TBill return is compounded from the monthly T-bill rates from January to December."
+      ],
+      "sha256": "593f4fbef03181bc0b22ff6292f217689dd1fb79355049ca905d95b262040a66",
+      "url": "https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/ftp/F-F_Research_Data_Factors_CSV.zip"
+    },
+    "F-F_ST_Reversal_Factor_CSV.zip": {
+      "bytes": 5573,
+      "csv_bytes": 21826,
+      "csv_member": "F-F_ST_Reversal_Factor.csv",
+      "csv_sha256": "7e99de693e41eb16b58eda1f8b3455065b183601cd6e86f335b9d4b0f9d77c72",
+      "downloaded_at_utc": "2026-10-26T09:17:57Z",
+      "preamble_lines": [
+        "This file was created using the 202608 CRSP database.  It",
+        "contains a reversal factor, constructed from six value-weight portfolios formed",
+        "using independent sorts on size and prior return of NYSE, AMEX, and NASDAQ stocks.",
+        "ST_Rev is the average of the returns on two (big and small) low prior return portfolios",
+        "minus the average of the returns on two high prior return portfolios.  The portfolios",
+        "are constructed monthly.  Big means a firm is above the median market cap on the NYSE",
+        "at the end of the previous month; small firms are below the median NYSE market cap.",
+        "Prior return is measured as the most recent month's return.  Firms in the low prior return",
+        "portfolio are below the 30th NYSE percentile.  Those in the high portfolio are above",
+        "the 70th NYSE percentile.",
+        "Missing data are indicated by -99.99 or -999."
+      ],
+      "sha256": "06c0d46d819f51f060a149b9f613aed3a8d8fea7da3fc6bbae7e14dbd048119e",
+      "url": "https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/ftp/F-F_ST_Reversal_Factor_CSV.zip"
+    }
+  },
+  "library_page": {
+    "bytes": 245732,
+    "read_at_utc": "2026-10-26T09:17:56Z",
+    "sha256": "9af7df28fb25d32d7ab81e1b6eaddebb167f57cc013cb437c85c154727ce9065",
+    "url": "https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/data_library.html"
+  }
+}

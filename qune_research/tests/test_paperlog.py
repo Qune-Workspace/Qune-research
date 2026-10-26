@@ -216,7 +216,7 @@ def test_shadow_file_is_configurable_for_the_sleeve_summary(root):
 
 MONTHLY_SPEC = paperlog.LogSpec(
     study="Study 010", folder="research/010-test", kind="monthly position record", label="not supported",
-    first_signal_date="2026-09", records_file="positions.csv", record_format="{factor} {h:+d}",
+    first_signal_date="2026-09", records_file="positions.csv", record_format="{factor} {h:+g}",
     release_log="releases/fetch_log.csv", scored_note="once after 60 months", chart_note="No equity line here.",
 )
 COHORT_SPEC = paperlog.LogSpec(
@@ -234,13 +234,14 @@ def test_monthly_records_group_by_month_and_trial_in_file_order(root):
     folder = root / MONTHLY_SPEC.folder / "paper-log"
     folder.mkdir(parents=True)
     _positions(folder, [("2026-10", "T1", "SMB", -1, "202609", False),
+                        ("2026-09", "T1b", "HML", 1, "202608", False),
                         ("2026-09", "T1", "SMB", 1, "202608", False), ("2026-09", "T1", "ST_Rev", -1, "202608", False),
                         ("2026-09", "T1a", "HML", 1, "202608", False)])
     st = paperlog.status(root, MONTHLY_SPEC)
     assert [r["signal_date"] for r in st.records] == ["2026-09", "2026-10"]
-    assert st.records[0]["target"] == "T1: SMB +1, ST_Rev -1<br>T1a: HML +1"
-    assert st.records[0]["release"] == "202608" and st.records[0]["rows"] == 3
-    assert st.next_due == "2026-11, from release 202610 once published"
+    assert st.records[0]["target"] == "T1b: HML +1<br>T1: SMB +1, ST_Rev -1<br>T1a: HML +1"   # file order, not sorted
+    assert st.records[0]["release"] == "202608" and st.records[0]["rows"] == 4
+    assert st.next_due == "2026-11, from release 202610 (not yet archived)"
     assert st.shadow.empty and st.equity.empty
     assert f"{MONTHLY_SPEC.folder}/paper-log/positions.csv" in st.inputs
 
@@ -248,17 +249,31 @@ def test_monthly_records_group_by_month_and_trial_in_file_order(root):
 def test_monthly_record_with_no_file_is_due_at_its_first_month(tmp_path):
     st = paperlog.status(tmp_path, MONTHLY_SPEC)
     assert st.records == [] and st.last_check is None
-    assert st.next_due == "2026-09, from release 202608 once published"
+    assert st.next_due == "2026-09, from release 202608 (not yet archived)"
     page = paperlog.render([st], "2026-10-26T22:00:00Z", "abc1234", {})
-    assert "| Study 010 | monthly position record, not supported | 0 | none (scored once at the end) | 2026-09, from release 202608 once published |" in page
+    assert ("| Study 010 | monthly position record, not supported | 0 | none (scored once at the end) | "
+            "2026-09, from release 202608 (not yet archived) |") in page
     assert "| Last release check | none logged |" in page and "| Last record | none yet |" in page
 
 
-def test_late_rows_mark_the_month_late(root):
+def test_a_month_with_two_releases_names_both(root):
     folder = root / MONTHLY_SPEC.folder / "paper-log"
     folder.mkdir(parents=True)
-    _positions(folder, [("2026-09", "T1", "SMB", 1, "202608", False), ("2026-09", "T1", "HML", 1, "202608", True)])
-    assert paperlog.status(root, MONTHLY_SPEC).records[0]["status"] == "late"
+    _positions(folder, [("2026-09", "T1", "SMB", 1, "202608", False), ("2026-09", "T1a", "HML", 1, "202607", False)])
+    assert paperlog.status(root, MONTHLY_SPEC).records[0]["release"] == "202607, 202608"
+
+
+def test_float_positions_pipes_and_blank_reasons_do_not_break_the_page(root):
+    folder = root / MONTHLY_SPEC.folder / "paper-log"
+    (folder / "releases").mkdir(parents=True)
+    _positions(folder, [("2026-09", "T1", "SMB", 1, "202608", False), ("2026-09", "T1", "HML", None, "202608", False)])
+    (folder / "releases" / "fetch_log.csv").write_text("at_utc,kept,release,reason\n2026-10-26T22:16:42Z,False,202608,bad | header\n"
+                                                        "2026-10-26T23:16:42Z,False,202608,\n")
+    st = paperlog.status(root, MONTHLY_SPEC)
+    assert st.records[0]["target"] == "T1: SMB +1, HML +nan"
+    assert paperlog._check_text(st.last_check) == "26 Oct 2026 23:16Z: release 202608, not kept"
+    assert paperlog._check_text({"at_utc": "2026-10-26T22:16:42Z", "kept": "False", "release": "202608",
+                                 "reason": "bad | header"}).endswith("(bad \\| header)")
 
 
 def test_monthly_section_shows_the_record_the_last_check_and_no_chart(root):
@@ -270,24 +285,27 @@ def test_monthly_section_shows_the_record_the_last_check_and_no_chart(root):
     out = root / "dashboard"
     manifest = paperlog.build(root, [MONTHLY_SPEC], out, "2026-10-26T22:30:00Z", commit="deadbee")
     page = (out / "README.md").read_text()
-    assert "| Last record | 2026-09 from release 202608 (recorded) |" in page
+    assert "| Last record | 2026-09 from release 202608 |" in page
     assert "| Last release check | 26 Oct 2026 22:16Z: release 202608, not kept (not newer) |" in page
-    assert "| Next record due | 2026-10, from release 202609 once published |" in page
+    assert "| Next record due | 2026-10, from release 202609 (not yet archived) |" in page
     assert "| Scoring | once after 60 months |" in page
-    assert "| 2026-09 | 202608 | recorded | T1: SMB +1 |" in page
+    assert "| Month | Release | Record by trial |" in page
+    assert "| 2026-09 | 202608 | T1: SMB +1 |" in page
     assert "No equity line here." in page
     assert manifest["outputs_sha256"] == {} and not list(out.glob("*.svg"))
     assert manifest["studies"][0]["records"] == 1
-    assert manifest["studies"][0]["next_record_due"] == "2026-10, from release 202609 once published"
+    assert manifest["studies"][0]["next_record_due"] == "2026-10, from release 202609 (not yet archived)"
     assert f"{MONTHLY_SPEC.folder}/paper-log/releases/fetch_log.csv" in manifest["studies"][0]["inputs_sha256"]
 
 
 def test_kept_release_check_is_reported_as_kept(root):
     folder = root / MONTHLY_SPEC.folder / "paper-log"
     (folder / "releases").mkdir(parents=True)
+    _positions(folder, [("2026-09", "T1", "SMB", 1, "202608", False)])
     (folder / "releases" / "fetch_log.csv").write_text("at_utc,kept,release,reason\n2026-11-03T15:15:00Z,True,202609,\n")
     st = paperlog.status(root, MONTHLY_SPEC)
     assert paperlog._check_text(st.last_check) == "3 Nov 2026 15:15Z: release 202609 kept"
+    assert st.next_due == "2026-10, from release 202609 (archived, record not yet written)"
 
 
 def test_cohort_lists_are_shown_with_commas_not_semicolons(root):
@@ -302,3 +320,22 @@ def test_cohort_lists_are_shown_with_commas_not_semicolons(root):
 
 def test_existing_specs_are_unchanged_by_the_monthly_path(root):
     assert not BOOK_SPEC.monthly and paperlog.status(root, BOOK_SPEC).next_due == "2026-10-30"
+
+
+def test_the_real_010_and_011_specs_read_the_committed_records():
+    """The tool's SPECS against the repository's own paper-log files: a typo in a file name or format fails here."""
+    import importlib.util
+    from pathlib import Path
+    repo = Path(__file__).resolve().parents[2]
+    spec_ = importlib.util.spec_from_file_location("make_paper_dashboard", repo / "tools" / "make_paper_dashboard.py")
+    assert spec_ is not None and spec_.loader is not None
+    tool = importlib.util.module_from_spec(spec_)
+    spec_.loader.exec_module(tool)
+    monthly = {s.study: s for s in tool.SPECS if s.monthly}
+    assert set(monthly) == {"Study 010", "Study 011"}
+    st10 = paperlog.status(repo, monthly["Study 010"])
+    st11 = paperlog.status(repo, monthly["Study 011"])
+    assert st10.records[0]["signal_date"] == "2026-09" and st10.records[0]["release"] == "202608"
+    assert st10.records[0]["target"].startswith("T1: SMB +1, HML +1, ST_Rev -1, LT_Rev +1<br>T1a: SMB +1, HML +1<br>T1b: ")
+    assert st11.records[0]["target"].startswith("M1: long Machn, Oil, Finan / short Steel, Cnstr, Clths<br>M1a: ")
+    assert st10.last_check is not None and st11.last_check is not None

@@ -73,6 +73,7 @@ class LogSpec:
     shadow_file: str = "shadow.csv"
     records_file: str = ""
     record_format: str = ""
+    records_heading: str = "Record by trial"
     release_log: str = ""
     scored_note: str = ""
 
@@ -101,6 +102,7 @@ class Status:
     next_due: str
     inputs: dict[str, str]
     last_check: dict | None = None
+    kept_releases: tuple[str, ...] = ()
 
     @property
     def last_record(self) -> dict | None:
@@ -169,8 +171,13 @@ def next_signal_date(last_signal_date: str | None, first_signal_date: str) -> st
     return str(days[-1].date())
 
 
+def _cell(text: str) -> str:
+    """Text safe inside one markdown table cell."""
+    return str(text).replace("|", "\\|")
+
+
 def _row_text(fmt: str, row: dict) -> str:
-    return fmt.format(**{k: v.replace(";", ", ") if isinstance(v, str) else v for k, v in row.items()})
+    return _cell(fmt.format(**{k: v.replace(";", ", ") if isinstance(v, str) else v for k, v in row.items()}))
 
 
 def monthly_records(frame: pd.DataFrame, spec: LogSpec) -> list[dict]:
@@ -185,17 +192,19 @@ def monthly_records(frame: pd.DataFrame, spec: LogSpec) -> list[dict]:
         for trial in dict.fromkeys(rows["trial"]):
             sub = rows[rows["trial"] == trial].to_dict("records")
             parts.append(f"{trial}: " + ", ".join(_row_text(spec.record_format, r) for r in sub))
-        late = bool(rows["late"].astype(str).str.lower().eq("true").any()) if "late" in rows else False
+        # No late flag is shown: the forward code writes ``late`` False and sets lateness at scoring
+        # from the commit time (§11), so the file cannot say whether a row was on time.
         records.append({"signal_date": month, "release": ", ".join(sorted(rows["release"].unique())),
-                        "late": late, "status": "late" if late else "recorded", "rows": len(rows),
-                        "target": "<br>".join(parts)})
+                        "rows": len(rows), "target": "<br>".join(parts)})
     return records
 
 
-def next_record_month(last_month: str | None, first_month: str) -> str:
+def next_record_month(last_month: str | None, first_month: str, kept: tuple[str, ...] = ()) -> str:
     """The next monthly record and the library release it needs (the first release that contains month t − 1)."""
     month = pd.Period(first_month, "M") if last_month is None else pd.Period(last_month, "M") + 1
-    return f"{month}, from release {(month - 1).strftime('%Y%m')} once published"
+    release = (month - 1).strftime("%Y%m")
+    state = "archived, record not yet written" if release in kept else "not yet archived"
+    return f"{month}, from release {release} ({state})"
 
 
 def due_text(st: Status) -> str:
@@ -208,8 +217,9 @@ def _check_text(check: dict | None) -> str:
     at = pd.Timestamp(check.get("at_utc", ""))
     when = f"{at.strftime('%-d %b %Y %H:%M')}Z" if not pd.isna(at) else "?"
     kept = str(check.get("kept", "")).lower() == "true"
-    return (f"{when}: release {check.get('release', '?')} kept" if kept
-            else f"{when}: release {check.get('release', '?')}, not kept ({check.get('reason', '')})")
+    reason = f" ({check['reason']})" if check.get("reason") else ""
+    return _cell(f"{when}: release {check.get('release', '?')} kept" if kept
+                 else f"{when}: release {check.get('release', '?')}, not kept{reason}")
 
 
 def _uk(day: str | date | pd.Timestamp) -> str:
@@ -249,11 +259,14 @@ def status(root: Path, spec: LogSpec) -> Status:
     last = records[-1]["signal_date"] if records else None
     inputs = {str(p.relative_to(root)): sha256(p) for p in sorted(folder.rglob("*"))
               if p.is_file() and "raw" not in p.relative_to(folder).parts and p.suffix in (".json", ".csv", ".jsonl")}
-    due = (next_record_month(last, spec.first_signal_date) if spec.monthly
+    log_path = folder / spec.release_log if spec.release_log else None
+    log = (pd.read_csv(log_path, dtype=str, keep_default_na=False) if log_path and log_path.is_file()
+           else pd.DataFrame(columns=["at_utc", "kept", "release", "reason"]))
+    check = log.iloc[-1].to_dict() if not log.empty else None
+    kept = tuple(log.loc[log["kept"].str.lower() == "true", "release"]) if not log.empty else ()
+    due = (next_record_month(last, spec.first_signal_date, kept) if spec.monthly
            else next_signal_date(last, spec.first_signal_date))
-    log = read_csv(folder / spec.release_log) if spec.release_log else pd.DataFrame()
-    check = log.astype(str).iloc[-1].to_dict() if not log.empty else None
-    return Status(spec, records, shadow, executions, runs, stops, equity(shadow, spec), due, inputs, check)
+    return Status(spec, records, shadow, executions, runs, stops, equity(shadow, spec), due, inputs, check, kept)
 
 
 # --- Chart -------------------------------------------------------------------------------------
@@ -299,14 +312,14 @@ def _study_section(st: Status, chart_rel: str | None) -> list[str]:
     if spec.monthly:
         rec = st.last_record
         rows = [("Monthly records", f"{len(st.records)}"),
-                ("Last record", f"{rec['signal_date']} from release {rec['release']} ({rec['status']})" if rec else "none yet"),
+                ("Last record", f"{rec['signal_date']} from release {rec['release']}" if rec else "none yet"),
                 ("Last release check", _check_text(st.last_check)),
                 ("Next record due", st.next_due),
                 ("Scoring", spec.scored_note or "not stated")]
         lines += ["| | |", "|---|---|"] + [f"| {k} | {v} |" for k, v in rows] + [""]
         if st.records:
-            lines += ["| Month | Release | Status | Positions by trial |", "|---|---|---|---|"]
-            lines += [f"| {r['signal_date']} | {r['release']} | {r['status']} | {r['target']} |" for r in st.records] + [""]
+            lines += [f"| Month | Release | {spec.records_heading} |", "|---|---|---|"]
+            lines += [f"| {r['signal_date']} | {r['release']} | {r['target']} |" for r in st.records] + [""]
         lines += [spec.chart_note or "No equity line: this record is scored once at the end.", ""]
         return lines
     rows = [("Decision records", f"{len(st.records)}"),
@@ -358,7 +371,8 @@ def render(statuses: list[Status], generated_at_utc: str, commit: str, charts: d
               "`qune_research/style.py`. The SHA-256 of every input file and the generation time are in `manifest.json`. "
               "The page is regenerated by the work loop after each record; a run that finds nothing new changes only the "
               "time stamp. The forward records' own rules (no record before the close, never overwritten, misses "
-              "logged as misses) are in each study's `paper-log/README.md`.", ""]
+              "logged as misses; Studies 010 and 011: only the first release that contains month t − 1, never replaced, late rows "
+              "labelled at scoring from the commit time) are in each study's `paper-log/README.md`.", ""]
     return "\n".join(lines)
 
 

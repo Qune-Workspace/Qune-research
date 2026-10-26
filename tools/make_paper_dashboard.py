@@ -93,24 +93,27 @@ SPECS = [
     # Study 009 has no record of its own (it scores the shadow records of 006 to 008).
     paperlog.LogSpec(
         study="Study 010", folder="research/010-factor-momentum-french-us", kind="monthly position record",
-        label="not supported on 1927–2026; shadow-only, every month scored once after 60 holding months; no paper order",
-        first_signal_date="2026-09", records_file="positions.csv", record_format="{factor} {h:+d}",
+        label="not supported on 1927–2026; shadow-only, scored once after 60 holding months; no paper order",
+        first_signal_date="2026-09", records_file="positions.csv", record_format="{factor} {h:+g}",
+        records_heading="Position h by trial and factor (+1 long, −1 short)",
         release_log="releases/fetch_log.csv",
         scored_note="once, by `python -m src.forward010 score --release YYYYMM`, after 60 holding months (2026-09 to 2031-08), from the "
                     "first archived release that contains 2031-08; a low-power check (detects a Sharpe of d of about 1.27 "
-                    "at 80% power); `interim` gives months recorded, months with a return, cumulative T and B3 and the mean of d, without a t-statistic or verdict",
+                    "at 80% power); lateness is set at scoring from the commit time; `interim` gives months recorded, months with a return, cumulative T and B3 and the mean of d, without a t-statistic or verdict",
         chart_note="No equity line: positions are +1 (long) or −1 (short) per factor; the factor returns of each month "
                    "come from a later library release and are scored only at the end.",
     ),
     paperlog.LogSpec(
         study="Study 011", folder="research/011-industry-momentum-french-us", kind="monthly cohort record",
-        label="not supported on 806 months outside [MG99]'s 1963–1995 sample; shadow-only, scored once after 60 "
-              "holding months; no paper order",
+        label="not supported (a variant of [MG99]'s rule on the library's industries) on 806 months outside "
+              "[MG99]'s 1963–1995 sample; shadow-only, scored once after 60 holding months; no paper order",
         first_signal_date="2026-09", records_file="cohorts.csv", record_format="long {winners} / short {losers}",
+        records_heading="Cohort started this month by trial (ranked at the end of t − 1; held 1/6 with the five "
+                        "earlier cohorts, which are the earlier rows or the history run's)",
         release_log="releases/fetch_log.csv",
         scored_note="once, by `python -m src.forward011 score --release YYYYMM`, after 60 holding months (2026-09 to 2031-08), from the "
                     "first archived release that contains 2031-08; a low-power check (detects a Sharpe of d of about 1.27 "
-                    "at 80% power); `interim` gives counts and the mean and sum of d without a t-statistic or verdict",
+                    "at 80% power); lateness is set at scoring from the commit time; `interim` gives counts and the mean and sum of d without a t-statistic or verdict",
         chart_note="No equity line: each month starts a six-month cohort (winners long, losers short, French Data "
                    "Library industry names); its returns are scored only at the end.",
     ),

@@ -1,0 +1,40 @@
+# Design review of Study 009's pre-registration (before its first commit)
+
+The house rule adopted after the [second cold read](../../COLD_READ.md#second-cold-read-2026-10-26) (point 5): every pre-registration is reviewed for design by a separate session before it is committed. Reviewer: a separate agent session on Fable, isolated context, read-only on the repository, no network, briefed to check the pooled statistic against the three forward codes, the exclusion rule, the power figures and their framing, the exclusion of Studies 003–005, and anything a sceptical systematic PM would call a design error. It read the uncommitted draft; the draft is not published, and the committed PREREGISTRATION.md is the version after the changes below. The review took about 3.5 minutes of reading (reviewer's clock, below); it is a design check, not an audit.
+
+## Reviewer's report (unedited)
+
+**Verdict: APPROVE WITH CHANGES**
+
+1. **must-fix — period alignment under a missed month** (PREREGISTRATION.md §2 "Pooled series", keyed by `execution_date`). All three forward codes handle a `signal unavailable` month identically (006 `forward.py` docstring lines 21-25, `shadow_line` 267-300; 007/008 same): no row is written for that month, and the *next* row spans from the previous ok `execution_date` to the next ok one (two months). An inner join on `execution_date` therefore pairs member A's one-month row with member B's two-month row that starts the same day, then silently drops A's following row. P would average returns over different holding spans and the "listed as missing" clause would not fire. Fix: key on (`signal_date`, `period_end`) or on `signal_date` with the condition that `period_end` is identical across members; otherwise drop and list. Same mechanism for `days_slipped` (a one-day slip changes `execution_date` and `period_end` in one member only): state explicitly whether a slipped period is dropped or matched by signal month.
+
+2. **must-fix — scoring rule is self-contradictory** (§3 first sentence; trials.md row P1 "Window"). "The first 60 holding periods of P" and "on the date the last member's first 60-period block is scored" coincide only if no period is ever dropped. Each member's block is 60 *ok* records (`score()`: `ok[end]` carries `scoring_date`), so after one dropped period P has 59 rows on that date. Pick one: recommend "the common periods inside the members' first blocks (n ≤ 60, n reported), scored when the last member's block-1 scoring date has passed". Also §2 says the study "writes no record of its own until scored" while §3 writes a date to trials.md first; reconcile.
+
+3. **should-fix — ETF-era power is not comparable across pools and is partly a correlation artefact** (§4 table and paragraph). (a) Adding a near-constant 006 (d ≈ 0.13·x when held) shrinks P's se *and* P's expected edge by about 1/3, so 0.98% (3-member) versus 1.21% (2-member) is not "more power"; the "months to +0.70%" column assumes P's mean is 0.70%, which the 3-member pool cannot deliver if 006 contributes ~0. (b) power_pooled.txt lines 30-35 show 008's d correlated −0.37/−0.40 with 006/007 in the ETF era against +0.31/+0.19 over 1974-2018; that sign flip is why the ETF-era MDE is low, and the text attributes it only to 006 barely timing. Disclose both. Arithmetic itself is correct: script reproduces `power_pooled.txt` byte-for-byte, 928/118 months = 77/10 years, 1−0.8702 = 0.13.
+
+4. **should-fix — overclaim** (§4 last two sentences). "Several times the historical one" holds at long-history dispersion (2.75/0.70 ≈ 3.9×) but not at ETF-era (0.98/0.70 ≈ 1.4×); at that dispersion a true 0.70% gives expected t ≈ 2.0, roughly 50% power, so "inconclusive whatever the truth" is too strong. Write "1.4 to 4 times" and "inconclusive is the likely outcome at the long-history dispersion; near a coin flip at the ETF-era one".
+
+5. **should-fix — disclosure on Study 003** (§2 "Not pooled"). `tools/power_pooled.py` docstring lines 10-14 calls 003 "the same object" and computes two pools with it (MDE 1.15%, 1.27%); the pre-registration drops it citing its seen history verdict. The stronger, undisclosed reasons: 003 has no `paper-log/shadow.csv` (only `runs.jsonl`), is a paper-order sleeve pending risk clearance, and is not a long-history rule under §1. State these, and that the 003 pools were computed and set aside before any forward data. 004/005 exclusion: no issue found.
+
+6. **note — exclusion rule** (§2 "Members"). Matches the code: 006 `t1_holdings.nunique() == 1` over the 60 rows; 007/008 `np.std(weights_after[T1])` over the 60 ok records, holds left out. Return-independent, no fork found. Two caveats to state: a member's block may not be P's period set (finding 2), and 007/008 can practically never be "not testable" (rank weights), so the rule only ever bites 006. "Holds IEF while the curve is upright" is correct: `signal.py:25` `IEF if value > 0`.
+
+7. **note — small-sample t** (§3, §4). K = 2.842 is the normal one-sided constant; a 6-lag Bartlett t on ≤60 observations is oversized. Say so once, as the members do not.
+
+8. **note — §5 family**. Four tests at t ≥ 2.0 with no adjustment; state that a member's lone "supported" is not read as an answer to §1.
+
+Facts checked and supported: effect sizes and 78% share pre-1986 (effect_lines.txt), column names `signal_date`/`execution_date`/`period_end`/`d` in all three writers, first signal 2026-10-30/execution 2026-11-02, B3 w = 0.8702, desk-view yields 5.13%/4.25%, commit `36eae76`.
+
+Ran `.venv/bin/python -I tools/power_pooled.py` (output identical to committed) plus a one-line arithmetic check; read 009 PREREGISTRATION.md and trials.md, power_pooled.py/.txt, effect_lines.txt, §11 of 006/007/008 pre-registrations, forward.py/forward007.py/forward008.py (decision, shadow, verdict, score), calendar.py diffs, 006 paper-log README, COLD_READ.md points 2 and 5, RESEARCH_AGENDA.md 2026-10-26 additions, DESK_VIEW.md. Start 01:19:40 UTC, end 01:22:59 UTC.
+
+## Author's response (Qune, 2026-10-26)
+
+| # | Kind | Response |
+|---|---|---|
+| 1 | must-fix | **Fixed.** §2 now keys a period on the same `signal_date`, `execution_date` and `period_end` in every member; any other period (a `signal unavailable` month that makes the next row span two months, or a slipped execution date in one member) is left out of P and listed with the reason. |
+| 2 | must-fix | **Fixed.** §3 scores the periods of P whose signal dates fall inside every remaining member's first 60-period block (n ≤ 60, reported), after the last member's block-1 scoring date; §2 now says the study writes nothing before scoring except the scoring-date row in `trials.md`. trials.md P1's window says the same. |
+| 3 | should-fix | **Disclosed** in §4: 006's near-constant d lowers P's expected mean as well as its dispersion, so the 3-member figure is not more power than the 2-member one; the "months to +0.70%" column assumes P's mean is +0.70%; 008's correlation with 006 and 007 changes sign between 1974–2018 and 2003–2018, and that does most of the work in the ETF-era figures. |
+| 4 | should-fix | **Fixed.** §4 now says about four times at long-history dispersion, roughly even odds at the most favourable ETF-era figure, and "inconclusive" is likely at the first and close to a coin flip at the second. |
+| 5 | should-fix | **Fixed.** §2 states that 003 is not one of the three long-history rules, writes no `shadow.csv` (only a runner log for a sleeve awaiting risk clearance) and is scored under its own §11.5, and that the two 003 pools in `tools/power_pooled.py` were computed and set aside before any forward data exist. The tool's docstring, already committed (`36eae76`), is left as written. |
+| 6 | note | **Added** to §2: in practice the exclusion can bite only Study 006. |
+| 7 | note | **Added** to §3: a 6-lag Newey–West t on 60 or fewer observations runs larger than normal, so a t just above 2.0 overstates the evidence. |
+| 8 | note | **Added** to §5: no adjustment for the four forward tests, and one member's "supported" alone is not read as an answer to §1. |

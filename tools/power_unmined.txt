@@ -1,0 +1,29 @@
+Power first for an unmined sample (descriptive power calculation; tools/power_unmined.py)
+d = T1 - B3 by execution month; Newey-West Bartlett 6 lags; K = 2.842 (t >= 2.0 at 80% power)
+
+Anchors reproduced before anything is reported, and the histories in Sharpe units of d
+  study  n    window             NW t   mean(d) a yr  sd(d) a yr  Sharpe(d)  nw ratio  months to see it
+  006    593  1969-08 to 2018-12   2.06    +0.90%       3.20%      0.282      0.963      1129
+  007    534  1974-07 to 2018-12   2.10    +0.85%       2.73%      0.309      0.981       976
+  008    534  1974-07 to 2018-12   1.38    +0.56%       2.49%      0.227      1.095      2261
+  pool   534  1974-07 to 2018-12   2.17    +0.70%       2.19%      0.321      0.989       917
+  (pool = equal-weight average of the three d on their common months; the three d correlate:
+   006-007 0.719; 006-008 0.314; 007-008 0.193)
+
+Candidate U: US 1953-1969 on Stocker's price-based 5-10-year sector (signal months to 1969-06)
+  form                                                                         N    Sharpe MDE  x pool's history Sharpe
+  switch, exact daily inputs (DGS10, DTB3 from 1962-01)                         90     1.026       3.2x
+  switch, monthly-average inputs (GS10, TB3MS from 1953-04)                    195     0.697       2.2x
+  tilts, monthly-average inputs (GS10/GS5/GS3, TB3MS from 1953-04), after the 60-month rank 136     0.835       2.6x
+
+Candidate C: other countries, synthetic legs from monthly-average yields (signal months to 2026-09)
+  months per country after the 60-month rank (tilt forms): GBR 742, DEU 742, CAN 790, FRA 622, AUS 628; total 3524
+  rho (assumed)  N_eff   Sharpe MDE   x pool's history Sharpe
+  0.25            1762     0.232        0.7x
+  0.50            1175     0.284        0.9x
+  0.75             881     0.328        1.0x
+
+Synthetic-leg bias found against Stocker (1969/1974-1982), in Sharpe units of d
+  006: +0.626% a year / sd(d) 5.58% over 1969-08 to 1982-10 = +0.112 Sharpe (over the whole history, sd 3.20%: +0.195); the history's Sharpe(d) 0.282
+  007: +0.570% a year / sd(d) 4.44% over 1974-07 to 1982-10 = +0.128 Sharpe (over the whole history, sd 2.73%: +0.209); the history's Sharpe(d) 0.309
+  008: +0.766% a year / sd(d) 3.89% over 1974-07 to 1982-10 = +0.197 Sharpe (over the whole history, sd 2.49%: +0.308); the history's Sharpe(d) 0.227

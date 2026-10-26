@@ -1,0 +1,26 @@
+Power first outside duration timing (descriptive power calculation; tools/power_offduration.py)
+Newey-West Bartlett 6 lags; K = 2.842 (t >= 2.0 at 80% power)
+
+1. Edges observed in this programme, in Sharpe units of d (anchors reproduced first)
+  study  n    NW t   Sharpe(d)  sd(d) a yr  nw ratio  series
+  003    185   0.37    0.092      2.46%     0.969    IEF 12-month trend vs B3, 2003-2018
+  004    180   0.65    0.185      2.15%     1.108    ten-ETF trend vs exposure-matched B4, 2004-2018
+  006    593   2.06    0.282      3.20%     0.963    term-spread switch vs B3, 1969-2018
+  007    534   2.10    0.309      2.73%     0.981    carry tilt vs B3, 1974-2018
+  008    534   1.38    0.227      2.49%     1.095    value tilt vs B3, 1974-2018
+  pool   534   2.17    0.321      2.19%     0.989    equal-weight 006-008 (as tools/power_unmined.txt)
+  largest nw ratio above: 1.108 (used as the high case below)
+
+2. Detectable Sharpe of d by sample (months from metadata only; no return read)
+  sample                                              N     S_MDE nw 1.00  nw high  x pool 0.321  2% bar needs sd(d) <=  return MDE at sd(d) 5% / 10% / 15% (assumed, nw 1.00)
+  E1 ETF era in-sample (Study 004 window)              180    0.734      0.813     2.3x        2.73%               3.67% / 7.34% / 11.01%
+  E2 ETF era incl. the spent/seen 2019-2026 window     273    0.596      0.660     1.9x        3.36%               2.98% / 5.96% / 8.94%
+  F1 French Developed 3 factors                        434    0.473      0.524     1.5x        4.23%               2.36% / 4.73% / 7.09%
+  F2 French US momentum factor                        1196    0.285      0.315     0.9x        7.03%               1.42% / 2.85% / 4.27%
+  F3 French US 3 factors                              1202    0.284      0.315     0.9x        7.04%               1.42% / 2.84% / 4.26%
+
+3. Months needed to see a given Sharpe of d (nw 1.00 / nw high)
+  Sharpe(d) 0.200:   2423 /   2975 months
+  Sharpe(d) 0.321:    941 /   1155 months
+  Sharpe(d) 0.500:    388 /    476 months
+  Sharpe(d) 0.750:    172 /    212 months

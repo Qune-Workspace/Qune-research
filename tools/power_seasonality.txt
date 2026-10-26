@@ -1,0 +1,34 @@
+Power first for industry return seasonality [KLN14] on the library's 17 industries (tools/power_seasonality.py)
+K = 2.842 (t >= 2.0 at 80% power); nw 1.00 / largest observed 1.108; library 1926-07..2026-08
+no return read; months from the paper's stated sample and the library's detail pages only
+
+Check first: 806 months reproduce tools/power_industry.txt (0.347 / 0.384)
+  S_MDE(806) = 0.347 / 0.384
+
+Paper's scored window 1963-01..2011-12: 588 months, all counted as used
+Paper's ranking inputs from 1943-01: 240 months before its window were read, not scored
+Paper's industry rule, implied if the t is a plain t (not stated): Sharpe 0.541 a year;
+  sd 4.48% a month = 15.5% a year; mean 8.4% a year
+
+  id     window                                          months             N    S_MDE          x pool 0.321   x 011 0.237   x paper     MDE %/yr at paper sd (plain t)
+  S1     before the window (scored months read by paper) 1946-07..1962-12    198  0.700 / 0.775  2.18x / 2.41x  2.95x / 3.27x  1.29 / 1.43  10.9 / 12.0
+  S1c    before any month the paper read                 1946-07..1942-12      0  none: first scorable 1946-07 is after 1943-01
+  S2     after the paper's window                        2012-01..2026-08    176  0.742 / 0.822  2.31x / 2.56x  3.13x / 3.47x  1.37 / 1.52  11.5 / 12.8
+  S1+S2  all scorable outside the window (S1 seen)       both                374  0.509 / 0.564  1.59x / 1.76x  2.15x / 2.38x  0.94 / 1.04  7.9 / 8.8
+
+only S2 (176 months) has outcomes the paper never read.
+Reading: x paper = the MDE as a multiple of the paper's own in-sample Sharpe (implied from a plain t);
+  above 1 means even the full published edge is below the MDE. A rule that kept less than that multiple
+  of its published edge out of sample would have less than 80% power to be seen; it would be missed
+  more often than not only below about 0.70 of that multiple (2.0 / 2.842).
+MDE %/yr uses the paper's implied 15.5% a year volatility (plain t assumed); the library variant's is unknown.
+
+Comparison with rows already decided (committed outputs):
+  Study 011 outside [MG99]'s window, 806 months: 0.347 / 0.384 (tools/power_industry.txt); observed 0.237
+  Study 010 outside [EL19]'s window, 560 months: 0.416 / 0.461 (tools/power_study010.txt)
+  vol-managed / dynamic momentum after their samples, 128-161 months: 0.776-0.964 (tools/power_mined.txt); not fixed
+
+Months needed to see (nw 1.00 / largest observed):
+  the pool's 0.321       941 /  1155
+  Study 011's 0.237     1726 /  2118
+  the paper's 0.541      331 /   406

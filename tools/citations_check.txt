@@ -1,4 +1,4 @@
-Citation check of RESEARCH_AGENDA.md: 38 DOIs, 38 ok, 0 problems. Checked 2026-10-26 07:22 UTC
+Citation check of RESEARCH_AGENDA.md: 39 DOIs, 39 ok, 0 problems. Checked 2026-10-26 13:26 UTC
 
 [MOP12] doi:10.1016/j.jfineco.2011.11.003 -> ok | registered: Moskowitz (2012) | Time series momentum | Journal of Financial Economics
 [HOP17] doi:10.3905/jpm.2017.44.1.015 -> ok | registered: Hurst (2017) | A Century of Evidence on Trend-Following Investing | The Journal of Portfolio Management
@@ -38,3 +38,4 @@ Citation check of RESEARCH_AGENDA.md: 38 DOIs, 38 ok, 0 problems. Checked 2026-1
 [BGHLS15] doi:10.2139/ssrn.2695101 -> ok | registered: Baz (2015) | Dissecting Investment Strategies in the Cross Section and Time Series | SSRN Electronic Journal
 [HRvH16] doi:10.2139/ssrn.2831926 -> ok | registered: Hamill (2016) | Trend Following: Equity and Bond Crisis Alpha | 
 [EL19] doi:10.3386/w25551 -> ok | registered: Ehsani (2019) | Factor Momentum and the Momentum Factor | 
+[MG99] doi:10.1111/0022-1082.00146 -> ok | registered: Moskowitz (1999) | Do Industries Explain Momentum? | The Journal of Finance

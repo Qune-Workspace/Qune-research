@@ -1,0 +1,21 @@
+Power first on mined samples (descriptive power calculation; tools/power_mined.py)
+K = 2.842 (t >= 2.0 at 80% power); nw 1.00 / largest observed 1.108; library last month 2026-08
+no return read; months from the papers' stated samples only
+
+Check first: 128 months reproduce Study 010's P2 row (0.870 / 0.964 in tools/power_study010.txt)
+  months 2016-01..2026-08 = 128; S_MDE = 0.870 / 0.964
+
+  id    question                                 unused months    N    S_MDE          x pool 0.321    x MM17 mkt AR 0.33 (not Sharpe d)  paper sample
+  V1    volatility-managed market (Mkt-RF)       2016-01..2026-08   128  0.870 / 0.964  2.71x / 3.00x   2.64x / 2.92x                       MM17 1926-2015
+  V2    volatility-managed SMB, HML              2016-01..2026-08   128  0.870 / 0.964  2.71x / 3.00x   2.64x / 2.92x                       MM17 1926-2015
+  V3    volatility-managed momentum (Mom)        2016-01..2026-08   128  0.870 / 0.964  2.71x / 3.00x   2.64x / 2.92x                       MM17 1926-2015; DM16 1927:01-2013:03
+  V3a   dynamic momentum, DM16's sample only     2013-04..2026-08   161  0.776 / 0.860  2.42x / 2.68x   2.35x / 2.61x                       DM16 1927:01-2013:03
+
+Months before the papers' samples: no usable window. The library's 3 factors start 1926-07 and Mom 1927-01
+(1,202 and 1,196 months to 2026-08, tools/power_offduration.txt rows F3/F2); MM17 starts in 1926 and DM16
+in 1927:01, leaving at most ~9 unused months, unstated where and needed as volatility burn-in anyway
+(Study 010 had 432 months before its paper's sample).
+
+Months needed to see the anchors (nw 1.00 / largest observed nw):
+  Sharpe(d) 0.321 (pool of 006-008):   941 /  1155 months
+  MM17 market appraisal ratio 0.33 (alpha/residual sd vs unmanaged, beta 0.61; not Sharpe of d):   890 /  1093 months

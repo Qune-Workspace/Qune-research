@@ -1,7 +1,8 @@
 """Paper dashboard: the forward records of the published studies, read as committed.
 
 Each study that reached publication keeps a ``paper-log/`` folder (Study 003's
-paper sleeve, Studies 004 and 005's shadow records with no order).  Those
+paper sleeve, Studies 004 to 008's shadow records with no order, Studies 010
+and 011's monthly position records, added 2026-10-26).  Those
 folders are written once a month by the studies' own forward code and are
 never rewritten.  This module reads them exactly as they are on disk, counts
 what exists, derives one equity path per series from the committed shadow
@@ -30,7 +31,8 @@ from matplotlib.figure import Figure
 from qune_research import nyse, style
 
 __all__ = ["LogSpec", "Status", "build", "equity", "headline", "chart", "next_signal_date", "render",
-           "read_json_dir", "read_jsonl", "read_csv", "status", "sha256"]
+           "read_json_dir", "read_jsonl", "read_csv", "status", "sha256", "monthly_records", "next_record_month",
+           "due_text"]
 
 
 @dataclass(frozen=True)
@@ -44,6 +46,15 @@ class LogSpec:
     is reported without a chart.  ``shadow_file`` names the per-period file in
     ``paper-log/`` (Study 003's §11.5 monthly summary is ``summary.csv``, added
     2026-10-24).  ``strategy`` is drawn in the accent colour; the rest in greys.
+
+    A monthly position record (Studies 010 and 011, added 2026-10-26) sets
+    ``records_file``: the CSV in ``paper-log/`` with one row per month and trial
+    (and factor), read instead of ``decisions/*.json``.  ``record_format`` turns
+    one row into text (``str.format`` on the row; ";" inside a value is shown as
+    ", "), rows are joined per trial, and ``release_log`` names the fetch log
+    whose last line is shown.  ``first_signal_date`` is then the first record
+    month (YYYY-MM).  Such a record has no shadow line and no chart, because the
+    study scores it once at the end (``scored_note`` says when and how).
     """
 
     study: str
@@ -60,6 +71,14 @@ class LogSpec:
     data_source: str = ""
     chart_note: str = ""
     shadow_file: str = "shadow.csv"
+    records_file: str = ""
+    record_format: str = ""
+    release_log: str = ""
+    scored_note: str = ""
+
+    @property
+    def monthly(self) -> bool:
+        return bool(self.records_file)
 
     @property
     def series(self) -> list[str]:
@@ -81,6 +100,7 @@ class Status:
     equity: pd.DataFrame
     next_due: str
     inputs: dict[str, str]
+    last_check: dict | None = None
 
     @property
     def last_record(self) -> dict | None:
@@ -149,6 +169,49 @@ def next_signal_date(last_signal_date: str | None, first_signal_date: str) -> st
     return str(days[-1].date())
 
 
+def _row_text(fmt: str, row: dict) -> str:
+    return fmt.format(**{k: v.replace(";", ", ") if isinstance(v, str) else v for k, v in row.items()})
+
+
+def monthly_records(frame: pd.DataFrame, spec: LogSpec) -> list[dict]:
+    """One record per month of a monthly position file, trials in file order, nothing recomputed."""
+    if frame.empty:
+        return []
+    frame = frame.astype({"month": str, "trial": str, "release": str})
+    records = []
+    for month in sorted(frame["month"].unique()):
+        rows = frame[frame["month"] == month]
+        parts = []
+        for trial in dict.fromkeys(rows["trial"]):
+            sub = rows[rows["trial"] == trial].to_dict("records")
+            parts.append(f"{trial}: " + ", ".join(_row_text(spec.record_format, r) for r in sub))
+        late = bool(rows["late"].astype(str).str.lower().eq("true").any()) if "late" in rows else False
+        records.append({"signal_date": month, "release": ", ".join(sorted(rows["release"].unique())),
+                        "late": late, "status": "late" if late else "recorded", "rows": len(rows),
+                        "target": "<br>".join(parts)})
+    return records
+
+
+def next_record_month(last_month: str | None, first_month: str) -> str:
+    """The next monthly record and the library release it needs (the first release that contains month t − 1)."""
+    month = pd.Period(first_month, "M") if last_month is None else pd.Period(last_month, "M") + 1
+    return f"{month}, from release {(month - 1).strftime('%Y%m')} once published"
+
+
+def due_text(st: Status) -> str:
+    return st.next_due if st.spec.monthly else _uk(st.next_due)
+
+
+def _check_text(check: dict | None) -> str:
+    if not check:
+        return "none logged"
+    at = pd.Timestamp(check.get("at_utc", ""))
+    when = f"{at.strftime('%-d %b %Y %H:%M')}Z" if not pd.isna(at) else "?"
+    kept = str(check.get("kept", "")).lower() == "true"
+    return (f"{when}: release {check.get('release', '?')} kept" if kept
+            else f"{when}: release {check.get('release', '?')}, not kept ({check.get('reason', '')})")
+
+
 def _uk(day: str | date | pd.Timestamp) -> str:
     return pd.Timestamp(day).strftime("%-d %b %Y")
 
@@ -174,16 +237,23 @@ def headline(status: Status) -> str:
 
 def status(root: Path, spec: LogSpec) -> Status:
     folder = Path(root) / spec.folder / "paper-log"
-    records = read_json_dir(folder / "decisions")
-    shadow = read_csv(folder / spec.shadow_file)
+    if spec.monthly:
+        records = monthly_records(read_csv(folder / spec.records_file), spec)
+        shadow = pd.DataFrame()
+    else:
+        records = read_json_dir(folder / "decisions")
+        shadow = read_csv(folder / spec.shadow_file)
     executions = read_json_dir(folder / "executions")
     runs = read_jsonl(folder / "runs.jsonl")
     stops = read_jsonl(folder / "stops.jsonl")
     last = records[-1]["signal_date"] if records else None
     inputs = {str(p.relative_to(root)): sha256(p) for p in sorted(folder.rglob("*"))
               if p.is_file() and "raw" not in p.relative_to(folder).parts and p.suffix in (".json", ".csv", ".jsonl")}
-    return Status(spec, records, shadow, executions, runs, stops, equity(shadow, spec),
-                  next_signal_date(last, spec.first_signal_date), inputs)
+    due = (next_record_month(last, spec.first_signal_date) if spec.monthly
+           else next_signal_date(last, spec.first_signal_date))
+    log = read_csv(folder / spec.release_log) if spec.release_log else pd.DataFrame()
+    check = log.astype(str).iloc[-1].to_dict() if not log.empty else None
+    return Status(spec, records, shadow, executions, runs, stops, equity(shadow, spec), due, inputs, check)
 
 
 # --- Chart -------------------------------------------------------------------------------------
@@ -226,6 +296,19 @@ def _study_section(st: Status, chart_rel: str | None) -> list[str]:
     spec = st.spec
     lines = [f"## {spec.study} ({spec.kind})", "",
              f"**Label: {spec.label}.** Folder `{spec.folder}/paper-log/`.", ""]
+    if spec.monthly:
+        rec = st.last_record
+        rows = [("Monthly records", f"{len(st.records)}"),
+                ("Last record", f"{rec['signal_date']} from release {rec['release']} ({rec['status']})" if rec else "none yet"),
+                ("Last release check", _check_text(st.last_check)),
+                ("Next record due", st.next_due),
+                ("Scoring", spec.scored_note or "not stated")]
+        lines += ["| | |", "|---|---|"] + [f"| {k} | {v} |" for k, v in rows] + [""]
+        if st.records:
+            lines += ["| Month | Release | Status | Positions by trial |", "|---|---|---|---|"]
+            lines += [f"| {r['signal_date']} | {r['release']} | {r['status']} | {r['target']} |" for r in st.records] + [""]
+        lines += [spec.chart_note or "No equity line: this record is scored once at the end.", ""]
+        return lines
     rows = [("Decision records", f"{len(st.records)}"),
             ("Last record", f"{st.last_record['signal_date']} ({st.last_record.get('status', '?')})" if st.last_record else "none yet"),
             ("Shadow lines (holding periods ended)", f"{len(st.shadow)}"),
@@ -261,14 +344,16 @@ def render(statuses: list[Status], generated_at_utc: str, commit: str, charts: d
              "study's publication. No study has a supported verdict; no order has been placed. Not advice.", ""]
     lines += ["| Study | Kind | Records | Shadow lines | Next record due |", "|---|---|---|---|---|"]
     for st in statuses:
-        lines.append(f"| {st.spec.study} | {st.spec.kind}, {st.spec.label} | {len(st.records)} | {len(st.shadow)} | "
-                     f"{_uk(st.next_due)} |")
+        shadow = "none (scored once at the end)" if st.spec.monthly else f"{len(st.shadow)}"
+        lines.append(f"| {st.spec.study} | {st.spec.kind}, {st.spec.label} | {len(st.records)} | {shadow} | "
+                     f"{due_text(st)} |")
     lines.append("")
     for st in statuses:
         lines += _study_section(st, charts.get(st.spec.study))
     lines += ["## How this page is made", "",
               "`make dashboard` runs `tools/make_paper_dashboard.py`, which reads each study's `paper-log/decisions/*.json`, "
-              "`shadow.csv` (Study 003: its §11.5 `summary.csv`), `executions/*.json`, `runs.jsonl` and `stops.jsonl` as committed, compounds the shadow "
+              "`shadow.csv` (Study 003: its §11.5 `summary.csv`), `executions/*.json`, `runs.jsonl` and `stops.jsonl` as committed (Studies 010 and "
+              "011: their monthly `positions.csv` or `cohorts.csv` and the last line of `releases/fetch_log.csv`), compounds the shadow "
               "lines' net returns (or reads the book values Study 004 writes) into one path per series, and draws it with "
               "`qune_research/style.py`. The SHA-256 of every input file and the generation time are in `manifest.json`. "
               "The page is regenerated by the work loop after each record; a run that finds nothing new changes only the "

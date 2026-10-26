@@ -1,8 +1,9 @@
-"""Paper dashboard for Studies 003 to 008 from their committed paper-log folders.
+"""Paper dashboard for Studies 003 to 008, 010 and 011 from their committed paper-log folders.
 
 Descriptive only.  This script reads each study's ``paper-log/`` exactly as
 committed (decision records, shadow lines, execution records, runner and
-stop-check lines), compounds the shadow lines into one equity path per
+stop-check lines; Studies 010 and 011: monthly position files and the last
+fetch-log line), compounds the shadow lines into one equity path per
 series with ``qune_research.paperlog`` and writes ``dashboard/README.md``,
 one chart per study that has at least one shadow line (SVG + 2x PNG, house
 style) and ``dashboard/manifest.json`` with the SHA-256 of every input and
@@ -86,6 +87,32 @@ SPECS = [
         labels={"T1": "Value tilt T1", "B3_T1": "Same-exposure mix B3", "B1": "Hold IEF B1"},
         data_source="FRED DGS10, DTB3 and DGS7, FRED CPIAUCNS and CPILFENS (real yield) and Alpaca daily IEF "
                     "and BIL bars (adjustment='all') read by the study's forward code",
+    ),
+    # Studies 010 and 011 (added 2026-10-26): shadow-only monthly records from the Kenneth French Data
+    # Library; no return is drawn here because each study scores its record once, after 60 holding months.
+    # Study 009 has no record of its own (it scores the shadow records of 006 to 008).
+    paperlog.LogSpec(
+        study="Study 010", folder="research/010-factor-momentum-french-us", kind="monthly position record",
+        label="not supported on 1927–2026; shadow-only, every month scored once after 60 holding months; no paper order",
+        first_signal_date="2026-09", records_file="positions.csv", record_format="{factor} {h:+d}",
+        release_log="releases/fetch_log.csv",
+        scored_note="once, by `python -m src.forward010 score --release YYYYMM`, after 60 holding months (2026-09 to 2031-08), from the "
+                    "first archived release that contains 2031-08; a low-power check (detects a Sharpe of d of about 1.27 "
+                    "at 80% power); `interim` gives months recorded, months with a return, cumulative T and B3 and the mean of d, without a t-statistic or verdict",
+        chart_note="No equity line: positions are +1 (long) or −1 (short) per factor; the factor returns of each month "
+                   "come from a later library release and are scored only at the end.",
+    ),
+    paperlog.LogSpec(
+        study="Study 011", folder="research/011-industry-momentum-french-us", kind="monthly cohort record",
+        label="not supported on 806 months outside [MG99]'s 1963–1995 sample; shadow-only, scored once after 60 "
+              "holding months; no paper order",
+        first_signal_date="2026-09", records_file="cohorts.csv", record_format="long {winners} / short {losers}",
+        release_log="releases/fetch_log.csv",
+        scored_note="once, by `python -m src.forward011 score --release YYYYMM`, after 60 holding months (2026-09 to 2031-08), from the "
+                    "first archived release that contains 2031-08; a low-power check (detects a Sharpe of d of about 1.27 "
+                    "at 80% power); `interim` gives counts and the mean and sum of d without a t-statistic or verdict",
+        chart_note="No equity line: each month starts a six-month cohort (winners long, losers short, French Data "
+                   "Library industry names); its returns are scored only at the end.",
     ),
 ]
 

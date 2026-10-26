@@ -1,0 +1,7 @@
+# Direct dependencies of Study 011's code (src/rule.py, src/stats011.py, data_step.py),
+# pinned to the versions the tests were run with; the same pins as
+# qune_research/requirements.txt.
+numpy==2.5.4
+pandas==3.0.6
+requests==2.34.2
+pytest==9.1.1

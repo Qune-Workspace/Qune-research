@@ -33,7 +33,8 @@ STUDIES := research/001-slope-duration-switch \
            research/006-term-spread-switch-long-history \
            research/007-bond-carry-tilt-long-history \
            research/008-bond-value-tilt-long-history \
-           research/009-pooled-forward-duration-timing
+           research/009-pooled-forward-duration-timing \
+           research/010-factor-momentum-french-us
 SUITES  := $(STUDIES) qune_research desk-view
 
 # review_recompute.py scripts that run from the committed outputs alone.  Rows

@@ -29,6 +29,7 @@ jobs:
           - research/007-bond-carry-tilt-long-history
           - research/008-bond-value-tilt-long-history
           - research/009-pooled-forward-duration-timing
+          - research/010-factor-momentum-french-us
           - qune_research
           - desk-view
     steps:

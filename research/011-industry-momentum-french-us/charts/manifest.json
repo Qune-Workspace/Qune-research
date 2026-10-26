@@ -1,0 +1,141 @@
+{
+  "made_at_utc": "2026-10-26T17:18:21+00:00",
+  "repository_commit_at_run": "73aa057bb1125ff2a3a01c86787553dd781a9d87",
+  "inputs_sha256": {
+    "research/011-industry-momentum-french-us/results/history/monthly.csv": "e2bd45a41208cdd79e1952e6ced28e3366c3eff25d2e15c38f8406ba6f4d1d86",
+    "research/011-industry-momentum-french-us/results/history/summary.json": "c14385c377ba7fa7d12f4ff372cf7bcd1faa69256ecdb3b814a6a4451e337682"
+  },
+  "outputs": [
+    "research/011-industry-momentum-french-us/charts/history_cumulative_d.png",
+    "research/011-industry-momentum-french-us/charts/history_cumulative_d.svg",
+    "research/011-industry-momentum-french-us/charts/history_d_by_decade.png",
+    "research/011-industry-momentum-french-us/charts/history_d_by_decade.svg",
+    "research/011-industry-momentum-french-us/charts/history_trials_by_window.png",
+    "research/011-industry-momentum-french-us/charts/history_trials_by_window.svg"
+  ],
+  "numbers_in_titles": {
+    "cumulative_d_end_pp": 323.62444444444486,
+    "window_mean_d_pct_a_year": {
+      "I1": 3.0491608929946126,
+      "M": 2.8662857142857163,
+      "I2": 3.9133690795353013
+    },
+    "window_nw_t": {
+      "I1": 1.3076477855618946,
+      "M": 1.330929419233866,
+      "I2": 1.6002149326705633
+    },
+    "O_mean_d_pct_a_year": 3.449098428453267,
+    "O_nw_t": 2.042447643183013,
+    "dsr_N3": 0.9351969493916144,
+    "decade_mean_d_pct_a_year": {
+      "1920s": 18.558064516129033,
+      "1930s": -4.922055555555555,
+      "1940s": 2.563555555555555,
+      "1950s": 5.2601666666666675,
+      "1960s": 8.175611111111113,
+      "1970s": 3.9929444444444444,
+      "1980s": 2.613000000000003,
+      "1990s": 2.113611111111111,
+      "2000s": 2.0493333333333315,
+      "2010s": 0.8725000000000034,
+      "2020s": 7.274416666666669
+    },
+    "decade_months": {
+      "1920s": 31,
+      "1930s": 120,
+      "1940s": 120,
+      "1950s": 120,
+      "1960s": 120,
+      "1970s": 120,
+      "1980s": 120,
+      "1990s": 120,
+      "2000s": 120,
+      "2010s": 120,
+      "2020s": 80
+    },
+    "decade_nw_t": {
+      "1920s": 3.6185917606401503,
+      "1930s": -0.7033963737432255,
+      "1940s": 1.0148117595343678,
+      "1950s": 2.7851722488272763,
+      "1960s": 3.1092396871378893,
+      "1970s": 1.0271565808540044,
+      "1980s": 0.618366338323095,
+      "1990s": 0.5277935777064584,
+      "2000s": 0.45935668177051686,
+      "2010s": 0.2424542726926776,
+      "2020s": 1.299389315654397
+    },
+    "decade_negative": [
+      "1930s"
+    ],
+    "decades_to_end_with_t_below_2": [
+      "1970s",
+      "1980s",
+      "1990s",
+      "2000s",
+      "2010s",
+      "2020s"
+    ],
+    "window_trials_mean_d_pct_a_year": {
+      "M1": {
+        "I1": 3.0491608929946126,
+        "I2": 3.9133690795353013,
+        "O": 3.449098428453267
+      },
+      "M1a": {
+        "I1": 4.5530993071593535,
+        "I2": 5.582627345844504,
+        "O": 5.029543424317618
+      },
+      "M1b": {
+        "I1": 4.321436377829819,
+        "I2": 4.992207327971402,
+        "O": 4.6341833333333335
+      }
+    },
+    "window_trials_nw_t": {
+      "M1": {
+        "I1": 1.3076477855618946,
+        "I2": 1.6002149326705633,
+        "O": 2.042447643183013
+      },
+      "M1a": {
+        "I1": 1.8704935183323927,
+        "I2": 2.067747889978079,
+        "O": 2.7796709004065017
+      },
+      "M1b": {
+        "I1": 1.588733399447266,
+        "I2": 1.5607284908251235,
+        "O": 2.2263487212830784
+      }
+    },
+    "window_trials_months": {
+      "M1": {
+        "I1": 433,
+        "I2": 373,
+        "O": 806
+      },
+      "M1a": {
+        "I1": 433,
+        "I2": 373,
+        "O": 806
+      },
+      "M1b": {
+        "I1": 427,
+        "I2": 373,
+        "O": 800
+      }
+    },
+    "window_trials_dsr_N3": {
+      "M1": 0.9351969493916144,
+      "M1a": 0.983517926777792,
+      "M1b": 0.9625745288534163
+    },
+    "window_trials_all_positive": true,
+    "window_trials_lowest_O": "M1",
+    "mde_80_M1_pct_a_year": 4.7993091849286875
+  }
+}

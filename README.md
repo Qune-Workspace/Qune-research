@@ -135,7 +135,7 @@ desk-view/              weekly rates-and-macro view from public data; numbers in
 predictions/            the desk's calls, logged before the outcome (append-only) and scored when due, with a market-anchored baseline beside each
 qune_research/          the shared library: calendar, data adapters with hashing, engine, statistics, risk model, multiple-testing inference, house chart style, tear-sheet report, paper dashboard
 tearsheets/             post-hoc one-page tear-sheets per published window of Studies 003-005
-dashboard/              paper dashboard: the forward records of Studies 003-008, counted and drawn by code
+dashboard/              paper dashboard: the forward records of Studies 003-008, 010 and 011, counted and drawn by code
 tools/                  scan.sh (leak scan before every commit and push), citation check, power and effect-size scripts with their committed outputs
 .github/workflows/      on each push: every test suite, ruff and mypy, library coverage, make reproduce (no data, no secrets)
 Makefile                the same steps CI runs, for a reader's machine

@@ -24,6 +24,8 @@ What the repository shows is a procedure: rules and trial counts fixed before th
 
 Charts (three, drawn from the committed history files, every number recomputed by a separate Tester chart check): [study note, Charts section](research/011-industry-momentum-french-us/README.md).
 
+Forward record (shadow only, no order): monthly cohort records from 2026-09 in [`paper-log/`](research/011-industry-momentum-french-us/paper-log/README.md), scored once after 60 holding months (2031-08) as a low-power check (detectable Sharpe of d about 1.27); recording and scoring code each passed a separate code review on 2026-10-26 after fixes ([CODE_REVIEW.md](research/011-industry-momentum-french-us/CODE_REVIEW.md)). Study 011 is complete for review.
+
 ## Previous result: Study 010, time-series factor momentum on four US equity factors, 1927–2026
 
 **Question:** does holding each of four factors from the Kenneth French Data Library (size, value, short- and long-term reversal) long after a rising year and short after a falling one beat holding the same factors at the rule's own average position (Ehsani and Linnainmaa, NBER WP 25551, 2019)? Disclosed first: the author knew the paper's positive result on 1964–2015 and the factors' general history, had not seen their 12-month signs outside the paper's window, and chose this sample after ten earlier studies; only the study's own three trials count for the deflated Sharpe criterion.

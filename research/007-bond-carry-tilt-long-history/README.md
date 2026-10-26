@@ -153,3 +153,21 @@ Drawn from the committed history files by [`charts/make_charts.py`](charts/make_
 2. ~~Charts~~: drawn 2026-10-25 13:28 GMT and through the Tester chart check (one must-fix, eight should-fix, all fixed; [CHART_REVIEW.md](../../CHART_REVIEW.md), fourth section).
 3. ~~Separate-session recomputation~~: done 2026-10-25 13:51 GMT (above): confirmed with findings, no must-fix.
 4. The forward-record code (`forward007.py`, before step 11), first record at the 2026-10-30 month end, scored once after 60 months; no paper order.
+
+## Errors found after commit (counted 2026-10-26 02:23Z, second cold read point 5; nothing above changed)
+
+Counted: everything committed for this study that was wrong, missing or mislabelled when committed and found later, by the author or a separate reviewer (every must-fix, every should-fix and every reviewer note of that kind, plus the author's own corrections). Not counted: reviewer notes that are informational only, chart-check should-fix items (requests for clearer charts, answered in [CHART_REVIEW.md](../../CHART_REVIEW.md)), and cosmetic markdown fixes. **Major** means that, uncaught, it could have changed a result, a forward record or a sentence about the verdict. Time-label slips are counted per correction, not per label. No item changed a verdict or a number in a committed results file. From Study 009 on, a separate session reviews each pre-registration's design before it is committed ([009 DESIGN_REVIEW.md](../009-pooled-forward-duration-timing/DESIGN_REVIEW.md)); Studies 006–008 had no such review.
+
+**Total 11: 4 major, 7 minor.**
+
+| # | Kind | What was wrong | Found by | Where fixed or disclosed |
+|---|---|---|---|---|
+| 1 | design, major | The fragility companions T1a and T1b (minimum history 36 and 120 months) cannot change an expanding rank's weights, so the fragility clause rests on T1b's later start alone | Author, at the gate, before any rule return | [trials.md](trials.md), gate rows (`4b2b7fd`); §16 |
+| 2 | design, major | The question note gave the programme family count for C3 as 11, omitting Study 005's three trials; it is 14 | Author, writing the pre-registration | [PREREGISTRATION.md](PREREGISTRATION.md) §11(a), `e4c21e5` |
+| 3 | code, major | `forward007.py` had no FRED row check on t itself when t is the last weekday; a lagging DGS7 on 2026-10-30 would have written a permanent hold | Separate code review (must-fix) | `f1a1f6a` |
+| 4 | charts, major | One chart must-fix | Tester chart check | `a82006a`; [CHART_REVIEW.md](../../CHART_REVIEW.md), fourth review |
+| 5 | text, minor | Episode sentence "below 0.2 from the July 2022 signal on" is true only to the 2024-11 signal | Separate-session recomputation, should-fix 1 | [REVIEW.md](REVIEW.md) |
+| 6–8 | time labels, minor | Time labels written as estimates, not read from the clock: two in the note's commit, one on the charts, one trial-log row | Author (two corrections), recomputation should-fix 2 | `4c19353`, `91367d8`; REVIEW.md |
+| 9 | label, minor | The gate's first split is labelled "2002-2007" but holds periods executed 2003–2007 | Recomputation, note 3 | REVIEW.md |
+| 10 | design, minor | The DSR variance at the family count is taken over this study's five trials; the family rule leaves it undefined | Recomputation, note 4 | REVIEW.md |
+| 11 | text, minor | A sentence compares two dispersions but reads as if 0.303 were a Sharpe ratio | Recomputation, note 5 | REVIEW.md |

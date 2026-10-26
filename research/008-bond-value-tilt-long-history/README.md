@@ -144,3 +144,26 @@ Drawn from the committed history files by [`charts/make_charts.py`](charts/make_
 - ~~Charts to the house standard and the Tester chart check~~: done the same evening (above; commits e4f3e41 and c2d4164). *(Step 10, the separate-session recomputation, done the same evening: above.)*
 - ~~`forward008.py` before the first forward signal at the 2026-10-30 month end~~: built and tested the same evening, before any forward input was fetched (15 tests; separate code review: no must-fix in the rule, timing or holds, one must-fix record field and six should-fix, all answered; [`paper-log/README.md`](paper-log/README.md), [`paper-log/CODE_REVIEW.md`](paper-log/CODE_REVIEW.md); code decisions in PREREGISTRATION.md §16). It separates "not yet in the fetched file" from "never published"; signal month 2026-11 will hold, because its k − 12 month is the unpublished October 2025 index. First record due after 21:15 UTC on 2026-10-30; scored once after 60 holding periods.
 - Not done and not planned: any further trial on this question. The verdict is fixed by the pre-registered table.
+
+## Errors found after commit (counted 2026-10-26 02:23Z, second cold read point 5; nothing above changed)
+
+Counted: everything committed for this study that was wrong, missing or mislabelled when committed and found later, by the author or a separate reviewer (every must-fix, every should-fix and every reviewer note of that kind, plus the author's own corrections). Not counted: reviewer notes that are informational only, chart-check should-fix items (requests for clearer charts, answered in [CHART_REVIEW.md](../../CHART_REVIEW.md)), and cosmetic markdown fixes. **Major** means that, uncaught, it could have changed a result, a forward record or a sentence about the verdict. Time-label slips are counted per correction, not per label. No item changed a verdict or a number in a committed results file. From Study 009 on, a separate session reviews each pre-registration's design before it is committed ([009 DESIGN_REVIEW.md](../009-pooled-forward-duration-timing/DESIGN_REVIEW.md)); Studies 006–008 had no such review.
+
+**Total 15: 5 major, 10 minor.** One major item is documented as copied from Study 007's code (the forward record's verdict label); Study 006's item 1 was the same gap that Study 007's code review found in its own copy. That is the copy-forward pattern the cold read named.
+
+| # | Kind | What was wrong | Found by | Where fixed or disclosed |
+|---|---|---|---|---|
+| 1 | data, major | The CPI series ID in the question note and the pre-registration was wrong (`CPIAUCNSA` for `CPIAUCNS`) | Author, from a 404, before any CPI data were received | §16 amendment, `be162c1` |
+| 2 | data check, major | The data-step script marked the ALFRED vintage check done after probing two endpoints; no vintage was compared and no release date read | Author | [trials.md](trials.md), data-step rows; the real check ran afterwards ([vintage_check.md](results/vintage_check.md)) |
+| 3 | code, major | `history008` never read the gate's dropped trials, so a trial dropped at the gate would still have run in the history | Separate code review (must-fix), before the gate | `7d7dc03` |
+| 4 | code, major | The forward record's label carried Study 007's history verdict, "inconclusive (fragile)", instead of "not supported" | Author | `98f1604`, with a test |
+| 5 | code, major | The forward record did not write CPI(k) and CPI(k−12) | Separate code review (must-fix) | `3d55337` |
+| 6 | text, minor | Episode table: the mean weights mix two bases | Separate-session recomputation, should-fix 1 | [REVIEW.md](REVIEW.md) |
+| 7 | text, minor | A registered descriptive (T1 on T1b's 474 periods, t 1.33) was not reported | Recomputation, should-fix 2 | REVIEW.md |
+| 8 | text, minor | A limitation the pre-registration says the note states (no forecast-based real yield) was absent | Recomputation, should-fix 3 | REVIEW.md |
+| 9 | label, minor | `cpi_availability.csv` and the CPILFENS branch counts in `summary.json` keep labels from before §16 (a) | Recomputation, note 4 | REVIEW.md |
+| 10 | process, minor | The series-ID amendment was committed 44 seconds after the run it governs | Recomputation, note 5 | REVIEW.md |
+| 11 | label, minor | Gate split labelled "2002-2007", inherited from Study 007 | Recomputation, note 6 | REVIEW.md |
+| 12 | design, minor | DSR variance over this study's three trials, not the family's 17 | Recomputation, note 7 | REVIEW.md |
+| 13 | text, minor | "687 months of history": 687 signal months, 686 with a defined real yield | Recomputation, note 7 | REVIEW.md |
+| 14–15 | time labels, minor | Two time labels written ahead of the clock, and a precision line that itself carried guessed times | Author | `f8e120f`, `2d8f72a` |

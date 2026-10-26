@@ -108,3 +108,18 @@ Drawn by [`charts/make_charts.py`](charts/make_charts.py) from the committed his
 
 The decade chart separates timing from exposure: in the 1990s and 2010–2018 the rule never held bills, so those two bars are only the gap between holding the bond and the 87% mix, (1 − w)(bond − bill). The timing advantage sits in 1969–1989 (+1.9% and +1.7% a year against the same-exposure mix); in the 2000s, the only later decade with bill months, it was −0.1%.
 
+
+## Errors found after commit (counted 2026-10-26 02:23Z, second cold read point 5; nothing above changed)
+
+Counted: everything committed for this study that was wrong, missing or mislabelled when committed and found later, by the author or a separate reviewer (every must-fix, every should-fix and every reviewer note of that kind, plus the author's own corrections). Not counted: reviewer notes that are informational only, chart-check should-fix items (requests for clearer charts, answered in [CHART_REVIEW.md](../../CHART_REVIEW.md)), and cosmetic markdown fixes. **Major** means that, uncaught, it could have changed a result, a forward record or a sentence about the verdict. Time-label slips are counted per correction, not per label. No item changed a verdict or a number in a committed results file. From Study 009 on, a separate session reviews each pre-registration's design before it is committed ([009 DESIGN_REVIEW.md](../009-pooled-forward-duration-timing/DESIGN_REVIEW.md)); Studies 006–008 had no such review.
+
+**Total 8: 4 major, 4 minor.**
+
+| # | Kind | What was wrong | Found by | Where fixed or disclosed |
+|---|---|---|---|---|
+| 1 | code, major | `forward.py` treated the signal date t as final without a row on t in all three FRED series; a lagging DGS7 on 2026-10-30 would have held T3 for good | Study 007's separate code review | `187038f`, §16 dated entry |
+| 2–4 | charts, major | Three chart titles claimed more than the results: "beat holding the bond" beside an inconclusive (fragile) verdict; a drawdown cut measured against the bond only; "came from 1969–79" when 1969–89 carry the edge | Tester chart check | `2d0889a`; [CHART_REVIEW.md](../../CHART_REVIEW.md), third review |
+| 5 | time labels, minor | Several time labels entered as estimates and not corrected | Separate-session recomputation, should-fix 1 | [REVIEW.md](REVIEW.md); `6a0fce9` |
+| 6 | process, minor | Three trial-log rows rewritten in place instead of appended | Recomputation, should-fix 2 | REVIEW.md; note under the table, `6a0fce9` |
+| 7 | text, minor | The chart section names two of the three renders | Recomputation, note 3 | REVIEW.md |
+| 8 | code, minor | `summary.json` carries `NaN` literals, which strict JSON parsers reject | Recomputation, note 5 | REVIEW.md |

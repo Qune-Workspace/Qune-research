@@ -20,7 +20,8 @@ fetches nothing. Candidate sample lengths come from metadata only:
 Method. S_MDE(N) = K x nw / sqrt(N / 12): the Sharpe ratio of d a year that a NW t >= 2.0
 test sees with 80% power over N months (K = 2.842, Study 007 section 11.4; nw = Newey-West
 over iid standard error, Bartlett 6 lags). nw is not known for a question not yet fixed, so
-it is shown at 1.00 and at the largest ratio among the committed d series below. The
+it is shown at 1.00 and at the largest ratio observed among the committed d series below
+(the largest observed, not a bound: a slower or overlapping signal could have a larger one). The
 return-unit statement beside it: the 2%-a-year bar holds only if sd(d) <= 2% / S_MDE, and
 the return MDE at an assumed sd(d) is S_MDE x sd(d) (assumed values, labelled so).
 
@@ -113,19 +114,22 @@ def main() -> None:
     print(f"  pool   {res['n']:3d}  {res['t']:5.2f}   {pool_sharpe:6.3f}     {sd_m * math.sqrt(12):6.2%}     "
           f"{nws['pool']:5.3f}    equal-weight 006-008 (as tools/power_unmined.txt)")
     nw_hi = max(nws.values())
-    print(f"  largest nw ratio above: {nw_hi:.3f} (used as the high case below)")
+    print(f"  largest nw ratio observed above: {nw_hi:.3f} (shown below beside nw 1.00; not a bound)")
+    print("  the pool's 0.321 is an in-sample point estimate (standard error about 0.15 over 44.5 years): an anchor")
+    print("  for the size of edge this programme has measured, not a target edge")
     print()
     print("2. Detectable Sharpe of d by sample (months from metadata only; no return read)")
-    print("  sample                                              N     S_MDE nw 1.00  nw high  x pool 0.321  "
-          "2% bar needs sd(d) <=  return MDE at sd(d) 5% / 10% / 15% (assumed, nw 1.00)")
+    print("  each pair is nw 1.00 / largest observed nw; return MDE at an assumed sd(d), nw 1.00")
+    print("  sample                                              N     S_MDE           x pool 0.321    "
+          "2% bar needs sd(d) <=  return MDE at sd(d) 5% / 10% / 15%")
     for label, (first, last) in SAMPLES.items():
         n = months(first, last)
         lo, hi = s_mde(n, 1.0), s_mde(n, nw_hi)
         rets = " / ".join(f"{lo * s:5.2%}" for s in ASSUMED_SD)
-        print(f"  {label:50s} {n:5d}   {lo:6.3f}     {hi:6.3f}    {lo / pool_sharpe:4.1f}x       "
-              f"{0.02 / lo:6.2%}               {rets}")
+        print(f"  {label:50s} {n:5d}   {lo:5.3f} / {hi:5.3f}   {lo / pool_sharpe:4.2f}x / {hi / pool_sharpe:4.2f}x   "
+              f"{0.02 / lo:5.2%} / {0.02 / hi:5.2%}       {rets}")
     print()
-    print("3. Months needed to see a given Sharpe of d (nw 1.00 / nw high)")
+    print("3. Months needed to see a given Sharpe of d (nw 1.00 / largest observed nw)")
     for s in (0.20, 0.321, 0.50, 0.75):
         print(f"  Sharpe(d) {s:5.3f}: {12 * (K / s) ** 2:6.0f} / {12 * (K * nw_hi / s) ** 2:6.0f} months")
 

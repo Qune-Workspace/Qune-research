@@ -5,10 +5,10 @@
 #   make lint           ruff over the repository, mypy over the shared library
 #   make coverage       line coverage of the shared library (tests excluded)
 #   make reproduce      the independent reviewers' recomputation of every published
-#                       statistic in Studies 003, 004 and 005 from the committed
-#                       result files; no vendor data, credentials or approval file
-#   make reproduce-raw  the same for Studies 001 and 002, which halted at data
-#                       validation and need the raw FRED files in data/raw/
+#                       statistic in Studies 003 to 006 from the committed result
+#                       files, then tools/effect_lines.py for 006-008's headline t
+#   make reproduce-raw  the same for Studies 001, 002, 007 and 008, whose scripts
+#                       need the raw vendor files in data/raw/ (not redistributed)
 #   make charts         redraw every chart from the committed result files
 #                       (rewrites charts/; `git diff --stat` shows any change)
 #   make tearsheets     redraw the post-hoc tear-sheets in tearsheets/ from the
@@ -42,9 +42,15 @@ SUITES  := $(STUDIES) qune_research desk-view
 # REVIEW.md, and the scripts still count them as mismatches.
 RECOMPUTE     := research/003-bond-tsmom-ief \
                  research/004-xasset-trend-voltarget \
-                 research/005-duration-trend-regime
+                 research/005-duration-trend-regime \
+                 research/006-term-spread-switch-long-history
+# Studies 007 and 008's scripts check almost every row against the raw vendor
+# files and report missing files as mismatches, so they run only where
+# data/raw/ exists; their headline t is rechecked by tools/effect_lines.py.
 RECOMPUTE_RAW := research/001-slope-duration-switch \
-                 research/002-slope-duration-switch-r
+                 research/002-slope-duration-switch-r \
+                 research/007-bond-carry-tilt-long-history \
+                 research/008-bond-value-tilt-long-history
 
 .PHONY: help venv test lint coverage reproduce reproduce-raw charts tearsheets dashboard clean
 
@@ -82,12 +88,15 @@ reproduce:
 	    printf '%s\n' "$$out" | tail -n 5; echo "   FAILED: no summary line (exit status $$code)"; failed=1; \
 	  fi; \
 	done; \
+	echo "== tools/effect_lines.py: Studies 006-008 headline t from the committed monthly files"; \
+	el=$$($(PYTHON) -I tools/effect_lines.py 2>&1) || { echo "$$el" | tail -n 3; echo "   FAILED: effect_lines.py"; failed=1; }; \
+	printf '%s\n' "$$el" | sed -n '4,7p'; \
 	exit $$failed
 
 reproduce-raw:
 	@set -e; for d in $(RECOMPUTE_RAW); do \
 	  echo "== $$d"; \
-	  if [ ! -d $$d/data/raw ]; then echo "   skipped: $$d/data/raw/ is absent (raw FRED files are not redistributed)"; continue; fi; \
+	  if [ ! -d $$d/data/raw ]; then echo "   skipped: $$d/data/raw/ is absent (raw vendor files are not redistributed)"; continue; fi; \
 	  (cd $$d && $(PYTHON) -I review_recompute.py | tail -n 12); \
 	done
 

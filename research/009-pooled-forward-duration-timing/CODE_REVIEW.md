@@ -50,3 +50,16 @@ All findings confirmed by reading the code; findings 1–6 fixed, notes 7–11 a
 | 11 | note | **Fixed.** 006 switching only in row 1 or only in row 60 is tested; the block must be one continuous run in date order (each period starts where the last ended), so order cannot vary; the date-format check is tested. |
 
 Mutations re-run by Qune on a scratch copy after the fixes (`pytest -x` each): strict-boundary, loose regex, 006 check from row 2, no member-date check, no `w_T1` check, no continuity check, no today check, keying on signal date only, member checks skipped: all nine caught. Suite 48 passed; ruff clean.
+
+## Re-check of 872ad0c (same reviewer, 03:29:50–03:33:09 UTC by its clock): PASS
+
+Findings 1–6 closed; the new checks would not wrongly refuse files the members' real code writes (scoring date = `ok[60]` execution date = `period_end` of shadow row 60 in all three writers; `append_shadow` already enforces continuity; a constant `w_T1` really means constant targets, since `run_with_holds` drifts the weight only on holds; a `to_csv` round trip scores normally; 006's recompute uses the same Newey–West code with 6 lags). 25 mutations: the four earlier survivors and all new checks caught. Report items and responses:
+
+| # | Kind | Reviewer's point (summarised) | Response |
+|---|---|---|---|
+| 1 | should-fix | The main-test's first assert relied on the real clock: from 2032-01-06 it would fail and turn CI red around the time P1 is scored. | **Fixed.** Both asserts use a fixed clock; the equal-to-today boundary is now tested too (allowed). |
+| 2 | note | The fixtures compute 006's verdict with `own_006_verdict`, so a 6 → 5 lag mutation survived. | **Fixed.** A spy test pins 6 lags. |
+| 3 | note | `float()` on the text and `pd.read_csv`'s default parser differ in the last digit for most values; a flip needs t within about 1e-14 of ±2.0. | No change; stated here for anyone comparing figures to the last digit. |
+| 4 | note | Low-risk survivors: the signal-date order check (implied by continuity), the ISO check on the trials.md date (implied by the regex), `LONG_PERIOD_DAYS`. | No change; the order and ISO checks are redundant guards; the 45-day threshold is a reporting count, not part of the verdict. |
+
+Suite 49 passed; ruff clean.

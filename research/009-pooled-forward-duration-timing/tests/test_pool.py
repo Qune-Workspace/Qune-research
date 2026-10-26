@@ -316,10 +316,15 @@ def _redirect(monkeypatch, tmp_path, shadows, trials_text):
     monkeypatch.setattr(pool.read_shadows, "__defaults__", (paths,))
 
 
-class _Clock:
-    @staticmethod
-    def now(tz):
-        return pd.Timestamp("2032-01-10", tz="UTC").to_pydatetime()
+def _clock(day):
+    class Clock:
+        @staticmethod
+        def now(tz):
+            return pd.Timestamp(day, tz="UTC").to_pydatetime()
+    return Clock
+
+
+_Clock = _clock("2032-01-10")
 
 
 def test_main_refuses_on_the_real_repository_today_and_writes_nothing(tmp_path, monkeypatch, capsys):
@@ -341,9 +346,10 @@ def test_main_scores_once_and_refuses_a_scoring_date_after_today(tmp_path, monke
     f = tmp_path / "v.json"
     f.write_text(json.dumps(verdicts(s)), encoding="utf-8")
     _redirect(monkeypatch, tmp_path, s, TRIALS_OK)
-    assert pool.main(["score", "--member-verdicts", str(f)]) == 1  # 2032-01-05 is after the real today
+    monkeypatch.setattr(pool, "datetime", _clock("2032-01-04"))  # a fixed clock, not the real one (re-check, 1)
+    assert pool.main(["score", "--member-verdicts", str(f)]) == 1
     assert "after today" in capsys.readouterr().out
-    monkeypatch.setattr(pool, "datetime", _Clock)
+    monkeypatch.setattr(pool, "datetime", _clock("2032-01-05"))  # the logged date itself is today: allowed
     assert pool.main(["score", "--member-verdicts", str(f)]) == 0
     assert json.loads((tmp_path / "results" / "score.json").read_text())["n"] == 60
     assert pool.main(["score", "--member-verdicts", str(f)]) == 1
@@ -360,3 +366,14 @@ def test_main_refuses_a_malformed_verdicts_file(tmp_path, monkeypatch, capsys):
         assert pool.main(["score", "--member-verdicts", str(f)]) == 1
         assert "refused" in capsys.readouterr().out
     assert not (tmp_path / "results").exists()
+
+
+def test_006_row_is_recomputed_with_6_lags_by_its_own_rule(monkeypatch):
+    """Pins the lag count independently of the fixtures, which use
+    own_006_verdict themselves (re-check, note 2)."""
+    s = members(NOISE["006"], NOISE["007"], NOISE["008"])
+    seen = []
+    real = pool.newey_west_mean
+    monkeypatch.setattr(pool, "newey_west_mean", lambda x, lags: seen.append(lags) or real(x, lags=lags))
+    rows = s["006"].iloc[:60].assign(d=lambda f: f["d"].astype(float))
+    assert pool.own_006_verdict(rows) == "inconclusive (forward)" and seen == [6]

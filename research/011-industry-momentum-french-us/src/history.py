@@ -7,7 +7,7 @@ stress (c = 0.50) one-way costs, and writes ``results/history/``:
 
 - ``monthly.csv``: per trial d_gross, turnover, d_base, d_stress, the legs,
   EW, empty legs and boundary ties;
-- ``cohorts.json``: W(m) and L(m) of every ranking month, per trial;
+- ``cohorts.json``: W(m), L(m) and boundary near-ties of every ranking month, per trial;
 - ``industries_17.csv``, ``industries_30.csv``: the snapshot's value-weighted
   monthly returns (percent, as printed), so every figure can be recomputed;
 - ``summary.json``: every §9.3-§9.6 figure, the criteria C1-C4, the window
@@ -116,6 +116,11 @@ def o_row(i1: pd.Series, i2: pd.Series) -> dict:
     }
 
 
+def _o_brief(i1: pd.Series, i2: pd.Series) -> dict:
+    r = o_row(i1, i2)
+    return {k: r[k] for k in ("months", "mean_pct_a_year", "nw_t", "nw_se_pct_a_year", "sharpe_annual")}
+
+
 def series_metrics(r: pd.Series, rng: np.random.Generator | None) -> dict:
     x = r / 100.0
     out = {
@@ -216,6 +221,10 @@ def compute(ind: dict[int, pd.DataFrame], end: str, programme: dict) -> tuple[di
     d1 = f1["d_base"]
     decades = {f"{dec}s": diff_row(g) for dec, g in d1.groupby((d1.index.year // 10) * 10)}
     legs = {}
+    i1w, i2w = stretches(f1["winners_leg"] - f1["ew"], TRIALS[PRIMARY]["first"], end)
+    i1l, i2l = stretches(f1["losers_leg"] - f1["ew"], TRIALS[PRIMARY]["first"], end)
+    i1e, i2e = stretches(f1["ew"], TRIALS[PRIMARY]["first"], end)
+    legs["O"] = {"winners_minus_ew": _o_brief(i1w, i2w), "losers_minus_ew": _o_brief(i1l, i2l), "ew": _o_brief(i1e, i2e)}
     for name, (a, b) in {"I1": (TRIALS[PRIMARY]["first"], I1_END), "I2": (I2_START, end), "M": M_WINDOW,
                          "full": (TRIALS[PRIMARY]["first"], end)}.items():
         legs[name] = {"winners_minus_ew": diff_row(_slice(f1["winners_leg"] - f1["ew"], a, b)),
@@ -240,8 +249,12 @@ def compute(ind: dict[int, pd.DataFrame], end: str, programme: dict) -> tuple[di
             "note": "the library's 17 four-digit-SIC industries, not the paper's 20; descriptive only (§9.6)",
         },
     }
-    summary["data_events"] = {k: {"months_with_empty_legs": int((f["empty_legs"] > 0).sum()),
-                                  "boundary_ties": int(f["ties"].sum())} for k, f in frames.items()}
+    summary["data_events"] = {
+        k: {"months_with_empty_legs": int((f["empty_legs"] > 0).sum()),
+            "boundary_ties_over_held_ranking_months": int(sum(v[2] for m, v in cohorts[k].items()
+                                                              if pd.Period(m, "M") < pd.Period(end, "M")))}
+        for k, f in frames.items()
+    }
     summary["programme_count"] = programme
     return summary, frames, cohorts
 
@@ -326,12 +339,19 @@ def main(argv: list[str] | None = None, here: Path = HERE) -> None:
     check_programme_count(programme)
     if HISTORY_ROW not in (here / "trials.md").read_text():
         raise SystemExit("refused: trials.md has no history-run row; it is logged before the run (§14 step 5)")
-    end = json.loads((here / "results" / "data_step.json").read_text())["last_common_month"]
-    # every check above runs before the first industry value is read
+    data_step = json.loads((here / "results" / "data_step.json").read_text())
+    end = data_step["last_common_month"]
+    # every check above runs before the first industry value is read; the marker below is written first,
+    # so a run that stops after reading the data leaves results/.history_tmp/ behind and blocks a re-run
+    tmp_dir.mkdir(parents=True)
+    (tmp_dir / "STARTED").write_text(datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ") + "\n")
     ind = load_industries(here / "data" / "raw", here / "results" / "data_manifest.json")
     summary, frames, cohorts = compute(ind, end, programme)
     summary["run_at_utc"] = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
-    tmp_dir.mkdir(parents=True)
+    summary["eligibility_from_data_step"] = {
+        k: {key: v[key] for key in ("ranking_months", "min_eligible")} | {"months_below_full_set": len(v["months_below_full_set"])}
+        for k, v in data_step.get("eligibility", {}).items()
+    }
     monthly_csv(frames).to_csv(tmp_dir / "monthly.csv", float_format="%.17g")
     (tmp_dir / "cohorts.json").write_text(json.dumps(cohorts, indent=1) + "\n")
     for n, f in ind.items():

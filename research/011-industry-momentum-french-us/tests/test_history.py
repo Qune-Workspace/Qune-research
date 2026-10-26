@@ -92,3 +92,17 @@ def test_loader_reads_vw_monthly_only():
     f = vw_monthly(text)
     assert list(f.columns) == ["A", "B"] and len(f) == 2
     assert f.iloc[0, 0] == 1.5 and np.isnan(f.iloc[0, 1])
+
+
+def test_crash_after_reading_leaves_marker(tmp_path, monkeypatch):
+    (tmp_path / "APPROVED").write_text("ok\n")
+    (tmp_path / "results").mkdir()
+    (tmp_path / "results" / "programme_count.json").write_text(json.dumps(PROG))
+    (tmp_path / "results" / "data_step.json").write_text(json.dumps({"last_common_month": "2026-08"}))
+    (tmp_path / "trials.md").write_text(history.HISTORY_ROW + " | x |\n")
+    monkeypatch.setattr(history, "load_industries", lambda *a: (_ for _ in ()).throw(RuntimeError("boom")))
+    with pytest.raises(RuntimeError):
+        history.main([], here=tmp_path)
+    assert (tmp_path / "results" / ".history_tmp" / "STARTED").is_file()
+    with pytest.raises(SystemExit, match="history_tmp"):
+        history.main([], here=tmp_path)

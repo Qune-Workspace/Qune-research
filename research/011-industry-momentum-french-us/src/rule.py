@@ -105,7 +105,8 @@ def run(r: pd.DataFrame, F: int, n: int, first_holding: pd.Period) -> pd.DataFra
     return out
 
 
-def cohort_table(r: pd.DataFrame, F: int, n: int, first_rank: pd.Period) -> dict[str, tuple[list[str], list[str]]]:
-    """W(m) and L(m) for every ranking month from ``first_rank`` (for the per-industry shares of §9.6)."""
+def cohort_table(r: pd.DataFrame, F: int, n: int, first_rank: pd.Period) -> dict[str, tuple[list[str], list[str], int]]:
+    """W(m), L(m) and the boundary near-ties of every ranking month from ``first_rank``
+    (for the per-industry shares and the tie count of §9.6)."""
     R = formation_returns(r, F)
-    return {str(m): rank_cohort(R.loc[m], n)[:2] for m in R.index if m >= first_rank}
+    return {str(m): rank_cohort(R.loc[m], n) for m in R.index if m >= first_rank}

@@ -2,7 +2,7 @@
 import numpy as np
 import pandas as pd
 import pytest
-from src.rule import COST_BASE, formation_returns, rank_cohort, run
+from src.rule import COST_BASE, cohort_table, formation_returns, rank_cohort, run
 from src.stats011 import newey_west_stretches
 
 from qune_research.stats import newey_west_mean
@@ -49,7 +49,7 @@ def test_one_replacement_adds_2_over_6n():
     idx = pd.period_range("1926-07", periods=30, freq="M")
     base = {"A": 3.0, "B": 1.0, "C": 0.5, "D": 0.0, "E": -2.0}
     r = pd.DataFrame(base, index=idx)
-    # month 1927-07: B jumps so that over 1927-02..07 B leads A for the cohort ranked at 1927-07 only
+    # month 1927-07: B jumps, so B leads A in the cohorts ranked at 1927-07 to 1927-12 (six-month formation)
     r.loc[P("1927-07", "M"), "B"] = 40.0
     out = run(r, F=6, n=1, first_holding=P("1927-06", "M"))
     t = P("1927-08", "M")  # first month holding the cohort ranked at 1927-07
@@ -62,7 +62,14 @@ def test_d_equals_weights_times_returns_without_missing():
     out = run(r, F=6, n=3, first_holding=P("1927-06", "M"))
     assert len(out) == 60 - 11
     assert out["empty_legs"].sum() == 0
-    assert np.isfinite(out["d_gross"]).all()
+    tab = cohort_table(r, 6, 3, P("1926-12", "M"))
+    for t in out.index:
+        w = pd.Series(0.0, index=cols)
+        for j in range(1, 7):
+            W, L, _ = tab[str(t - j)]
+            w[W] += 1 / 18
+            w[L] -= 1 / 18
+        assert out.loc[t, "d_gross"] == pytest.approx(float((w * r.loc[t]).sum()), abs=1e-12)
 
 
 def test_empty_leg_contributes_zero():
@@ -73,6 +80,7 @@ def test_empty_leg_contributes_zero():
     out = run(r, F=6, n=1, first_holding=P("1927-06", "M"))
     assert out.loc[t, "d_gross"] == 0.0
     assert out.loc[t, "empty_legs"] == 6
+    assert out.loc[t, "turnover"] == 0.0  # the empty-leg cohorts keep their weights for costs (§6.3)
 
 
 def test_first_holding_needs_formation():

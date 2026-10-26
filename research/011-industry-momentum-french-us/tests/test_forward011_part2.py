@@ -200,13 +200,13 @@ def _own(ind):
                           f"sha-{(P(month, 'M') - 1).strftime('%Y%m')}")
 
 
-def _score_setup(tmp_path, ind):
+def _score_setup(tmp_path, ind, ind_release=None):
     snap = tmp_path / "snap"
     snap.mkdir()
     _, snap_man = write_release(snap, cut(ind, "2026-08"), "202608")
     raw, rel = tmp_path / "raw", tmp_path / "releases"
     (raw / "203108").mkdir(parents=True)
-    _, man = write_release(raw / "203108", ind, "203108")
+    _, man = write_release(raw / "203108", ind if ind_release is None else ind_release, "203108")
     rel.mkdir()
     m = json.loads(man.read_text())
     (rel / "203108.json").write_text(json.dumps(m))
@@ -217,7 +217,11 @@ def test_score_end_to_end_and_once(tmp_path, monkeypatch):
     monkeypatch.setattr(fw, "_ever_committed", lambda p: False)
     ind = synthetic("2031-08", seed=5)
     pos, times = _forward_book(ind)
-    snap, snap_man, raw, rel = _score_setup(tmp_path, ind)
+    for t in TRIALS:  # committed after the desk first held release 203108 (downloaded 2026-10-26T15:31:23Z)
+        times[("2031-08", t)]["time"] = pd.Timestamp("2031-10-01T00:00:00Z")
+    revised = {n: f.copy() for n, f in ind.items()}
+    revised[17].iloc[100, 0] += 1.0  # one revised history cell (1934-11), far from every forward ranking
+    snap, snap_man, raw, rel = _score_setup(tmp_path, ind, revised)
     out = tmp_path / "score.json"
     res = fw.score("203108", pos, times, raw, rel, snap, snap_man, hist_from(ind), out, "2031-10-01T00:00:00Z",
                    own_release=_own(ind))
@@ -227,9 +231,19 @@ def test_score_end_to_end_and_once(tmp_path, monkeypatch):
         assert res["trials"][t]["d"]["mean_pct_a_year"] == pytest.approx(ref["d_base"].mean() * 12, abs=1e-10)
         assert res["trials"][t]["stress_mean_d_pct_a_year"] == pytest.approx(ref["d_stress"].mean() * 12, abs=1e-10)
         assert res["trials"][t]["d"]["months"] == 60
+        assert res["trials"][t]["late_months"] == ["2031-08"] and res["trials"][t]["rows_late"] == 1
     assert res["headline"].startswith("M1: ") and fw.LABEL in res["headline"]
+    assert res["N_family"] == 3
+    x = {t: fw.forward_frame(revised[s["set"]], fw.cohort_map(pos, t, hist_from(ind)[t]), months, s["n"])["d_base"] / 100
+         for t, s in TRIALS.items()}
+    var, _ = fw.stats.trial_variance([fw.stats.sharpe_monthly(v) for v in x.values()])
+    v = x["M1"]
+    want = fw.stats.deflated_sharpe(fw.stats.sharpe_monthly(v), 60, fw.stats.skewness(v), fw.stats.kurtosis(v), 3, var)
+    assert res["trials"]["M1"]["dsr"]["dsr"] == pytest.approx(want["dsr"], abs=1e-12)
     assert res["vintage"]["cohort_rows_differing"] == 0 and res["vintage"]["cohort_rows_compared"] == 180
-    assert res["vintage"]["per_file_over_history"]["17"]["cells_differing"] == 0
+    assert res["vintage"]["history_cohorts_differing"] == [] and res["vintage"]["history_cohorts_compared"] == 18
+    assert res["vintage"]["per_file_over_history"]["17"]["cells_differing"] == 1
+    assert res["vintage"]["per_file_over_history"]["30"]["cells_differing"] == 0
     json.loads(out.read_text())
     with pytest.raises(SystemExit, match="scored once"):
         fw.score("203108", pos, times, raw, rel, snap, snap_man, hist_from(ind), out, own_release=_own(ind))
@@ -253,7 +267,13 @@ def test_score_refusals(tmp_path, monkeypatch):
     other = synthetic("2031-08", seed=7)
     with pytest.raises(SystemExit, match="not reproduced"):
         fw.score("203108", pos, times, *args, tmp_path / "d.json", own_release=_own(other))
-    assert not any((tmp_path / f"{x}.json").exists() for x in "abcd")
+    # an edited history cohorts.json (W and L of M1's 2026-07 cohort swapped)
+    hist = hist_from(ind)
+    W, L = hist["M1"]["2026-07"]
+    hist["M1"]["2026-07"] = (L, W)
+    with pytest.raises(SystemExit, match="cohorts.json differs"):
+        fw.score("203108", pos, times, raw, rel, snap, snap_man, hist, tmp_path / "e.json", own_release=_own(ind))
+    assert not any((tmp_path / f"{x}.json").exists() for x in "abcde")
 
 
 def test_check_rows_reports_missing_raw_files():

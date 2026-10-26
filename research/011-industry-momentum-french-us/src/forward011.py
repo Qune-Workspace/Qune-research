@@ -95,7 +95,7 @@ import requests
 
 from .data import FILES, SECTION_TITLE, load_industries, read_zip
 from .history import C1_SHARPE, C2_T, C3_DSR, I1_END, I2_START, N_FAMILY, TRIALS, diff_row, stats
-from .rule import COST_BASE, COST_STRESS, HOLD, formation_returns, rank_cohort, run
+from .rule import COST_BASE, COST_STRESS, HOLD, cohort_table, formation_returns, rank_cohort, run
 
 STUDY_DIR = Path(__file__).resolve().parents[1]
 PAPER_LOG = STUDY_DIR / "paper-log"
@@ -457,6 +457,25 @@ def history_cohorts(path: Path = HISTORY_COHORTS) -> dict[str, dict[str, tuple[l
     return {t: {m: (v[0], v[1]) for m, v in raw[t].items()} for t in TRIALS}
 
 
+def history_ranks_used() -> list[str]:
+    """Ranking months whose history cohorts the forward record uses: 2026-02 to 2026-07 (the first
+    forward months' earlier cohorts and, through 2026-08's weights, the first month's trade)."""
+    first_rank = pd.Period(FIRST_FORWARD_MONTH, "M") - 1
+    return [str(first_rank - j) for j in range(HOLD, 0, -1)]
+
+
+def check_history_cohorts(ind: dict, hist: dict) -> list[list[str]]:
+    """The history cohorts the forward record uses, recomputed from a release; returns [month, trial] that differ."""
+    differ = []
+    start = pd.Period(history_ranks_used()[0], "M")
+    for t, spec in TRIALS.items():
+        again = cohort_table(ind[spec["set"]][ind[spec["set"]].index <= start + HOLD - 1], spec["F"], spec["n"], start)
+        for m in history_ranks_used():
+            if m not in hist[t] or m not in again or list(hist[t][m]) != list(again[m][:2]):
+                differ.append([m, t])
+    return differ
+
+
 def cohort_map(pos: pd.DataFrame, trial: str, hist: dict[str, tuple[list[str], list[str]]]) -> dict[pd.Period, tuple]:
     """Ranking month -> (W, L): the history's before the first forward ranking month, the committed rows from it (§16 item 4)."""
     first_rank = pd.Period(FIRST_FORWARD_MONTH, "M") - 1
@@ -476,8 +495,9 @@ def weights(cmap: dict, t: pd.Period, cols: list[str], n: int) -> pd.Series:
         if t - j not in cmap:
             raise SystemExit(f"STOP: no cohort ranked at {t - j} (needed for {t})")
         W, L = cmap[t - j]
-        if len(W) != n or len(L) != n or not set(W) | set(L) <= set(cols):
-            raise SystemExit(f"STOP: the cohort ranked at {t - j} is not {n} + {n} of the file's industries")
+        if (len(set(W)) != n or len(set(L)) != n or set(W) & set(L) or len(W) != n or len(L) != n
+                or not set(W) | set(L) <= set(cols)):
+            raise SystemExit(f"STOP: the cohort ranked at {t - j} is not {n} + {n} distinct industries of the file")
         w[W] += 1.0 / (HOLD * n)
         w[L] -= 1.0 / (HOLD * n)
     return w
@@ -549,11 +569,12 @@ def interim(pos: pd.DataFrame, raw_root: Path = FORWARD_RAW, releases_dir: Path 
                 row.update(months_with_return=int(len(fr)), mean_d_pct_a_year=float(fr["d_base"].mean() * 12),
                            sum_d_pct=float(fr["d_base"].sum()))
         out["trials"][t] = row
-    out["months_to_scoring"] = SCORED_MONTHS - out["trials"]["M1"]["months_with_return"]
+    out["months_to_scoring"] = max(0, SCORED_MONTHS - out["trials"]["M1"]["months_with_return"])
     return out
 
 
-def vintage_row(ind_score: dict, ind_snap: dict, pos: pd.DataFrame, months: pd.PeriodIndex) -> dict:
+def vintage_row(ind_score: dict, ind_snap: dict, pos: pd.DataFrame, months: pd.PeriodIndex,
+                hist: dict | None = None) -> dict:
     """The scoring release against the snapshot over the history's months, and the cohorts recomputed beside the committed."""
     h_end = pd.Period(H_END, "M")
     per = {}
@@ -582,7 +603,10 @@ def vintage_row(ind_score: dict, ind_snap: dict, pos: pd.DataFrame, months: pd.P
             recomputed.append({"month": r.month, "trial": r.trial, "same": bool(
                 x["winners"] == r.winners and x["losers"] == r.losers)})
     differ = [x for x in recomputed if not x["same"]]
-    return {"per_file_over_history": per, "M1_mean_d_over_O_pct_a_year": o,
+    hist_differ = check_history_cohorts(ind_score, hist) if hist is not None else None
+    return {"history_cohorts_compared": len(history_ranks_used()) * len(TRIALS) if hist is not None else 0,
+            "history_cohorts_differing": hist_differ,
+            "per_file_over_history": per, "M1_mean_d_over_O_pct_a_year": o,
             "cohort_rows_compared": len(recomputed), "cohort_rows_differing": len(differ),
             "cohorts_differing": [[x["month"], x["trial"]] for x in differ]}
 
@@ -708,6 +732,9 @@ def score(release: str, pos: pd.DataFrame, commit_times: dict, raw_root: Path = 
     if not all((snapshot_raw / name).exists() for name in _names()):
         raise SystemExit("STOP: the snapshot's raw files are needed for the vintage row (§11)")
     ind_snap = load_industries(snapshot_raw, snapshot_manifest)
+    bad = check_history_cohorts(ind_snap, hist)
+    if bad:
+        raise SystemExit(f"STOP: cohorts.json differs from the snapshot's cohorts at {bad}; the history file was edited")
     late = late_flags(pos, commit_times, archived(releases_dir))
     frames = {t: forward_frame(ind[s["set"]], cohort_map(pos, t, hist[t]), months, s["n"]) for t, s in TRIALS.items()}
     var, floored = stats.trial_variance([stats.sharpe_monthly(frames[t]["d_base"] / 100) for t in TRIALS])
@@ -730,7 +757,7 @@ def score(release: str, pos: pd.DataFrame, commit_times: dict, raw_root: Path = 
               "variance_across_trials": var, "floor_applied": floored, "trials": trials,
               "headline": f"M1: {trials['M1']['verdict']['row']}",
               "months_not_rechecked_raw_files_missing": not_rechecked,
-              "vintage": vintage_row(ind, ind_snap, pos, months)}
+              "vintage": vintage_row(ind, ind_snap, pos, months, hist)}
     out.parent.mkdir(parents=True, exist_ok=True)
     with open(out.with_suffix(".lock"), "w") as lock:
         fcntl.flock(lock, fcntl.LOCK_EX)
@@ -759,7 +786,7 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     if a.cmd == "interim":
         payload = interim(read_cohorts())
-        INTERIM_JSON.write_text(json.dumps(payload, indent=2) + "\n")
+        INTERIM_JSON.write_text(json.dumps(_clean(payload), indent=2, allow_nan=False) + "\n")
         print(json.dumps(payload, indent=2))
         return 0
     if a.cmd == "score":

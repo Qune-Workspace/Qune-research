@@ -111,7 +111,7 @@ def read_stocker(path: Path) -> dict[str, dict[str, float]]:
             if len(rec) < 7:
                 continue
             vals = {}
-            for h, v in zip(names, rec[2:]):
+            for h, v in zip(names, rec[2:7], strict=True):
                 try:
                     vals[h] = float(v)
                 except ValueError:
@@ -165,7 +165,7 @@ def compare(sid: str, rows: list[dict[str, str]], stk: dict[str, dict[str, float
     return {
         "first": months[0], "last": months[-1], "n": len(months), "w": w,
         "mean_g_ann": st.mean(g) * 12, "sd_g_ann": st.stdev(g) * math.sqrt(12),
-        "corr_g_s": corr(g, s_list), "corr_b1_s": corr([gg + ss for gg, ss in zip(g, s_list)], s_list),
+        "corr_g_s": corr(g, s_list), "corr_b1_s": corr([gg + ss for gg, ss in zip(g, s_list, strict=True)], s_list),
         "g2": st.stdev(g) / st.stdev(x), "g1": abs(st.mean(e)) * 12, "e_signed": st.mean(e) * 12, "full_share": st.mean(e) * 12 * len(e) / n_full, "n_full": n_full, "years": dict(years),
     }
 

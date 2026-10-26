@@ -1,0 +1,12 @@
+Study 010 question note: power of each row (arithmetic on month counts; no return read)
+K = 2.842; nw shown at 1.00 / 1.108; pool anchor Sharpe(d) 0.321
+
+  row                                             first     last     N           S_MDE          x pool   2% bar needs sd(d) <=
+  H  full history (decision row)                1927-07  2026-08  1190   0.285 / 0.316   0.89x / 0.99x   7.01% / 6.32%
+  P1 before the paper's data (pre-1963-07)      1927-07  1963-06   432   0.474 / 0.525   1.48x / 1.63x   4.22% / 3.81%
+  L  the paper's US data window                 1963-07  2015-12   630   0.392 / 0.435   1.22x / 1.35x   5.10% / 4.60%
+  P2 after the paper's sample end               2016-01  2026-08   128   0.870 / 0.964   2.71x / 3.00x   2.30% / 2.07%
+  P  outside the paper's window (P1 + P2)             -        -   560   0.416 / 0.461   1.30x / 1.44x   4.81% / 4.34%
+
+  check: H = P1 + L + P2: True
+  months to see Sharpe(d) 0.321 at nw 1.00: 941

@@ -27,12 +27,38 @@ and the record time.
 - B3's h̄ is frozen from the history run (``results/history/summary.json``)
   and written once to ``paper-log/frozen_hbar.json``; it is never re-estimated.
 
-Part 2 (scoring after 60 holding months, interim figures, the vintage row,
-the fetch of later releases into ``paper-log/raw/``) is written before any
-forward month can be scored; nothing here computes a forward return.
+Part 2 (written 2026-10-26, before any forward month can be scored):
+
+- ``fetch``: downloads the three files once into ``paper-log/raw/_incoming/``,
+  reads the release from the zips' own header lines (no value is read), and
+  keeps the set only if the three agree and the release is new: the history
+  snapshot's release and an already archived release are refused and the
+  download discarded.  A kept set moves to ``paper-log/raw/<release>/``
+  (git-ignored, as ``data/raw/``) with ``paper-log/releases/<release>.json``
+  (URL, download time, SHA-256, bytes, header lines; the format ``record``
+  reads), which is committed.
+- ``late`` (§11): a row is late if its first commit time in git is after the
+  desk's first download of a release that contains month t.  The library's own
+  publication time is not observable, so lateness is measured against what the
+  desk had seen; disclosed in §16 (code decisions).
+- ``interim``: months recorded, months with a return in the latest archived
+  release, cumulative T and B3 per trial; no t-statistic and no verdict before
+  the 60th holding month (Study 008's interim convention).
+- ``score``: once, after 60 holding months (2026-09 to 2031-08), from one
+  archived release named at scoring that contains all 60 months.  The h scored
+  is the committed h; f, B1 and B3 (frozen h̄) come from the scoring release;
+  costs as §6.3, the first month's trade measured from h at H's end
+  (``results/history/monthly_base.csv``).  C2 and C4 decide, C1 and C3 are
+  reported (§11), and the row is worded as a low-power check.  The vintage
+  row compares the scoring release with the snapshot over H's months and
+  shows h recomputed from the scoring release beside the committed h.
+  Output ``results/forward/score.json``, written once.
 
 Usage, from the study folder:
   python -m src.forward010 record --month 2026-09 [--raw-dir data/raw --manifest results/data_manifest.json]
+  python -m src.forward010 fetch
+  python -m src.forward010 interim
+  python -m src.forward010 score --release YYYYMM
 """
 from __future__ import annotations
 
@@ -40,22 +66,41 @@ import argparse
 import csv
 import fcntl
 import hashlib
+import io
 import json
 import os
 import re
+import shutil
+import subprocess
 from datetime import UTC, datetime
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
+import requests
 
 from .data import FILES, load_factors, read_zip
-from .rule import TRIALS, formation_return, sign_position
+from .history import C1_MARGIN, C2_T, C3_DSR, N_FAMILY, diff_row, series_metrics, stats
+from .rule import COST_BASE, COST_STRESS, TRIALS, formation_return, run, sign_position
 
 STUDY_DIR = Path(__file__).resolve().parents[1]
 PAPER_LOG = STUDY_DIR / "paper-log"
 POSITIONS_CSV = PAPER_LOG / "positions.csv"
 FROZEN_HBAR = PAPER_LOG / "frozen_hbar.json"
 HISTORY_SUMMARY = STUDY_DIR / "results" / "history" / "summary.json"
+HISTORY_MONTHLY = STUDY_DIR / "results" / "history" / "monthly_base.csv"
+SNAPSHOT_MANIFEST = STUDY_DIR / "results" / "data_manifest.json"
+SNAPSHOT_RAW = STUDY_DIR / "data" / "raw"
+FORWARD_RAW = PAPER_LOG / "raw"
+RELEASES = PAPER_LOG / "releases"
+INTERIM_JSON = PAPER_LOG / "interim.json"
+SCORE_JSON = STUDY_DIR / "results" / "forward" / "score.json"
+H_END = "2026-08"
+SCORED_MONTHS = 60
+LIBRARY_PAGE = "https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/data_library.html"
+UA = {"User-Agent": "qune-research study 010 forward record (one download per file per check)"}
+LABEL = "low-power check (60-month detectable Sharpe of d about 1.27 at 80% power, §11)"
+NOT_YET_SCORED = "Not yet scored: interim figures, no decision weight (§11 scores once after 60 holding months)"
 FIRST_FORWARD_MONTH = "2026-09"
 COLUMNS = ["month", "trial", "factor", "formation_months", "formation_return", "h", "release",
            "release_last_month", "files_sha256", "manifest_sha256", "downloaded_at_utc", "recorded_at_utc", "late"]
@@ -218,6 +263,302 @@ def record(month: str, raw_dir: Path, manifest_path: Path, out: Path = POSITIONS
     return rows
 
 
+# --- Part 2: fetch, lateness, interim, scoring (§11) ----------------------------------------------------
+
+def _utc_now() -> str:
+    return datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def preamble_of(zbytes: bytes) -> list[str]:
+    """The text lines above the monthly column header (they name the release; they hold no value)."""
+    lines = read_zip(zbytes).splitlines()
+    first = next(i for i, ln in enumerate(lines) if re.fullmatch(r"\d{6}", ln.split(",")[0].strip()))
+    return [ln.strip() for ln in lines[: first - 1] if ln.strip()]
+
+
+def _links(html: str) -> dict[str, str]:
+    """The three files' links on the library page (copied from data_step.find_links)."""
+    hrefs = re.findall(r'href\s*=\s*"([^"]+)"', html, flags=re.I)
+    links = {}
+    for name in FILES:
+        hits = sorted({h for h in hrefs if h.rsplit("/", 1)[-1] == name})
+        if len(hits) != 1:
+            raise SystemExit(f"STOP: {len(hits)} links named {name} on the library page; expected exactly one")
+        links[name] = requests.compat.urljoin(LIBRARY_PAGE, hits[0])
+    return links
+
+
+def archived(releases_dir: Path = RELEASES) -> dict[str, dict]:
+    """Archived forward releases by name, from paper-log/releases/YYYYMM.json."""
+    return {p.stem: json.loads(p.read_text()) for p in sorted(releases_dir.glob("[0-9]" * 6 + ".json"))}
+
+
+def fetch(get=requests.get, raw_root: Path = FORWARD_RAW, releases_dir: Path = RELEASES,
+          snapshot_manifest: Path = SNAPSHOT_MANIFEST, now=_utc_now) -> dict:
+    """Download the three files once; keep them only if they name one new release (see the module docstring)."""
+    incoming = raw_root / "_incoming"
+    shutil.rmtree(incoming, ignore_errors=True)
+    incoming.mkdir(parents=True)
+    try:
+        page_time = now()
+        page = get(LIBRARY_PAGE, headers=UA, timeout=60)
+        page.raise_for_status()
+        files = {}
+        for name, url in _links(page.text).items():
+            t = now()
+            r = get(url, headers=UA, timeout=120)
+            r.raise_for_status()
+            (incoming / name).write_bytes(r.content)
+            files[name] = {"url": url, "downloaded_at_utc": t, "sha256": hashlib.sha256(r.content).hexdigest(),
+                           "bytes": len(r.content), "preamble_lines": preamble_of(r.content)}
+        rels = {}
+        for name in FILES:
+            hits = {m.group(1) for ln in files[name]["preamble_lines"] for m in [_RELEASE.search(ln)] if m}
+            if len(hits) != 1:
+                return {"kept": False, "reason": f"{name} names {sorted(hits)} in its header"}
+            rels[name] = hits.pop()
+        if len(set(rels.values())) != 1:
+            return {"kept": False, "reason": f"the files name different releases {rels} (library mid-update?)"}
+        rel = rels[next(iter(FILES))]
+        snap = release_of(snapshot_manifest)
+        if rel <= snap:
+            return {"kept": False, "release": rel, "reason": f"not newer than the history snapshot's release {snap}"}
+        if (releases_dir / f"{rel}.json").exists() or (raw_root / rel).exists():
+            return {"kept": False, "release": rel, "reason": "already archived (one download per release)"}
+        latest = max(archived(releases_dir), default=None)
+        if latest is not None and rel < latest:
+            return {"kept": False, "release": rel, "reason": f"older than the latest archived release {latest}"}
+        releases_dir.mkdir(parents=True, exist_ok=True)
+        dest = raw_root / rel
+        incoming.rename(dest)
+        rec = {"release": rel, "library_page": {"url": LIBRARY_PAGE, "read_at_utc": page_time,
+                                                "sha256": hashlib.sha256(page.content).hexdigest()},
+               "files": files}
+        (releases_dir / f"{rel}.json").write_text(json.dumps(rec, indent=2, sort_keys=True) + "\n")
+        return {"kept": True, "release": rel, "raw_dir": str(dest), "manifest": str(releases_dir / f"{rel}.json")}
+    finally:
+        shutil.rmtree(incoming, ignore_errors=True)
+
+
+def read_positions(path: Path = POSITIONS_CSV) -> pd.DataFrame:
+    body = existing_body(path)
+    if not body:
+        raise SystemExit(f"STOP: {path.name} has no record")
+    pos = pd.read_csv(io.StringIO(body), dtype=str)
+    key = ["month", "trial", "factor"]
+    if pos.duplicated(key).any():
+        raise SystemExit("STOP: a (month, trial, factor) is recorded twice")
+    return pos
+
+
+def row_commit_times(path: Path = POSITIONS_CSV) -> dict[tuple[str, str, str], pd.Timestamp]:
+    """First commit time (UTC) of each (month, trial, factor) row, from git: the evidence of when it existed."""
+    top = subprocess.run(["git", "rev-parse", "--show-toplevel"], cwd=path.parent, check=True,
+                         capture_output=True, text=True).stdout.strip()
+    rel = path.resolve().relative_to(Path(top).resolve()).as_posix()
+    log = subprocess.run(["git", "log", "--reverse", "--format=%H %cI", "--", rel], cwd=top, check=True,
+                         capture_output=True, text=True).stdout.split("\n")
+    times: dict[tuple[str, str, str], pd.Timestamp] = {}
+    for line in filter(None, log):
+        h, t = line.split()
+        body = subprocess.run(["git", "show", f"{h}:{rel}"], cwd=top, capture_output=True, text=True).stdout
+        for r in csv.DictReader(body.splitlines()):
+            times.setdefault((r["month"], r["trial"], r["factor"]), pd.Timestamp(t).tz_convert("UTC"))
+    return times
+
+
+def first_seen(month: str, releases: dict[str, dict]) -> pd.Timestamp | None:
+    """When the desk first held a release containing month t: the last file download of the earliest such set."""
+    want = pd.Period(month, "M").strftime("%Y%m")
+    seen = [max(pd.Timestamp(v["downloaded_at_utc"]) for v in rec["files"].values())
+            for name, rec in releases.items() if name >= want]
+    return min(seen) if seen else None
+
+
+def late_flags(pos: pd.DataFrame, commit_times: dict, releases: dict[str, dict]) -> pd.Series:
+    """§11 "late": committed after the desk first held a release containing month t (True / False)."""
+    out = []
+    for r in pos.itertuples(index=False):
+        key = (r.month, r.trial, r.factor)
+        if key not in commit_times:
+            raise SystemExit(f"STOP: {key} is not in any commit; every scored row must be committed first")
+        seen = first_seen(r.month, releases)
+        out.append(bool(seen is not None and commit_times[key] > seen))
+    return pd.Series(out, index=pos.index)
+
+
+def h_at_h_end(path: Path = HISTORY_MONTHLY) -> dict[str, dict[str, float]]:
+    """h at H's last month (2026-08) per trial and factor, from the history run's committed monthly file."""
+    m = pd.read_csv(path, dtype={"month": str}).set_index("month")
+    if m.index[-1] != H_END:
+        raise SystemExit(f"STOP: {path.name} ends at {m.index[-1]}, not {H_END}")
+    last = m.loc[H_END]
+    return {t: {k: float(last[f"{t}_h_{k}"]) for k in trial.factors} for t, trial in TRIALS.items()}
+
+
+def committed_h(pos: pd.DataFrame, trial: str, months: pd.PeriodIndex) -> pd.DataFrame:
+    sub = pos[pos["trial"] == trial]
+    h = sub.pivot(index="month", columns="factor", values="h").astype(float)
+    h.index = pd.PeriodIndex(h.index, freq="M")
+    h = h.reindex(index=months, columns=TRIALS[trial].factors)
+    if h.isna().any().any():
+        raise SystemExit(f"STOP: {trial} has no committed h for some month or factor in {months[0]}..{months[-1]}")
+    if not h.isin([1.0, -1.0]).all().all():
+        raise SystemExit(f"STOP: {trial} has an h other than +1 / −1")
+    return h
+
+
+def forward_frame(h: pd.DataFrame, f: pd.DataFrame, hbar: dict[str, float], h_prev: dict[str, float],
+                  cost: float) -> pd.DataFrame:
+    """T, B1, B3, d on the committed h (§9.1, §6.3); the first month's trade from h at H's end."""
+    fh = f.reindex(h.index)[h.columns]
+    if fh.isna().any().any():
+        raise SystemExit("STOP: the release has no return for a scored month")
+    K = float(h.shape[1])
+    prev = h.shift(1)
+    prev.iloc[0] = pd.Series(h_prev)[h.columns]
+    traded = (2.0 * (h - prev).abs()).sum(axis=1) / K
+    t_gross = (h * fh).sum(axis=1) / K
+    b3 = (fh * pd.Series(hbar)[h.columns]).sum(axis=1) / K
+    t_net = t_gross - cost * traded
+    return pd.DataFrame({"T_gross": t_gross, "cost": cost * traded, "T": t_net, "B1": fh.sum(axis=1) / K,
+                         "B3": b3, "d": t_net - b3, "K": K})
+
+
+def _release_frame(release: str, raw_root: Path, releases_dir: Path) -> pd.DataFrame:
+    man = releases_dir / f"{release}.json"
+    if not man.exists():
+        raise SystemExit(f"STOP: release {release} is not archived in {releases_dir.name}/")
+    f = load_factors(raw_root / release, man)  # checks every zip against its SHA-256
+    if zip_releases(raw_root / release) != {release} or release_of(man) != release:
+        raise SystemExit(f"STOP: the archived files do not all name {release}")
+    return f
+
+
+def interim(pos: pd.DataFrame, raw_root: Path = FORWARD_RAW, releases_dir: Path = RELEASES,
+            hbar: dict | None = None, h_prev: dict | None = None, now_utc: str | None = None) -> dict:
+    """Counts and cumulative returns so far; no t-statistic and no verdict before the 60th month."""
+    hbar = hbar or json.loads(FROZEN_HBAR.read_text())["hbar"]
+    h_prev = h_prev or h_at_h_end()
+    rels = archived(releases_dir)
+    latest = max(rels, default=None)
+    out = {"heading": NOT_YET_SCORED, "label": LABEL, "written_at_utc": now_utc or _utc_now(),
+           "scored_after": f"{SCORED_MONTHS} holding months ({FIRST_FORWARD_MONTH} to "
+                           f"{pd.Period(FIRST_FORWARD_MONTH, 'M') + SCORED_MONTHS - 1})",
+           "latest_archived_release": latest, "trials": {}}
+    f = _release_frame(latest, raw_root, releases_dir) if latest else None
+    for t in TRIALS:
+        recorded = sorted(pos.loc[pos["trial"] == t, "month"].unique())
+        row = {"months_recorded": len(recorded), "months_with_return": 0, "cumulative_T": None,
+               "cumulative_B3": None, "mean_d_pct_a_year": None}
+        if f is not None and recorded:
+            last_f = min(f[k].last_valid_index() for k in TRIALS[t].factors)
+            months = pd.period_range(FIRST_FORWARD_MONTH, recorded[-1], freq="M")
+            months = months[months <= last_f]
+            if len(months) and set(str(m) for m in months) <= set(recorded):
+                fr = forward_frame(committed_h(pos, t, months), f, hbar[t], h_prev[t], COST_BASE)
+                row.update(months_with_return=int(len(fr)),
+                           cumulative_T=float(np.prod(1 + fr["T"].to_numpy() / 100) - 1),
+                           cumulative_B3=float(np.prod(1 + fr["B3"].to_numpy() / 100) - 1),
+                           mean_d_pct_a_year=float(fr["d"].mean() * 12))
+        out["trials"][t] = row
+    out["months_to_scoring"] = SCORED_MONTHS - out["trials"]["T1"]["months_with_return"]
+    return out
+
+
+def vintage_row(f_score: pd.DataFrame, f_snap: pd.DataFrame, pos: pd.DataFrame, months: pd.PeriodIndex) -> dict:
+    """The scoring release against the snapshot over H's months, and h recomputed beside the committed h."""
+    h_idx = pd.period_range("1926-02", H_END, freq="M")
+    per = {}
+    for k in FACTORS:
+        a, b = f_snap[k].reindex(h_idx), f_score[k].reindex(h_idx)
+        both = a.notna() & b.notna()
+        diff = (b - a)[both]
+        per[k] = {"months_compared": int(both.sum()), "months_only_in_one": int((a.notna() ^ b.notna()).sum()),
+                  "months_differing": int((diff.abs() > 1e-9).sum()),
+                  "max_abs_change_pct": float(diff.abs().max()) if len(diff) else 0.0,
+                  "mean_change_pct_a_year": float(diff.mean() * 12) if len(diff) else 0.0}
+    d_score = run(f_score, TRIALS["T1"], H_END, COST_BASE)["frame"]["d"]
+    d_snap = run(f_snap, TRIALS["T1"], H_END, COST_BASE)["frame"]["d"]
+    recomputed = []
+    for m in months:
+        for r in positions_for(f_score, str(m)):
+            c = pos[(pos["month"] == r["month"]) & (pos["trial"] == r["trial"]) & (pos["factor"] == r["factor"])]
+            recomputed.append({"month": r["month"], "trial": r["trial"], "factor": r["factor"],
+                               "h_committed": int(c["h"].iloc[0]), "h_scoring_release": r["h"]})
+    differ = [x for x in recomputed if x["h_committed"] != x["h_scoring_release"]]
+    return {"per_factor_over_H": per,
+            "T1_mean_d_over_H_pct_a_year": {"snapshot": float(d_snap.mean() * 12),
+                                            "scoring_release": float(d_score.mean() * 12)},
+            "h_rows_compared": len(recomputed), "h_rows_differing": len(differ), "h_differing": differ}
+
+
+def forward_verdict(m: dict, stress_mean_d: float) -> dict:
+    """§11: §9.5's C1–C4 on the 60 months; C2 and C4 decide, C1 and C3 are reported; a low-power check."""
+    sT, s1 = m["T"]["sharpe_annual"], m["B1"]["sharpe_annual"]
+    c1_b3 = sT >= C1_MARGIN if m["B3"] is None else sT >= m["B3"]["sharpe_annual"] + C1_MARGIN
+    c = {"C1_reported": bool(sT >= s1 + C1_MARGIN and c1_b3),
+         "C2": bool(m["d"]["nw_t"] >= C2_T),
+         "C3_reported": bool(m["dsr"]["dsr"] >= C3_DSR),
+         "C4": bool(np.sign(stress_mean_d) == np.sign(m["d"]["mean_pct_a_year"]))}
+    row = "meets C2 and C4" if c["C2"] and c["C4"] else "does not meet C2 and C4"
+    return {**c, "row": f"{row} ({LABEL})"}
+
+
+def score(release: str, pos: pd.DataFrame, commit_times: dict, raw_root: Path = FORWARD_RAW,
+          releases_dir: Path = RELEASES, snapshot_raw: Path = SNAPSHOT_RAW,
+          snapshot_manifest: Path = SNAPSHOT_MANIFEST, hbar: dict | None = None, h_prev: dict | None = None,
+          out: Path = SCORE_JSON, now_utc: str | None = None) -> dict:
+    """Score the 60 holding months once, from one archived release named at scoring (§11)."""
+    if out.exists():
+        raise SystemExit(f"STOP: {out.name} exists; the forward record is scored once (§11)")
+    hbar = hbar or json.loads(FROZEN_HBAR.read_text())["hbar"]
+    h_prev = h_prev or h_at_h_end()
+    months = pd.period_range(FIRST_FORWARD_MONTH, periods=SCORED_MONTHS, freq="M")
+    want = {(str(m), t, k) for m in months for t, tr in TRIALS.items() for k in tr.factors}
+    have = set(zip(pos["month"], pos["trial"], pos["factor"]))
+    if not want <= have:
+        raise SystemExit(f"STOP: {len(want - have)} of the 60 months' rows are not recorded")
+    pos = pos[[k in want for k in zip(pos["month"], pos["trial"], pos["factor"])]].reset_index(drop=True)
+    f = _release_frame(release, raw_root, releases_dir)
+    if any(f[k].last_valid_index() < months[-1] for k in FACTORS):
+        raise SystemExit(f"STOP: release {release} does not contain {months[-1]} for every factor")
+    if not (snapshot_raw / next(iter(FILES))).exists():
+        raise SystemExit("STOP: the snapshot's raw files are needed for the vintage row (§11)")
+    f_snap = load_factors(snapshot_raw, snapshot_manifest)
+    late = late_flags(pos, commit_times, archived(releases_dir))
+    frames = {case: {t: forward_frame(committed_h(pos, t, months), f, hbar[t], h_prev[t], c)
+                     for t in TRIALS} for case, c in (("base", COST_BASE), ("stress", COST_STRESS))}
+    var, floored = stats.trial_variance([stats.sharpe_monthly(frames["base"][t]["T"] / 100) for t in TRIALS])
+    trials = {}
+    for t in TRIALS:
+        fr = frames["base"][t]
+        x = fr["T"] / 100
+        b3_zero = all(v == 0 for v in hbar[t].values())
+        m = {"T": series_metrics(fr["T"], None), "B1": series_metrics(fr["B1"], None),
+             "B3": None if b3_zero else series_metrics(fr["B3"], None), "d": diff_row(fr["d"]),
+             "T_minus_B1": diff_row(fr["T"] - fr["B1"]), "cost_pct_a_year": float(fr["cost"].mean() * 12),
+             "dsr": stats.deflated_sharpe(stats.sharpe_monthly(x), len(x), stats.skewness(x), stats.kurtosis(x),
+                                          N_FAMILY, var)}
+        stress = float(frames["stress"][t]["d"].mean() * 12)
+        sel = pos["trial"] == t
+        trials[t] = {**m, "stress_mean_d_pct_a_year": stress, "verdict": forward_verdict(m, stress),
+                     "rows_late": int(late[sel].sum()), "rows": int(sel.sum())}
+    result = {"release": release, "months": [str(months[0]), str(months[-1])], "label": LABEL,
+              "scored_at_utc": now_utc or _utc_now(), "N_family": N_FAMILY,
+              "variance_across_trials": var, "floor_applied": floored, "trials": trials,
+              "headline": f"T1: {trials['T1']['verdict']['row']}",
+              "vintage": vintage_row(f, f_snap, pos, months)}
+    out.parent.mkdir(parents=True, exist_ok=True)
+    with open(out.with_suffix(".lock"), "w") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        if out.exists():
+            raise SystemExit(f"STOP: {out.name} exists; the forward record is scored once (§11)")
+        tmp = out.with_suffix(".tmp")
+        tmp.write_text(json.dumps(result, indent=2, default=float) + "\n")
+        tmp.replace(out)
+    return result
+
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(prog="python -m src.forward010")
     sub = p.add_subparsers(dest="cmd", required=True)
@@ -225,7 +566,23 @@ def main(argv: list[str] | None = None) -> int:
     r.add_argument("--month", required=True)
     r.add_argument("--raw-dir", type=Path, default=STUDY_DIR / "data" / "raw")
     r.add_argument("--manifest", type=Path, default=STUDY_DIR / "results" / "data_manifest.json")
+    sub.add_parser("fetch", help="download the three files once; keep them only if they name a new release")
+    sub.add_parser("interim", help="write paper-log/interim.json (no t-statistic, no verdict)")
+    s = sub.add_parser("score", help="score the 60 holding months once, from one archived release")
+    s.add_argument("--release", required=True)
     a = p.parse_args(argv)
+    if a.cmd == "fetch":
+        print(json.dumps(fetch(), indent=2))
+        return 0
+    if a.cmd == "interim":
+        payload = interim(read_positions())
+        INTERIM_JSON.write_text(json.dumps(payload, indent=2) + "\n")
+        print(json.dumps(payload, indent=2))
+        return 0
+    if a.cmd == "score":
+        res = score(a.release, read_positions(), row_commit_times())
+        print(res["headline"])
+        return 0
     freeze_hbar()
     rows = record(a.month, a.raw_dir, a.manifest)
     for row in rows:

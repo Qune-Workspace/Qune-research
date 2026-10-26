@@ -1,0 +1,35 @@
+Power of a pooled forward record (descriptive power calculation; tools/power_pooled.py)
+d = T1 - B3 by execution month; Newey-West Bartlett 6 lags; MDE = 2.842 x se x 12; forward horizon 60 months
+
+Anchors reproduced before anything is reported
+  003: 185 months 2003-08 to 2018-12, NW t 0.37 (published 0.37)
+  006: 593 months 1969-08 to 2018-12, NW t 2.06 (published 2.06)
+  007: 534 months 1974-07 to 2018-12, NW t 2.10 (published 2.1)
+  008: 534 months 1974-07 to 2018-12, NW t 1.38 (published 1.38)
+
+Single records, 60-month MDE at each window's dispersion
+  study  window              n    MDE 60 m   months to 2%   months to 1%
+  003    own window          185    3.03%        138           551
+  003    ETF era (2003-08+)  185    3.03%        138           551
+  006    own window          593    3.92%        231           922
+  006    ETF era (2003-08+)  185    1.32%         26           104
+  007    own window          534    3.41%        174           697
+  007    ETF era (2003-08+)  185    2.54%         97           386
+  008    own window          534    3.46%        180           720
+  008    ETF era (2003-08+)  185    2.39%         86           342
+
+Pools (equal-weight average of the members' d on their common months)
+  pool              window              n    MDE 60 m   months to 2%   months to 1%   months to +0.70%
+  006+007+008       1974-07 to 2018-12  534    2.75%        114           455            928
+  006+007+008       ETF era (2003-08+)  185    0.98%         14            58            118
+  007+008           1974-07 to 2018-12  534    2.67%        107           429            876
+  007+008           ETF era (2003-08+)  185    1.21%         22            88            179
+  003+006+007+008   ETF era (2003-08+)  185    1.15%         20            79            161
+  003+007+008       ETF era (2003-08+)  185    1.27%         24            97            199
+
+Correlation of d, ETF era common months (2003-08 to 2018-12, n = 185):
+       003    006    007    008
+003  1.000  0.347  0.451 -0.344
+006  0.347  1.000  0.589 -0.373
+007  0.451  0.589  1.000 -0.400
+008 -0.344 -0.373 -0.400  1.000

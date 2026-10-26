@@ -1,0 +1,128 @@
+{
+  "run_at_utc": "2026-10-26T15:31:24Z",
+  "parse_only": false,
+  "files": {
+    "17_Industry_Portfolios_CSV.zip": {
+      "section_title_line": "Average Value Weighted Returns -- Monthly",
+      "column_header": [
+        "Food",
+        "Mines",
+        "Oil",
+        "Clths",
+        "Durbl",
+        "Chems",
+        "Cnsum",
+        "Cnstr",
+        "Steel",
+        "FabPr",
+        "Machn",
+        "Cars",
+        "Trans",
+        "Utils",
+        "Rtail",
+        "Finan",
+        "Other"
+      ],
+      "first_month": "1926-07",
+      "last_month": "2026-08",
+      "rows": 1202,
+      "month_gaps": [],
+      "duplicate_or_out_of_order": [],
+      "rows_with_wrong_field_count": []
+    },
+    "30_Industry_Portfolios_CSV.zip": {
+      "section_title_line": "Average Value Weighted Returns -- Monthly",
+      "column_header": [
+        "Food",
+        "Beer",
+        "Smoke",
+        "Games",
+        "Books",
+        "Hshld",
+        "Clths",
+        "Hlth",
+        "Chems",
+        "Txtls",
+        "Cnstr",
+        "Steel",
+        "FabPr",
+        "ElcEq",
+        "Autos",
+        "Carry",
+        "Mines",
+        "Coal",
+        "Oil",
+        "Util",
+        "Telcm",
+        "Servs",
+        "BusEq",
+        "Paper",
+        "Trans",
+        "Whlsl",
+        "Rtail",
+        "Meals",
+        "Fin",
+        "Other"
+      ],
+      "first_month": "1926-07",
+      "last_month": "2026-08",
+      "rows": 1202,
+      "month_gaps": [],
+      "duplicate_or_out_of_order": [],
+      "rows_with_wrong_field_count": []
+    }
+  },
+  "last_common_month": "2026-08",
+  "months_with_fewer_values_than_the_set": {
+    "17_Industry_Portfolios_CSV.zip": {},
+    "30_Industry_Portfolios_CSV.zip": {}
+  },
+  "eligibility": {
+    "17_Industry_Portfolios_CSV.zip F=6": {
+      "ranking_months": "1926-12 to 2026-07",
+      "count": 1196,
+      "min_eligible": 17,
+      "months_below_full_set": {},
+      "months_below_floor": {}
+    },
+    "17_Industry_Portfolios_CSV.zip F=12": {
+      "ranking_months": "1927-06 to 2026-07",
+      "count": 1190,
+      "min_eligible": 17,
+      "months_below_full_set": {},
+      "months_below_floor": {}
+    },
+    "30_Industry_Portfolios_CSV.zip F=6": {
+      "ranking_months": "1926-12 to 2026-07",
+      "count": 1196,
+      "min_eligible": 30,
+      "months_below_full_set": {},
+      "months_below_floor": {}
+    }
+  },
+  "window_months": {
+    "M1": {
+      "I1": "1927-06 to 1963-06 (433)",
+      "I2": "1995-08 to 2026-08 (373)",
+      "O": 806,
+      "M": 385,
+      "full": 1191
+    },
+    "M1a": {
+      "I1": "1927-06 to 1963-06 (433)",
+      "I2": "1995-08 to 2026-08 (373)",
+      "O": 806,
+      "M": 385,
+      "full": 1191
+    },
+    "M1b": {
+      "I1": "1927-12 to 1963-06 (427)",
+      "I2": "1995-08 to 2026-08 (373)",
+      "O": 800,
+      "M": 385,
+      "full": 1185
+    }
+  },
+  "stops": [],
+  "outcome": "pass: no \u00a75.4 stop rule met"
+}

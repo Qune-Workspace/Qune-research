@@ -1,0 +1,42 @@
+{
+  "files": {
+    "17_Industry_Portfolios_CSV.zip": {
+      "bytes": 187380,
+      "csv_bytes": 812718,
+      "csv_member": "17_Industry_Portfolios.csv",
+      "csv_sha256": "413c0f3a6ef2d5f2ccee508c336e7642f606223dacb41f742cee3bd4261842a8",
+      "downloaded_at_utc": "2026-10-26T15:31:23Z",
+      "preamble_lines": [
+        "This file was created using the 202608 CRSP database.",
+        "It contains value- and equal-weighted returns for 17 industry portfolios.",
+        "The portfolios are constructed at the end of June.",
+        "The annual returns are from January to December.",
+        "Missing data are indicated by -99.99 or -999."
+      ],
+      "sha256": "8c97059001351146ce70473cbdba4156635c48014d322d7062b7a8bc963e1f45",
+      "url": "https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/ftp/17_Industry_Portfolios_CSV.zip"
+    },
+    "30_Industry_Portfolios_CSV.zip": {
+      "bytes": 314316,
+      "csv_bytes": 1401829,
+      "csv_member": "30_Industry_Portfolios.csv",
+      "csv_sha256": "4e0bbe2344b740c9eedebe300521cdb72f361028faa3d8d59016a802b79ab6a1",
+      "downloaded_at_utc": "2026-10-26T15:31:23Z",
+      "preamble_lines": [
+        "This file was created by CMPT_IND_RETS using the 202608 CRSP database.",
+        "It contains value- and equal-weighted returns for 30 industry portfolios.",
+        "The portfolios are constructed at the end of June.",
+        "The annual returns are from January to December.",
+        "Missing data are indicated by -99.99 or -999."
+      ],
+      "sha256": "8380fadbf9b1eab98ecda389c3d4f0d62756e81b8a69a639d1e8a1331a10722a",
+      "url": "https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/ftp/30_Industry_Portfolios_CSV.zip"
+    }
+  },
+  "library_page": {
+    "bytes": 245732,
+    "read_at_utc": "2026-10-26T15:31:22Z",
+    "sha256": "9af7df28fb25d32d7ab81e1b6eaddebb167f57cc013cb437c85c154727ce9065",
+    "url": "https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/data_library.html"
+  }
+}

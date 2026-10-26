@@ -2,7 +2,8 @@
 # Study 010 reproduction script (PREREGISTRATION.md §13, §14).
 #
 #   ./reproduce.sh --history    §8 decision row H and its sub-windows, once -> results/history/
-#   ./reproduce.sh --forward    §11 shadow forward record (not built yet; refused)
+#   ./reproduce.sh --forward    §11 shadow forward record: part 1 (position records) is
+#                               `python -m src.forward010 record --month YYYY-MM`; scoring (part 2) not built yet
 #
 # --history refuses without a non-empty file named APPROVED in this folder
 # (§14 step 4), when results/history/ already exists (it runs once), and when
@@ -22,7 +23,8 @@ usage() { echo "usage: $0 --history | --forward" >&2; exit 2; }
 [ $# -eq 1 ] || usage
 case "$1" in
   --forward)
-    echo "refused: the forward record code (forward010.py) is not built yet (§11, §14 step 10)." >&2
+    echo "refused: forward scoring (forward010.py part 2) is not built yet (§11, §14 step 10)." >&2
+    echo "Monthly position records: \$PYTHON -m src.forward010 record --month YYYY-MM (from the first release containing YYYY-MM minus one)." >&2
     exit 1 ;;
   --history) ;;
   *) usage ;;

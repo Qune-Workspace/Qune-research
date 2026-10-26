@@ -68,6 +68,7 @@ def diff_row(d: pd.Series) -> dict:
         "mean_pct_a_year": float(d.mean() * 12),
         "nw_t": nw["t"],
         "nw_se_pct_a_year": nw["se"] * 12,
+        "iid_t": float(d.mean() / (sd / math.sqrt(len(d)))) if sd > 0 else float("nan"),
         "sharpe_annual": float(d.mean() / sd * math.sqrt(12)) if sd > 0 else float("nan"),
     }
 
@@ -85,7 +86,8 @@ def series_metrics(r: pd.Series, rng: np.random.Generator | None) -> dict:
         "max_drawdown": stats.max_drawdown(stats.total_return_index(x)),
         "positive_month_share": float((x > 0).mean()),
         "skewness": stats.skewness(x),
-        "kurtosis": stats.kurtosis(x),
+        "kurtosis_non_excess": stats.kurtosis(x),
+        "excess_kurtosis": stats.kurtosis(x) - 3.0,
     }
     if rng is not None and x.std() > 0:
         out["sharpe_ci"] = stats.sharpe_ci_stationary_bootstrap(x, rng, n_resamples=N_RESAMPLES)
@@ -107,8 +109,9 @@ def power_realised(d: pd.Series) -> dict:
     }
 
 
-def per_factor(out: dict, f: pd.DataFrame) -> dict:
+def per_factor(out: dict, f: pd.DataFrame, cost: float) -> dict:
     h, hbar, K = out["h"], out["hbar"], out["frame"]["K"]
+    prev = h.shift(1).where(h.shift(1).notna(), 0.0)
     fh = f.reindex(h.index)[h.columns]
     se = static_exposure(h, hbar)
     rows = {}
@@ -116,6 +119,8 @@ def per_factor(out: dict, f: pd.DataFrame) -> dict:
         held = h[k].notna()
         flips = int((h[k].diff().abs() == 2).sum())
         contrib = ((h[k] - hbar[k]) * fh[k] / K).where(held, 0.0)  # gross of costs; (1/K_t)-weighted
+        own_cost = (cost * 2.0 * (h[k] - prev[k]).abs() / K).where(held, 0.0)  # this factor's timing cost (§6.3)
+        net = contrib - own_cost  # the net contributions add up to mean(d) exactly
         hit = (np.sign(h[k][held]) == np.sign(fh[k][held])) & (fh[k][held] != 0)
         rows[k] = {
             "hbar": float(hbar[k]),
@@ -125,8 +130,11 @@ def per_factor(out: dict, f: pd.DataFrame) -> dict:
             "ties": out["ties"][k],
             "long_share": float((h[k][held] > 0).mean()),
             "hit_rate": float(hit.mean()),
-            "contribution_to_mean_d_pct_a_year": float(contrib.mean() * 12),
-            "contribution_nw_t": stats.newey_west_mean(contrib)["t"],
+            "contribution_to_mean_d_gross_pct_a_year": float(contrib.mean() * 12),
+            "contribution_gross_nw_t": stats.newey_west_mean(contrib)["t"],
+            "contribution_to_mean_d_net_pct_a_year": float(net.mean() * 12),
+            "contribution_net_nw_t": stats.newey_west_mean(net)["t"],
+            "hits": int(hit.sum()),
             "static_exposure": float(se[k]),
         }
     return rows
@@ -157,12 +165,13 @@ def verdict(crit: dict, window_pass: bool, mde_80: float) -> dict:
         v = "inconclusive (fragile)"
     else:
         v = "supported in history; forward record pending"
-    label = v != "not supported" and mde_80 > RETURN_UNIT_BAR
+    bar_not_met = bool(mde_80 > RETURN_UNIT_BAR)
+    suffix = " (Sharpe units; the 2%-a-year bar not met)"
+    rows = {PRIMARY: v, **{k: own[k] for k in COMPANIONS}}
+    # §9.5: "any row that is not 'not supported'" carries the label, each row on its own reading
     return {
-        PRIMARY: v + (" (Sharpe units; the 2%-a-year bar not met)" if label else ""),
-        **{k: own[k] + (" (Sharpe units; the 2%-a-year bar not met)" if own[k] != "not supported" and label else "")
-           for k in COMPANIONS},
-        "return_unit_label_applied": bool(label),
+        **{k: r + (suffix if bar_not_met and r != "not supported" else "") for k, r in rows.items()},
+        "return_unit_bar_not_met": bar_not_met,
         "mde_80_T1_pct_a_year": mde_80,
     }
 
@@ -200,13 +209,15 @@ def compute(f: pd.DataFrame, h_end: str, programme: dict) -> tuple[dict, dict]:
                                      programme["with_desk_registry"]})
                 },
                 "windows": {w: diff_row(window(fr, w)["d"]) for w in ("P1", "L", "P2", "P")},
-                "per_factor": per_factor(res[k], f),
+                "per_factor": per_factor(res[k], f, COSTS[case]),
                 "flips_total_per_year": float(sum((res[k]["h"][c].diff().abs() == 2).sum() for c in res[k]["h"])
                                               / len(fr) * 12),
                 "power_realised": power_realised(fr["d"]),
             }
             if b3_zero:
                 m["B3"] = {"sharpe_annual": float("nan")}
+            pf = m["per_factor"]
+            m["hit_rate_pooled"] = sum(v["hits"] for v in pf.values()) / sum(v["months_held"] for v in pf.values())
             block["trials"][k] = m
         summary["cost_cases"][case] = block
 
@@ -301,26 +312,47 @@ def _json_default(o):
     raise TypeError(type(o))
 
 
+HISTORY_ROW = "| History run (§14 step 6), logged before it runs"
+
+
+def check_programme_count(programme: dict) -> None:
+    for key in ("public_trials_md", "with_desk_registry"):
+        v = programme.get(key)
+        if not isinstance(v, int) or isinstance(v, bool) or v < 2:
+            raise SystemExit(f"refused: programme_count.json '{key}' must be an integer >= 2 (§9.4)")
+    if not str(programme.get("method", "")).strip():
+        raise SystemExit("refused: programme_count.json has no 'method' (§9.4: the method of the count)")
+
+
 def main(argv: list[str] | None = None, here: Path = HERE) -> None:
     argparse.ArgumentParser(description="Study 010 history run (§8, §9), once.").parse_args(argv)
     if not (here / "APPROVED").is_file() or not (here / "APPROVED").read_text().strip():
         raise SystemExit("refused: no APPROVED file (§14 step 4)")
     out_dir = here / "results" / "history"
+    tmp_dir = here / "results" / ".history_tmp"
     if out_dir.exists():
         raise SystemExit("refused: results/history/ exists; the history run is executed once (§14 step 6)")
+    if tmp_dir.exists():
+        raise SystemExit("refused: results/.history_tmp/ exists: an earlier run read the data and stopped; "
+                         "a dated §16 amendment is needed before any re-run")
     count_path = here / "results" / "programme_count.json"
     if not count_path.exists():
         raise SystemExit("refused: results/programme_count.json missing; the re-count comes first (§9.4, §14 step 5)")
     programme = json.loads(count_path.read_text())
+    check_programme_count(programme)
+    if HISTORY_ROW not in (here / "trials.md").read_text():
+        raise SystemExit("refused: trials.md has no history-run row; it is logged before the run (§14 step 5)")
     h_end = json.loads((here / "results" / "data_step.json").read_text())["h_end"]
+    # every check above runs before the first factor value is read
     f = load_factors(here / "data" / "raw", here / "results" / "data_manifest.json")
     summary, runs = compute(f, h_end, programme)
     summary["run_at_utc"] = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
-    out_dir.mkdir(parents=True)
+    tmp_dir.mkdir(parents=True)
     for case in COSTS:
-        monthly_csv(f, runs[case]).to_csv(out_dir / f"monthly_{case}.csv", float_format="%.17g")
-    (out_dir / "summary.json").write_text(json.dumps(summary, indent=2, default=_json_default) + "\n")
-    write_verdict(summary, out_dir / "verdict.md")
+        monthly_csv(f, runs[case]).to_csv(tmp_dir / f"monthly_{case}.csv", float_format="%.17g")
+    (tmp_dir / "summary.json").write_text(json.dumps(summary, indent=2, default=_json_default) + "\n")
+    write_verdict(summary, tmp_dir / "verdict.md")
+    tmp_dir.rename(out_dir)  # results/history/ appears only when every output is written
     print((out_dir / "verdict.md").read_text())
 
 

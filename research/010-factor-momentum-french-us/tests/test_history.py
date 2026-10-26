@@ -1,4 +1,6 @@
 """Study 010 history runner on synthetic factor series only."""
+import json
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -45,8 +47,16 @@ def test_per_factor_contributions_add_up_to_gross_d(computed):
     s, runs = computed
     fr = runs["base"]["T1"]["frame"]
     pf = s["cost_cases"]["base"]["trials"]["T1"]["per_factor"]
-    total = sum(v["contribution_to_mean_d_pct_a_year"] for v in pf.values())
-    assert total == pytest.approx((fr["T_gross"] - fr["B3"]).mean() * 12, abs=1e-10)
+    gross = sum(v["contribution_to_mean_d_gross_pct_a_year"] for v in pf.values())
+    assert gross == pytest.approx((fr["T_gross"] - fr["B3"]).mean() * 12, abs=1e-10)
+    net = sum(v["contribution_to_mean_d_net_pct_a_year"] for v in pf.values())
+    assert net == pytest.approx(fr["d"].mean() * 12, abs=1e-10)
+    b = s["cost_cases"]["base"]["trials"]["T1"]
+    assert b["hit_rate_pooled"] == pytest.approx(
+        sum(v["hit_rate"] * v["months_held"] for v in pf.values()) / sum(v["months_held"] for v in pf.values()))
+    assert b["T"]["excess_kurtosis"] == pytest.approx(b["T"]["kurtosis_non_excess"] - 3.0)
+    pc = s["descriptive_T1"]["paper_comparison"]["paper_strategy_months"]["T1_gross"]
+    assert {"nw_t", "iid_t"} <= set(pc)
 
 
 def test_seed_makes_the_run_repeatable(computed):
@@ -83,6 +93,11 @@ def test_verdict_precedence_and_label():
     lab = v({"T1": ok, "T1a": ok, "T1b": bad}, True, 2.5)
     assert lab["T1"].endswith("(Sharpe units; the 2%-a-year bar not met)") and lab["T1b"] == "not supported"
     assert v({"T1": bad, "T1a": ok, "T1b": ok}, True, 2.5)["T1"] == "not supported"
+    # §9.5 "any row that is not 'not supported'": a companion meeting C1–C4 is labelled whatever T1's row says
+    r2 = v({"T1": bad, "T1a": ok, "T1b": bad}, True, 2.5)
+    assert r2["T1a"] == "meets C1–C4 (Sharpe units; the 2%-a-year bar not met)" and r2["T1b"] == "not supported"
+    assert r2["return_unit_bar_not_met"] is True
+    assert v({"T1": bad, "T1a": ok, "T1b": ok}, True, 1.9)["T1a"] == "meets C1–C4"
 
 
 def test_main_refusals(tmp_path):
@@ -105,3 +120,72 @@ def test_monthly_csv_full_precision(computed, tmp_path):
     frame.to_csv(p, float_format="%.17g")
     back = pd.read_csv(p, index_col="month", float_precision="round_trip")
     assert np.array_equal(back["T1_d"].to_numpy(), runs["base"]["T1"]["frame"]["d"].to_numpy())
+
+
+def _text(frame: pd.DataFrame, cols: list[str]) -> str:
+    lines = ["This file was created using the 209901 CRSP database.", "", "," + ",".join(cols)]
+    for p, row in frame[cols].dropna().iterrows():
+        lines.append(f"{p.year:04d}{p.month:02d}," + ",".join(f"{v:.2f}" for v in row))
+    return "\n".join(lines + ["", "  Annual Factors: January-December", "," + ",".join(cols), "  1927, 1.00"]) + "\n"
+
+
+def _study(tmp_path):
+    """A synthetic study folder: zips, manifest, data step, count, trials row, APPROVED."""
+    import hashlib
+    import io
+    import zipfile
+
+    f = synthetic(21)
+    f["Mkt-RF"], f["RF"] = 0.5, 0.1
+    files = {
+        "F-F_Research_Data_Factors_CSV.zip": ["Mkt-RF", "SMB", "HML", "RF"],
+        "F-F_ST_Reversal_Factor_CSV.zip": ["ST_Rev"],
+        "F-F_LT_Reversal_Factor_CSV.zip": ["LT_Rev"],
+    }
+    (tmp_path / "data" / "raw").mkdir(parents=True)
+    (tmp_path / "results").mkdir()
+    man = {"files": {}}
+    for n, cols in files.items():
+        buf = io.BytesIO()
+        with zipfile.ZipFile(buf, "w") as z:
+            z.writestr(n.replace("_CSV.zip", ".csv"), _text(f, cols))
+        (tmp_path / "data" / "raw" / n).write_bytes(buf.getvalue())
+        man["files"][n] = {"sha256": hashlib.sha256(buf.getvalue()).hexdigest()}
+    (tmp_path / "results" / "data_manifest.json").write_text(json.dumps(man))
+    (tmp_path / "results" / "data_step.json").write_text(json.dumps({"h_end": H_END}))
+    (tmp_path / "results" / "programme_count.json").write_text(json.dumps(PROG))
+    (tmp_path / "trials.md").write_text(history.HISTORY_ROW + " | synthetic |\n")
+    (tmp_path / "APPROVED").write_text("approved (synthetic)\n")
+    return tmp_path
+
+
+def test_full_main_run_then_refuses(tmp_path, capsys):
+    here = _study(tmp_path)
+    history.main([], here=here)
+    out = here / "results" / "history"
+    assert {p.name for p in out.iterdir()} == {"monthly_base.csv", "monthly_stress.csv", "summary.json", "verdict.md"}
+    assert not (here / "results" / ".history_tmp").exists()
+    s = json.loads((out / "summary.json").read_text())
+    assert s["h_end"] == H_END and "verdict" in s
+    with pytest.raises(SystemExit, match="exists"):
+        history.main([], here=here)
+
+
+@pytest.mark.parametrize("bad", [{"public_trials_md": 1}, {"with_desk_registry": "603"}, {"method": " "}])
+def test_bad_programme_count_refused_before_data(tmp_path, bad):
+    here = _study(tmp_path)
+    (here / "results" / "programme_count.json").write_text(json.dumps({**PROG, **bad}))
+    (here / "data" / "raw" / "F-F_LT_Reversal_Factor_CSV.zip").write_bytes(b"not read")  # a read would stop on the hash
+    with pytest.raises(SystemExit, match="programme_count"):
+        history.main([], here=here)
+
+
+def test_missing_history_row_and_leftover_tmp_refused(tmp_path):
+    here = _study(tmp_path)
+    (here / "trials.md").write_text("no row\n")
+    with pytest.raises(SystemExit, match="history-run row"):
+        history.main([], here=here)
+    (here / "trials.md").write_text(history.HISTORY_ROW + "\n")
+    (here / "results" / ".history_tmp").mkdir()
+    with pytest.raises(SystemExit, match="history_tmp"):
+        history.main([], here=here)

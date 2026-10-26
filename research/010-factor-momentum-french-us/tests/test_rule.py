@@ -130,3 +130,10 @@ def test_window_counts():
     fr = run(synthetic(), TRIALS["T1"], H_END, COST_BASE)["frame"]
     counts = {w: len(window(fr, w)) for w in ("H", "P1", "L", "P2", "P")}
     assert counts == {"H": 1190, "P1": 432, "L": 630, "P2": 128, "P": 560}
+
+
+def test_missing_factor_return_in_a_held_month_raises():
+    f = synthetic()
+    f.loc[pd.Period(H_END, "M"), "HML"] = np.nan  # H's last month: its formation (to 2026-07) is still defined
+    with pytest.raises(ValueError, match="factor return is missing"):
+        run(f, TRIALS["T1a"], H_END, COST_BASE)

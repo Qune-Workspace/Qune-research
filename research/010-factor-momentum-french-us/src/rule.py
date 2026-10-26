@@ -97,6 +97,8 @@ def run(f: pd.DataFrame, trial: Trial, h_end: str, cost: float, mapping: str = "
         raise ValueError(mapping)
     fh = f.reindex(idx)[trial.factors]
     held = h.notna()
+    if fh.where(held).notna().sum().sum() != held.sum().sum():
+        raise ValueError(f"{trial.trial_id}: a factor return is missing in a held month (§6.5 stops the study)")
     K = held.sum(axis=1).astype(float)
     if (K == 0).any():
         raise ValueError("a month in H holds no factor")

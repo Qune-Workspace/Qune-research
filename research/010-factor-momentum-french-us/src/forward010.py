@@ -72,6 +72,7 @@ import os
 import re
 import shutil
 import subprocess
+import tempfile
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -295,12 +296,30 @@ def archived(releases_dir: Path = RELEASES) -> dict[str, dict]:
 
 def fetch(get=requests.get, raw_root: Path = FORWARD_RAW, releases_dir: Path = RELEASES,
           snapshot_manifest: Path = SNAPSHOT_MANIFEST, now=_utc_now) -> dict:
-    """Download the three files once; keep them only if they name one new release (see the module docstring)."""
-    incoming = raw_root / "_incoming"
-    shutil.rmtree(incoming, ignore_errors=True)
-    incoming.mkdir(parents=True)
+    """Download the three files once; keep them only if they name one new release (see the module docstring).
+
+    Every attempt, kept or refused, is appended to ``releases/fetch_log.csv`` (committed), so a refused
+    download is on record too (code review note 2)."""
+    raw_root.mkdir(parents=True, exist_ok=True)
+    releases_dir.mkdir(parents=True, exist_ok=True)
+    with open(raw_root / ".fetch.lock", "w") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)  # two fetches at once cannot share a staging dir (should-fix 4)
+        res = _fetch(get, raw_root, releases_dir, snapshot_manifest, now)
+        log = releases_dir / "fetch_log.csv"
+        new = not log.exists()
+        with log.open("a", newline="") as fh:
+            w = csv.writer(fh, lineterminator="\n")
+            if new:
+                w.writerow(["at_utc", "kept", "release", "reason"])
+            w.writerow([res.get("at_utc", ""), res["kept"], res.get("release", ""), res.get("reason", "")])
+        return res
+
+
+def _fetch(get, raw_root: Path, releases_dir: Path, snapshot_manifest: Path, now) -> dict:
+    incoming = Path(tempfile.mkdtemp(prefix="_incoming-", dir=raw_root))
     try:
         page_time = now()
+        base = {"at_utc": page_time}
         page = get(LIBRARY_PAGE, headers=UA, timeout=60)
         page.raise_for_status()
         files = {}
@@ -315,27 +334,30 @@ def fetch(get=requests.get, raw_root: Path = FORWARD_RAW, releases_dir: Path = R
         for name in FILES:
             hits = {m.group(1) for ln in files[name]["preamble_lines"] for m in [_RELEASE.search(ln)] if m}
             if len(hits) != 1:
-                return {"kept": False, "reason": f"{name} names {sorted(hits)} in its header"}
+                return {**base, "kept": False, "reason": f"{name} names {sorted(hits)} in its header"}
             rels[name] = hits.pop()
         if len(set(rels.values())) != 1:
-            return {"kept": False, "reason": f"the files name different releases {rels} (library mid-update?)"}
+            return {**base, "kept": False, "reason": f"the files name different releases {rels} (library mid-update?)"}
         rel = rels[next(iter(FILES))]
         snap = release_of(snapshot_manifest)
         if rel <= snap:
-            return {"kept": False, "release": rel, "reason": f"not newer than the history snapshot's release {snap}"}
-        if (releases_dir / f"{rel}.json").exists() or (raw_root / rel).exists():
-            return {"kept": False, "release": rel, "reason": "already archived (one download per release)"}
+            return {**base, "kept": False, "release": rel, "reason": f"not newer than the history snapshot's release {snap}"}
+        man, dest = releases_dir / f"{rel}.json", raw_root / rel
+        if man.exists():
+            return {**base, "kept": False, "release": rel, "reason": "already archived (one download per release)"}
         latest = max(archived(releases_dir), default=None)
         if latest is not None and rel < latest:
-            return {"kept": False, "release": rel, "reason": f"older than the latest archived release {latest}"}
-        releases_dir.mkdir(parents=True, exist_ok=True)
-        dest = raw_root / rel
-        incoming.rename(dest)
+            return {**base, "kept": False, "release": rel, "reason": f"older than the latest archived release {latest}"}
+        if dest.exists():  # files without their json: an earlier fetch stopped before its record (should-fix 3)
+            shutil.rmtree(dest)
         rec = {"release": rel, "library_page": {"url": LIBRARY_PAGE, "read_at_utc": page_time,
                                                 "sha256": hashlib.sha256(page.content).hexdigest()},
                "files": files}
-        (releases_dir / f"{rel}.json").write_text(json.dumps(rec, indent=2, sort_keys=True) + "\n")
-        return {"kept": True, "release": rel, "raw_dir": str(dest), "manifest": str(releases_dir / f"{rel}.json")}
+        tmp = man.with_suffix(".tmp")
+        tmp.write_text(json.dumps(rec, indent=2, sort_keys=True) + "\n")
+        incoming.rename(dest)
+        tmp.replace(man)  # the json exists only once the files are in place
+        return {**base, "kept": True, "release": rel, "raw_dir": str(dest), "manifest": str(man)}
     finally:
         shutil.rmtree(incoming, ignore_errors=True)
 
@@ -351,19 +373,30 @@ def read_positions(path: Path = POSITIONS_CSV) -> pd.DataFrame:
     return pos
 
 
-def row_commit_times(path: Path = POSITIONS_CSV) -> dict[tuple[str, str, str], pd.Timestamp]:
-    """First commit time (UTC) of each (month, trial, factor) row, from git: the evidence of when it existed."""
+def row_commit_times(path: Path = POSITIONS_CSV) -> dict[tuple[str, str, str], dict]:
+    """Per (month, trial, factor): the earliest commit time (UTC) of the row and the row as first committed.
+
+    The row as first committed is what ``score`` uses: a later rewrite or an uncommitted edit is refused
+    there (code review must-fix 1).  Commit times are the committer's clock; the push events on the public
+    remote are the stronger evidence and are cited in BUILD_LOG (review note 1)."""
     top = subprocess.run(["git", "rev-parse", "--show-toplevel"], cwd=path.parent, check=True,
                          capture_output=True, text=True).stdout.strip()
+    shallow = subprocess.run(["git", "rev-parse", "--is-shallow-repository"], cwd=top, check=True,
+                             capture_output=True, text=True).stdout.strip()
+    if shallow == "true":
+        raise SystemExit("STOP: a shallow clone cannot date the rows; use a full clone")
     rel = path.resolve().relative_to(Path(top).resolve()).as_posix()
     log = subprocess.run(["git", "log", "--reverse", "--format=%H %cI", "--", rel], cwd=top, check=True,
                          capture_output=True, text=True).stdout.split("\n")
-    times: dict[tuple[str, str, str], pd.Timestamp] = {}
+    times: dict[tuple[str, str, str], dict] = {}
     for line in filter(None, log):
         h, t = line.split()
+        when = pd.Timestamp(t).tz_convert("UTC")
         body = subprocess.run(["git", "show", f"{h}:{rel}"], cwd=top, capture_output=True, text=True).stdout
         for r in csv.DictReader(body.splitlines()):
-            times.setdefault((r["month"], r["trial"], r["factor"]), pd.Timestamp(t).tz_convert("UTC"))
+            key = (r["month"], r["trial"], r["factor"])
+            if key not in times or when < times[key]["time"]:
+                times[key] = {"time": when, "row": {c: r[c] for c in COLUMNS if c != "late"}}
     return times
 
 
@@ -383,7 +416,7 @@ def late_flags(pos: pd.DataFrame, commit_times: dict, releases: dict[str, dict])
         if key not in commit_times:
             raise SystemExit(f"STOP: {key} is not in any commit; every scored row must be committed first")
         seen = first_seen(r.month, releases)
-        out.append(bool(seen is not None and commit_times[key] > seen))
+        out.append(bool(seen is not None and commit_times[key]["time"] > seen))
     return pd.Series(out, index=pos.index)
 
 
@@ -505,13 +538,81 @@ def forward_verdict(m: dict, stress_mean_d: float) -> dict:
     return {**c, "row": f"{row} ({LABEL})"}
 
 
+def own_release_loader(raw_root: Path = FORWARD_RAW, releases_dir: Path = RELEASES,
+                       snapshot_raw: Path = SNAPSHOT_RAW, snapshot_manifest: Path = SNAPSHOT_MANIFEST):
+    """month t -> (frame, release, files_sha256) of the release a row for t must come from (release t − 1)."""
+    cache: dict[str, tuple] = {}
+
+    def load(month: str) -> tuple:
+        want = (pd.Period(month, "M") - 1).strftime("%Y%m")
+        if want not in cache:
+            if want == release_of(snapshot_manifest):
+                cache[want] = (load_factors(snapshot_raw, snapshot_manifest), want, files_sha256(snapshot_manifest))
+            else:
+                cache[want] = (_release_frame(want, raw_root, releases_dir), want,
+                               files_sha256(releases_dir / f"{want}.json"))
+        return cache[want]
+    return load
+
+
+def check_rows(pos: pd.DataFrame, commit_times: dict, own_release) -> None:
+    """Each scored row equals its first commit and is reproduced from its own release (review must-fix 1, should-fix 2)."""
+    for r in pos.to_dict("records"):
+        key = (r["month"], r["trial"], r["factor"])
+        if key not in commit_times:
+            raise SystemExit(f"STOP: {key} is not in any commit; every scored row must be committed first")
+        first = commit_times[key]["row"]
+        if any(str(r[c]) != first[c] for c in first):
+            raise SystemExit(f"STOP: {key} differs from its first commit; a record is never replaced (§11)")
+    for month in sorted(pos["month"].unique()):
+        f, release, sha = own_release(month)
+        mine = pos[pos["month"] == month]
+        if set(mine["release"]) != {release} or set(mine["files_sha256"]) != {sha}:
+            raise SystemExit(f"STOP: {month}'s rows do not name release {release} and its files' SHA-256")
+        again = {(x["trial"], x["factor"]): x for x in positions_for(f, month)}
+        for r in mine.itertuples(index=False):
+            x = again[(r.trial, r.factor)]
+            if int(r.h) != x["h"] or r.formation_return != x["formation_return"]:
+                raise SystemExit(f"STOP: {month} {r.trial} {r.factor} is not reproduced from release {release}")
+
+
+def scoring_release(months: pd.PeriodIndex, releases: dict[str, dict]) -> str:
+    """The first archived release that contains the 60th month: fixed by the archive, not chosen (should-fix 1)."""
+    want = months[-1].strftime("%Y%m")
+    hits = sorted(r for r in releases if r >= want)
+    if not hits:
+        raise SystemExit(f"STOP: no archived release contains {months[-1]} yet")
+    return hits[0]
+
+
+def _ever_committed(path: Path) -> bool:
+    """True if git has any commit of this path (a deleted score.json does not reopen the scoring)."""
+    cwd = next(d for d in [path.parent, *path.parent.parents] if d.exists())
+    r = subprocess.run(["git", "log", "--all", "--format=%H", "--", str(path.resolve())], cwd=cwd,
+                       capture_output=True, text=True)
+    return r.returncode == 0 and bool(r.stdout.strip())
+
+
+def _clean(o):
+    """NaN and infinities become null, so score.json is strict JSON (review note 5)."""
+    if isinstance(o, dict):
+        return {k: _clean(v) for k, v in o.items()}
+    if isinstance(o, (list, tuple)):
+        return [_clean(v) for v in o]
+    if isinstance(o, (float, np.floating)):
+        return float(o) if np.isfinite(o) else None
+    if isinstance(o, (np.integer, np.bool_)):
+        return o.item()
+    return o
+
+
 def score(release: str, pos: pd.DataFrame, commit_times: dict, raw_root: Path = FORWARD_RAW,
           releases_dir: Path = RELEASES, snapshot_raw: Path = SNAPSHOT_RAW,
           snapshot_manifest: Path = SNAPSHOT_MANIFEST, hbar: dict | None = None, h_prev: dict | None = None,
-          out: Path = SCORE_JSON, now_utc: str | None = None) -> dict:
-    """Score the 60 holding months once, from one archived release named at scoring (§11)."""
-    if out.exists():
-        raise SystemExit(f"STOP: {out.name} exists; the forward record is scored once (§11)")
+          out: Path = SCORE_JSON, now_utc: str | None = None, own_release=None) -> dict:
+    """Score the 60 holding months once, from the first archived release that contains them (§11)."""
+    if out.exists() or _ever_committed(out):
+        raise SystemExit(f"STOP: {out.name} exists or was committed before; the forward record is scored once (§11)")
     hbar = hbar or json.loads(FROZEN_HBAR.read_text())["hbar"]
     h_prev = h_prev or h_at_h_end()
     months = pd.period_range(FIRST_FORWARD_MONTH, periods=SCORED_MONTHS, freq="M")
@@ -520,6 +621,11 @@ def score(release: str, pos: pd.DataFrame, commit_times: dict, raw_root: Path = 
     if not want <= have:
         raise SystemExit(f"STOP: {len(want - have)} of the 60 months' rows are not recorded")
     pos = pos[[k in want for k in zip(pos["month"], pos["trial"], pos["factor"])]].reset_index(drop=True)
+    first = scoring_release(months, archived(releases_dir))
+    if release != first:
+        raise SystemExit(f"STOP: the scoring release is {first}, the first archived release containing {months[-1]}")
+    check_rows(pos, commit_times, own_release or own_release_loader(raw_root, releases_dir, snapshot_raw,
+                                                                    snapshot_manifest))
     f = _release_frame(release, raw_root, releases_dir)
     if any(f[k].last_valid_index() < months[-1] for k in FACTORS):
         raise SystemExit(f"STOP: release {release} does not contain {months[-1]} for every factor")
@@ -543,7 +649,8 @@ def score(release: str, pos: pd.DataFrame, commit_times: dict, raw_root: Path = 
         stress = float(frames["stress"][t]["d"].mean() * 12)
         sel = pos["trial"] == t
         trials[t] = {**m, "stress_mean_d_pct_a_year": stress, "verdict": forward_verdict(m, stress),
-                     "rows_late": int(late[sel].sum()), "rows": int(sel.sum())}
+                     "rows_late": int(late[sel].sum()), "rows": int(sel.sum()),
+                     "late_rows": [[r.month, r.factor] for r in pos[sel & late].itertuples(index=False)]}
     result = {"release": release, "months": [str(months[0]), str(months[-1])], "label": LABEL,
               "scored_at_utc": now_utc or _utc_now(), "N_family": N_FAMILY,
               "variance_across_trials": var, "floor_applied": floored, "trials": trials,
@@ -555,7 +662,7 @@ def score(release: str, pos: pd.DataFrame, commit_times: dict, raw_root: Path = 
         if out.exists():
             raise SystemExit(f"STOP: {out.name} exists; the forward record is scored once (§11)")
         tmp = out.with_suffix(".tmp")
-        tmp.write_text(json.dumps(result, indent=2, default=float) + "\n")
+        tmp.write_text(json.dumps(_clean(result), indent=2, allow_nan=False) + "\n")
         tmp.replace(out)
     return result
 

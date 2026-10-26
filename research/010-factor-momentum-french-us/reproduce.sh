@@ -3,7 +3,7 @@
 #
 #   ./reproduce.sh --history    §8 decision row H and its sub-windows, once -> results/history/
 #   ./reproduce.sh --forward    §11 shadow forward record: part 1 (position records) is
-#                               `python -m src.forward010 record --month YYYY-MM`; scoring (part 2) not built yet
+#                               `python -m src.forward010 record --month YYYY-MM`; fetch / interim / score (part 2) as listed by --forward
 #
 # --history refuses without a non-empty file named APPROVED in this folder
 # (§14 step 4), when results/history/ already exists (it runs once), and when
@@ -23,9 +23,12 @@ usage() { echo "usage: $0 --history | --forward" >&2; exit 2; }
 [ $# -eq 1 ] || usage
 case "$1" in
   --forward)
-    echo "refused: forward scoring (forward010.py part 2) is not built yet (§11, §14 step 10)." >&2
-    echo "Monthly position records: \$PYTHON -m src.forward010 record --month YYYY-MM (from the first release containing YYYY-MM minus one)." >&2
-    exit 1 ;;
+    echo "§11 forward record (shadow only), run from this folder:"
+    echo "  \$PYTHON -m src.forward010 fetch                 # once per new library release; kept only if new"
+    echo "  \$PYTHON -m src.forward010 record --month YYYY-MM --raw-dir paper-log/raw/<YYYYMM of month minus one> --manifest paper-log/releases/<same>.json"
+    echo "  \$PYTHON -m src.forward010 interim               # counts and cumulative returns; no t, no verdict"
+    echo "  \$PYTHON -m src.forward010 score --release YYYYMM # once, after 60 holding months (2026-09 to 2031-08)"
+    exit 0 ;;
   --history) ;;
   *) usage ;;
 esac

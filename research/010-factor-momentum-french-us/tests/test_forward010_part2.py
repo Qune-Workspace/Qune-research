@@ -74,7 +74,8 @@ def test_fetch_refuses_the_snapshot_release_mixed_releases_and_older(tmp_path):
     shutil.copy(other / "F-F_LT_Reversal_Factor_CSV.zip", mixed_dir / "F-F_LT_Reversal_Factor_CSV.zip")
     mixed = fw.fetch(fake_get(mixed_dir), raw, rel, snap_man)
     assert not mixed["kept"] and "different releases" in mixed["reason"]
-    assert not rel.exists() and list(raw.iterdir()) == []  # nothing kept, staging removed
+    assert [p.name for p in rel.iterdir()] == ["fetch_log.csv"]  # nothing kept, the attempts logged
+    assert [p.name for p in raw.iterdir()] == [".fetch.lock"]  # staging removed
     assert fw.fetch(fake_get(other), raw, rel, snap_man)["kept"]
     older = fw.fetch(fake_get(library(tmp_path, synthetic("2026-09"), "202609", "d")), raw, rel, snap_man)
     assert not older["kept"] and "older" in older["reason"]
@@ -83,8 +84,21 @@ def test_fetch_refuses_the_snapshot_release_mixed_releases_and_older(tmp_path):
 def engine_positions(f):
     rows = []
     for m in MONTHS:
-        rows += fw.positions_for(f, str(m))
+        for r in fw.positions_for(f, str(m)):
+            r.update(release=(m - 1).strftime("%Y%m"), files_sha256="sha-" + (m - 1).strftime("%Y%m"))
+            rows.append(r)
     return pd.DataFrame(rows).astype(str)
+
+
+def committed(pos, when="2026-01-01T00:00:00Z"):
+    """commit_times as row_commit_times returns them: each row as committed, at one time."""
+    return {(r["month"], r["trial"], r["factor"]): {"time": pd.Timestamp(when), "row": dict(r)}
+            for r in pos.to_dict("records")}
+
+
+def loader(f):
+    return lambda month: (f, (pd.Period(month, "M") - 1).strftime("%Y%m"),
+                          "sha-" + (pd.Period(month, "M") - 1).strftime("%Y%m"))
 
 
 def test_forward_frame_matches_the_history_engine():
@@ -120,7 +134,8 @@ def test_late_flags_use_the_desk_first_download():
                                  "b": {"downloaded_at_utc": "2026-11-02T10:05:00Z"}}},
             "202610": {"files": {"a": {"downloaded_at_utc": "2026-12-01T10:00:00Z"}}}}
     ts = pd.Timestamp
-    times = {("2026-09", "T1", "SMB"): ts("2026-11-02T10:06:00Z"), ("2026-10", "T1", "SMB"): ts("2026-11-03T09:00:00Z")}
+    times = {("2026-09", "T1", "SMB"): {"time": ts("2026-11-02T10:06:00Z")},
+             ("2026-10", "T1", "SMB"): {"time": ts("2026-11-03T09:00:00Z")}}
     assert fw.late_flags(pos, times, rels).tolist() == [True, False]
     with pytest.raises(SystemExit, match="not in any commit"):
         fw.late_flags(pos, {}, rels)
@@ -138,8 +153,16 @@ def test_row_commit_times_from_git(tmp_path):
         subprocess.run(["git", "commit", "-qm", str(i)], cwd=tmp_path, check=True,
                        env={**env, "GIT_COMMITTER_DATE": f"2026-11-0{i + 1}T12:00:00+01:00", "PATH": "/usr/bin:/bin"})
     t = fw.row_commit_times(p)
-    assert t[("2026-09", "T1", "SMB")] == pd.Timestamp("2026-11-01T11:00:00Z")
-    assert t[("2026-10", "T1", "SMB")] == pd.Timestamp("2026-11-02T11:00:00Z")
+    assert t[("2026-09", "T1", "SMB")]["time"] == pd.Timestamp("2026-11-01T11:00:00Z")
+    assert t[("2026-10", "T1", "SMB")]["time"] == pd.Timestamp("2026-11-02T11:00:00Z")
+    assert t[("2026-09", "T1", "SMB")]["row"]["h"] == "1"
+    # a later rewrite keeps the first committed contents, which score compares against (review must-fix 1)
+    p.write_text(head + row("2026-09").replace(",1,r,", ",-1,r,") + row("2026-10"))
+    subprocess.run(["git", "commit", "-qam", "rewrite"], cwd=tmp_path, check=True,
+                   env={**env, "GIT_COMMITTER_DATE": "2031-10-01T12:00:00+00:00", "PATH": "/usr/bin:/bin"})
+    t2 = fw.row_commit_times(p)
+    assert t2[("2026-09", "T1", "SMB")]["row"]["h"] == "1"
+    assert t2[("2026-09", "T1", "SMB")]["time"] == pd.Timestamp("2026-11-01T11:00:00Z")
 
 
 def setup_score(tmp_path, f, release="203108", f_snap=None):
@@ -151,11 +174,11 @@ def setup_score(tmp_path, f, release="203108", f_snap=None):
     rel.mkdir()
     man.rename(rel / f"{release}.json")
     pos = engine_positions(f)
-    times = {k: pd.Timestamp("2026-01-01T00:00:00Z") for k in zip(pos["month"], pos["trial"], pos["factor"])}
+    times = committed(pos)
     hbar = json.loads(json.dumps({t: {k: 0.2 for k in tr.factors} for t, tr in TRIALS.items()}))
     h_prev = {t: {k: 1.0 for k in tr.factors} for t, tr in TRIALS.items()}
     kw = dict(raw_root=raw, releases_dir=rel, snapshot_raw=snap_dir, snapshot_manifest=snap_man, hbar=hbar,
-              h_prev=h_prev, out=tmp_path / "score.json")
+              h_prev=h_prev, out=tmp_path / "score.json", own_release=loader(f))
     return pos, times, kw
 
 
@@ -184,12 +207,12 @@ def test_score_refuses_short_record_missing_release_and_short_release(tmp_path):
     pos, times, kw = setup_score(tmp_path, f)
     with pytest.raises(SystemExit, match="not recorded"):
         fw.score("203108", pos[pos["month"] != "2031-08"], times, **kw)
-    with pytest.raises(SystemExit, match="not archived"):
+    with pytest.raises(SystemExit, match="the scoring release is 203108"):
         fw.score("203107", pos, times, **kw)
     assert not kw["out"].exists()
     (tmp_path / "x").mkdir()
     _, _, kw2 = setup_score(tmp_path / "x", synthetic("2031-07", seed=7), "203107")
-    with pytest.raises(SystemExit, match="does not contain 2031-08"):
+    with pytest.raises(SystemExit, match="no archived release contains 2031-08"):
         fw.score("203107", pos, times, **kw2)
 
 
@@ -202,8 +225,9 @@ def test_c2_and_c4_decide_on_constructed_returns(tmp_path):
         m = pd.Period(r.month, "M")
         v = abs(f.loc[m, r.factor]) + 0.5
         f.loc[m, r.factor] = v if r.h == "1" else -v
-    _, times, kw = setup_score(tmp_path, f)
-    res = fw.score("203108", pos, times, **kw)
+    _, _, kw = setup_score(tmp_path, f)
+    kw["own_release"] = loader(synthetic("2031-08", seed=3))  # the rows came from the releases before the change
+    res = fw.score("203108", pos, committed(pos), **kw)
     v = res["trials"]["T1"]["verdict"]
     assert v["C2"] and v["C4"] and res["headline"].startswith("T1: meets C2 and C4")
     assert res["vintage"]["h_rows_differing"] > 0  # h recomputed from the revised release is shown beside it
@@ -227,3 +251,86 @@ def test_interim_has_no_t_and_no_verdict(tmp_path):
     assert out["months_to_scoring"] == 54
     keys = {k for row in out["trials"].values() for k in row}
     assert keys == {"months_recorded", "months_with_return", "cumulative_T", "cumulative_B3", "mean_d_pct_a_year"}
+
+
+def test_score_refuses_a_rewritten_or_uncommitted_row(tmp_path):
+    f = synthetic("2031-08", seed=7)
+    pos, times, kw = setup_score(tmp_path, f)
+    edited = pos.copy()
+    i = edited.index[(edited["trial"] == "T1") & (edited["month"] == "2027-03")][0]
+    edited.loc[i, "h"] = "-1" if edited.loc[i, "h"] == "1" else "1"
+    with pytest.raises(SystemExit, match="differs from its first commit"):
+        fw.score("203108", edited, times, **kw)
+    times.pop(next(iter(times)))
+    with pytest.raises(SystemExit, match="not in any commit"):
+        fw.score("203108", pos, times, **kw)
+    assert not kw["out"].exists()
+
+
+def test_score_refuses_a_row_not_reproduced_from_its_own_release(tmp_path):
+    """A row committed with an h its own release does not give is refused, even if never rewritten."""
+    f = synthetic("2031-08", seed=7)
+    pos, _, kw = setup_score(tmp_path, f)
+    bad = pos.copy()
+    i = bad.index[bad["month"] == "2028-01"][0]
+    bad.loc[i, "h"] = "-1" if bad.loc[i, "h"] == "1" else "1"
+    with pytest.raises(SystemExit, match="not reproduced"):
+        fw.score("203108", bad, committed(bad), **kw)
+    wrong = pos.copy()
+    wrong.loc[wrong["month"] == "2028-01", "release"] = "202801"
+    with pytest.raises(SystemExit, match="do not name release"):
+        fw.score("203108", wrong, committed(wrong), **kw)
+
+
+def test_score_release_is_the_first_archived_one_containing_the_60th_month(tmp_path):
+    f = synthetic("2031-09", seed=7)
+    pos, times, kw = setup_score(tmp_path, f, "203108")
+    d = kw["raw_root"] / "203109"
+    d.mkdir()
+    _, man = write_release(d, f, "203109")
+    man.rename(kw["releases_dir"] / "203109.json")
+    with pytest.raises(SystemExit, match="the scoring release is 203108"):
+        fw.score("203109", pos, times, **kw)
+    assert fw.score("203108", pos, times, **kw)["release"] == "203108"
+
+
+def test_scored_t_is_built_from_the_committed_h_and_rows_can_fail(tmp_path):
+    """T's mean equals the mean built by hand from the committed h; a rule that is always wrong in sign
+    gives a 'does not meet' row; DSR is the library's at N = 3."""
+    from src.history import stats
+    f = synthetic("2031-08", seed=3)
+    pos = engine_positions(f)
+    for r in pos[pos["trial"] == "T1"].itertuples():
+        m = pd.Period(r.month, "M")
+        v = abs(f.loc[m, r.factor]) + 0.5
+        f.loc[m, r.factor] = -v if r.h == "1" else v  # always against the committed h
+    _, _, kw = setup_score(tmp_path, f)
+    kw["own_release"] = loader(synthetic("2031-08", seed=3))  # rows come from the releases before the change
+    res = fw.score("203108", pos, committed(pos), **kw)
+    t1 = res["trials"]["T1"]
+    h = fw.committed_h(pos, "T1", MONTHS)
+    fh = f.loc[MONTHS, h.columns]
+    prev = h.shift(1)
+    prev.iloc[0] = 1.0
+    by_hand = ((h * fh).sum(axis=1) / 4 - 0.10 * (2 * (h - prev).abs()).sum(axis=1) / 4).mean() * 12
+    assert t1["T"]["mean_pct_a_year"] == pytest.approx(by_hand, abs=1e-10)
+    assert not t1["verdict"]["C2"] and t1["verdict"]["row"].startswith("does not meet C2 and C4")
+    x = fw.forward_frame(h, f, kw["hbar"]["T1"], kw["h_prev"]["T1"], 0.10)["T"] / 100
+    var = res["variance_across_trials"]
+    want = stats.deflated_sharpe(stats.sharpe_monthly(x), len(x), stats.skewness(x), stats.kurtosis(x), 3, var)
+    assert t1["dsr"]["dsr"] == pytest.approx(want["dsr"], abs=1e-12)
+
+
+def test_fetch_clears_files_left_without_their_record_and_logs_every_attempt(tmp_path):
+    _, snap_man = snapshot(tmp_path)
+    src = library(tmp_path, synthetic("2026-09"), "202609")
+    raw, rel = tmp_path / "raw", tmp_path / "releases"
+    (raw / "202609").mkdir(parents=True)
+    (raw / "202609" / "stale.zip").write_bytes(b"x")  # a crash after the move, before the record
+    got = fw.fetch(fake_get(src), raw, rel, snap_man)
+    assert got["kept"] and not (raw / "202609" / "stale.zip").exists()
+    fw.fetch(fake_get(src), raw, rel, snap_man)
+    log = (rel / "fetch_log.csv").read_text().splitlines()
+    assert log[0] == "at_utc,kept,release,reason" and len(log) == 3
+    assert log[1].split(",")[1:3] == ["True", "202609"] and log[2].split(",")[1] == "False"
+    assert not [p for p in raw.iterdir() if p.name.startswith("_incoming")]

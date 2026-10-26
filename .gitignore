@@ -17,3 +17,7 @@ htmlcov/
 
 # Study 010 forward record: the writer's lock file
 research/010-factor-momentum-french-us/paper-log/*.lock
+# Study 010 forward scoring: lock and temp files only (score.json itself is committed).
+**/results/forward/*.lock
+**/results/forward/*.tmp
+**/paper-log/releases/*.tmp

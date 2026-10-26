@@ -91,4 +91,4 @@ Drawn from the committed history files by [`charts/make_charts.py`](charts/make_
 
 1. ~~The separate-session recomputation of every figure on this page~~: done 2026-10-26 (`d2ea8cc`; above).
 2. ~~Charts to the house standard, through the Tester chart check (§9.6)~~: done 2026-10-26 (above; commits be25445 and 3f0c39e).
-3. The forward record code (`forward010.py`, shadow only; §11), before the first forward month is due. Over 60 months it can see only a Sharpe of d of about 1.27, so its verdict will be worded as a low-power check.
+3. The forward record code (`forward010.py`, shadow only; §11). *Part 1 done 2026-10-26: monthly position records from the first release that contains t − 1, separate code review FAIL → fixed → PASS ([CODE_REVIEW.md](CODE_REVIEW.md), second part); first record 2026-09 from release 202608 in [`paper-log/`](paper-log/README.md). Part 2 (scoring, interim figures, vintage row, fetch of later releases) still to build.* Original text: before the first forward month is due. Over 60 months it can see only a Sharpe of d of about 1.27, so its verdict will be worded as a low-power check.

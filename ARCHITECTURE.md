@@ -99,6 +99,8 @@ Source: the work loop's run log in the private workspace, which records the mode
 
 *Dated addition, 2026-10-26 (after the [second cold read](COLD_READ.md#second-cold-read-2026-10-26), point 6; the sentence above is unchanged).* **Not done.** Studies 006, 007 and 008 pushed their pre-registrations before their data steps in the author's run logs, but none of their `trials.md` files records the remote commit hash or a push time, and every commit in the repository is unsigned, so for those three studies the order still rests on the local git clock alone (pre-registration commits `a67ef8d`, `e4c21e5`, `ca2432a`). Gate 3 for the same three: approved by the orchestrator under the owner's delegation, as their `APPROVED` files and `trials.md` say; the owner did not see them before their runs, so of eight pre-registrations the owner approved one (Study 001's).
 
+*Dated addition, 2026-10-26, later the same night (nothing above changed).* Done for the next pre-registration: [Study 009](research/009-pooled-forward-duration-timing/trials.md)'s `trials.md` records its remote commit (`299b532`) and GitHub's own push-event time (2026-10-26T01:26:56Z, from the public events API), an external clock that the author does not write. Its design was also reviewed by a separate session before its first commit. Commits remain unsigned.
+
 ## The shared-allowance constraint
 
 Every agent in the organisation, and every interactive session, draws on a single model-usage allowance measured over a rolling five-hour window. This is the binding resource, more than compute or data.

@@ -90,14 +90,20 @@ A separate Opus session on a clean clone of `9e2bfab` rebuilt the rule from `res
 7. **"Flatters every figure on this page"** (note) is not true of the gross paper comparison or of the equal-weight mean; it holds for every after-cost figure.
 8. **Tests** (note): of the 21, five are data-step tests from `c7753a5` and one came with the review fixes in `8ccf310`; `0ab2ab2` had 20.
 
-## Charts (§9.6)
+## Charts (§9.6, added 2026-10-26; descriptive, no decision weight; Tester chart check done: CHART_REVIEW.md, seventh section)
 
-To follow (§14 step 9), reviewed against the chart standard.
+Drawn from the committed history files by [`charts/make_charts.py`](charts/make_charts.py) (adapted from Study 010's); every number in a title is computed by the script and listed with the input hashes in [`charts/manifest.json`](charts/manifest.json). SVG beside each PNG. A separate Tester (Opus, isolated) recomputed every number on the three charts: all correct; two must-fix and one should-fix, all in title wording (the decade title applied C2's t 2 to descriptive decade t's; the window title ranked the headline against its companions; the cumulative title led with three window figures instead of O after costs and at stress). All answered before this section was written; one fix was taken in a different form, with the reason ([CHART_REVIEW.md](../../CHART_REVIEW.md), seventh section).
+
+![Outside the paper's 1963–95 sample the industry momentum long-short (M1) made +3.45% a year after base costs (+3.05% before, +3.91% after), +1.03% at 50 bp; not supported: deflated Sharpe 0.935 against 0.95 at N = 3](charts/history_cumulative_d.png)
+
+![The industry momentum long-short (M1) was positive in 10 of 11 calendar decades, negative in the 1930s (−4.9% a year)](charts/history_d_by_decade.png)
+
+![All three trials made more than zero before and after the paper's sample; the headline M1, which alone decides, is not supported (+3.45% a year on O, deflated Sharpe 0.935 against 0.95); the companions are fragility checks, not alternatives](charts/history_trials_by_window.png)
 
 ## Next
 
 1. ~~Separate-session recomputation~~ done 2026-10-26 (above).
-2. Charts (§14 step 9) and a Tester chart check.
+2. ~~Charts (§14 step 9) and a Tester chart check~~: done 2026-10-26 (above).
 3. Forward record code (`forward011.py`) with tests and a separate code review, before the first forward month is due (§11); shadow only, scored once after 60 holding months as a low-power check (detectable Sharpe of d about 1.27).
 
 ## References

@@ -120,3 +120,22 @@ and are not evidence. Items 2 and 3 above become the reopener: the question reop
 agenda addition, made before any SPY price is read, after either (a) the owner decides that aggregate
 statistics may be published on this reading of the terms, or (b) Alpaca gives written consent. The
 aggregates-only publication clause would bind either way.
+
+### Item 3 traced (2026-10-27 23:2xZ, same run; from the code and its docstrings, nothing re-run)
+
+Committed series computed from Alpaca daily bars of IEF and BIL (`adjustment='all'` closes; the bars
+themselves were never committed):
+
+- Study 001: the validation checks and report (`src/validate.py`, `src/report.py` load the bars).
+- Study 003: the out-of-sample run (`src/report.py`: "out-of-sample window once on Alpaca bars and writes
+  `results/oos/`"), so `results/oos/monthly_base.csv` and `monthly_stress.csv` hold monthly returns of
+  the IEF and BIL legs from those bars; `results/checks/bil_vendor_decision.*` compares Tiingo and Alpaca
+  BIL returns (aggregates only).
+- Studies 006, 007 and 008: the actual-ETF episode (`src/episode.py`: "Actual IEF and BIL from Alpaca"),
+  so `results/episode/actual/monthly_*.csv`; their forward code fetches Alpaca closes for the forward
+  records.
+
+These are monthly returns, not quotations or last-sale reports, but they are series derived from the
+bars, not only aggregates over many periods, so they are a step closer to the terms' "Content" than the
+aggregates-only clause would allow for Study 012. Recorded for the owner's decision; nothing changed or
+removed. Tiingo's terms (the other licensed vendor) were not re-read.

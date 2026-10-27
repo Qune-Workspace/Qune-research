@@ -1,4 +1,4 @@
-Citation check of RESEARCH_AGENDA.md: 41 DOIs, 41 ok, 0 problems. Checked 2026-10-27 00:22 UTC
+Citation check of RESEARCH_AGENDA.md: 43 DOIs, 43 ok, 0 problems. Checked 2026-10-27 02:24 UTC
 
 [MOP12] doi:10.1016/j.jfineco.2011.11.003 -> ok | registered: Moskowitz (2012) | Time series momentum | Journal of Financial Economics
 [HOP17] doi:10.3905/jpm.2017.44.1.015 -> ok | registered: Hurst (2017) | A Century of Evidence on Trend-Following Investing | The Journal of Portfolio Management
@@ -41,3 +41,5 @@ Citation check of RESEARCH_AGENDA.md: 41 DOIs, 41 ok, 0 problems. Checked 2026-1
 [MG99] doi:10.1111/0022-1082.00146 -> ok | registered: Moskowitz (1999) | Do Industries Explain Momentum? | The Journal of Finance
 [KLN14] doi:10.3386/w20815 -> ok | registered: Keloharju (2014) | Common Factors in Return Seasonalities | 
 [Pat11] doi:10.1016/j.jeconom.2010.03.034 -> ok | registered: Patton (2011) | Volatility forecast comparison using imperfect volatility proxies | Journal of Econometrics
+[Kup95] doi:10.3905/jod.1995.407942 -> ok | registered: Kupiec (1995) | Techniques for Verifying the Accuracy of Risk Measurement Models | The Journal of Derivatives
+[Chr98] doi:10.2307/2527341 -> ok | registered: Christoffersen (1998) | Evaluating Interval Forecasts | International Economic Review

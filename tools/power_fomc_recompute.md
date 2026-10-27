@@ -19,3 +19,11 @@ Run 2026-10-27 21:1xZ–21:2xZ by the clock (about two minutes): a separate Opus
 | 7 | note | Statement times after 2011 may fall inside a 2pm-to-2pm window on some days (reviewer's memory, not checked). | Flagged in the docstring as not checked, for any later data step; power figures unaffected. |
 
 The fixed output was not re-reviewed.
+
+## Section 6 (2016-01..2026-09, the window with SIP minute bars), 2026-10-27 22:2xZ
+
+Separate Opus 5.5 session (isolated, read-only, ~40 s; brief: recompute before reading the code, count meetings from the Fed's own pages year by year). Verdict: **every claimed figure MATCH; N = 85 confirmed; no defect in the section 6 code or docstring.**
+
+- Meetings held per year, from federalreserve.gov fomchistorical2016–2020.htm and fomccalendars.htm: 2016 8, 2017 8, 2018 8, 2019 8 (Oct 4 unscheduled, excluded), 2020 7 (Mar 17-18 cancelled; Mar 2, Mar 15 unscheduled and notation votes excluded; page read as raw HTML because the normal fetch came back empty), 2021–2025 40 (2025 Aug 22 notation vote excluded), 2026 6 (Jan, Mar, Apr, Jun, Jul, Sep; minutes released for all six). N = 85.
+- Reviewer's own figures: mean MDE 0.2809% (0.576×), 0.37453% (0.767×), 0.4682% (0.959×); paper 2pm Sharpe 1.1360; Sharpe MDE 0.8719 (nw 1.108: 0.9660); ratios 0.7675× and 0.8504×.
+- Not verifiable by the reviewer (outside the brief): "Minute bars start on 2016-01-04", which comes from the probe recorded in [`intraday_source_check.md`](intraday_source_check.md).

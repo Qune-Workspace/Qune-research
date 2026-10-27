@@ -22,3 +22,7 @@ K = 2.842; annualised at 8 meetings a year; nw 1.00 (sensitivity 1.108)
 5. Meetings needed to see the paper's own mean (80% power, paper's sd)
    2pm-to-2pm (SPX-2pm)     51 meetings = 6.375 years
    close-to-close (SPX)     93 meetings = 11.625 years
+
+6. 2pm-to-2pm on the window with a checked free minute-bar source (2016-01..2026-09), N = 85
+   mean: sd x0.75: 0.281% (0.58x); sd x1.00: 0.375% (0.77x); sd x1.25: 0.468% (0.96x)
+   Sharpe: 0.872 (nw 1.108: 0.966); vs 2pm 1.136: 0.77x (nw: 0.85x)

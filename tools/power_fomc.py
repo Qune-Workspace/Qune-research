@@ -49,6 +49,15 @@ slightly more, so the forward figures are, if anything, optimistic.
 Not checked, for any later data step: statement release times after 2011 (on some days they may
 fall inside a 2pm-to-2pm window). The power figures do not depend on it.
 
+Dated addition, 2026-10-27 from 22:1xZ by the clock (section 6; sections 1-5 unchanged): the
+desk's paper market-data feed (Alpaca, SIP feed) was probed for SPY minute bars, counts and
+timestamps only, no price read (record: tools/intraday_source_check.md). Minute bars start on
+2016-01-04; none on any date probed before it. The 2pm-to-2pm form can therefore be built for
+the scheduled meetings of 2016-01..2026-09 only: 2016-2019 eight a year = 32; 2020 seven; 2021-2025
+eight a year = 40; 2026 six = 85 (the same counts as the 123 above, minus 2011-04..2015-12 = 38).
+SPY is an ETF on the index, not the index the paper used; that is a construction difference for any
+later pre-registration, not a power input.
+
 Run from the repository root: ``python tools/power_fomc.py > tools/power_fomc.txt``
 """
 
@@ -65,6 +74,7 @@ FORMS = {  # form: (mean %, sd %, N) from LM15 Table 1, post-1994 panel, pre-FOM
 }
 PAPER_SHARPE_CC = 0.84  # LM15 text, close-to-close, annualised
 N_POST = 6 + 8 * 8 + 7 + 5 * 8 + 6  # 2011-04..2026-09 scheduled meetings held (2020: 7)
+N_ALPACA = 8 * 4 + 7 + 5 * 8 + 6  # 2016-01..2026-09, the window with SIP minute bars (section 6)
 N_FORWARD = 60 // 12 * PER_YEAR  # 60 months of forward record
 
 
@@ -111,6 +121,16 @@ def main() -> None:
     for form, (m, sd, _n) in FORMS.items():
         need = math.ceil((K * sd / m) ** 2)
         print(f"   {form:24s} {need} meetings = {need / PER_YEAR:.3f} years")
+    print()
+    print(f"6. 2pm-to-2pm on the window with a checked free minute-bar source (2016-01..2026-09), N = {N_ALPACA}")
+    m, sd, _n = FORMS["2pm-to-2pm (SPX-2pm)"]
+    cells = []
+    for f in (0.75, 1.00, 1.25):
+        v = mde_mean(sd * f, N_ALPACA)
+        cells.append(f"sd x{f:.2f}: {v:.3f}% ({v / m:.2f}x)")
+    print("   mean: " + "; ".join(cells))
+    a, b = mde_sharpe(N_ALPACA), mde_sharpe(N_ALPACA, NW_LARGEST)
+    print(f"   Sharpe: {a:.3f} (nw {NW_LARGEST}: {b:.3f}); vs 2pm {s2:.3f}: {a / s2:.2f}x (nw: {b / s2:.2f}x)")
 
 
 if __name__ == "__main__":

@@ -10,4 +10,6 @@ Shadow only: the four factors are long-short portfolios outside the approved ins
 
 First record: 2026-09 from release 202608 (the history snapshot, downloaded 2026-10-26 09:17:57Z), recorded 2026-10-26 before release 202609 was available to the desk.
 
+Second record (dated addition, 2026-10-27 17:2xZ): 2026-10 from release 202609, the first release containing 2026-09 (last file downloaded 2026-10-27 16:16:11Z, `releases/202609.json`), committed at 16:17:52Z by git (582bd5a). Cannot be labelled late at scoring (§16, item 1): no release containing 2026-10 exists yet. Next record: 2026-11, from release 202610.
+
 Backup of the raw files (dated addition, commit 93b64f8, 2026-10-26 13:17Z by git): scoring needs every release's raw zips, which are git-ignored and no longer served once a newer release is out. From this date the loop copies every study's `data/raw/` and `paper-log/raw/` into a local archive outside the repository after each kept release (files only added, never overwritten; a changed raw file stops the copy; SHA-256 list re-checked each run). First run: 1,451 files, all studies. Limitation: the archive is on the same disk as the repository; it guards against a clean or re-clone, not against loss of the server. An off-server copy is the owner's decision and is not yet made.

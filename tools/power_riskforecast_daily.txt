@@ -1,0 +1,36 @@
+Power first for volatility-forecast accuracy at daily scoring (tools/power_riskforecast_daily.py)
+K = 2.842 (t >= 2.0 at 80% power); daily Sharpe of the loss differential d; Newey-West 21 lags
+inputs: Study 004's archived Tiingo daily files (hash-checked against results/data_manifest.json) and its
+committed T1 periods and daily net index; nothing fetched; both windows seen, not clean
+pair: R1, EWMA (42-day half-life) vs the 252-day sample covariance, one-day-ahead, d = L(sample) - L(ewma)
+
+in-sample 2004-2018: 3,775 scored days in 180 holding periods (2004-01-05 .. 2019-01-02); zero-return days 0; median forecast vol (annualised) ewma 0.0390, sample 0.0415
+  3,781 index days in the holding periods: 0 with no position, 6 exchange closures (no vendor bar), so 99.8% scored
+2019-2026 (seen): 1,756 scored days in 84 holding periods (2019-02-04 .. 2026-09-30); zero-return days 0; median forecast vol (annualised) ewma 0.0425, sample 0.0445
+  1,946 index days in the holding periods: 190 with no position, 0 exchange closures (no vendor bar), so 90.2% scored
+
+  window               loss        n     mean d       sd d   s/day  t iid   t NW     nw  nw L5 nw L63          d>0  days to see s
+  in-sample 2004-2018  QLIKE   3,775  7.215e-02  6.018e-01  0.1199   7.37   5.32  1.385  1.159  1.545 2,200/3,775           1,077
+  in-sample 2004-2018  MSEvar  3,775  1.774e-11  1.343e-10  0.1321   8.12   4.20  1.932  1.308  2.742 2,202/3,775           1,728
+  2019-2026 (seen)     QLIKE   1,756  1.701e-01  1.573e+00  0.1082   4.53   2.16  2.097  1.642  2.087 1,075/1,756           3,036
+  2019-2026 (seen)     MSEvar  1,756  1.227e-10  1.253e-09  0.0979   4.10   1.75  2.348  1.798  2.493 1,080/1,756           4,645
+
+Days to see each row's own s, by Newey-West lag (the result depends on the lag)
+  window               loss         L5      L21      L42      L63     L126
+  in-sample 2004-2018  QLIKE       755    1,077    1,260    1,341    1,529
+  in-sample 2004-2018  MSEvar      792    1,728    2,710    3,481    4,956
+  2019-2026 (seen)     QLIKE     1,861    3,036    3,080    3,007    2,739
+  2019-2026 (seen)     MSEvar    2,724    4,645    5,075    5,236    5,279
+
+Forward record: detectable daily Sharpe of d, S_MDE = K * nw / sqrt(N scored days)
+  nw bracket 1.00 / largest observed here over lags 5-126 3.272 (not a bound)
+  60 months, fully invested, 1,260 days: S_MDE = 0.0801 / 0.2620
+  60 months, invested as in in-sample 2004-2018 (99.8%), 1,258 days: S_MDE = 0.0801 / 0.2622
+  60 months, invested as in 2019-2026 (seen) (90.2%), 1,137 days: S_MDE = 0.0843 / 0.2758
+  120 months, fully invested, 2,520 days: S_MDE = 0.0566 / 0.1852
+  120 months, invested as in in-sample 2004-2018 (99.8%), 2,516 days: S_MDE = 0.0567 / 0.1854
+  120 months, invested as in 2019-2026 (seen) (90.2%), 2,274 days: S_MDE = 0.0596 / 0.1950
+
+Reading: compare each row's s/day with S_MDE. A daily forward record can see the comparison only if the
+daily Sharpe of d out of sample is at least S_MDE. The in-sample s is an anchor, not a target; the
+2019-2026 s shows whether that size held later. Both windows were seen, so only forward days are clean.

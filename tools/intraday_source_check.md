@@ -58,10 +58,54 @@ Which earlier price is used (the 13:59 bar's close or an earlier cut) is a const
 fixed and justified in QUESTION.md, before any price is read. The release time is the stated embargo
 time, not an observed timestamp.
 
-Open: check 1 (whether Alpaca's market-data terms allow publishing statistics derived from SIP bars).
+Earlier record (kept): check 1 (whether Alpaca's market-data terms allow publishing statistics derived from SIP bars).
 Read so far (2026-10-27 22:25Z): Alpaca's "About Market Data API" page (docs.alpaca.markets, page
 metadata updatedAt 2026-10-06) states "Historical data timeframe: Since 2016" for both equity plans
 and "latest 15 minutes" as the free plan's historical limitation, which agrees with the probe above
 (reported, corroborating the observed start). It says nothing on publishing derived statistics. The
 website's Terms & Conditions PDF was downloaded but not read (no PDF text tool in this environment),
 and a market-data agreement was not found at the paths tried. Check 1 stays open.
+
+## Check 1: market-data terms (2026-10-27 23:2xZ)
+
+Read this run: Alpaca's Terms and Conditions, linked as "Terms & Conditions" from alpaca.markets/disclosures
+(https://s3.amazonaws.com/files.alpaca.markets/disclosures/library/TermsAndConditions.pdf, fetched
+2026-10-27 23:15Z, 27,092 bytes, SHA-256 `2dc774d4aeeafbe4c7f0565e7842d932bc8bc10488af805fce43b8734e7b9859`,
+four pages, read in full with a PDF reader; the earlier "no PDF text tool" was mine: one was available).
+The clauses that bear on publishing (quoted):
+
+- "Content includes, without limitation: ... (3) market data such as quotations for securities transactions
+  and/or last sale information for completed securities transactions ..."
+- "Other than as set forth herein, you agree to use the Services and Content solely for your own personal and
+  non-commercial purposes." Other uses, or "making the Services and Content available to others through your
+  own application", need 30 days' advance written notice to Alpaca.
+- "Content is provided exclusively for personal and noncommercial access and use. No part of the Service or
+  Content may be copied, reproduced, republished, uploaded, posted, publicly displayed, encoded, translated,
+  transmitted or distributed in any way (including "mirroring") to any other computer, server, web site or
+  other medium for publication or distribution or for any commercial enterprise, without Alpaca's express
+  prior written consent."
+- The free 'Basic' plan names no further exchange agreement; the paid 'Pro' plan adds the NASDAQ OMX Global
+  Subscriber Agreement or the Agreement for Market Data Display Services. No separate market-data agreement
+  for the free plan was found.
+
+**Result (observed, as read; not legal advice): check 1 does not pass as written.** The queue line required
+the terms to *allow* publishing statistics derived from the bars. They forbid publishing the market data
+itself (bars, prices, any bar-level series) without written consent and say nothing either way about
+statistics derived from it. Silence is not an allowance.
+
+What follows (decided by Qune, 2026-10-27 23:2xZ):
+
+1. Study 012 stays queued. Its QUESTION.md may be written (no price is read and nothing from the feed is
+   published by writing it), but it must carry a publication clause: only aggregate statistics over the
+   85 meetings (count, mean, standard deviation, t, share positive, and the same by sub-period), never a
+   price, a bar, a per-meeting return or any series from which bars could be rebuilt.
+2. No price is read for Study 012 until the owner has chosen between (a) publishing aggregates under that
+   clause on this reading of the terms, and (b) asking Alpaca for written consent first. Contacting Alpaca is
+   outside the desk's rights, so (b) is the owner's step. Qune's recommendation: (b) if it costs a single
+   message, otherwise (a), because aggregate test statistics are not the quotations or last-sale data the
+   clause names, and nothing here is commercial.
+3. The same reading applies to what is already public. Studies 001, 003, 006, 007 and 008 list Alpaca daily
+   IEF and BIL bars in their data manifests ("licensed, not redistributed"; the raw files were never
+   committed). Whether any committed monthly or daily series rests on those bars, rather than on the
+   Tiingo files, was not traced this run; Tiingo's own terms were not re-read. Both are open, recorded here
+   so that the answer to item 2 covers them too. Nothing already published was changed or removed.

@@ -1,6 +1,6 @@
 {
-  "commit": "961d9c9",
-  "generated_at_utc": "2026-10-26T22:27:12Z",
+  "commit": "41bb3fa",
+  "generated_at_utc": "2026-10-27T16:18:12Z",
   "outputs_sha256": {},
   "studies": [
     {
@@ -57,22 +57,24 @@
       "executions": 0,
       "inputs_sha256": {
         "research/010-factor-momentum-french-us/paper-log/frozen_hbar.json": "4be2bcdeb2c7e3cb219b79f3ee039f50de7ab7f950b1f373e59955f90ef624fb",
-        "research/010-factor-momentum-french-us/paper-log/positions.csv": "2af9172ac8e91042e39fe29f3f6a6181f8136a5d513c00e05abca52dcb16a522",
-        "research/010-factor-momentum-french-us/paper-log/releases/fetch_log.csv": "845f0dc9b49fa314bd78aaba813ade0ad4ac62504564c0f5b1fc39d67245d2c3"
+        "research/010-factor-momentum-french-us/paper-log/positions.csv": "9cb109a293f31a41117b4feed25cd53c08bf3f11f926cdfd83fd8c547a799c2f",
+        "research/010-factor-momentum-french-us/paper-log/releases/202609.json": "9ca27034e7da4f3b3eb71ee66b27c52a8c96a5c85ba5f75907e0e0488a834dc5",
+        "research/010-factor-momentum-french-us/paper-log/releases/fetch_log.csv": "32ee1206599b147873adc3995192018f86beb07674aa8ca9eea49d21efd67df1"
       },
-      "next_record_due": "2026-10, from release 202609 (not yet archived)",
-      "records": 1,
+      "next_record_due": "2026-11, from release 202610 (not yet archived)",
+      "records": 2,
       "shadow_lines": 0,
       "study": "Study 010"
     },
     {
       "executions": 0,
       "inputs_sha256": {
-        "research/011-industry-momentum-french-us/paper-log/cohorts.csv": "e1be5eb868c769c0952c0f7a445a5cf13d9aec89058231f4c32d6491eb634b9e",
-        "research/011-industry-momentum-french-us/paper-log/releases/fetch_log.csv": "9215c438671de4c3483c62469075188c17905e7f8019e26b2055aa7a67bd8fee"
+        "research/011-industry-momentum-french-us/paper-log/cohorts.csv": "abb0ef5965f7dde6c47700bed8f51e1ffc4cc8022b95582f3cd777b99a813639",
+        "research/011-industry-momentum-french-us/paper-log/releases/202609.json": "5aa3fd914d3713612c30a49d902961aeb1352689610a4c738154a71e0f46eeb3",
+        "research/011-industry-momentum-french-us/paper-log/releases/fetch_log.csv": "fbaebee233a5233af73f72107f4b92b48110135a4e853dd0225a78f7502bddb6"
       },
-      "next_record_due": "2026-10, from release 202609 (not yet archived)",
-      "records": 1,
+      "next_record_due": "2026-11, from release 202610 (not yet archived)",
+      "records": 2,
       "shadow_lines": 0,
       "study": "Study 011"
     }

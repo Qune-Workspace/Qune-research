@@ -1,0 +1,24 @@
+Power first: pre-FOMC announcement drift [LM15] after its sample (no return read)
+K = 2.842; annualised at 8 meetings a year; nw 1.00 (sensitivity 1.108)
+
+1. The paper's own figures, recomputed from Table 1 (plain t, Sharpe)
+   2pm-to-2pm (SPX-2pm)     mean 0.488% sd 1.215% N 131: plain t 4.60, Sharpe 1.136
+   close-to-close (SPX)     mean 0.338% sd 1.144% N 132: plain t 3.39, Sharpe 0.836
+   check: close-to-close Sharpe vs the paper's stated 0.84
+
+2. Windows: after the sample 2011-04..2026-09 N = 123; forward 60 months N = 40
+
+3. Minimum detectable mean (80% power at |t| >= 2.0), paper's sd and +/-25%
+   2pm-to-2pm (SPX-2pm)     after sample sd x0.75: 0.234% (0.48x); sd x1.00: 0.311% (0.64x); sd x1.25: 0.389% (0.80x)
+   2pm-to-2pm (SPX-2pm)     forward 60m  sd x0.75: 0.409% (0.84x); sd x1.00: 0.546% (1.12x); sd x1.25: 0.682% (1.40x)
+   close-to-close (SPX)     after sample sd x0.75: 0.220% (0.65x); sd x1.00: 0.293% (0.87x); sd x1.25: 0.366% (1.08x)
+   close-to-close (SPX)     forward 60m  sd x0.75: 0.386% (1.14x); sd x1.00: 0.514% (1.52x); sd x1.25: 0.643% (1.90x)
+   (x = multiple of the paper's own mean for that form)
+
+4. Minimum detectable annualised Sharpe
+   after sample N 123: 0.725 (nw 1.108: 0.803); vs paper close-to-close 0.84: 0.86x; vs 2pm 1.136: 0.64x
+   forward 60m  N  40: 1.271 (nw 1.108: 1.408); vs paper close-to-close 0.84: 1.51x; vs 2pm 1.136: 1.12x
+
+5. Meetings needed to see the paper's own mean (80% power, paper's sd)
+   2pm-to-2pm (SPX-2pm)     51 meetings = 6.375 years
+   close-to-close (SPX)     93 meetings = 11.625 years

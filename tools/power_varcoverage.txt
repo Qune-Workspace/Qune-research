@@ -1,0 +1,49 @@
+Power first for value-at-risk coverage at daily scoring (tools/power_varcoverage.py)
+inputs: Study 004's archived Tiingo daily files (hash-checked against results/data_manifest.json) and its
+committed T1 periods and daily net index, rows as in tools/power_riskforecast_daily.py; nothing fetched;
+both windows seen, and normal-VaR coverage already read on them by the 2026-10-23 risk report, so not clean
+tests: Kupiec unconditional coverage and Christoffersen independence, LR > 3.841 (chi2(1), 5%)
+
+  window               level method             n  hits    rate   LR uc    p uc  LR ind   p ind pairs median VaR
+  in-sample 2004-2018  0.99  normal-ewma    3,775    66   1.75%   17.46  0.0000   10.84  0.0010     6    0.5718%
+  in-sample 2004-2018  0.99  normal-sample  3,775    72   1.91%   24.79  0.0000   12.48  0.0004     7    0.6080%
+  in-sample 2004-2018  0.99  hs             3,775    65   1.72%   16.34  0.0001    7.69  0.0056     5    0.6525%
+  in-sample 2004-2018  0.99  fhs            3,775    61   1.62%   12.19  0.0005    5.49  0.0192     4    0.6220%
+  in-sample 2004-2018  0.95  normal-ewma    3,775   189   5.01%    0.00  0.9851   15.92  0.0001    23    0.4043%
+  in-sample 2004-2018  0.95  normal-sample  3,775   198   5.25%    0.47  0.4930   17.26  0.0000    25    0.4299%
+  in-sample 2004-2018  0.95  hs             3,775   221   5.85%    5.51  0.0189   21.56  0.0000    31    0.3911%
+  in-sample 2004-2018  0.95  fhs            3,775   231   6.12%    9.32  0.0023   15.87  0.0001    30    0.3741%
+  2019-2026 (seen)     0.99  normal-ewma    1,756    40   2.28%   21.27  0.0000   18.39  0.0000     7    0.6224%
+  2019-2026 (seen)     0.99  normal-sample  1,756    36   2.05%   15.00  0.0001   32.74  0.0000     9    0.6516%
+  2019-2026 (seen)     0.99  hs             1,756    35   1.99%   13.58  0.0002   27.81  0.0000     8    0.6947%
+  2019-2026 (seen)     0.99  fhs            1,756    40   2.28%   21.27  0.0000   13.84  0.0002     6    0.6674%
+  2019-2026 (seen)     0.95  normal-ewma    1,756    89   5.07%    0.02  0.8957   14.99  0.0001    14    0.4401%
+  2019-2026 (seen)     0.95  normal-sample  1,756    87   4.95%    0.01  0.9301   25.47  0.0000    17    0.4607%
+  2019-2026 (seen)     0.95  hs             1,756   101   5.75%    2.00  0.1576   16.93  0.0000    17    0.4220%
+  2019-2026 (seen)     0.95  fhs            1,756   101   5.75%    2.00  0.1576    5.87  0.0154    12    0.3857%
+
+Forward record: exact binomial power of the Kupiec test at 5% (days treated as independent)
+  length                                           n level size at p0  80% power above  80% power below
+  60 months, fully invested                    1,260 0.99       0.050            1.96%            0.37%
+  60 months, fully invested                    1,260 0.95       0.052            6.84%            3.42%
+  60 months, invested as in 2019-2026 (90.2%)  1,137 0.99       0.053            1.98%            0.34%
+  60 months, invested as in 2019-2026 (90.2%)  1,137 0.95       0.057            6.93%            3.37%
+  120 months, fully invested                   2,520 0.99       0.058            1.63%            0.53%
+  120 months, fully invested                   2,520 0.95       0.050            6.31%            3.86%
+
+Power at each method's seen rate, 60 months at the 2019-2026 invested share (1,137 days)
+  level method          in-sample 2004-2018 rate  power      2019-2026 (seen) rate  power
+  0.99  normal-ewma                        1.75%  0.610                      2.28%  0.935
+  0.99  normal-sample                      1.91%  0.749                      2.05%  0.843
+  0.99  hs                                 1.72%  0.583                      1.99%  0.810
+  0.99  fhs                                1.62%  0.473                      2.28%  0.935
+  0.95  normal-ewma                        5.01%  0.057                      5.07%  0.058
+  0.95  normal-sample                      5.25%  0.073                      4.95%  0.058
+  0.95  hs                                 5.85%  0.264                      5.75%  0.218
+  0.95  fhs                                6.12%  0.400                      5.75%  0.218
+
+Reading: a seen rate with high power here is one a forward record would likely confirm if the rate held and
+days were independent; a seen rate inside the 80% band is one it would not reliably tell from nominal
+(power below 80%, not zero). Every Christoffersen row above rejects independence at 5%, so the
+independence behind these power figures is rejected on the data the rates come from; with clustering the
+effective sample is smaller and the power lower. Both windows were seen, so only forward days are clean.

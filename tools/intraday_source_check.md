@@ -32,5 +32,16 @@ commit ([`power_fomc_recompute.md`](power_fomc_recompute.md), section 6: every f
 
 **Not checked (for any later step):** whether Alpaca's market-data terms allow publishing statistics
 derived from SIP bars (raw bars would not be published either way); whether every meeting day and
-the day before have a 14:00 ET bar; FOMC statement release times 2016–2026; SPY against the S&P 500
+the day before have a 14:00 ET bar (checked since, below); FOMC statement release times 2016–2026; SPY against the S&P 500
 index (an ETF with dividends and tracking error, not the paper's series).
+
+## Check 3 of the 2026-10-27 22:1xZ agenda addition: a 2pm bar on every meeting day and the day before (2026-10-27 22:2xZ)
+
+Statement dates for the 85 scheduled meetings held 2016-01..2026-09 were read from the Fed's pages
+([`fomc_statement_dates_2016_2026-09.txt`](fomc_statement_dates_2016_2026-09.txt): 8 a year, 2020 7,
+2026 6, the same per-year counts as the separate-session recount). A second private probe took the
+trading days from SIP daily-bar timestamps (2,701 days, 2016-01-04..2026-09-30; not checked against an
+exchange calendar) and asked for the SPY minute bars stamped 13:59 and 14:00 New York time on each
+statement date and the trading day before it, comparing timestamps only (no price field read).
+**Result (observed): 85 statement dates, all trading days in the feed; 340 bars checked; 0 missing.**
+Check 3 passes. Checks 1 (market-data terms) and 2 (statement release times) are still open.

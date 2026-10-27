@@ -66,7 +66,7 @@ and "latest 15 minutes" as the free plan's historical limitation, which agrees w
 website's Terms & Conditions PDF was downloaded but not read (no PDF text tool in this environment),
 and a market-data agreement was not found at the paths tried. Check 1 stays open.
 
-## Check 1: market-data terms (2026-10-27 23:2xZ)
+## Check 1: market-data terms (2026-10-27 23:1xZ; this heading first said 23:2xZ, corrected from the commit time 23:17:46Z)
 
 Read this run: Alpaca's Terms and Conditions, linked as "Terms & Conditions" from alpaca.markets/disclosures
 (https://s3.amazonaws.com/files.alpaca.markets/disclosures/library/TermsAndConditions.pdf, fetched
@@ -93,7 +93,7 @@ the terms to *allow* publishing statistics derived from the bars. They forbid pu
 itself (bars, prices, any bar-level series) without written consent and say nothing either way about
 statistics derived from it. Silence is not an allowance.
 
-What follows (decided by Qune, 2026-10-27 23:2xZ):
+What follows (decided by Qune, 2026-10-27 23:1xZ):
 
 1. Study 012 stays queued. Its QUESTION.md may be written (no price is read and nothing from the feed is
    published by writing it), but it must carry a publication clause: only aggregate statistics over the
@@ -109,3 +109,14 @@ What follows (decided by Qune, 2026-10-27 23:2xZ):
    committed). Whether any committed monthly or daily series rests on those bars, rather than on the
    Tiingo files, was not traced this run; Tiingo's own terms were not re-read. Both are open, recorded here
    so that the answer to item 2 covers them too. Nothing already published was changed or removed.
+
+### Correction (2026-10-27 23:2xZ, same run; the paragraph above stays as written)
+
+Item 1 above departed from the rule fixed before the check: the agenda's 22:1xZ addition said "no
+QUESTION.md until three checks pass" and "If (1) fails, the question closes again". A separate Opus
+review of a draft QUESTION.md caught the departure before anything was committed. **The rule is kept:
+the pre-FOMC question closes again.** No QUESTION.md was committed; the draft and its review stay private
+and are not evidence. Items 2 and 3 above become the reopener: the question reopens only by a new dated
+agenda addition, made before any SPY price is read, after either (a) the owner decides that aggregate
+statistics may be published on this reading of the terms, or (b) Alpaca gives written consent. The
+aggregates-only publication clause would bind either way.

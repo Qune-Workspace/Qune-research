@@ -32,7 +32,7 @@ commit ([`power_fomc_recompute.md`](power_fomc_recompute.md), section 6: every f
 
 **Not checked (for any later step):** whether Alpaca's market-data terms allow publishing statistics
 derived from SIP bars (raw bars would not be published either way); whether every meeting day and
-the day before have a 14:00 ET bar (checked since, below); FOMC statement release times 2016–2026; SPY against the S&P 500
+the day before have a 14:00 ET bar (checked since, below); FOMC statement release times 2016–2026 (checked since, below); SPY against the S&P 500
 index (an ETF with dividends and tracking error, not the paper's series).
 
 ## Check 3 of the 2026-10-27 22:1xZ agenda addition: a 2pm bar on every meeting day and the day before (2026-10-27 22:2xZ)
@@ -44,4 +44,19 @@ trading days from SIP daily-bar timestamps (2,701 days, 2016-01-04..2026-09-30; 
 exchange calendar) and asked for the SPY minute bars stamped 13:59 and 14:00 New York time on each
 statement date and the trading day before it, comparing timestamps only (no price field read).
 **Result (observed): 85 statement dates, all trading days in the feed; 340 bars checked; 0 missing.**
-Check 3 passes. Checks 1 (market-data terms) and 2 (statement release times) are still open.
+Check 3 passes.
+
+## Check 2: statement release times (2026-10-27 22:3xZ)
+
+[`fomc_calendar.py`](fomc_calendar.py) (public pages only; output [`fomc_calendar.txt`](fomc_calendar.txt))
+reads each of the 85 statements' own "For release at ..." line. **Result (observed): all 85 state
+2:00 p.m. New York time (24 EST, 61 EDT).** The script also regenerates the statement-dates file; its
+run reproduced the file committed with check 3 unchanged, and its 85 times equal an earlier ad hoc
+run's. Check 2 passes, with one consequence for any QUESTION.md: the release falls on the 2pm mark,
+so the minute bar stamped 14:00 contains the release minute and cannot be the pre-announcement price.
+Which earlier price is used (the 13:59 bar's close or an earlier cut) is a construction choice to be
+fixed and justified in QUESTION.md, before any price is read. The release time is the stated embargo
+time, not an observed timestamp.
+
+Open: check 1 (whether Alpaca's market-data terms allow publishing statistics derived from SIP bars;
+not checked this run, the web search tool was unavailable).

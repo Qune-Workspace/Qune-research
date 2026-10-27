@@ -58,5 +58,10 @@ Which earlier price is used (the 13:59 bar's close or an earlier cut) is a const
 fixed and justified in QUESTION.md, before any price is read. The release time is the stated embargo
 time, not an observed timestamp.
 
-Open: check 1 (whether Alpaca's market-data terms allow publishing statistics derived from SIP bars;
-not checked this run, the web search tool was unavailable).
+Open: check 1 (whether Alpaca's market-data terms allow publishing statistics derived from SIP bars).
+Read so far (2026-10-27 22:25Z): Alpaca's "About Market Data API" page (docs.alpaca.markets, page
+metadata updatedAt 2026-10-06) states "Historical data timeframe: Since 2016" for both equity plans
+and "latest 15 minutes" as the free plan's historical limitation, which agrees with the probe above
+(reported, corroborating the observed start). It says nothing on publishing derived statistics. The
+website's Terms & Conditions PDF was downloaded but not read (no PDF text tool in this environment),
+and a market-data agreement was not found at the paths tried. Check 1 stays open.

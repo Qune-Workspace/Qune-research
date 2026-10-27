@@ -1,0 +1,38 @@
+Power first for volatility-forecast accuracy on Study 004's T1 book (tools/power_riskforecast.py)
+K = 2.842 (t >= 2.0 at 80% power); monthly Sharpe of the loss differential d; Newey-West 6 lags
+inputs: research/004-xasset-trend-voltarget/risk/forecasts_{insample,oos}.csv (committed); nothing fetched
+both windows were already read for this property (post-hoc risk report, 2026-10-23): seen, not clean
+
+in-sample 2004-2018: 180 months with a position and all four forecasts (2003-12-31 .. 2018-11-30); realised vol median 0.0368
+2019-2026 (seen): 84 months with a position and all four forecasts (2019-01-31 .. 2026-08-31); realised vol median 0.0375
+
+R1: EWMA (42-day half-life) beats the 252-day sample covariance (d = L(vol_sample) - L(vol_ewma); d > 0 favours vol_ewma)
+  id   window               loss      n     mean d       sd d  s/month  t iid   t NW     nw      d>0  months to see s
+  R1   in-sample 2004-2018  QLIKE   180  4.566e-02  2.092e-01    0.218   2.93   2.18  1.345  107/180              307
+  R1   in-sample 2004-2018  MSEvar  180  1.076e-06  4.644e-06    0.232   3.11   1.66  1.875  110/180              529
+  R1   2019-2026 (seen)     QLIKE    84  1.370e-02  4.601e-01    0.030   0.27   0.20  1.342   56/84            16,404
+  R1   2019-2026 (seen)     MSEvar   84  4.031e-06  2.330e-05    0.173   1.59   1.17  1.354   56/84               494
+
+R2: Ledoit-Wolf shrinkage improves on plain EWMA (d = L(vol_ewma) - L(vol_shrunk); d > 0 favours vol_shrunk)
+  id   window               loss      n     mean d       sd d  s/month  t iid   t NW     nw      d>0  months to see s
+  R2   in-sample 2004-2018  QLIKE   180  1.115e-05  2.951e-03    0.004   0.05   0.05  1.023   94/180          592,300
+  R2   in-sample 2004-2018  MSEvar  180  9.209e-10  2.098e-08    0.044   0.59   0.61  0.973   94/180            3,967
+  R2   2019-2026 (seen)     QLIKE    84  9.144e-04  1.796e-02    0.051   0.47   0.48  0.971   48/84             2,937
+  R2   2019-2026 (seen)     MSEvar   84  1.193e-08  7.579e-08    0.157   1.44   1.28  1.125   48/84               413
+
+R3: full covariance beats the diagonal forecast the study used (d = L(vol_diagonal) - L(vol_shrunk); d > 0 favours vol_shrunk)
+  id   window               loss      n     mean d       sd d  s/month  t iid   t NW     nw      d>0  months to see s
+  R3   in-sample 2004-2018  QLIKE   180  8.564e-01  1.664e+00    0.515   6.90   7.24  0.954  128/180               28
+  R3   in-sample 2004-2018  MSEvar  180  1.584e-06  4.529e-06    0.350   4.69   5.01  0.937  116/180               58
+  R3   2019-2026 (seen)     QLIKE    84  1.728e+00  5.480e+00    0.315   2.89   3.33  0.868   65/84                61
+  R3   2019-2026 (seen)     MSEvar   84  2.308e-06  8.438e-06    0.274   2.51   2.80  0.895   54/84                87
+
+Forward record: detectable monthly Sharpe of d, S_MDE = K * nw / sqrt(N)
+  nw bracket 1.00 / largest observed here 1.345 (QLIKE rows; not a bound)
+  N =  60 months: S_MDE = 0.367 / 0.494
+  N = 120 months: S_MDE = 0.259 / 0.349
+
+Reading: compare each row's s/month with S_MDE. A forward record can see a comparison only if its
+monthly Sharpe of d out of sample is at least S_MDE. The in-sample s is an anchor, not a target; the
+2019-2026 s shows whether that size held in a later window. Both windows were seen by the author and
+read for this property by the post-hoc risk report, so only forward months are a clean sample.

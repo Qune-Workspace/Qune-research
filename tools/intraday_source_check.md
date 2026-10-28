@@ -252,8 +252,45 @@ copying the files than publishing statistics computed from them.
   provided for your internal use only and you are not authorized or permitted to publish, distribute or
   otherwise furnish Top Level Data to any third-party without prior written approval".
 - `VIXCLS`: the nearest capture (2026-10-22) is a site-maintenance page, so its notes were **not read**.
+  *Dated addition, 2026-10-28 03:2xZ:* read from the 2026-10-13 02:36:03Z capture instead (decompressed
+  HTML SHA-256 `a57f7d99bbf22d32c19de43987236cdf3597d572f571f098142e90c8026361cf`): "Copyright, 2016,
+  Chicago Board Options Exchange, Inc. Reprinted with permission"; FRED class "Copyrighted: Citation
+  Required". No reproduction ban like S&P's or ICE's.
 - The copyright class of the other FRED series the programme uses (Treasury yields, TIPS, breakevens, the
   Kim-Wright term premium, EFFR, the target range, CPI) was **not checked** this run.
+  *Dated addition, 2026-10-28 03:2x–03:4xZ:* checked from Internet Archive captures (the live series pages
+  still timed out; the CSV endpoint answered). The class is FRED's own tag on each series page; hashes are of
+  the decompressed HTML.
+
+  | Series | Capture (UTC) | FRED source | Class | SHA-256 (first 16) |
+  |---|---|---|---|---|
+  | DGS2 | 2026-10-14 06:10:08 | Board of Governors | Public Domain: Citation Requested | `cc2650f844c50f4b` |
+  | DGS5 | 2026-10-18 06:15:03 | Board of Governors | Public Domain: Citation Requested | `f2eef1a972768bdd` |
+  | DGS7 | 2026-01-01 08:57:13 | Board of Governors | Public Domain: Citation Requested | `d5b67eed8f245416` |
+  | DGS10 | 2026-10-25 04:35:10 | Board of Governors | Public Domain: Citation Requested | `5a0789f52eb1e880` |
+  | DGS30 | 2026-10-24 16:13:28 | Board of Governors | Public Domain: Citation Requested | `839cd19dabbdd6a2` |
+  | GS2 | 2026-05-17 18:48:56 | Board of Governors | Public Domain: Citation Requested | `fade337932ea1bb2` |
+  | GS3 | 2026-10-06 15:37:32 | Board of Governors | Public Domain: Citation Requested | `be02e5232a6bbab9` |
+  | GS10 | 2026-10-20 00:07:41 | Board of Governors | Public Domain: Citation Requested | `810d98d333ffb327` |
+  | DTB3 | 2026-10-06 08:39:06 | Board of Governors | Public Domain: Citation Requested | `aef2d73822925f26` |
+  | TB3MS | 2026-10-07 19:49:46 | Board of Governors | Public Domain: Citation Requested | `bd4e948c892d2a61` |
+  | DFII10 | 2026-10-23 08:39:56 | Board of Governors | Public Domain: Citation Requested | `9d0413e82d4a2138` |
+  | THREEFYTP10 | 2026-10-24 16:14:26 | Board of Governors | Public Domain: Citation Requested | `3c9f842c004f6ec2` |
+  | DFF | 2026-10-23 11:24:02 | Board of Governors | Public Domain: Citation Requested | `be4cdcab540105ff` |
+  | DFEDTARU | 2026-10-22 12:42:15 | Board of Governors | Public Domain: Citation Requested | `8f8124b2dc8da27c` |
+  | DFEDTARL | 2026-09-19 15:45:59 | Board of Governors | Public Domain: Citation Requested | `4a2c0e27ba5a0bea` |
+  | CPIAUCSL | 2026-10-23 17:38:28 | U.S. Bureau of Labor Statistics | Public Domain: Citation Requested | `db13d7cc441b3526` |
+  | EFFR | 2026-10-19 03:01:17 | Federal Reserve Bank of New York | **Copyrighted: Citation Required** | `93ab474071fde105` |
+  | T10YIE | 2026-10-22 14:39:00 | Federal Reserve Bank of St. Louis | **Copyrighted: Citation Required** | `a55e3bcbd143f50b` |
+  | T10Y2Y | 2026-10-23 11:24:02 | Federal Reserve Bank of St. Louis | **Copyrighted: Citation Required** | `51380055322d0895` |
+
+  Not checked: DGS3MO and T5YIFR (both in the desk-view snapshot), DGS20 and GS5 (archive rate limit,
+  HTTP 429, after five tries each). Reading (not legal advice): every checked Treasury, TIPS, term-premium,
+  target-range and CPI series is public domain; EFFR, T10YIE, T10Y2Y and VIXCLS need a citation, which FRED's
+  legal page says permits use "with proper attribution". The committed desk view and predictions ledger name
+  these series by FRED id but did not carry the data owners' attribution; a dated attribution note is added
+  to `desk-view/DESK_VIEW.md` this run. That leaves S&P 500 and the ICE high-yield OAS as the only FRED series
+  in the programme whose notes forbid reproduction.
 
 **Committed from the three flagged FRED series** (raw files are git-ignored under `desk-view/data/raw/` and
 `predictions/raw/`): one level each in `desk-view/data/snapshot_2026-10-23.csv` and
@@ -274,3 +311,7 @@ no longer rebuild the histories exactly; the committed copies are what make that
 Recommendation: (a) for the French tables, cited, unless the owner judges the risk otherwise ((d) if not);
 (c) for the three single FRED values (the desk view argues from none of them); both reversible from git; for
 new work, statistics only. The front page's line is corrected this run.
+
+*Dated addition, 2026-10-28 03:4xZ (the paragraph above is unchanged):* with the VIX note now read
+("Copyrighted: Citation Required", no reproduction ban), the recommendation narrows to (c) for **two**
+single FRED values, the S&P 500 level and the ICE high-yield OAS rows; the VIX level stays, cited.

@@ -1,0 +1,18 @@
+# Push order of pre-registrations 006-011 (tools/push_order.py; spec in its docstring)
+
+events_p1.json: sha256 d3e382867f836b7630b1b224419009f6e806b54078981d943f0b0c2c895b6e54, 100 events
+events_p2.json: sha256 93808b0d0b65c22898c0fc7a0a83c2c7dd1ec7bb8b54dd2434f235a1d31b5925, 100 events
+events_p3.json: sha256 0a4c2b69b0b447d1f1c55021b07e50920ebb50a1e3825748445a40605e7eb9c0, 58 events
+events listed: 258; PushEvents: 256; oldest listed 2026-10-21T20:14:15Z, newest 2026-10-27T18:16:52Z
+PushEvent heads not in this clone: 0
+
+| Study | Pre-registration commit | GitHub push time (earliest carrying PushEvent) | Reference | Reference time (machine) | Margin (s) | Reading |
+|---|---|---|---|---|---|---|
+| 006 | `a67ef8d` | 2026-10-25T02:20:04Z | data_step.json run_at_utc | 2026-10-25T02:21:01Z | 57 | within clock tolerance |
+| 007 | `e4c21e5` | 2026-10-25T11:23:46Z | data_step.json run_at_utc | 2026-10-25T11:25:57Z | 131 | pushed before the first data read |
+| 008 | `ca2432a` | 2026-10-25T17:20:24Z | first 2026-10-25 downloaded_at_utc (CPI fetch) | 2026-10-25T17:25:04Z | 280 | pushed before the first data read |
+| 009 | `299b532` | 2026-10-26T01:26:56Z | control: recorded PushEvent 2026-10-26T01:26:56Z | 2026-10-26T01:26:56Z | 0 | control reproduced |
+| 010 | `d9648af` | 2026-10-26T08:23:22Z | data_manifest.json read_at_utc | 2026-10-26T09:17:56Z | 3274 | pushed before the first data read |
+| 011 | `f534c99` | 2026-10-26T15:29:28Z | data_manifest.json read_at_utc | 2026-10-26T15:31:22Z | 114 | pushed before the first data read |
+
+Control: reproduced, check valid.

@@ -95,7 +95,7 @@ def reference_time(study: str) -> str:
 
         walk(man)
         return min(times)
-    return man["read_at_utc"]
+    return man["library_page"]["read_at_utc"]
 
 
 def repo_slug() -> str:

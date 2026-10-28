@@ -38,11 +38,10 @@ Run from the study folder: ``python -m paper.bar_age_rule_check``.
 """
 from __future__ import annotations
 
-from datetime import datetime, time, timedelta, timezone
+from datetime import UTC, datetime, time, timedelta
 from zoneinfo import ZoneInfo
 
 import pandas as pd
-
 from src.calendar import nyse_trading_days
 
 ET = ZoneInfo("America/New_York")
@@ -52,7 +51,7 @@ RETRIES = 3
 
 
 def engine_age_h(signal_day, now_utc: datetime) -> float:
-    bar_ts = datetime(signal_day.year, signal_day.month, signal_day.day, 4, 0, tzinfo=timezone.utc)
+    bar_ts = datetime(signal_day.year, signal_day.month, signal_day.day, 4, 0, tzinfo=UTC)
     return (now_utc - bar_ts - timedelta(hours=1)).total_seconds() / 3600
 
 
@@ -62,7 +61,7 @@ def close_age_h(signal_day, now_utc: datetime) -> float:
 
 
 def at_et(day, t: time) -> datetime:
-    return datetime.combine(day, t, tzinfo=ET).astimezone(timezone.utc)
+    return datetime.combine(day, t, tzinfo=ET).astimezone(UTC)
 
 
 def main() -> None:

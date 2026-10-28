@@ -5,10 +5,10 @@
 #   make lint           ruff over the repository, mypy over the shared library
 #   make coverage       line coverage of the shared library (tests excluded)
 #   make reproduce      the independent reviewers' recomputation of every published
-#                       statistic in Studies 003 to 006 from the committed result
-#                       files, then tools/effect_lines.py for 006-008's headline t
-#   make reproduce-raw  the same for Studies 001, 002, 007 and 008, whose scripts
-#                       need the raw vendor files in data/raw/ (not redistributed)
+#                       statistic in Studies 003 to 006 and 011 from the committed
+#                       result files, then tools/effect_lines.py for 006-008's t
+#   make reproduce-raw  the same for Studies 001, 002, 007, 008 and 010, whose
+#                       scripts need the raw data files in data/raw/ (not committed)
 #   make charts         redraw every chart from the committed result files
 #                       (rewrites charts/; `git diff --stat` shows any change)
 #   make tearsheets     redraw the post-hoc tear-sheets in tearsheets/ from the
@@ -53,7 +53,13 @@ RECOMPUTE     := research/003-bond-tsmom-ief \
 RECOMPUTE_RAW := research/001-slope-duration-switch \
                  research/002-slope-duration-switch-r \
                  research/007-bond-carry-tilt-long-history \
-                 research/008-bond-value-tilt-long-history
+                 research/008-bond-value-tilt-long-history \
+                 research/010-factor-momentum-french-us
+# Study 011's script (reviewer's scratch name recompute011.py) rebuilds the rule
+# from the committed results/history/ files and prints values rather than
+# match rows, so `reproduce` runs it on its own: it must exit 0 and rebuild all
+# three trials with no cohort mismatch; the printed values compare with REVIEW.md.
+# Study 010's script hash-checks the three French Data Library zips in data/raw/.
 
 .PHONY: help venv test lint coverage reproduce reproduce-raw charts tearsheets dashboard clean
 
@@ -91,6 +97,13 @@ reproduce:
 	    printf '%s\n' "$$out" | tail -n 5; echo "   FAILED: no summary line (exit status $$code)"; failed=1; \
 	  fi; \
 	done; \
+	d=research/011-industry-momentum-french-us; \
+	echo "== $$d: the reviewer's recomputation from the committed history files"; \
+	o11=$$($(PYTHON) -I $$d/review_recompute.py . 2>&1) && code=0 || code=$$?; \
+	n=$$(printf '%s\n' "$$o11" | grep -c "'cohort_mismatch': 0" || true); \
+	printf '%s\n' "$$o11" | awk '/^== /{s=($$0 ~ /^== (base|stress|criteria)/)} s && /^(== |M1|window)/' | cut -c1-100; \
+	echo "   rule rebuilt for $$n of 3 trials with no cohort mismatch (script exit status $$code; compare with REVIEW.md)"; \
+	if [ "$$code" != 0 ] || [ "$$n" != 3 ]; then printf '%s\n' "$$o11" | tail -n 3; echo "   FAILED: Study 011 recomputation"; failed=1; fi; \
 	echo "== tools/effect_lines.py: Studies 006-008 headline t from the committed monthly files"; \
 	el=$$($(PYTHON) -I tools/effect_lines.py 2>&1) || { echo "$$el" | tail -n 3; echo "   FAILED: effect_lines.py"; failed=1; }; \
 	printf '%s\n' "$$el" | sed -n '4,7p'; \

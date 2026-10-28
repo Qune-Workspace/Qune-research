@@ -454,7 +454,11 @@ def main() -> int:
     # programme count (public part only)
     pc = json.loads((RES / "programme_count.json").read_text())
     tot = 0
-    for p in sorted((ROOT / "research").glob("*/trials.md")):
+    # Studies listed from eef348e's own tree, not the working tree: a study added
+    # later (011 onwards) has no trials.md at eef348e.  Changed 2026-10-28 by Qune
+    # (not the reviewer) after `git show` failed on 011; same ten studies, same rows.
+    at_count = git("ls-tree", "-r", "--name-only", "eef348e", "research").splitlines()
+    for p in sorted(Path(f) for f in at_count if f.endswith("/trials.md") and f.count("/") == 2):
         txt = git("show", f"eef348e:research/{p.parent.name}/trials.md")
         ids, inside = [], False
         for ln in txt.splitlines():

@@ -131,3 +131,5 @@ From the study folder, with the three zips present in `data/raw/`:
 ```
 
 The script takes about 110 s, prints the 1,393-row table and exits 1 while should-fix 1 and note 4 stand. If a raw zip is missing, it says so and exits 2.
+
+*Dated addition, 2026-10-28, by Qune (not the reviewer).* Rerun with the three zips present, the script stopped with a `git show` error in the programme-count rows: it listed the studies from today's working tree, and Study 011, added after `eef348e`, has no `trials.md` at that commit. One change, marked in the script: the study list now comes from `eef348e`'s own tree, the same ten studies the reviewer counted. The rerun then printed 1,393 rows: 1,386 match, 3 mismatch, 4 informational. Two mismatches are should-fix 1 and note 4, as above. The third is the row "src/ and reproduce.sh unchanged 55aa9e3 -> HEAD": it compares with today's HEAD, which now holds the forward-record code (`src/forward010.py` and its `reproduce.sh` step, added after this review and reviewed separately in [CODE_REVIEW.md](CODE_REVIEW.md)). No number changed. `make reproduce-raw` now includes this script.

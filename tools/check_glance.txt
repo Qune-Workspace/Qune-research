@@ -1,4 +1,4 @@
-rows 11; decisive numbers 65, not found 0; integers 106
+rows 11, prose result sections 2; decisive numbers 108, not found 0; integers 172
 001 pass: 6/6 decisive numbers found, 10/10 integers found, 11 files in research/001-slope-duration-switch
 002 pass: 2/2 decisive numbers found, 7/7 integers found, 16 files in research/002-slope-duration-switch-r
 003 pass: 5/5 decisive numbers found, 11/11 integers found, 21 files in research/003-bond-tsmom-ief
@@ -10,3 +10,5 @@ rows 11; decisive numbers 65, not found 0; integers 106
 009 pass: 2/2 decisive numbers found, 9/9 integers found, 6 files in research/009-pooled-forward-duration-timing
 010 pass: 8/8 decisive numbers found, 9/9 integers found, 19 files in research/010-factor-momentum-french-us
 011 pass: 10/10 decisive numbers found, 10/10 integers found, 19 files in research/011-industry-momentum-french-us
+Latest result (011) pass: 23/23 decisive numbers found, 46/46 integers found, 19 files in research/011-industry-momentum-french-us
+Previous result (010) pass: 20/20 decisive numbers found, 20/20 integers found, 19 files in research/010-factor-momentum-french-us

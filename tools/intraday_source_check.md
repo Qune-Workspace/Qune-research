@@ -195,3 +195,81 @@ publish aggregates only. Under (c), removal from HEAD does not remove them from 
 only a history rewrite and force-push would, which cannot be fully undone once clones exist, and is an
 owner decision. The front page's "Not a data distribution" line was qualified this run to say what is
 committed.
+
+### French Data Library and FRED terms read, their committed series traced (2026-10-28 from 02:15Z; the sections above stay as written)
+
+The two traces above covered the licensed vendors (Alpaca, Tiingo). The programme's other two sources are
+the Kenneth French Data Library (Studies 010 and 011) and FRED (yields, CPI and the desk view). This
+section reads their terms and lists what is committed from them. Nothing published was changed or removed.
+Tiingo's current terms page was tried again this run (`www.tiingo.com/tos`, which redirects to
+`app.tiingo.com/tos`): HTTP 403 with a bot challenge to plain requests, browser tool still unavailable, so it
+is still **not read**; the challenge was not bypassed.
+
+**Bad news first: the front page was wrong.** It said "Raw vendor data is re-fetched by the scripts and
+never committed". For the French library that is false: two committed files are exact copies of a block of
+a library file, and four columns of a third are copies of library factor series. Checked this run against
+the git-ignored raw zips, value by value:
+
+- Study 011 `results/history/industries_17.csv` and `industries_30.csv`: the "Average Value Weighted Returns
+  -- Monthly" block of `17_Industry_Portfolios.csv` and `30_Industry_Portfolios.csv` ("created using the
+  202608 CRSP database"), 1926-07 to 2026-08; **1,202 of 1,202 rows identical** in each file. They were
+  committed so that a separate session could rebuild the rule without the study's code (011 README).
+- Study 010 `results/history/monthly_base.csv` and `monthly_stress.csv`: columns `f_SMB`, `f_HML`,
+  `f_ST_Rev`, `f_LT_Rev` are the library's factor returns; `f_SMB` and `f_HML` equal
+  `F-F_Research_Data_Factors.csv` on **1,190 of 1,190 months** (the two reversal columns were not checked
+  this run).
+
+**French Data Library terms.** The library page
+(`mba.tuck.dartmouth.edu/pages/faculty/ken.french/data_library.html`, fetched 2026-10-28 02:17Z, SHA-256
+`dd48316327898aea2e3ad3dd070b34c3325ce3b25ced7f719245efd5ad36146a`) carries one line on rights: "Copyright
+Eugene F. Fama and Kenneth R. French". It has no licence, no terms of use and no word on redistribution or
+permission (searched: "licen", "terms", "permission", "redistribut", "commercial": none). The returns are
+built from CRSP files (the page and each file say so). Reading (not legal advice): a copyright notice with
+no licence grants no right to republish; academic practice is to cite the library, and many public
+repositories carry copies, but that is practice, not permission. Republishing full tables is closer to
+copying the files than publishing statistics computed from them.
+
+**FRED terms.** The live site did not answer this run (every request to `fred.stlouisfed.org`, including
+`/legal/` and three series pages, failed or timed out). Read instead from the Internet Archive:
+
+- `fred.stlouisfed.org/legal/` captured 2026-10-25 04:31:27Z, decompressed HTML SHA-256
+  `a5a80d2b67566ddcaf4d021df0ff37193a45c763b3e321ade5c0ac95b24998e2`. Three copyright classes: "Copyrighted:
+  Pre-approval required ... Without first obtaining the express written permission of the copyright holder
+  ... these series may only be used for non-commercial educational or personal use"; "Copyrighted: Citation
+  required ... you may use these data series with proper attribution"; "Public Domain: Citation requested".
+  Also: "Before using data with a copyright notice for anything other than your own personal use, you must
+  contact the data owner to obtain permission. Unfortunately, the Federal Reserve Bank of St. Louis cannot
+  give you such permission."
+- `SP500` series page captured 2026-10-27 14:40:22Z (SHA-256
+  `1103cb113164edc1aa02d0899287a3605c71e62479f1a75fbd4abb87e5a278fa`): "Copyright © 2016, S&P Dow Jones
+  Indices LLC. All rights reserved. Reproduction of S&P 500 in any form is prohibited except with the prior
+  written permission of S&P Dow Jones Indices LLC".
+- `BAMLH0A0HYM2` series page captured 2026-10-21 00:47:14Z (SHA-256
+  `f4b97b7045fb9a671fd79ee9bd4dcc7d2a9e3f292189aa4a23d35dedbc1f18c6`): "Copyright, 2023, ICE Data Indices.
+  Reproduction of this data in any form is prohibited except with the prior written permission of ICE Data
+  Indices. The end of day Index values, Index returns, and Index statistics ("Top Level Data") are being
+  provided for your internal use only and you are not authorized or permitted to publish, distribute or
+  otherwise furnish Top Level Data to any third-party without prior written approval".
+- `VIXCLS`: the nearest capture (2026-10-22) is a site-maintenance page, so its notes were **not read**.
+- The copyright class of the other FRED series the programme uses (Treasury yields, TIPS, breakevens, the
+  Kim-Wright term premium, EFFR, the target range, CPI) was **not checked** this run.
+
+**Committed from the three flagged FRED series** (raw files are git-ignored under `desk-view/data/raw/` and
+`predictions/raw/`): one level each in `desk-view/data/snapshot_2026-10-23.csv` and
+`numbers_2026-10-23.json` (S&P 500 7,757.17; high-yield OAS 3.27%; VIX 16.68), the high-yield OAS row with
+its 1-, 3- and 12-month changes and the VIX row in `DESK_VIEW.md`, and the 63-day stock-bond correlation
+chart computed from daily S&P 500 and 10-year yield changes (a statistic, not the index).
+
+Reading (not legal advice): S&P's and ICE's notes forbid reproduction "in any form" without permission and
+ICE limits its values to internal use; the desk view publishes one level of each. FRED's own page allows
+"non-commercial educational or personal use" of such series without permission; whether this public
+research showcase is that is an owner judgement, not mine. So the owner's decision now has four sources in
+it, with the same three choices per source as above ((a) keep, (b) ask the owner of the data, which only the
+owner can do, (c) remove from HEAD). For the French tables a fourth choice exists: (d) replace the committed
+copies with a download script checked against the SHA-256 hashes already in each study's
+`results/data_manifest.json`. Its cost: the library rebuilds its files from each new CRSP release (these are
+from the 202608 database), so after the next release the hashes will not match and an outside reader could
+no longer rebuild the histories exactly; the committed copies are what make that rebuild possible today.
+Recommendation: (a) for the French tables, cited, unless the owner judges the risk otherwise ((d) if not);
+(c) for the three single FRED values (the desk view argues from none of them); both reversible from git; for
+new work, statistics only. The front page's line is corrected this run.

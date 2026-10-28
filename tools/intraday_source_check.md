@@ -216,8 +216,9 @@ the git-ignored raw zips, value by value:
   committed so that a separate session could rebuild the rule without the study's code (011 README).
 - Study 010 `results/history/monthly_base.csv` and `monthly_stress.csv`: columns `f_SMB`, `f_HML`,
   `f_ST_Rev`, `f_LT_Rev` are the library's factor returns; `f_SMB` and `f_HML` equal
-  `F-F_Research_Data_Factors.csv` on **1,190 of 1,190 months** (the two reversal columns were not checked
-  this run).
+  `F-F_Research_Data_Factors.csv` on **1,190 of 1,190 months**; `f_ST_Rev` and `f_LT_Rev` equal the
+  library's reversal files on 1,190 of 1,190 and 1,148 of 1,148 non-blank months (checked in a second pass
+  of this run; first pushed as "not checked this run").
 
 **French Data Library terms.** The library page
 (`mba.tuck.dartmouth.edu/pages/faculty/ken.french/data_library.html`, fetched 2026-10-28 02:17Z, SHA-256

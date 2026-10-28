@@ -2,7 +2,8 @@
 #
 #   make venv           create .venv and install every pinned requirement
 #   make test           every study's unit tests, exactly as CI runs them
-#   make lint           ruff over the repository, mypy over the shared library
+#   make lint           ruff over the repository, mypy over the shared library,
+#                       relative Markdown links (tools/check_links.py)
 #   make coverage       line coverage of the shared library (tests excluded)
 #   make reproduce      the independent reviewers' recomputation of every published
 #                       statistic in Studies 003 to 006 and 011 from the committed
@@ -78,6 +79,7 @@ test:
 lint:
 	$(PYTHON) -m ruff check .
 	$(PYTHON) -m mypy
+	$(PYTHON) tools/check_links.py
 
 coverage:
 	cd qune_research && $(PYTHON) -m pytest -q --cov=qune_research --cov-config=../pyproject.toml --cov-report=term-missing

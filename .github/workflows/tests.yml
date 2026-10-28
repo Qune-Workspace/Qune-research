@@ -68,6 +68,10 @@ jobs:
         run: python -m ruff check .
       - name: mypy (shared library)
         run: python -m mypy
+      # Every relative link and anchor in the tracked Markdown files resolves
+      # in a clean checkout (tools/check_links.py; external links not fetched).
+      - name: relative links
+        run: python tools/check_links.py
       # Line coverage of the shared library, tests excluded (pyproject.toml).
       # The floor is below the figure measured at adoption so that it catches
       # a drop, not a rounding.

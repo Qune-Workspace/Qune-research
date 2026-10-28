@@ -292,6 +292,33 @@ copying the files than publishing statistics computed from them.
   to `desk-view/DESK_VIEW.md` this run. That leaves S&P 500 and the ICE high-yield OAS as the only FRED series
   in the programme whose notes forbid reproduction.
 
+  *Dated addition, 2026-10-28 04:2xZ:* the four series left open above and four found missing from the
+  list, read from Internet Archive captures (live series pages still timed out from this host; hashes of the
+  decompressed HTML, full SHA-256 in BUILD_LOG's line for this run). The class is the page's tag at the
+  capture date, which is up to five months old (GS5, 2026-05-15). CPIAUCNS and CPILFENS (Study 008's CPI files), DTB4WK (the predictions
+  baseline) and DGS1MO (Study 001's data-availability table) were not in the earlier list either: found by
+  searching every tracked file for FRED-style series ids, and checked in the same run.
+
+  | Series | Capture (UTC) | FRED source | Class | SHA-256 (first 16) |
+  |---|---|---|---|---|
+  | DGS3MO | 2026-10-22 14:15:46 | Board of Governors | Public Domain: Citation Requested | `b093751d94de98ce` |
+  | DGS20 | 2026-10-08 13:27:10 | Board of Governors | Public Domain: Citation Requested | `891a1f54fe1b9bb1` |
+  | GS5 | 2026-05-15 08:13:44 | Board of Governors | Public Domain: Citation Requested | `31b6a69c642358ed` |
+  | T5YIFR | 2026-09-14 12:03:17 | Federal Reserve Bank of St. Louis | **Copyrighted: Citation Required** | `b748780a60140807` |
+  | CPIAUCNS | 2026-10-02 00:06:50 | U.S. Bureau of Labor Statistics | Public Domain: Citation Requested | `c6f47c0554f179a6` |
+  | CPILFENS | 2026-09-27 13:07:58 | U.S. Bureau of Labor Statistics | Public Domain: Citation Requested | `78ee80d4faee6aa9` |
+  | DTB4WK | 2026-08-26 19:37:27 | Board of Governors | Public Domain: Citation Requested | `cbccdf68f25de23a` |
+  | DGS1MO | 2026-10-08 15:01:14 | Board of Governors | Public Domain: Citation Requested | `ba69cd1ecddda902` |
+
+  T5YIFR's notes carry no reproduction ban (no "reproduction" or "permission" in the page text); it joins
+  EFFR, T10YIE, T10Y2Y and VIXCLS as citation required, and the desk view (which prints its level and
+  change) gets the citation in a further dated addendum. With these eight, every FRED series id the search
+  found in the tracked files has a recorded class: 30 ids (`CPIAUCNSA`, named in Study 008's pre-registration,
+  does not exist and was corrected there; a text search can miss an id built at run time): 23 public domain
+  (citation requested), 5 citation required (EFFR, T10YIE, T10Y2Y, T5YIFR, VIXCLS), and the two with
+  reproduction bans (SP500, BAMLH0A0HYM2) read on 2026-10-28 02:15Z. The open owner question is
+  unchanged (S&P 500 and ICE HY OAS only).
+
 **Committed from the three flagged FRED series** (raw files are git-ignored under `desk-view/data/raw/` and
 `predictions/raw/`): one level each in `desk-view/data/snapshot_2026-10-23.csv` and
 `numbers_2026-10-23.json` (S&P 500 7,757.17; high-yield OAS 3.27%; VIX 16.68), the high-yield OAS row with

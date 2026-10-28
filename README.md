@@ -162,4 +162,4 @@ A result is never upgraded to "tested" by re-running with changed parameters; a 
 - Not investment advice, and not a track record. Every figure is a backtest or a paper-account observation.
 - Not real money. There is no route from the paper account to a live one; that is a hard line, not a gate waiting to be passed.
 - Not a claim of profit. Several results here are failures and are published as such.
-- Not a data distribution. Raw vendor data is re-fetched by the scripts and never committed.
+- Not a data distribution. Raw vendor data is re-fetched by the scripts and never committed. Return series computed from it are committed, including single-ETF monthly returns (Studies 003 and 005 in-sample, the 003 out-of-sample and 006–008 actual-ETF episode files) and per-ETF signal tables (Study 004); both vendors' terms restrict republishing their data, and whether these series need the vendors' permission is an open owner decision ([`tools/intraday_source_check.md`](tools/intraday_source_check.md), last two sections).

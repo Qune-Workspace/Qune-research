@@ -139,3 +139,59 @@ These are monthly returns, not quotations or last-sale reports, but they are ser
 bars, not only aggregates over many periods, so they are a step closer to the terms' "Content" than the
 aggregates-only clause would allow for Study 012. Recorded for the owner's decision; nothing changed or
 removed. Tiingo's terms (the other licensed vendor) were not re-read.
+
+### Tiingo terms read, Tiingo-derived series traced (2026-10-28 from 01:15Z; the sections above stay as written)
+
+The 23:2xZ trace left two things open: Tiingo's terms (the other licensed vendor) and which committed
+series rest on Tiingo files. Both are answered here. Nothing published was changed or removed.
+
+**Terms.** The current terms page (`www.tiingo.com/tos`, the link the site's sign-up form uses) returned a
+bot challenge to every plain request this run, and the browser tool was unavailable, so the current text
+was **not read**. Read instead:
+
+- The Internet Archive copy of `https://www.tiingo.com/tos/` captured 2022-06-03 (the only capture with
+  status 200), "Effective Date: January 16th, 2022", decompressed HTML SHA-256
+  `44a61ee5416ec674d304a868488781cb5c318c5e90c82646e795ed632bad0708`. Section 7.3, "Use of the Tiingo API":
+  "All data via the API is for internal consumption only. If you are an individual, you may sign up for an
+  Individual plan; however, if you are representing an organization or business, you must sign up for a
+  Commercial plan. Redistribution is only available upon special request and permission, and comes with
+  additional fees." If redistribution is permitted, the attribution "Data sourced by Tiingo" with a link is
+  required. Section 1.4(a) also bars reproducing or distributing "Company Properties", which include "the
+  information and content available on the Website and in the Application and the Services".
+- The live site's pricing text, from its current JavaScript bundle (fetched 2026-10-28, SHA-256
+  `4d6004e95fc26d2de7c7e619b06a52a82f731abfbf524b49b29811c75a11b492`): plan rows marked "Internal Use Only";
+  "Commercial plans allow for internal use for up to two (2) developers. For more developers or to
+  redistribute data, please contact" sales; "Our API is included in a Tiingo.com subscription for
+  individuals & personal use. For those who have commercial or redistribution needs, we offer [...]
+  pricing". This agrees in substance with the 2022 text but is not the terms themselves.
+
+Reading (not legal advice): Tiingo's API data is for internal use; publishing it, or series from which it
+can be rebuilt, needs Tiingo's permission. Like Alpaca's terms, the text says nothing about aggregate
+statistics. Which plan the desk's token is on (Individual or Commercial) is an account fact this run did not
+check; the 2022 text ties organisational use to a Commercial plan.
+
+**Committed series computed from Tiingo daily files** (from the code and config; one row checked by hand):
+
+- Studies 003 and 005, `results/insample/monthly_base.csv` and `monthly_stress.csv` (185 months,
+  2003-07 to 2018): column B1 is the buy-and-hold IEF return between execution dates from Tiingo `adjClose`.
+  Checked this run against the git-ignored raw file: 2003-08-01 to 2003-09-02 gives −0.006918072288497168
+  from the raw file and −0.006918072288497057 in the committed file; 2010-03-01 to 2010-04-01 matches to
+  every printed digit. The IEF adjusted close at monthly execution dates can therefore be rebuilt from the
+  committed file, up to a scale.
+- Study 004 (twelve-ETF universe; IEF reused from 002, BIL from 003, the others fetched under 004, all
+  Tiingo): `results/insample/` and `results/oos/` daily and monthly index files of the benchmark and rule
+  portfolios (multi-asset mixes; B0 out of sample is BIL alone), and the per-asset monthly signal tables
+  `signal_s3/s6/s12/vol_*.csv` (each ETF's trailing return and volatility at every signal date).
+- Study 002 used Tiingo IEF for its validation and overlap checks; its committed outputs found here are
+  validation statistics (aggregates).
+- Studies 006, 007 and 008: their long histories run on yields from FRED (public), not on Tiingo; Tiingo IEF
+  enters their overlap checks (aggregates).
+
+So the owner's decision (items 2 and 3 above) has a second vendor in it, with stricter wording than Alpaca's
+("internal consumption only"). For each vendor the same three choices stand: (a) keep the derived series
+public on the reading that returns are not the vendor's data; (b) ask the vendor for permission (external
+contact, so only the owner can); (c) remove the per-asset and single-asset return series from HEAD and
+publish aggregates only. Under (c), removal from HEAD does not remove them from the public git history;
+only a history rewrite and force-push would, which cannot be fully undone once clones exist, and is an
+owner decision. The front page's "Not a data distribution" line was qualified this run to say what is
+committed.

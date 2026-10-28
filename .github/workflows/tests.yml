@@ -72,6 +72,11 @@ jobs:
       # in a clean checkout (tools/check_links.py; external links not fetched).
       - name: relative links
         run: python tools/check_links.py
+      # Every decimal or % figure in the front page's "Results at a glance"
+      # table appears, written the same way, in its study's notes or results
+      # (tools/check_glance.py; presence in the folder, not context).
+      - name: front-page figures
+        run: python tools/check_glance.py
       # Line coverage of the shared library, tests excluded (pyproject.toml).
       # The floor is below the figure measured at adoption so that it catches
       # a drop, not a rounding.

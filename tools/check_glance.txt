@@ -1,0 +1,12 @@
+rows 11; decisive numbers 65, not found 0; integers 106
+001 pass: 6/6 decisive numbers found, 10/10 integers found, 11 files in research/001-slope-duration-switch
+002 pass: 2/2 decisive numbers found, 7/7 integers found, 16 files in research/002-slope-duration-switch-r
+003 pass: 5/5 decisive numbers found, 11/11 integers found, 21 files in research/003-bond-tsmom-ief
+004 pass: 6/6 decisive numbers found, 9/9 integers found, 18 files in research/004-xasset-trend-voltarget
+005 pass: 3/3 decisive numbers found, 9/9 integers found, 15 files in research/005-duration-trend-regime
+006 pass: 8/8 decisive numbers found, 12/12 integers found, 19 files in research/006-term-spread-switch-long-history
+007 pass: 7/7 decisive numbers found, 10/10 integers found, 19 files in research/007-bond-carry-tilt-long-history
+008 pass: 8/8 decisive numbers found, 10/10 integers found, 22 files in research/008-bond-value-tilt-long-history
+009 pass: 2/2 decisive numbers found, 9/9 integers found, 6 files in research/009-pooled-forward-duration-timing
+010 pass: 8/8 decisive numbers found, 9/9 integers found, 19 files in research/010-factor-momentum-french-us
+011 pass: 10/10 decisive numbers found, 10/10 integers found, 19 files in research/011-industry-momentum-french-us

@@ -1,6 +1,6 @@
 {
-  "commit": "41bb3fa",
-  "generated_at_utc": "2026-10-27T16:18:12Z",
+  "commit": "a09eb9c",
+  "generated_at_utc": "2026-10-28T15:18:06Z",
   "outputs_sha256": {},
   "studies": [
     {
@@ -59,7 +59,7 @@
         "research/010-factor-momentum-french-us/paper-log/frozen_hbar.json": "4be2bcdeb2c7e3cb219b79f3ee039f50de7ab7f950b1f373e59955f90ef624fb",
         "research/010-factor-momentum-french-us/paper-log/positions.csv": "9cb109a293f31a41117b4feed25cd53c08bf3f11f926cdfd83fd8c547a799c2f",
         "research/010-factor-momentum-french-us/paper-log/releases/202609.json": "9ca27034e7da4f3b3eb71ee66b27c52a8c96a5c85ba5f75907e0e0488a834dc5",
-        "research/010-factor-momentum-french-us/paper-log/releases/fetch_log.csv": "32ee1206599b147873adc3995192018f86beb07674aa8ca9eea49d21efd67df1"
+        "research/010-factor-momentum-french-us/paper-log/releases/fetch_log.csv": "451579ffbe853bda31b5a665b2e8a1e85008aca445af01c2b64f0fef7582f5f1"
       },
       "next_record_due": "2026-11, from release 202610 (not yet archived)",
       "records": 2,
@@ -71,7 +71,7 @@
       "inputs_sha256": {
         "research/011-industry-momentum-french-us/paper-log/cohorts.csv": "abb0ef5965f7dde6c47700bed8f51e1ffc4cc8022b95582f3cd777b99a813639",
         "research/011-industry-momentum-french-us/paper-log/releases/202609.json": "5aa3fd914d3713612c30a49d902961aeb1352689610a4c738154a71e0f46eeb3",
-        "research/011-industry-momentum-french-us/paper-log/releases/fetch_log.csv": "fbaebee233a5233af73f72107f4b92b48110135a4e853dd0225a78f7502bddb6"
+        "research/011-industry-momentum-french-us/paper-log/releases/fetch_log.csv": "55598dd84c550d873f41c1af2b3adced04373012d8750704530b930197eaf214"
       },
       "next_record_due": "2026-11, from release 202610 (not yet archived)",
       "records": 2,

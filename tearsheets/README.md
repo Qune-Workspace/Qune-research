@@ -19,7 +19,7 @@ Sharpe ratios are of the monthly excess over the study's cash series (B0), annua
 
 Series labels, from each pre-registration: Study 003: T1 the 12-month trend rule on IEF with BIL as the cash leg; B3 the constant IEF-and-cash mix at T1's in-sample IEF share, frozen; B1 hold IEF; B2 50/50 IEF and cash rebalanced monthly. Study 004: T1 the ten-ETF 12-month trend rule, each position volatility-scaled; B4 the same volatility-scaled book held throughout, multiplied by T1's in-sample mean exposure; B3 the volatility-scaled book fully held; B1 equal weight. Study 005: T1 Study 003's trend exit applied only when the trailing 63-day SPY–IEF correlation is positive, else hold IEF; B2 the unconditional trend rule (Study 003's T1, same engine); B1 hold IEF; B3 the constant mix at T1's in-sample IEF share.
 
-Regenerate from the repository root with `make tearsheets` (or `.venv/bin/python tools/make_tearsheets.py`). The PNGs come back byte-identical; the SVGs and the manifest carry the drawing date and element ids.
+Regenerate from the repository root with `make tearsheets` (or `.venv/bin/python tools/make_tearsheets.py`). The PNGs and SVGs come back byte-identical; only the manifest carries the drawing time and commit. (Until 2026-10-28 the committed SVGs predated the house style's fixed SVG id salt of 2026-10-25, so a re-render changed their element ids though nothing drawn differed; they were re-rendered once on 2026-10-28, see BUILD_LOG.)
 
 ![003_insample](003_insample.png)
 

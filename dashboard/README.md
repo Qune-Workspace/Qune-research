@@ -1,6 +1,6 @@
 # Paper dashboard: the forward records, as committed
 
-Generated 2026-10-27T16:18:12Z from the files at commit `41bb3fa` by `tools/make_paper_dashboard.py`. Each study's forward code writes its own record once a month and never rewrites it; this page only counts and draws what is on disk at generation time, so an empty row means no record exists yet, not that one was missed. Nothing here is a backtest: every value is a forward observation after the study's publication. No study has a supported verdict; no order has been placed. Not advice.
+Generated 2026-10-28T15:18:06Z from the files at commit `a09eb9c` by `tools/make_paper_dashboard.py`. Each study's forward code writes its own record once a month and never rewrites it; this page only counts and draws what is on disk at generation time, so an empty row means no record exists yet, not that one was missed. Nothing here is a backtest: every value is a forward observation after the study's publication. No study has a supported verdict; no order has been placed. Not advice.
 
 | Study | Kind | Records | Shadow lines | Next record due |
 |---|---|---|---|---|
@@ -102,7 +102,7 @@ No chart yet: the first shadow line follows the record after 30 Oct 2026.
 |---|---|
 | Monthly records | 2 |
 | Last record | 2026-10 from release 202609 |
-| Last release check | 27 Oct 2026 16:16Z: release 202609 kept |
+| Last release check | 27 Oct 2026 18:15Z: release 202609, not kept (already archived (one download per release)) |
 | Next record due | 2026-11, from release 202610 (not yet archived) |
 | Scoring | once, by `python -m src.forward010 score --release YYYYMM`, after 60 holding months (2026-09 to 2031-08), from the first archived release that contains 2031-08; a low-power check (detects a Sharpe of d of about 1.27 at 80% power); lateness is set at scoring from the commit time; `interim` gives months recorded, months with a return, cumulative T and B3 and the mean of d, without a t-statistic or verdict |
 
@@ -121,7 +121,7 @@ No equity line: positions are +1 (long) or −1 (short) per factor; the factor r
 |---|---|
 | Monthly records | 2 |
 | Last record | 2026-10 from release 202609 |
-| Last release check | 27 Oct 2026 16:16Z: release 202609 kept |
+| Last release check | 27 Oct 2026 18:15Z: release 202609, not kept (already archived (one download per release)) |
 | Next record due | 2026-11, from release 202610 (not yet archived) |
 | Scoring | once, by `python -m src.forward011 score --release YYYYMM`, after 60 holding months (2026-09 to 2031-08), from the first archived release that contains 2031-08; a low-power check (detects a Sharpe of d of about 1.27 at 80% power); lateness is set at scoring from the commit time; `interim` gives counts and the mean and sum of d without a t-statistic or verdict |
 

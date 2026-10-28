@@ -27,3 +27,7 @@ Run before the window so that a broken fetch does not surface on Friday night. N
 - One error of the check itself, disclosed: the first attempt called the 004/005 modules outside `reproduce.sh` and failed on the import path that `reproduce.sh` sets; the check was changed to go through each study's `reproduce.sh`, the path the run uses, and passed.
 
 What this does not show: that the decide steps work on October's data. That is first observed on Friday's run.
+
+## Pre-flight re-run, 2026-10-28 about 14:16–14:17 UTC (observed)
+
+Same script, same checks, two days before the window, because about 30 commits had landed since the first check. None of them touched a study's `src/`, `paper/` or `reproduce.sh`, the shared library or the pinned requirements (`git diff --stat f54e0dd..387f245` on those paths: empty). Every step exited as on 2026-10-27: the Alpaca IEF 2026-09 bars request and the FRED DGS10 request to 2026-09-30 exit 0 (into a temporary folder that was deleted, not kept); 003, 010 and 011 import; 004–008 refuse on the real clock with the same messages as above (step times 14:17:02Z–14:17:13Z). Git status, including ignored files, was unchanged. The bar and row counts of the two fetches were not kept this time (the run's log buffer kept only the later lines), so only their exit codes are stated. No October value was read.

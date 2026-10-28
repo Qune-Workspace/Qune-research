@@ -78,6 +78,11 @@ jobs:
       # (tools/check_glance.py; presence in the folder, not context).
       - name: front-page figures
         run: python tools/check_glance.py
+      # The committed paper dashboard matches a regeneration from the committed
+      # paper-log files (tools/check_dashboard.py; chart bytes not compared across
+      # machines, chart hashes checked against the committed manifest).
+      - name: paper dashboard current
+        run: python tools/check_dashboard.py
       # Line coverage of the shared library, tests excluded (pyproject.toml).
       # The floor is below the figure measured at adoption so that it catches
       # a drop, not a rounding.

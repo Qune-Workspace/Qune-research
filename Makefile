@@ -5,6 +5,7 @@
 #   make lint           ruff over the repository, mypy over the shared library,
 #                       relative Markdown links (tools/check_links.py), front-page
 #                       figures against the study folders (tools/check_glance.py)
+#                       and the paper dashboard against a regeneration (tools/check_dashboard.py)
 #   make coverage       line coverage of the shared library (tests excluded)
 #   make reproduce      the independent reviewers' recomputation of every published
 #                       statistic in Studies 003 to 006 and 011 from the committed
@@ -66,7 +67,7 @@ RECOMPUTE_RAW := research/001-slope-duration-switch \
 .PHONY: help venv test lint coverage reproduce reproduce-raw charts tearsheets dashboard clean
 
 help:
-	@sed -n '3,19p' $(firstword $(MAKEFILE_LIST))
+	@sed -n '3,21p' $(firstword $(MAKEFILE_LIST))
 
 venv:
 	python3 -m venv .venv
@@ -82,6 +83,7 @@ lint:
 	$(PYTHON) -m mypy
 	$(PYTHON) tools/check_links.py
 	$(PYTHON) tools/check_glance.py
+	$(PYTHON) tools/check_dashboard.py
 
 coverage:
 	cd qune_research && $(PYTHON) -m pytest -q --cov=qune_research --cov-config=../pyproject.toml --cov-report=term-missing

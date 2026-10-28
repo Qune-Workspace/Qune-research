@@ -1,4 +1,4 @@
-rows 11, prose result sections 2; decisive numbers 108, not found 0; integers 172
+rows 11, prose result sections 2, desk units 6 (22 sentences with numbers); decisive numbers 138, not found 0; integers 213
 001 pass: 6/6 decisive numbers found, 10/10 integers found, 11 files in research/001-slope-duration-switch
 002 pass: 2/2 decisive numbers found, 7/7 integers found, 16 files in research/002-slope-duration-switch-r
 003 pass: 5/5 decisive numbers found, 11/11 integers found, 21 files in research/003-bond-tsmom-ief
@@ -12,3 +12,25 @@ rows 11, prose result sections 2; decisive numbers 108, not found 0; integers 17
 011 pass: 10/10 decisive numbers found, 10/10 integers found, 19 files in research/011-industry-momentum-french-us
 Latest result (011) pass: 23/23 decisive numbers found, 46/46 integers found, 19 files in research/011-industry-momentum-french-us
 Previous result (010) pass: 20/20 decisive numbers found, 20/20 integers found, 19 files in research/010-factor-momentum-french-us
+desk point 1.s1 pass: 0/0 decisive numbers found, 1/1 integers found, 185 files in 001 + 002 + 003 + 004 + 005 + 006 + 007 + 008 + 009 + 010 + 011
+desk point 1.s4 pass: 2/2 decisive numbers found, 3/3 integers found, 19 files in 010
+desk point 1.s5 pass: 4/4 decisive numbers found, 2/2 integers found, 19 files in 011
+desk point 2.s1 pass: 0/0 decisive numbers found, 1/1 integers found, 64 files in 006 + 007 + 008 + tools/effect_lines.txt + RESEARCH_AGENDA.md + tools/fidelity_stocker.txt + tools/fidelity_gsw.txt
+desk point 2.s2 pass: 0/0 decisive numbers found, 8/8 integers found, 64 files in 006 + 007 + 008 + tools/effect_lines.txt + RESEARCH_AGENDA.md + tools/fidelity_stocker.txt + tools/fidelity_gsw.txt
+desk point 2.s3 pass: 3/3 decisive numbers found, 0/0 integers found, 64 files in 006 + 007 + 008 + tools/effect_lines.txt + RESEARCH_AGENDA.md + tools/fidelity_stocker.txt + tools/fidelity_gsw.txt
+desk point 2.s4 pass: 4/4 decisive numbers found, 2/2 integers found, 64 files in 006 + 007 + 008 + tools/effect_lines.txt + RESEARCH_AGENDA.md + tools/fidelity_stocker.txt + tools/fidelity_gsw.txt
+desk point 2.s6 pass: 0/0 decisive numbers found, 3/3 integers found, 64 files in 006 + 007 + 008 + tools/effect_lines.txt + RESEARCH_AGENDA.md + tools/fidelity_stocker.txt + tools/fidelity_gsw.txt
+desk point 2.s7 pass: 7/7 decisive numbers found, 4/4 integers found, 64 files in 006 + 007 + 008 + tools/effect_lines.txt + RESEARCH_AGENDA.md + tools/fidelity_stocker.txt + tools/fidelity_gsw.txt
+desk point 2.s8 pass: 0/0 decisive numbers found, 4/4 integers found, 64 files in 006 + 007 + 008 + tools/effect_lines.txt + RESEARCH_AGENDA.md + tools/fidelity_stocker.txt + tools/fidelity_gsw.txt
+desk point 3.s1 pass: 0/0 decisive numbers found, 1/1 integers found, 122 files in 003 + 004 + 005 + 006 + 007 + 008 + 009 + tools/power_first.txt + tools/power_pooled.txt
+desk point 3.s2 pass: 3/3 decisive numbers found, 0/0 integers found, 62 files in 006 + 007 + 008 + tools/power_first.txt + tools/power_pooled.txt
+desk point 3.s3 pass: 1/1 decisive numbers found, 0/0 integers found, 41 files in 003 + 004 + tools/power_first.txt + tools/power_pooled.txt
+desk point 3.s4 pass: 1/1 decisive numbers found, 0/0 integers found, 17 files in 005 + tools/power_first.txt + tools/power_pooled.txt
+desk point 3.s5 pass: 1/1 decisive numbers found, 2/2 integers found, 122 files in 003 + 004 + 005 + 006 + 007 + 008 + 009 + tools/power_first.txt + tools/power_pooled.txt
+desk point 3.s6 pass: 3/3 decisive numbers found, 0/0 integers found, 8 files in 009 + tools/power_first.txt + tools/power_pooled.txt
+desk point 4.s1 pass: 0/0 decisive numbers found, 1/1 integers found, 115 files in 003 + 004 + 005 + 006 + 007 + 008 + METHODS.md
+desk point 4.s2 pass: 0/0 decisive numbers found, 2/2 integers found, 115 files in 003 + 004 + 005 + 006 + 007 + 008 + METHODS.md
+desk point 4.s3 pass: 0/0 decisive numbers found, 3/3 integers found, 115 files in 003 + 004 + 005 + 006 + 007 + 008 + METHODS.md
+desk point 4.s4 pass: 0/0 decisive numbers found, 3/3 integers found, 115 files in 003 + 004 + 005 + 006 + 007 + 008 + METHODS.md
+desk point 5.s1 pass: 0/0 decisive numbers found, 1/1 integers found, 42 files in 003 + 011 + RESEARCH_AGENDA.md + RISK_PROPOSAL_DURATION_SLEEVES.md
+desk point 5.s7 pass: 1/1 decisive numbers found, 0/0 integers found, 23 files in 003 + RESEARCH_AGENDA.md + RISK_PROPOSAL_DURATION_SLEEVES.md

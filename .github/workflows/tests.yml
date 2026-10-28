@@ -73,7 +73,8 @@ jobs:
       - name: relative links
         run: python tools/check_links.py
       # Every decimal or % figure in the front page's "Results at a glance"
-      # table and Latest/Previous result sections appears, written the same way, in its study's notes or results
+      # table, Latest/Previous result sections and "What the desk knows" (sentence by sentence) appears,
+      # written the same way, in the notes or results of the studies it names or the files it links
       # (tools/check_glance.py; presence in the folder, not context).
       - name: front-page figures
         run: python tools/check_glance.py

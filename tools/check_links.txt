@@ -1,5 +1,5 @@
 Relative-link check of tracked Markdown files (tools/check_links.py)
 Markdown files: 131
-Relative links and anchors checked: 529
+Relative links and anchors checked: 530
 External links (not fetched): 2
 Broken: 0

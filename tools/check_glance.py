@@ -19,6 +19,15 @@ A number not found is a reader-path fault until a person shows where it
 comes from; the script never decides that a figure is right, only that the
 front page and the study folder say the same thing.
 
+Extension, 2026-10-28 12:2xZ (rule fixed before its first run): the same
+test now also covers the front page's prose result sections, every "## Latest
+result" and "## Previous result" section. Such a section is about one study;
+its folder is taken from the first `research/NNN-...` link in the section, and
+every number in the whole section (heading included, link targets stripped) is
+searched in that folder exactly as for a table row, with the same decisive
+rule. A section with no study link is a failure. "What the desk knows" is not
+covered: it cites many studies at once, so no single folder can be searched.
+
 Usage: python3 tools/check_glance.py [--readme README.md] [--out tools/check_glance.txt]
 Exit status 1 if any decisive number is not found.
 """
@@ -63,6 +72,34 @@ def glance_rows(readme: str) -> list[tuple[str, str, str]]:
     return rows
 
 
+SECTION_PREFIXES = ("## Latest result", "## Previous result")
+SECTION_LINK_RE = re.compile(r"\]\((research/\d{3}-[^/)#]+)")
+
+
+def result_sections(readme: str) -> list[tuple[str, str | None, str]]:
+    """(label, folder or None, section text) for every Latest/Previous result section."""
+    sections: list[tuple[str, str | None, str]] = []
+    current: list[str] | None = None
+    for line in readme.splitlines() + ["## end"]:
+        if line.startswith("## "):
+            if current is not None:
+                text = "\n".join(current)
+                m = SECTION_LINK_RE.search(text)
+                folder = m.group(1) if m else None
+                label = current[0][3:].split(":")[0].strip() + (f" ({folder.split('/')[1][:3]})" if folder else "")
+                sections.append((label, folder, text))
+            current = [line] if line.startswith(SECTION_PREFIXES) else None
+            continue
+        if current is not None:
+            current.append(line)
+    return sections
+
+
+def numbers_in_text(text: str) -> list[str]:
+    body = re.sub(r"\]\([^)]*\)", "]", text)
+    return [m.group(0) for m in NUM_RE.finditer(normalise(body))]
+
+
 def numbers_in(row: str) -> list[str]:
     cells = [c.strip() for c in row.strip().strip("|").split("|")]
     # Drop the study id cell (its link would match itself) and strip link targets.
@@ -90,10 +127,16 @@ def check(readme_path: Path) -> tuple[list[str], int]:
     if not rows:
         return ["no 'Results at a glance' rows found"], 1
     total_dec = total_int = 0
-    for study, folder, row in rows:
+    units: list[tuple[str, str | None, list[str]]] = [(study, folder, numbers_in(row)) for study, folder, row in rows]
+    sections = result_sections(readme_path.read_text(encoding="utf-8"))
+    units += [(label, folder, numbers_in_text(text)) for label, folder, text in sections]
+    for study, folder, tokens in units:
+        if folder is None:
+            failures += 1
+            lines.append(f"{study} FAIL: no research/NNN-... link in the section")
+            continue
         files = tracked_files(folder)
         corpus = "\n".join(normalise(p.read_text(encoding="utf-8", errors="replace")) for p in files)
-        tokens = numbers_in(row)
         missing_dec = [t for t in tokens if decisive(t) and not found(t, corpus)]
         missing_int = [t for t in tokens if not decisive(t) and not found(t, corpus)]
         n_dec = sum(decisive(t) for t in tokens)
@@ -112,7 +155,7 @@ def check(readme_path: Path) -> tuple[list[str], int]:
             lines.append(f"    not found (integer, reported only): {', '.join(missing_int)}")
     lines.insert(
         0,
-        f"rows {len(rows)}; decisive numbers {total_dec}, not found {failures}; integers {total_int}",
+        f"rows {len(rows)}, prose result sections {len(sections)}; decisive numbers {total_dec}, not found {failures}; integers {total_int}",
     )
     return lines, failures
 

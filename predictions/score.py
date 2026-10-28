@@ -10,8 +10,15 @@ Rules, in code and not only in prose:
 * A call is scored once.  A second attempt on a scored id is refused.
 * Scores go to ``outcomes.csv`` with the observed value, the date it was
   observed and the data file's hash; a miss is written like a hit.
-* "Due" means today is on or after ``due_on``; a value for the due date must
-  exist (the last valid observation on or before ``due_on`` is used and named).
+* "Due" means today is on or after ``due_on``.  A due call is scored only once
+  the fetched series reaches the due date: it must hold a row dated on or after
+  ``due_on`` (FRED writes a row with an empty value on holidays).  Until then
+  the call is reported as not yet published and left unscored, so a run made
+  before the day's print cannot score yesterday's value as today's.  When the
+  due date's own value is empty, the last valid observation before it is used
+  and named.  (Added 2026-10-28, before any call was scored: the first version
+  fell back to the last earlier observation even when the due date's row had
+  not been published yet.)
 
 Test kinds (the ``test`` column):
     eq_on_due                value on due date equals threshold_low (to 1e-9)
@@ -47,6 +54,10 @@ OUTCOME_COLUMNS = ["id", "scored_on", "observed_on", "observed_value", "result",
 TESTS = {"eq_on_due", "between_on_due", "below_on_due", "above_on_due", "within_every_day_until_due"}
 
 
+class NotYetPublished(ValueError):
+    """The series does not reach the due date yet; retry on a later day."""
+
+
 def read_ledger(path: Path = LEDGER) -> pd.DataFrame:
     ledger = pd.read_csv(path, dtype=str, keep_default_na=False)
     validate_ledger(ledger)
@@ -79,6 +90,9 @@ def evaluate(row: pd.Series, series: pd.Series) -> dict:
     made = pd.Timestamp(row["made_on"])
     low = float(row["threshold_low"])
     high = float(row["threshold_high"]) if row["threshold_high"] != "" else float("nan")
+    if series.empty or series.index.max() < due:
+        last = "no rows" if series.empty else f"last row {series.index.max().date()}"
+        raise NotYetPublished(f"{row['id']}: series does not reach the due date {due.date()} yet ({last})")
     valid = series.dropna()
     if valid.loc[:due].empty:
         raise ValueError(f"{row['id']}: no observation on or before {due.date()}")
@@ -175,7 +189,11 @@ def main() -> int:
             return qdata.fetch_fred(sid, RAW_DIR, MANIFEST)
 
         series = load_series(row["series"], fetch)
-        result = evaluate(row, series)
+        try:
+            result = evaluate(row, series)
+        except NotYetPublished as exc:
+            print(f"NOT SCORED: {exc}; retry on a later day")
+            continue
         record = {"id": row["id"], "scored_on": str(today.date()), **result,
                   "raw_sha256": ";".join(qdata.sha256_of(qdata.fred_path(sid, RAW_DIR)) for sid in fetched)}
         print(record)

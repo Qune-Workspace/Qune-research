@@ -104,9 +104,27 @@ def test_scorer_point_tests_hit_and_miss():
 
 
 def test_scorer_uses_last_observation_before_due_and_says_so():
-    s = pd.Series([4.25], pd.to_datetime(["2026-10-28"]))
+    # The due date's row exists with an empty value (a holiday): the last valid value is used and named.
+    s = pd.Series([4.25, np.nan], pd.to_datetime(["2026-10-28", "2026-10-29"]))
     out = score.evaluate(row(test="eq_on_due", threshold_low="4.25", threshold_high="", due_on="2026-10-29"), s)
     assert out["result"] == "hit" and out["observed_on"] == "2026-10-28" and "before the due date" in out["note"]
+    # A derived series drops empty days, so a later row also shows the due date has passed.
+    s2 = pd.Series([4.25, 4.25], pd.to_datetime(["2026-10-28", "2026-10-30"]))
+    assert score.evaluate(row(test="eq_on_due", threshold_low="4.25", threshold_high="", due_on="2026-10-29"),
+                          s2)["observed_on"] == "2026-10-28"
+
+
+def test_scorer_refuses_before_the_due_date_is_published():
+    # Run on the due date before the day's print: the series ends the day before.  The call must stay
+    # unscored, not be scored on the earlier value (V1 would have read 4.00 on 2026-10-28 as a miss).
+    s = pd.Series([4.00], pd.to_datetime(["2026-10-28"]))
+    with pytest.raises(score.NotYetPublished):
+        score.evaluate(row(test="eq_on_due", threshold_low="4.25", threshold_high="", due_on="2026-10-29"), s)
+    r = row(test="within_every_day_until_due", threshold_low="2.1", threshold_high="2.6", due_on="2026-11-04")
+    with pytest.raises(score.NotYetPublished):
+        score.evaluate(r, pd.Series(np.full(5, 2.3), days("2026-10-23", 5)))
+    with pytest.raises(score.NotYetPublished):
+        score.evaluate(row(), pd.Series(dtype=float))
 
 
 def test_scorer_within_every_day_fails_on_one_excursion():

@@ -39,6 +39,15 @@ not counted as numbers. Same decisive rule; a unit with a decisive number and
 an empty corpus fails. Limit, stated: the union is wider than one folder, so a
 figure attributed to the wrong study inside the same point still passes.
 
+Tightened, 2026-10-28 13:2xZ, after the negative control and before the
+tightened rule's first run on the README: the control showed the point-level
+union is too wide (point 1 names all eleven studies, so a changed t of 2.04 or
+a figure borrowed from another study still passed). Each point is now checked
+sentence by sentence: a sentence that names one or more studies is searched in
+those studies' folders plus every file the whole point links to; a sentence
+that names no study is searched in the point's full corpus as above. The
+point-level union rule ran once (all units passed) and is kept in BUILD_LOG.
+
 Usage: python3 tools/check_glance.py [--readme README.md] [--out tools/check_glance.txt]
 Exit status 1 if any decisive number is not found.
 """
@@ -144,6 +153,21 @@ def desk_sources(text: str, folders: dict[str, str]) -> list[str]:
     return sources
 
 
+SENTENCE_RE = re.compile(r"(?<=[.;])\s+(?=[A-Z*(\[])")
+
+
+def desk_sentence_units(label: str, text: str, folders: dict[str, str]) -> list[tuple[str, list[str], str]]:
+    """(label, sources, sentence) per sentence; see the 13:2xZ tightening in the docstring."""
+    point_sources = desk_sources(text, folders)
+    point_links = [t for t in FILE_LINK_RE.findall(text) if not t.startswith(("http://", "https://"))]
+    out: list[tuple[str, list[str], str]] = []
+    for i, sentence in enumerate(SENTENCE_RE.split(text), start=1):
+        named = [src for src in desk_sources(sentence, folders) if src.startswith("research/")]
+        sources = named + [t for t in point_links if t not in named] if named else point_sources
+        out.append((f"{label}.s{i}", sources, sentence))
+    return out
+
+
 def strip_study_ids(text: str) -> str:
     return STUDY_ID_RE.sub(" ", text)
 
@@ -188,9 +212,16 @@ def check(readme_path: Path) -> tuple[list[str], int]:
     if not desk:
         return ["no 'What the desk knows' points found"], 1
     desk_corpus: dict[str, list[str]] = {}
+    n_sentences = 0
     for label, text in desk:
-        desk_corpus[label] = desk_sources(text, folders)
-        units.append((label, " + ".join(desk_corpus[label]) or None, numbers_in_text(strip_study_ids(text))))
+        for slabel, sources, sentence in desk_sentence_units(label, text, folders):
+            tokens = numbers_in_text(strip_study_ids(sentence))
+            if not tokens:
+                continue
+            n_sentences += 1
+            desk_corpus[slabel] = sources
+            short = " + ".join(src.split("/")[1][:3] if src.startswith("research/") else src for src in sources)
+            units.append((slabel, short or None, tokens))
     for study, folder, tokens in units:
         if folder is None:
             if study.startswith("desk") and not any(decisive(t) for t in tokens):
@@ -219,7 +250,7 @@ def check(readme_path: Path) -> tuple[list[str], int]:
             lines.append(f"    not found (integer, reported only): {', '.join(missing_int)}")
     lines.insert(
         0,
-        f"rows {len(rows)}, prose result sections {len(sections)}, desk units {len(desk)}; decisive numbers {total_dec}, not found {failures}; integers {total_int}",
+        f"rows {len(rows)}, prose result sections {len(sections)}, desk units {len(desk)} ({n_sentences} sentences with numbers); decisive numbers {total_dec}, not found {failures}; integers {total_int}",
     )
     return lines, failures
 

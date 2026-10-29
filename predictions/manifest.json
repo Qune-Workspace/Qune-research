@@ -1,4 +1,15 @@
 {
+  "fred_DFEDTARU.csv": {
+    "downloaded_at_utc": "2026-10-29T13:16:28Z",
+    "first_bar": "2008-12-16",
+    "last_bar": "2026-10-29",
+    "last_valid": "2026-10-29",
+    "rows": 6527,
+    "series_id": "DFEDTARU",
+    "sha256": "b2e6184f413720b12ceb0e7ca835bc9db3f75866a182d0516952c21347a2873e",
+    "source": "FRED (fredgraph.csv)",
+    "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=DFEDTARU"
+  },
   "fred_DGS10.csv": {
     "downloaded_at_utc": "2026-10-25T08:21:41Z",
     "first_bar": "1962-01-02",

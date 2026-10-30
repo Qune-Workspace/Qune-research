@@ -59,7 +59,9 @@ def _study_003_raw_files_present() -> bool:
     return all(sha256_of(raw / n) == recorded[n]["sha256"] for n in ("tiingo_IEF_daily.csv", "fred_DTB3.csv"))
 
 
-@pytest.mark.skipif(not _study_003_raw_files_present(), reason="Study 003's raw files are not on this machine (CI)")
+@pytest.mark.skipif(not _study_003_raw_files_present() or not STUDY_003_INSAMPLE_MONTHLY.exists(),
+                    reason="Study 003's raw files are not on this machine (CI), or its in-sample monthly file is not in the tree "
+                           "(vendor-derived series removed on 2026-10-30, tools/vendor_series_removed.md): regenerate it first")
 def test_i_b2_reproduces_study_003_insample_to_1e10():
     """(i): the ported unconditional rule on Study 003's own files reproduces
     its committed in-sample T1 column (and B0, B1, B3) to 1e-10.  Reads the

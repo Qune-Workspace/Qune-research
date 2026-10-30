@@ -90,9 +90,11 @@ jobs:
         working-directory: qune_research
         run: python -m pytest -q --cov=qune_research --cov-config=../pyproject.toml --cov-report=term-missing --cov-fail-under=90
 
-  # The independent reviewers' recomputation of every published statistic in
-  # Studies 003 to 006 and 011 from the committed result files, then the headline t of
-  # Studies 006-008 from their committed monthly files (`make reproduce`).
+  # The independent reviewers' recomputation from the committed result files
+  # (`make reproduce`): Study 011's script and the headline t of Studies 006-008
+  # from their committed history files run here; the scripts of Studies 003 to
+  # 006 read vendor-derived series removed from the tree on 2026-10-30
+  # (tools/vendor_series_removed.md) and are skipped with that reason.
   # No vendor data, credentials or approval file: rows that need the raw files
   # are reported as "not checked".  The job fails only when a script does not
   # run to its summary line; the last-digit README mismatches disclosed in the

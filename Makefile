@@ -8,8 +8,12 @@
 #                       and the paper dashboard against a regeneration (tools/check_dashboard.py)
 #   make coverage       line coverage of the shared library (tests excluded)
 #   make reproduce      the independent reviewers' recomputation of every published
-#                       statistic in Studies 003 to 006 and 011 from the committed
-#                       result files, then tools/effect_lines.py for 006-008's t
+#                       statistic from the committed result files: Study 011's
+#                       script and tools/effect_lines.py (006-008's headline t) run
+#                       as committed; the scripts of Studies 003 to 006 read
+#                       vendor-derived series removed from the tree on 2026-10-30
+#                       (tools/vendor_series_removed.md) and are skipped with that
+#                       reason until a reader regenerates the files
 #   make reproduce-raw  the same for Studies 001, 002, 007, 008 and 010, whose
 #                       scripts need the raw data files in data/raw/ (not committed)
 #   make charts         redraw every chart from the committed result files
@@ -41,9 +45,11 @@ STUDIES := research/001-slope-duration-switch \
            research/011-industry-momentum-french-us
 SUITES  := $(STUDIES) qune_research desk-view
 
-# review_recompute.py scripts that run from the committed outputs alone.  Rows
-# that need the raw vendor files are reported as "not checked" when data/raw/
-# is absent.  Studies 004 and 005 exit 1 by design: their reviews found README
+# review_recompute.py scripts that ran from the committed outputs alone until
+# 2026-10-30, when the vendor-derived monthly, index and signal files they read
+# were removed from the tree (tools/vendor_series_removed.md); the target now
+# skips a study whose input is absent and says so.  Rows that need the raw
+# vendor files are reported as "not checked" when data/raw/ is absent.  Studies 004 and 005 exit 1 by design: their reviews found README
 # figures one unit off in the last printed digit, disclosed and answered in
 # REVIEW.md, and the scripts still count them as mismatches.
 RECOMPUTE     := research/003-bond-tsmom-ief \
@@ -94,6 +100,11 @@ coverage:
 reproduce:
 	@set -e; failed=0; \
 	for d in $(RECOMPUTE); do \
+	  case $$d in *003*|*005*) need=results/insample/monthly_base.csv;; *004*) need=results/insample/daily_index_10assets.csv;; *006*) need=results/episode/actual/monthly_base.csv;; *) need=;; esac; \
+	  if [ -n "$$need" ] && [ ! -f $$d/$$need ]; then \
+	    echo "== $$d: not run: $$need is not in the tree (vendor-derived series removed on 2026-10-30, see tools/vendor_series_removed.md); regenerate it with the study's reproduce.sh under your own vendor licence, then run review_recompute.py"; \
+	    continue; \
+	  fi; \
 	  echo "== $$d: the reviewer's recomputation from the committed result files"; \
 	  out=$$(cd $$d && $(PYTHON) -I review_recompute.py 2>&1) && code=0 || code=$$?; \
 	  if printf '%s\n' "$$out" | grep -q -E '^(Rows: [0-9]+|[0-9]+ rows:)'; then \

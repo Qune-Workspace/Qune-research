@@ -14,6 +14,11 @@ script exits 1 on any difference above 1e-9.  The manifest records the
 SHA-256 of every input and the git commit it ran at.
 
 Run from the repository root:  .venv/bin/python tools/make_tearsheets.py
+
+Since 2026-10-30 the monthly input files are not in the tree (vendor-derived
+series, ``tools/vendor_series_removed.md``).  A sheet whose input is absent is
+reported and left as committed, with its manifest entry carried over; the
+manifest is rewritten only when at least one sheet was rebuilt.
 """
 
 from __future__ import annotations
@@ -154,7 +159,17 @@ def main() -> int:
     manifest: dict = {"generated_utc": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"), "commit": git_head(),
                       "tolerance": TOL, "sheets": []}
     failures = 0
+    previous = json.loads((OUT / "manifest.json").read_text()) if (OUT / "manifest.json").exists() else {"sheets": []}
+    carried = {s["stem"]: s for s in previous.get("sheets", [])}
+    rebuilt = 0
     for spec in SHEETS:
+        if not (ROOT / spec["monthly"]).exists():
+            print(f"{spec['stem']}: not rebuilt: {spec['monthly']} is not in the tree (vendor-derived series removed on "
+                  "2026-10-30, tools/vendor_series_removed.md); the committed sheet stands")
+            if spec["stem"] in carried:
+                manifest["sheets"].append(carried[spec["stem"]])
+            continue
+        rebuilt += 1
         monthly = load_monthly(spec)
         inputs = {spec["monthly"]: sha256(ROOT / spec["monthly"]), spec["metrics"]: sha256(ROOT / spec["metrics"])}
         sheet = report.build(monthly, spec["strategy"], spec["benchmarks"], cash=spec["cash"],
@@ -178,8 +193,11 @@ def main() -> int:
         })
         print(f"{spec['stem']}: {sheet.headline}")
         print(f"    checked {len(checks)} metrics against {spec['metrics']}: {n_bad} mismatches")
+    if rebuilt == 0:
+        print(f"\n{len(SHEETS)} sheets, none rebuilt; the committed sheets and manifest stand.")
+        return 0
     (OUT / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
-    print(f"\n{len(SHEETS)} sheets; {failures} mismatches against the committed metrics files; manifest written.")
+    print(f"\n{len(SHEETS)} sheets, {rebuilt} rebuilt; {failures} mismatches against the committed metrics files; manifest written.")
     return 1 if failures else 0
 
 

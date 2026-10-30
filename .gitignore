@@ -23,3 +23,15 @@ research/011-industry-momentum-french-us/paper-log/*.lock
 **/results/forward/*.lock
 **/results/forward/*.tmp
 **/paper-log/releases/*.tmp
+
+# Vendor-derived series removed from the tree on 2026-10-30 (tools/vendor_series_removed.md):
+# a reader's regenerated copies stay local.
+research/003-bond-tsmom-ief/results/insample/monthly_*.csv
+research/003-bond-tsmom-ief/results/oos/monthly_*.csv
+research/004-xasset-trend-voltarget/results/*/daily_index_*.csv
+research/004-xasset-trend-voltarget/results/insample/signal_*.csv
+research/005-duration-trend-regime/results/insample/monthly_*.csv
+research/005-duration-trend-regime/results/episode/monthly_*.csv
+research/006-term-spread-switch-long-history/results/episode/actual/monthly_*.csv
+research/007-bond-carry-tilt-long-history/results/episode/actual/monthly_*.csv
+research/008-bond-value-tilt-long-history/results/episode/actual/monthly_*.csv

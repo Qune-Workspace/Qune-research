@@ -231,32 +231,6 @@
         "change_bp": 54.910000000000004
       }
     ],
-    "BAMLH0A0HYM2": [
-      {
-        "lookback": "now",
-        "observed_on": "2026-10-21",
-        "value_pct": 3.27,
-        "change_bp": 0.0
-      },
-      {
-        "lookback": "1m",
-        "observed_on": "2026-09-23",
-        "value_pct": 2.73,
-        "change_bp": 54.0
-      },
-      {
-        "lookback": "3m",
-        "observed_on": "2026-07-23",
-        "value_pct": 2.77,
-        "change_bp": 50.0
-      },
-      {
-        "lookback": "1y",
-        "observed_on": "2025-10-23",
-        "value_pct": 2.96,
-        "change_bp": 31.000000000000007
-      }
-    ],
     "VIXCLS": [
       {
         "lookback": "now",
@@ -343,8 +317,7 @@
     "DFEDTARU": "Federal funds target range, upper limit, percent",
     "DFEDTARL": "Federal funds target range, lower limit, percent",
     "THREEFYTP10": "10-year term premium, Kim-Wright three-factor model, percent",
-    "BAMLH0A0HYM2": "ICE BofA US High Yield option-adjusted spread, percent",
-    "SP500": "S&P 500 index level (FRED carries the last ten years)",
     "VIXCLS": "CBOE VIX, close"
-  }
+  },
+  "withheld_2026-10-30": "SP500 and BAMLH0A0HYM2 removed from this file on 2026-10-30: FRED's notes for both series forbid reproduction without the data owner's permission (tools/intraday_source_check.md); the original file is at b1a6650"
 }

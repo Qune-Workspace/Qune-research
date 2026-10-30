@@ -149,7 +149,17 @@ def growth_chart(window: str, idx: pd.DataFrame, met: pd.DataFrame, numbers: dic
     return svg
 
 
+REQUIRED = [STUDY / "results" / w / "daily_index_10assets.csv" for w in ("insample", "oos")]
+
+
 def main() -> None:
+    missing = [p for p in REQUIRED if not p.exists()]
+    if missing:
+        for p in missing:
+            print(f"not redrawn: {p.relative_to(ROOT)} is not in the tree (vendor-derived series removed on 2026-10-30, "
+                  "tools/vendor_series_removed.md); regenerate it with reproduce.sh under your own vendor licence")
+        print("the committed charts and manifest stand")
+        return
     numbers: dict = {}
     inputs: dict[str, str] = {}
     outputs: list[str] = []

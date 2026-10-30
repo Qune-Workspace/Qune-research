@@ -235,7 +235,17 @@ def cash_check_chart(numbers: dict) -> tuple[Path, dict[str, str]]:
     return svg, {str(path.relative_to(ROOT)): sha256(path)}
 
 
+REQUIRED = [STUDY / "results" / w / "monthly_base.csv" for w in ("insample", "oos")]
+
+
 def main() -> None:
+    missing = [p for p in REQUIRED if not p.exists()]
+    if missing:
+        for p in missing:
+            print(f"not redrawn: {p.relative_to(ROOT)} is not in the tree (vendor-derived series removed on 2026-10-30, "
+                  "tools/vendor_series_removed.md); regenerate it with reproduce.sh under your own vendor licence")
+        print("the committed charts and manifest stand")
+        return
     numbers: dict = {}
     inputs: dict[str, str] = {}
     outputs: list[str] = []

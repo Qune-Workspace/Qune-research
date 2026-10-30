@@ -80,6 +80,18 @@ TENORS = {"3m": "DGS3MO", "2y": "DGS2", "10y": "DGS10", "30y": "DGS30"}
 LOOKBACKS = {"1m": pd.DateOffset(months=1), "3m": pd.DateOffset(months=3), "1y": pd.DateOffset(years=1)}
 CHANGE_SERIES = ("DGS3MO", "DGS2", "DGS10", "DGS30", "DFII10", "T10YIE", "T5YIFR", "THREEFYTP10", "BAMLH0A0HYM2",
                  "VIXCLS")
+# Series whose FRED notes forbid reproduction without the owner's permission (tools/intraday_source_check.md).
+# From the view of 2026-10-30 their levels are not written to the committed numbers or snapshot files while the
+# owner's licence decision is open; they are still read (SP500 feeds the correlation proxy, a derived statistic).
+# Views dated before 2026-10-30 keep the files they were published with, so --charts-only still reproduces them.
+NO_REPRODUCTION = ("BAMLH0A0HYM2", "SP500")
+NO_REPRODUCTION_FROM = pd.Timestamp("2026-10-30")
+
+
+def change_series(asof: pd.Timestamp) -> tuple[str, ...]:
+    if asof < NO_REPRODUCTION_FROM:
+        return CHANGE_SERIES
+    return tuple(sid for sid in CHANGE_SERIES if sid not in NO_REPRODUCTION)
 
 
 def sha256(path: Path) -> str:
@@ -115,7 +127,7 @@ def verify_raw_against_manifest() -> dict[str, str]:
 def compute_numbers(s: dict[str, pd.Series], asof: pd.Timestamp) -> tuple[dict, pd.Series]:
     """Every number the note quotes, plus the correlation series the chart draws."""
     curve = vl.curve_snapshot({t: s[c] for t, c in TENORS.items()}, asof)
-    changes = {sid: vl.change_table(s[sid], asof, LOOKBACKS) for sid in CHANGE_SERIES}
+    changes = {sid: vl.change_table(s[sid], asof, LOOKBACKS) for sid in change_series(asof)}
     nominal = vl.last_valid_on_or_before(s["DGS10"], asof)
     real = vl.last_valid_on_or_before(s["DFII10"], nominal[0])
     bei = vl.last_valid_on_or_before(s["T10YIE"], nominal[0])
@@ -394,6 +406,8 @@ def main() -> int:
     rows = []
     for sid in SERIES:
         d, v = vl.last_valid_on_or_before(s[sid], asof)
+        if sid in NO_REPRODUCTION and asof >= NO_REPRODUCTION_FROM:
+            v = None  # level withheld; see NO_REPRODUCTION
         rows.append({"series": sid, "observed_on": str(d.date()), "value": v, "what": SERIES[sid]})
     pd.DataFrame(rows).to_csv(HERE / "data" / f"snapshot_{asof.date()}.csv", index=False)
     numbers_path.write_text(json.dumps(numbers, indent=2) + "\n")

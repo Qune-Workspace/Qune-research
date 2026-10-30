@@ -47,6 +47,14 @@ Methods (the ``method`` column), chosen by the series and test of the call:
 
 Horizon h counts weekdays from ``asof`` (exclusive) to ``due_on`` (inclusive);
 holidays are not removed (a one- or two-day overstatement of h, disclosed).
+
+Discipline after the V1 miss (2026-10-30, see POST_MORTEMS.md): for calls made on or
+after 2026-10-30 the baseline row is computed before the confidence is written and
+committed with the call; a confidence more than 0.20 from the baseline names the
+baseline and what the market is missing in the basis.  ``max_policy_spread`` is the
+check a front-end reading must pass before a bill spread is called expectations.
+``desk-view/tests/test_ledger_discipline.py`` enforces the first two rules on the
+committed files.
 """
 from __future__ import annotations
 
@@ -161,6 +169,22 @@ def bill_implied_hike_probability(bill: float, funds: float, bill_days: int, day
         raise ValueError("the meeting must fall inside the bill's life")
     implied = (bill - funds) * bill_days / (bill_days - days_to_meeting) / step
     return float(min(1.0, max(0.0, implied)))
+
+
+def max_policy_spread(bill_days: int, days_to_meetings: list[int], step: float = HIKE_STEP) -> float:
+    """The largest bill-minus-funds spread (percentage points) that policy alone can
+    explain: one full ``step`` at every meeting inside the bill's life, each weighted
+    by the share of the bill's life that follows it.  Any spread above this figure is
+    premium (term, supply, bill-funds basis), not expectations.
+
+    Added 2026-10-30 after the V1 miss: on 2026-10-21 the 3-month bill sat 37 bp over
+    funds with the 28 October and 9 December meetings inside its life; two full hikes
+    would have produced at most 34.6 bp, so the desk's reading of the spread as 'one
+    hike plus part of another' was arithmetically impossible as policy content."""
+    if bill_days <= 0:
+        raise ValueError("bill_days must be positive")
+    inside = [t for t in days_to_meetings if 0 < t < bill_days]
+    return float(sum(step * (bill_days - t) / bill_days for t in inside))
 
 
 def persistence_base_rate(series: pd.Series, threshold: float, above_now: bool, horizon_obs: int) -> float:

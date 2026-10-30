@@ -73,6 +73,20 @@ def test_bill_implied_hike_probability_scales_and_clips():
         bl.bill_implied_hike_probability(4.0, 3.88, 28, 30)
 
 
+def test_max_policy_spread_bounds_the_v1_reading():
+    # V1, 2026-10-21: 3-month bill, meetings 7 and 49 days out; two full hikes = 34.6 bp
+    bound = bl.max_policy_spread(91, [7, 49])
+    assert bound == pytest.approx(0.25 * (84 / 91 + 42 / 91))
+    assert 0.37 > bound  # the spread the desk read as 'one hike plus part of another'
+    # the 4-week bill holds one meeting; a meeting past the bill's maturity does not count
+    assert bl.max_policy_spread(28, [7, 49]) == pytest.approx(0.25 * 21 / 28)
+    assert bl.max_policy_spread(28, [30]) == 0.0
+    # consistent with the single-meeting probability: a spread at the bound implies p = 1
+    assert bl.bill_implied_hike_probability(3.88 + bl.max_policy_spread(28, [7]), 3.88, 28, 7) == pytest.approx(1.0)
+    with pytest.raises(ValueError):
+        bl.max_policy_spread(0, [7])
+
+
 def test_persistence_base_rate_on_constructed_regimes():
     # 100 days positive, 100 negative, repeated: ten steps ahead stays on the same side 90% of the time
     values = np.tile(np.r_[np.ones(100), -np.ones(100)], 3)

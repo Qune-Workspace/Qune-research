@@ -26,6 +26,8 @@ Scope note (not part of the licence terms above)
 
 The licence covers the code and the documents in this repository. It does not
 cover vendor market data, which the scripts fetch under the reader's own
-licence and which is never committed here. Nothing in this repository is
+licence and which is never committed here; series computed from vendor
+prices were removed from the current tree on 2026-10-30 and are regenerated
+by the scripts (tools/vendor_series_removed.md). Nothing in this repository is
 investment advice, an offer, or a track record: every figure is a backtest or
 a paper-account observation, published with its trial count and its failures.

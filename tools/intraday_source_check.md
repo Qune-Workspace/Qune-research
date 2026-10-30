@@ -342,3 +342,12 @@ new work, statistics only. The front page's line is corrected this run.
 *Dated addition, 2026-10-28 03:4xZ (the paragraph above is unchanged):* with the VIX note now read
 ("Copyrighted: Citation Required", no reproduction ban), the recommendation narrows to (c) for **two**
 single FRED values, the S&P 500 level and the ICE high-yield OAS rows; the VIX level stays, cited.
+
+## Executed (2026-10-30, 17:02Z; the sections above are unchanged)
+
+Qune's decision of 2026-10-30, taken because it only reduces exposure and is reversible from git while the owner's
+question of 28 October stayed open: choice (c) for the Tiingo- and Alpaca-derived series (26 files removed from the
+tree, listed with hashes in `vendor_series_removed.md`; Study 004's out-of-sample signal files follow after a reviewed
+change to its forward code) and choice (c) for the two FRED values (the S&P 500 level and the ICE high-yield OAS rows
+withheld from the archived 2026-10-23 snapshot, numbers file and table; the VIX stays, cited). The French tables stay
+under (a), cited; that question and Study 012's aggregates question are unchanged and remain the owner's.

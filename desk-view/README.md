@@ -1,6 +1,6 @@
 # Desk view
 
-A dated rates-and-macro view from public data, updated weekly, ending in falsifiable calls that are logged in [`../predictions/`](../predictions/) before the outcome and scored there when due.
+A dated rates-and-macro view from public data, updated weekly, ending in falsifiable calls that are logged in [`../predictions/`](../predictions/) before the outcome and scored there when due. Misses get a post-mortem in [`../predictions/POST_MORTEMS.md`](../predictions/POST_MORTEMS.md); the rules it produced (baseline before confidence, nearest instrument, Brier against the baseline in every view) are in the predictions README and tested in `tests/test_ledger_discipline.py`.
 
 - [`DESK_VIEW.md`](DESK_VIEW.md): the current view. Earlier views are kept under `archive/<date>/` once superseded, with the charts and data manifest of their build; the text is unchanged except relative link targets, re-pointed for the folder (the byte-identical original stays in git).
 - `build_view.py`: fetches the FRED series, writes `data/snapshot_<date>.csv` and `data/numbers_<date>.json` (every number the note quotes) and the four charts in `charts/`. `view_lib.py` holds the definitions (curve snapshot, 10-year decomposition, stock-bond correlation proxy, market-implied path) as pure functions, and the wording rules that choose each chart's title from the numbers; `tests/` checks them and the prediction scorer on constructed series.

@@ -32,3 +32,14 @@ Every input, the observation dates and the hash of each file used are in the row
 ## Scoring waits for the due date's print (dated addition, 2026-10-28)
 
 Found before any call was scored: `score.py` treated a call as due on its due date and, when the fetched series had no value for that date, used the last earlier observation. Run on 2026-10-29 before FRED posts that day's row, it would have scored V1 on the 2026-10-28 value (upper limit 4.00%, the day of the decision) and written a permanent miss, since a call is scored once. A dry run on a throwaway copy with the live FRED file at about 17:25Z on 2026-10-28 (`--today 2026-10-29`, series ending 2026-10-28) did exactly that. The scorer now requires the series to hold a row dated on or after the due date (FRED writes an empty row on holidays; the derived correlation series drops empty days, so a later row counts); until then it prints `NOT SCORED ... retry on a later day` and writes nothing. The same dry run with the fix refused V1. When the due date's own value is empty, the last valid value before it is still used and named. No ledger row, threshold or due date changed; `outcomes.csv` does not exist yet.
+
+## Rules after the first miss (dated addition, 2026-10-30)
+
+V1 (a 28 October hike at 0.70) missed; the baseline had it at 0.21. The post-mortem is in [`POST_MORTEMS.md`](POST_MORTEMS.md): the desk read a 37 bp 3-month bill spread as "one hike plus part of another" when two full hikes could have produced at most 34.6 bp of it, and never looked at the 4-week bill, which carried the October meeting alone and showed a fifth of a hike. From this date:
+
+- **Baseline before confidence.** The baseline row is computed on the draft call (`baseline.py --asof <view date> --ids <id> --dry-run`) before the confidence is written, and committed with the call. A confidence more than 0.20 from the baseline names the baseline in the basis and says, in one testable sentence, what the market is missing.
+- **Nearest instrument.** A meeting is read off the bill maturing soonest after it. A longer bill's spread is decomposed across every meeting inside its life and compared with `baseline.max_policy_spread`; the excess is premium and is called premium. The recent bill-funds basis is quoted beside the reading.
+- **Brier every week.** Each desk view reports the desk's and the baseline's Brier scores and the number of scored calls from `SKILL.md`.
+- **The no-change path is a named downside** of every policy call.
+
+The first two rules are enforced on the committed files by [`../desk-view/tests/test_ledger_discipline.py`](../desk-view/tests/test_ledger_discipline.py) for calls made on or after 2026-10-30; the five calls of 2026-10-23 are exempt and stand as logged.

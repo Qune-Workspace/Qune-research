@@ -1,0 +1,22 @@
+{
+  "drawdown": null,
+  "equity_close": null,
+  "execution_date": "2026-11-02",
+  "holding_before": "BIL",
+  "mom": -0.051337343507075306,
+  "notes": "",
+  "orders": [],
+  "peak_equity": null,
+  "run_at_utc": "2026-10-31T06:18:34Z",
+  "signal_date": "2026-10-30",
+  "status": "ok",
+  "strategy_id": "study003-tsmom-ief-bil",
+  "strategy_version": "1",
+  "switch": false,
+  "t12_date": "2025-10-31",
+  "target": "BIL",
+  "tri_cash_t": 1.1284764952005906,
+  "tri_cash_t12": 1.088604479448683,
+  "tri_ief_t": 1.0593396444239205,
+  "tri_ief_t12": 1.075155853151697
+}

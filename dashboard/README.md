@@ -1,12 +1,12 @@
 # Paper dashboard: the forward records, as committed
 
-Generated 2026-10-28T15:18:06Z from the files at commit `a09eb9c` by `tools/make_paper_dashboard.py`. Each study's forward code writes its own record once a month and never rewrites it; this page only counts and draws what is on disk at generation time, so an empty row means no record exists yet, not that one was missed. Nothing here is a backtest: every value is a forward observation after the study's publication. No study has a supported verdict; no order has been placed. Not advice.
+Generated 2026-10-31T06:20:06Z from the files at commit `b7a399b` by `tools/make_paper_dashboard.py`. Each study's forward code writes its own record once a month and never rewrites it; this page only counts and draws what is on disk at generation time, so an empty row means no record exists yet, not that one was missed. Nothing here is a backtest: every value is a forward observation after the study's publication. No study has a supported verdict; no order has been placed. Not advice.
 
 | Study | Kind | Records | Shadow lines | Next record due |
 |---|---|---|---|---|
-| Study 003 | paper sleeve, not supported; paper record of a not-supported rule; orders only once Independent Risk clears the sleeve | 0 | 0 | 30 Oct 2026 |
-| Study 004 | shadow record, not supported; no paper order | 0 | 0 | 30 Oct 2026 |
-| Study 005 | shadow record, refuted in-sample; no paper order | 0 | 0 | 30 Oct 2026 |
+| Study 003 | paper sleeve, not supported; paper record of a not-supported rule; orders only once Independent Risk clears the sleeve | 1 | 0 | 30 Nov 2026 |
+| Study 004 | shadow record, not supported; no paper order | 1 | 0 | 30 Nov 2026 |
+| Study 005 | shadow record, refuted in-sample; no paper order | 1 | 0 | 30 Nov 2026 |
 | Study 006 | shadow record, inconclusive (fragile) on 1969–2018; forward record, scored once after 60 periods; no paper order | 0 | 0 | 30 Oct 2026 |
 | Study 007 | shadow record, inconclusive (fragile) on 1974–2018; forward record, scored once after 60 periods; no paper order | 0 | 0 | 30 Oct 2026 |
 | Study 008 | shadow record, not supported on 1974–2018; forward record, scored once after 60 periods; no paper order | 0 | 0 | 30 Oct 2026 |
@@ -19,15 +19,19 @@ Generated 2026-10-28T15:18:06Z from the files at commit `a09eb9c` by `tools/make
 
 | | |
 |---|---|
-| Decision records | 0 |
-| Last record | none yet |
+| Decision records | 1 |
+| Last record | 2026-10-30 (ok) |
 | Shadow lines (holding periods ended) | 0 |
-| Next record due (signal date) | 30 Oct 2026 |
+| Next record due (signal date) | 30 Nov 2026 |
 | Execution records (orders) | 0 |
 | Runner lines in runs.jsonl | 1 |
 | Daily stop-check lines | 0 |
 
-No chart yet: the first shadow line follows the record after 30 Oct 2026.
+| Signal date | Execution date | Status | Target |
+|---|---|---|---|
+| 2026-10-30 | 2026-11-02 | ok | BIL |
+
+No chart yet: the first shadow line follows the record after 30 Nov 2026.
 
 ## Study 004 (shadow record)
 
@@ -35,12 +39,16 @@ No chart yet: the first shadow line follows the record after 30 Oct 2026.
 
 | | |
 |---|---|
-| Decision records | 0 |
-| Last record | none yet |
+| Decision records | 1 |
+| Last record | 2026-10-30 (ok) |
 | Shadow lines (holding periods ended) | 0 |
-| Next record due (signal date) | 30 Oct 2026 |
+| Next record due (signal date) | 30 Nov 2026 |
 
-No chart yet: the first shadow line follows the record after 30 Oct 2026.
+| Signal date | Execution date | Status | Target |
+|---|---|---|---|
+| 2026-10-30 | 2026-11-02 | ok | none |
+
+No chart yet: the first shadow line follows the record after 30 Nov 2026.
 
 ## Study 005 (shadow record)
 
@@ -48,12 +56,16 @@ No chart yet: the first shadow line follows the record after 30 Oct 2026.
 
 | | |
 |---|---|
-| Decision records | 0 |
-| Last record | none yet |
+| Decision records | 1 |
+| Last record | 2026-10-30 (ok) |
 | Shadow lines (holding periods ended) | 0 |
-| Next record due (signal date) | 30 Oct 2026 |
+| Next record due (signal date) | 30 Nov 2026 |
 
-No chart yet: the first shadow line follows the record after 30 Oct 2026.
+| Signal date | Execution date | Status | Target |
+|---|---|---|---|
+| 2026-10-30 | 2026-11-02 | ok | none |
+
+No chart yet: the first shadow line follows the record after 30 Nov 2026.
 
 ## Study 006 (shadow record)
 
@@ -102,7 +114,7 @@ No chart yet: the first shadow line follows the record after 30 Oct 2026.
 |---|---|
 | Monthly records | 2 |
 | Last record | 2026-10 from release 202609 |
-| Last release check | 27 Oct 2026 18:15Z: release 202609, not kept (already archived (one download per release)) |
+| Last release check | 31 Oct 2026 06:19Z: release 202609, not kept (already archived (one download per release)) |
 | Next record due | 2026-11, from release 202610 (not yet archived) |
 | Scoring | once, by `python -m src.forward010 score --release YYYYMM`, after 60 holding months (2026-09 to 2031-08), from the first archived release that contains 2031-08; a low-power check (detects a Sharpe of d of about 1.27 at 80% power); lateness is set at scoring from the commit time; `interim` gives months recorded, months with a return, cumulative T and B3 and the mean of d, without a t-statistic or verdict |
 
@@ -121,7 +133,7 @@ No equity line: positions are +1 (long) or −1 (short) per factor; the factor r
 |---|---|
 | Monthly records | 2 |
 | Last record | 2026-10 from release 202609 |
-| Last release check | 27 Oct 2026 18:15Z: release 202609, not kept (already archived (one download per release)) |
+| Last release check | 31 Oct 2026 06:19Z: release 202609, not kept (already archived (one download per release)) |
 | Next record due | 2026-11, from release 202610 (not yet archived) |
 | Scoring | once, by `python -m src.forward011 score --release YYYYMM`, after 60 holding months (2026-09 to 2031-08), from the first archived release that contains 2031-08; a low-power check (detects a Sharpe of d of about 1.27 at 80% power); lateness is set at scoring from the commit time; `interim` gives counts and the mean and sum of d without a t-statistic or verdict |
 

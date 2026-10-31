@@ -1,0 +1,93 @@
+{
+  "alpaca_BIL_1Day_all.csv": {
+    "downloaded_at_utc": "2026-10-31T06:18:58Z",
+    "first_bar": "2026-09-01",
+    "last_bar": "2026-10-30",
+    "params": {
+      "adjustment": "all",
+      "end": "2026-10-31T06:03:58Z",
+      "feed": "sip",
+      "limit": 10000,
+      "start": "2026-09-01",
+      "timeframe": "1Day"
+    },
+    "rows": 43,
+    "sha256": "aeca7bd3b9e36095c2bcc061530e7f21292fdc0141fb5b8da2e381cba6567eba",
+    "source": "Alpaca market data (licensed, not redistributed)",
+    "symbol": "BIL",
+    "url": "https://data.alpaca.markets/v2/stocks/BIL/bars"
+  },
+  "alpaca_IEF_1Day_all.csv": {
+    "downloaded_at_utc": "2026-10-31T06:18:57Z",
+    "first_bar": "2026-09-01",
+    "last_bar": "2026-10-30",
+    "params": {
+      "adjustment": "all",
+      "end": "2026-10-31T06:03:57Z",
+      "feed": "sip",
+      "limit": 10000,
+      "start": "2026-09-01",
+      "timeframe": "1Day"
+    },
+    "rows": 43,
+    "sha256": "e7a5241f369da2972b17a1731200ce76cc7e63f8b319290f7b4a8c6309c810c6",
+    "source": "Alpaca market data (licensed, not redistributed)",
+    "symbol": "IEF",
+    "url": "https://data.alpaca.markets/v2/stocks/IEF/bars"
+  },
+  "fred_CPIAUCNS.csv": {
+    "downloaded_at_utc": "2026-10-31T06:18:57Z",
+    "first_valid": "1913-01-01",
+    "last_valid": "2026-09-01",
+    "missing": 1,
+    "rows": 1365,
+    "series_id": "CPIAUCNS",
+    "sha256": "cfab9b9be4a5d4f06253c4dcc3f7e0b28b1d58837e710dd7cb1fd54a49e7ad7c",
+    "source": "FRED",
+    "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=CPIAUCNS"
+  },
+  "fred_CPILFENS.csv": {
+    "downloaded_at_utc": "2026-10-31T06:18:57Z",
+    "first_valid": "1957-01-01",
+    "last_valid": "2026-09-01",
+    "missing": 1,
+    "rows": 837,
+    "series_id": "CPILFENS",
+    "sha256": "15fb27ab0a444bc2e68eb5301987bd57890254910b20a87d54dacac55486efa5",
+    "source": "FRED",
+    "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=CPILFENS"
+  },
+  "fred_DGS10.csv": {
+    "downloaded_at_utc": "2026-10-31T06:18:57Z",
+    "first_valid": "1962-01-02",
+    "last_valid": "2026-10-29",
+    "missing": 721,
+    "rows": 16913,
+    "series_id": "DGS10",
+    "sha256": "55e2559ffdb30b8ed921b119935fa6b3893dde3d1ed26ddede33fb59895f0659",
+    "source": "FRED",
+    "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=DGS10"
+  },
+  "fred_DGS7.csv": {
+    "downloaded_at_utc": "2026-10-31T06:18:57Z",
+    "first_valid": "1969-07-01",
+    "last_valid": "2026-10-29",
+    "missing": 636,
+    "rows": 14958,
+    "series_id": "DGS7",
+    "sha256": "fc379ef54e38e3de007bee0c17e206acaacb0fad0982140c27a17274af8b3330",
+    "source": "FRED",
+    "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=DGS7"
+  },
+  "fred_DTB3.csv": {
+    "downloaded_at_utc": "2026-10-31T06:18:57Z",
+    "first_valid": "1954-01-04",
+    "last_valid": "2026-10-29",
+    "missing": 801,
+    "rows": 18999,
+    "series_id": "DTB3",
+    "sha256": "a28fbf5afa8b8676fe7ea5fac886198b0b3f02bbd79ea772f98227f6bdabb04a",
+    "source": "FRED",
+    "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=DTB3"
+  }
+}

@@ -1,0 +1,74 @@
+{
+  "execution_date": "2026-11-02",
+  "holding_before": {
+    "B2": "BIL",
+    "T1": "BIL",
+    "T2": "BIL",
+    "T3": "BIL"
+  },
+  "holding_before_source": "episode terminal targets (signal date 2026-09-30)",
+  "input_sha256": {
+    "alpaca_BIL_1Day_all.csv": "8378d1f440c7dc206646117a3febc03fa8f3e7f9b4a0409aaa6beae9b3f084c9",
+    "alpaca_IEF_1Day_all.csv": "c9ccade857a8b7602b9984968b45bea9e1ad8497ef512b677b3af6d84da70c4d",
+    "alpaca_SPY_1Day_all.csv": "9e72ca41bb5f72fb55f548c7a27020d53084535e702b30225860d90e9ab48a36",
+    "fred_CPIAUCNS.csv": "cfab9b9be4a5d4f06253c4dcc3f7e0b28b1d58837e710dd7cb1fd54a49e7ad7c"
+  },
+  "label": "refuted in-sample; forward record (section 11); no paper order",
+  "notes": "B2 = unconditional trend rule; T1 = B2's target in a positive regime, IEF otherwise (on trial); T2, T3 descriptive. No order is placed for any of them.",
+  "orders": [],
+  "paper_order": false,
+  "regime_symbol_held": false,
+  "regimes": {
+    "T1": {
+      "first_return_day": "2026-08-04",
+      "positive": true,
+      "rho": 0.17851179134115672,
+      "variable": "sign of the 63-day SPY-IEF correlation",
+      "window_days": 63
+    },
+    "T2": {
+      "first_return_day": "2025-10-30",
+      "positive": true,
+      "rho": 0.29490720575234836,
+      "variable": "sign of the 252-day SPY-IEF correlation",
+      "window_days": 252
+    },
+    "T3": {
+      "cpi_12m_change": 0.033965478924364856,
+      "cpi_month": "2026-08",
+      "cpi_month_filled": false,
+      "positive": true,
+      "variable": "CPIAUCNS twelve-month change (m-2) > 3%"
+    }
+  },
+  "run_at_utc": "2026-10-31T06:18:43Z",
+  "signal_date": "2026-10-30",
+  "status": "ok",
+  "study": "005-duration-trend-regime",
+  "switch": {
+    "B2": false,
+    "T1": false,
+    "T2": false,
+    "T3": false
+  },
+  "targets": {
+    "B2": "BIL",
+    "T1": "BIL",
+    "T2": "BIL",
+    "T3": "BIL"
+  },
+  "trend": {
+    "close_t": {
+      "BIL": 91.7,
+      "IEF": 91.76,
+      "SPY": 755.72
+    },
+    "mom": -0.051337343507075306,
+    "rule": "IEF if mom > 0 else BIL (Study 003 T1, section 6.2)",
+    "t12_date": "2025-10-31",
+    "tri_bil_t": 1.1284764952005906,
+    "tri_bil_t12": 1.088604479448683,
+    "tri_ief_t": 1.0593396444239205,
+    "tri_ief_t12": 1.075155853151697
+  }
+}

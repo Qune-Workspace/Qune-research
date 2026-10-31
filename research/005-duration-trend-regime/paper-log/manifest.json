@@ -1,0 +1,67 @@
+{
+  "alpaca_BIL_1Day_all.csv": {
+    "downloaded_at_utc": "2026-10-31T06:18:44Z",
+    "first_bar": "2024-01-02",
+    "last_bar": "2026-10-30",
+    "params": {
+      "adjustment": "all",
+      "end": "2026-10-31T06:03:44Z",
+      "feed": "sip",
+      "limit": 10000,
+      "start": "2024-01-02",
+      "timeframe": "1Day"
+    },
+    "rows": 711,
+    "sha256": "8378d1f440c7dc206646117a3febc03fa8f3e7f9b4a0409aaa6beae9b3f084c9",
+    "source": "Alpaca market data (licensed, not redistributed)",
+    "symbol": "BIL",
+    "url": "https://data.alpaca.markets/v2/stocks/BIL/bars"
+  },
+  "alpaca_IEF_1Day_all.csv": {
+    "downloaded_at_utc": "2026-10-31T06:18:43Z",
+    "first_bar": "2024-01-02",
+    "last_bar": "2026-10-30",
+    "params": {
+      "adjustment": "all",
+      "end": "2026-10-31T06:03:43Z",
+      "feed": "sip",
+      "limit": 10000,
+      "start": "2024-01-02",
+      "timeframe": "1Day"
+    },
+    "rows": 711,
+    "sha256": "c9ccade857a8b7602b9984968b45bea9e1ad8497ef512b677b3af6d84da70c4d",
+    "source": "Alpaca market data (licensed, not redistributed)",
+    "symbol": "IEF",
+    "url": "https://data.alpaca.markets/v2/stocks/IEF/bars"
+  },
+  "alpaca_SPY_1Day_all.csv": {
+    "downloaded_at_utc": "2026-10-31T06:18:44Z",
+    "first_bar": "2024-01-02",
+    "last_bar": "2026-10-30",
+    "params": {
+      "adjustment": "all",
+      "end": "2026-10-31T06:03:44Z",
+      "feed": "sip",
+      "limit": 10000,
+      "start": "2024-01-02",
+      "timeframe": "1Day"
+    },
+    "rows": 711,
+    "sha256": "9e72ca41bb5f72fb55f548c7a27020d53084535e702b30225860d90e9ab48a36",
+    "source": "Alpaca market data (licensed, not redistributed)",
+    "symbol": "SPY",
+    "url": "https://data.alpaca.markets/v2/stocks/SPY/bars"
+  },
+  "fred_CPIAUCNS.csv": {
+    "downloaded_at_utc": "2026-10-31T06:18:45Z",
+    "first_bar": "1913-01-01",
+    "last_bar": "2026-09-01",
+    "last_valid": "2026-09-01",
+    "rows": 1365,
+    "series_id": "CPIAUCNS",
+    "sha256": "cfab9b9be4a5d4f06253c4dcc3f7e0b28b1d58837e710dd7cb1fd54a49e7ad7c",
+    "source": "FRED (fredgraph.csv)",
+    "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=CPIAUCNS"
+  }
+}

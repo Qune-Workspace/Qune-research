@@ -1,0 +1,251 @@
+{
+  "assets": {
+    "EEM": {
+      "cash_t": 91.7,
+      "cash_t12": 88.46,
+      "close_t": 61.04,
+      "close_t12": 54.24,
+      "mom12": 0.08874200762039663,
+      "s12": 1.0,
+      "status": "ok",
+      "t12_date": "2025-10-31",
+      "vol63_annualised": 0.21072711374260328
+    },
+    "EFA": {
+      "cash_t": 91.7,
+      "cash_t12": 88.46,
+      "close_t": 103.37,
+      "close_t12": 91.36,
+      "mom12": 0.09483124453333214,
+      "s12": 1.0,
+      "status": "ok",
+      "t12_date": "2025-10-31",
+      "vol63_annualised": 0.11069883791880318
+    },
+    "GLD": {
+      "cash_t": 91.7,
+      "cash_t12": 88.46,
+      "close_t": 355.78,
+      "close_t12": 368.12,
+      "mom12": -0.07014840165681424,
+      "s12": 0.0,
+      "status": "ok",
+      "t12_date": "2025-10-31",
+      "vol63_annualised": 0.24662667948723233
+    },
+    "HYG": {
+      "cash_t": 91.7,
+      "cash_t12": 88.46,
+      "close_t": 77.43,
+      "close_t12": 76.19,
+      "mom12": -0.020351622223639287,
+      "s12": 0.0,
+      "status": "ok",
+      "t12_date": "2025-10-31",
+      "vol63_annualised": 0.03529799521418684
+    },
+    "IEF": {
+      "cash_t": 91.7,
+      "cash_t12": 88.46,
+      "close_t": 91.76,
+      "close_t12": 93.13,
+      "mom12": -0.051337343507075306,
+      "s12": 0.0,
+      "status": "ok",
+      "t12_date": "2025-10-31",
+      "vol63_annualised": 0.05822425669213321
+    },
+    "IWM": {
+      "cash_t": 91.7,
+      "cash_t12": 88.46,
+      "close_t": 279.33,
+      "close_t12": 243.75,
+      "mom12": 0.1093425068262055,
+      "s12": 1.0,
+      "status": "ok",
+      "t12_date": "2025-10-31",
+      "vol63_annualised": 0.13739259954631447
+    },
+    "LQD": {
+      "cash_t": 91.7,
+      "cash_t12": 88.46,
+      "close_t": 104.27,
+      "close_t12": 106.18,
+      "mom12": -0.05461504566086284,
+      "s12": 0.0,
+      "status": "ok",
+      "t12_date": "2025-10-31",
+      "vol63_annualised": 0.06351581619704384
+    },
+    "SHY": {
+      "cash_t": 91.7,
+      "cash_t12": 88.46,
+      "close_t": 81.7,
+      "close_t12": 80.06,
+      "mom12": -0.016142087420417006,
+      "s12": 0.0,
+      "status": "ok",
+      "t12_date": "2025-10-31",
+      "vol63_annualised": 0.015343433141497257
+    },
+    "TLT": {
+      "cash_t": 91.7,
+      "cash_t12": 88.46,
+      "close_t": 81.84,
+      "close_t12": 86.29,
+      "mom12": -0.08819701018708592,
+      "s12": 0.0,
+      "status": "ok",
+      "t12_date": "2025-10-31",
+      "vol63_annualised": 0.10827223723644896
+    },
+    "VNQ": {
+      "cash_t": 91.7,
+      "cash_t12": 88.46,
+      "close_t": 93.94,
+      "close_t12": 85.93,
+      "mom12": 0.05658868394711791,
+      "s12": 1.0,
+      "status": "ok",
+      "t12_date": "2025-10-31",
+      "vol63_annualised": 0.13146077338870849
+    }
+  },
+  "assets_on_T1": [
+    "EEM",
+    "EFA",
+    "IWM",
+    "VNQ"
+  ],
+  "carried": [],
+  "cash_weight": {
+    "B3": 0.0,
+    "B4": 0.19823334144908022,
+    "T1": 0.7133576342578785
+  },
+  "execution_date": "2026-11-02",
+  "gross_exposure": {
+    "B3": 1.0,
+    "B4": 0.8017666585509198,
+    "T1": 0.28664236574212154
+  },
+  "holding_before": {
+    "B3": {
+      "EEM": 0.032036345765448435,
+      "EFA": 0.05987686950947302,
+      "GLD": 0.03150950527942129,
+      "HYG": 0.19585105022955937,
+      "IEF": 0.15224491095463408,
+      "IWM": 0.059654964800690345,
+      "LQD": 0.13160803197210538,
+      "SHY": 0.19585105022955937,
+      "TLT": 0.07928426274999228,
+      "VNQ": 0.06208300850911645
+    },
+    "B4": {
+      "EEM": 0.0256856738965455,
+      "EFA": 0.048007277591099635,
+      "GLD": 0.025263270760474174,
+      "HYG": 0.15702684211624215,
+      "IEF": 0.12206489353747929,
+      "IWM": 0.04782936179422224,
+      "LQD": 0.10551893203273754,
+      "SHY": 0.15702684211624215,
+      "TLT": 0.06356747842073447,
+      "VNQ": 0.049776086285142615
+    },
+    "T1": {
+      "EEM": 0.04089376305092345,
+      "EFA": 0.07643164210670637,
+      "GLD": 0.04022126156904523,
+      "HYG": 0.0,
+      "IEF": 0.0,
+      "IWM": 0.07614838512579847,
+      "LQD": 0.0,
+      "SHY": 0.0,
+      "TLT": 0.0,
+      "VNQ": 0.0
+    }
+  },
+  "holding_before_source": "terminal position of the held-back window (signal date 2026-09-30)",
+  "input_sha256": {
+    "alpaca_BIL_1Day_all.csv": "f9638bf769e9a00e89b0900f3089c1068abd9b114f834772b8808a1ad9629f5e",
+    "alpaca_EEM_1Day_all.csv": "e5df049dd301fd4afd96f4033557f0259510eb67e6c8364efa310ca9355a94ce",
+    "alpaca_EFA_1Day_all.csv": "046b5994481124fb8d751988511e60682d1629e452514426e00a66096ac75d30",
+    "alpaca_GLD_1Day_all.csv": "606e47f27089ff7707c22eb5544f8421dbf62b15f1a0aa716f6d28a20e9c4dc6",
+    "alpaca_HYG_1Day_all.csv": "594f35efc29bf2860fd13e74022e0ea178048fe8c6a845dfa0dbb1c5d77b7720",
+    "alpaca_IEF_1Day_all.csv": "78a691ec97b3dba5ca857319b3e3aac6aed5b3e127656c8ff44eb2ba19c5ef32",
+    "alpaca_IWM_1Day_all.csv": "97a513b5a0c102fc9fa47092fac546388c0fd84c0ecf9a5fe7de5a5ffd10c0de",
+    "alpaca_LQD_1Day_all.csv": "65293d1e082974912aea1ffa82ae05f355f750062314d8d7a0ece8696def4b63",
+    "alpaca_SHY_1Day_all.csv": "a82ff94054d51b0ac88e0611f18f79b8101d7fe9fbc3ca1c75e0c2e5e29594a9",
+    "alpaca_SPY_1Day_all.csv": "cd83191fb60069e10cb92e314afdadc5526035e0335fb717d536cc5bbcfed1aa",
+    "alpaca_TLT_1Day_all.csv": "5a72b2423b336a8ae1cf42c8525c96437788454ee895d0d9c2c5cafb950ae27a",
+    "alpaca_VNQ_1Day_all.csv": "0569995fd49939b9685e3ee89fe76917355322ba4fa5c4b98092c5bf9f5e69a7"
+  },
+  "k_exposure_ratio_frozen": 0.8017666585509198,
+  "label": "not supported; forward shadow record (section 11); no paper order",
+  "n_assets_signalled": 10,
+  "notes": "T1 = long/flat 12-month excess momentum with capped inverse-volatility sizing (section 6); B3 = the same sizing always on; B4 = B3 scaled by the frozen k. No order is placed for any of them. The weights take effect at the execution date's close and are marked by the shadow line.",
+  "orders": [],
+  "paper_order": false,
+  "reference_symbol_held": false,
+  "run_at_utc": "2026-10-31T06:18:38Z",
+  "signal_date": "2026-10-30",
+  "status": "ok",
+  "study": "004-xasset-trend-voltarget",
+  "targets": {
+    "B3": {
+      "EEM": 0.03800209407898883,
+      "EFA": 0.07234106294154646,
+      "GLD": 0.03247041892665453,
+      "HYG": 0.20020179003600472,
+      "IEF": 0.13753840849843216,
+      "IWM": 0.05828604763199566,
+      "LQD": 0.1260799605659937,
+      "SHY": 0.20020179003600472,
+      "TLT": 0.07396237304999861,
+      "VNQ": 0.06091605423438064
+    },
+    "B4": {
+      "EEM": 0.030468811987648566,
+      "EFA": 0.05800065231066548,
+      "GLD": 0.026033699284572345,
+      "HYG": 0.16051512023308032,
+      "IEF": 0.11027371020419938,
+      "IWM": 0.046731809650044906,
+      "LQD": 0.10108670869322849,
+      "SHY": 0.16051512023308032,
+      "TLT": 0.05930056469879399,
+      "VNQ": 0.04884046125560597
+    },
+    "T1": {
+      "EEM": 0.047454738132154624,
+      "EFA": 0.09033518497578928,
+      "GLD": 0.0,
+      "HYG": 0.0,
+      "IEF": 0.0,
+      "IWM": 0.07278412398499705,
+      "LQD": 0.0,
+      "SHY": 0.0,
+      "TLT": 0.0,
+      "VNQ": 0.07606831864918061
+    }
+  },
+  "turnover_vs_holding_before": {
+    "B3": 0.05618467001147556,
+    "B4": 0.04504699513688684,
+    "T1": 0.14011835930934133
+  },
+  "universe": [
+    "IWM",
+    "EFA",
+    "EEM",
+    "SHY",
+    "IEF",
+    "TLT",
+    "LQD",
+    "HYG",
+    "GLD",
+    "VNQ"
+  ]
+}

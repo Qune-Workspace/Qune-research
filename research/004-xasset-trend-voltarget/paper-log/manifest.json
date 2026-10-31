@@ -1,0 +1,218 @@
+{
+  "alpaca_BIL_1Day_all.csv": {
+    "downloaded_at_utc": "2026-10-31T06:18:41Z",
+    "first_bar": "2025-06-02",
+    "last_bar": "2026-10-30",
+    "params": {
+      "adjustment": "all",
+      "end": "2026-10-31T06:03:41Z",
+      "feed": "sip",
+      "limit": 10000,
+      "start": "2025-06-02",
+      "timeframe": "1Day"
+    },
+    "rows": 357,
+    "sha256": "f9638bf769e9a00e89b0900f3089c1068abd9b114f834772b8808a1ad9629f5e",
+    "source": "Alpaca market data (licensed, not redistributed)",
+    "symbol": "BIL",
+    "url": "https://data.alpaca.markets/v2/stocks/BIL/bars"
+  },
+  "alpaca_EEM_1Day_all.csv": {
+    "downloaded_at_utc": "2026-10-31T06:18:38Z",
+    "first_bar": "2025-06-02",
+    "last_bar": "2026-10-30",
+    "params": {
+      "adjustment": "all",
+      "end": "2026-10-31T06:03:38Z",
+      "feed": "sip",
+      "limit": 10000,
+      "start": "2025-06-02",
+      "timeframe": "1Day"
+    },
+    "rows": 357,
+    "sha256": "e5df049dd301fd4afd96f4033557f0259510eb67e6c8364efa310ca9355a94ce",
+    "source": "Alpaca market data (licensed, not redistributed)",
+    "symbol": "EEM",
+    "url": "https://data.alpaca.markets/v2/stocks/EEM/bars"
+  },
+  "alpaca_EFA_1Day_all.csv": {
+    "downloaded_at_utc": "2026-10-31T06:18:38Z",
+    "first_bar": "2025-06-02",
+    "last_bar": "2026-10-30",
+    "params": {
+      "adjustment": "all",
+      "end": "2026-10-31T06:03:38Z",
+      "feed": "sip",
+      "limit": 10000,
+      "start": "2025-06-02",
+      "timeframe": "1Day"
+    },
+    "rows": 357,
+    "sha256": "046b5994481124fb8d751988511e60682d1629e452514426e00a66096ac75d30",
+    "source": "Alpaca market data (licensed, not redistributed)",
+    "symbol": "EFA",
+    "url": "https://data.alpaca.markets/v2/stocks/EFA/bars"
+  },
+  "alpaca_GLD_1Day_all.csv": {
+    "downloaded_at_utc": "2026-10-31T06:18:41Z",
+    "first_bar": "2025-06-02",
+    "last_bar": "2026-10-30",
+    "params": {
+      "adjustment": "all",
+      "end": "2026-10-31T06:03:41Z",
+      "feed": "sip",
+      "limit": 10000,
+      "start": "2025-06-02",
+      "timeframe": "1Day"
+    },
+    "rows": 357,
+    "sha256": "606e47f27089ff7707c22eb5544f8421dbf62b15f1a0aa716f6d28a20e9c4dc6",
+    "source": "Alpaca market data (licensed, not redistributed)",
+    "symbol": "GLD",
+    "url": "https://data.alpaca.markets/v2/stocks/GLD/bars"
+  },
+  "alpaca_HYG_1Day_all.csv": {
+    "downloaded_at_utc": "2026-10-31T06:18:40Z",
+    "first_bar": "2025-06-02",
+    "last_bar": "2026-10-30",
+    "params": {
+      "adjustment": "all",
+      "end": "2026-10-31T06:03:40Z",
+      "feed": "sip",
+      "limit": 10000,
+      "start": "2025-06-02",
+      "timeframe": "1Day"
+    },
+    "rows": 357,
+    "sha256": "594f35efc29bf2860fd13e74022e0ea178048fe8c6a845dfa0dbb1c5d77b7720",
+    "source": "Alpaca market data (licensed, not redistributed)",
+    "symbol": "HYG",
+    "url": "https://data.alpaca.markets/v2/stocks/HYG/bars"
+  },
+  "alpaca_IEF_1Day_all.csv": {
+    "downloaded_at_utc": "2026-10-31T06:18:39Z",
+    "first_bar": "2025-06-02",
+    "last_bar": "2026-10-30",
+    "params": {
+      "adjustment": "all",
+      "end": "2026-10-31T06:03:39Z",
+      "feed": "sip",
+      "limit": 10000,
+      "start": "2025-06-02",
+      "timeframe": "1Day"
+    },
+    "rows": 357,
+    "sha256": "78a691ec97b3dba5ca857319b3e3aac6aed5b3e127656c8ff44eb2ba19c5ef32",
+    "source": "Alpaca market data (licensed, not redistributed)",
+    "symbol": "IEF",
+    "url": "https://data.alpaca.markets/v2/stocks/IEF/bars"
+  },
+  "alpaca_IWM_1Day_all.csv": {
+    "downloaded_at_utc": "2026-10-31T06:18:38Z",
+    "first_bar": "2025-06-02",
+    "last_bar": "2026-10-30",
+    "params": {
+      "adjustment": "all",
+      "end": "2026-10-31T06:03:38Z",
+      "feed": "sip",
+      "limit": 10000,
+      "start": "2025-06-02",
+      "timeframe": "1Day"
+    },
+    "rows": 357,
+    "sha256": "97a513b5a0c102fc9fa47092fac546388c0fd84c0ecf9a5fe7de5a5ffd10c0de",
+    "source": "Alpaca market data (licensed, not redistributed)",
+    "symbol": "IWM",
+    "url": "https://data.alpaca.markets/v2/stocks/IWM/bars"
+  },
+  "alpaca_LQD_1Day_all.csv": {
+    "downloaded_at_utc": "2026-10-31T06:18:40Z",
+    "first_bar": "2025-06-02",
+    "last_bar": "2026-10-30",
+    "params": {
+      "adjustment": "all",
+      "end": "2026-10-31T06:03:40Z",
+      "feed": "sip",
+      "limit": 10000,
+      "start": "2025-06-02",
+      "timeframe": "1Day"
+    },
+    "rows": 357,
+    "sha256": "65293d1e082974912aea1ffa82ae05f355f750062314d8d7a0ece8696def4b63",
+    "source": "Alpaca market data (licensed, not redistributed)",
+    "symbol": "LQD",
+    "url": "https://data.alpaca.markets/v2/stocks/LQD/bars"
+  },
+  "alpaca_SHY_1Day_all.csv": {
+    "downloaded_at_utc": "2026-10-31T06:18:39Z",
+    "first_bar": "2025-06-02",
+    "last_bar": "2026-10-30",
+    "params": {
+      "adjustment": "all",
+      "end": "2026-10-31T06:03:39Z",
+      "feed": "sip",
+      "limit": 10000,
+      "start": "2025-06-02",
+      "timeframe": "1Day"
+    },
+    "rows": 357,
+    "sha256": "a82ff94054d51b0ac88e0611f18f79b8101d7fe9fbc3ca1c75e0c2e5e29594a9",
+    "source": "Alpaca market data (licensed, not redistributed)",
+    "symbol": "SHY",
+    "url": "https://data.alpaca.markets/v2/stocks/SHY/bars"
+  },
+  "alpaca_SPY_1Day_all.csv": {
+    "downloaded_at_utc": "2026-10-31T06:18:42Z",
+    "first_bar": "2025-06-02",
+    "last_bar": "2026-10-30",
+    "params": {
+      "adjustment": "all",
+      "end": "2026-10-31T06:03:42Z",
+      "feed": "sip",
+      "limit": 10000,
+      "start": "2025-06-02",
+      "timeframe": "1Day"
+    },
+    "rows": 357,
+    "sha256": "cd83191fb60069e10cb92e314afdadc5526035e0335fb717d536cc5bbcfed1aa",
+    "source": "Alpaca market data (licensed, not redistributed)",
+    "symbol": "SPY",
+    "url": "https://data.alpaca.markets/v2/stocks/SPY/bars"
+  },
+  "alpaca_TLT_1Day_all.csv": {
+    "downloaded_at_utc": "2026-10-31T06:18:39Z",
+    "first_bar": "2025-06-02",
+    "last_bar": "2026-10-30",
+    "params": {
+      "adjustment": "all",
+      "end": "2026-10-31T06:03:39Z",
+      "feed": "sip",
+      "limit": 10000,
+      "start": "2025-06-02",
+      "timeframe": "1Day"
+    },
+    "rows": 357,
+    "sha256": "5a72b2423b336a8ae1cf42c8525c96437788454ee895d0d9c2c5cafb950ae27a",
+    "source": "Alpaca market data (licensed, not redistributed)",
+    "symbol": "TLT",
+    "url": "https://data.alpaca.markets/v2/stocks/TLT/bars"
+  },
+  "alpaca_VNQ_1Day_all.csv": {
+    "downloaded_at_utc": "2026-10-31T06:18:41Z",
+    "first_bar": "2025-06-02",
+    "last_bar": "2026-10-30",
+    "params": {
+      "adjustment": "all",
+      "end": "2026-10-31T06:03:41Z",
+      "feed": "sip",
+      "limit": 10000,
+      "start": "2025-06-02",
+      "timeframe": "1Day"
+    },
+    "rows": 357,
+    "sha256": "0569995fd49939b9685e3ee89fe76917355322ba4fa5c4b98092c5bf9f5e69a7",
+    "source": "Alpaca market data (licensed, not redistributed)",
+    "symbol": "VNQ",
+    "url": "https://data.alpaca.markets/v2/stocks/VNQ/bars"
+  }
+}

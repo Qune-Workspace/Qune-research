@@ -1,0 +1,71 @@
+{
+  "alpaca_BIL_1Day_all.csv": {
+    "downloaded_at_utc": "2026-10-31T06:18:54Z",
+    "first_bar": "2025-01-02",
+    "last_bar": "2026-10-30",
+    "params": {
+      "adjustment": "all",
+      "end": "2026-10-31T06:03:54Z",
+      "feed": "sip",
+      "limit": 10000,
+      "start": "2025-01-02",
+      "timeframe": "1Day"
+    },
+    "rows": 459,
+    "sha256": "680da439ef91cc03193fe4a695cac9a638a4e659fe6692c2dfd9f72f53de123c",
+    "source": "Alpaca market data (licensed, not redistributed)",
+    "symbol": "BIL",
+    "url": "https://data.alpaca.markets/v2/stocks/BIL/bars"
+  },
+  "alpaca_IEF_1Day_all.csv": {
+    "downloaded_at_utc": "2026-10-31T06:18:53Z",
+    "first_bar": "2025-01-02",
+    "last_bar": "2026-10-30",
+    "params": {
+      "adjustment": "all",
+      "end": "2026-10-31T06:03:53Z",
+      "feed": "sip",
+      "limit": 10000,
+      "start": "2025-01-02",
+      "timeframe": "1Day"
+    },
+    "rows": 459,
+    "sha256": "8acd2687b1a098e1a560e13ec62d6a485495d0e544f38d78a76cccac2f192a09",
+    "source": "Alpaca market data (licensed, not redistributed)",
+    "symbol": "IEF",
+    "url": "https://data.alpaca.markets/v2/stocks/IEF/bars"
+  },
+  "fred_DGS10.csv": {
+    "downloaded_at_utc": "2026-10-31T06:18:53Z",
+    "first_valid": "1962-01-02",
+    "last_valid": "2026-10-29",
+    "missing": 721,
+    "rows": 16913,
+    "series_id": "DGS10",
+    "sha256": "55e2559ffdb30b8ed921b119935fa6b3893dde3d1ed26ddede33fb59895f0659",
+    "source": "FRED",
+    "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=DGS10"
+  },
+  "fred_DGS7.csv": {
+    "downloaded_at_utc": "2026-10-31T06:18:53Z",
+    "first_valid": "1969-07-01",
+    "last_valid": "2026-10-29",
+    "missing": 636,
+    "rows": 14958,
+    "series_id": "DGS7",
+    "sha256": "fc379ef54e38e3de007bee0c17e206acaacb0fad0982140c27a17274af8b3330",
+    "source": "FRED",
+    "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=DGS7"
+  },
+  "fred_DTB3.csv": {
+    "downloaded_at_utc": "2026-10-31T06:18:53Z",
+    "first_valid": "1954-01-04",
+    "last_valid": "2026-10-29",
+    "missing": 801,
+    "rows": 18999,
+    "series_id": "DTB3",
+    "sha256": "a28fbf5afa8b8676fe7ea5fac886198b0b3f02bbd79ea772f98227f6bdabb04a",
+    "source": "FRED",
+    "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=DTB3"
+  }
+}

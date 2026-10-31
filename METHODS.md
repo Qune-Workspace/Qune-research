@@ -26,6 +26,8 @@ Each study says before the run how many signal changes or regime months it needs
 
 Study 005's figure is the one that mattered: an edge of 4.4% a year is far above anything a conditional exit from IEF could plausibly earn, so the in-sample check was declared a sign-and-mechanism check in advance and the three verdict rows were refuted / sign consistent / inconclusive. The check then refuted the hypothesis (§2.4).
 
+*Dated addition, 2026-10-31 (after the programme post-mortem, [research/POST_MORTEMS.md](research/POST_MORTEMS.md); nothing above changed).* Power stated before the result was not enough: Studies 003 and 004 could see about 1.7% a year, and the forward records about 4.8%, against a plausible decayed edge below 1.7%, so most verdicts could not distinguish a true edge of that size from none. From Study 012 the power is stated before the question, as a ratio to the source paper's published effect (at most 0.50 to run as a test), together with a persistence reason, the data terms and the unmined months, in a "Question gate" section of the question note checked by [`tools/check_question_gate.py`](tools/check_question_gate.py) in CI.
+
 ### 1.3 Data gates that can halt the study
 
 A pre-registered data check with a limit written before the comparison, run on instrument returns only, before any rule return exists. Failure halts the study permanently; the limit is not moved after the fact.

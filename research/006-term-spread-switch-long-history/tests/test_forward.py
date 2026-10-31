@@ -2,6 +2,8 @@
 through the frozen engine, interim and scoring.  Constructed data only."""
 from __future__ import annotations
 
+import json
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -195,23 +197,103 @@ def test_score_refuses_early_and_without_a_scoring_date():
     assert out["verdict"] == forward.VERDICT_NOT_TESTABLE and out["scoring_date"] == "2031-11-03"
 
 
-def test_dry_run_without_inputs_refuses_and_writes_nothing(tmp_path, monkeypatch):
+PATH_NAMES = ("DECISIONS_DIR", "FROZEN_START", "FORWARD_RAW_DIR", "SHADOW_CSV", "WAITS_CSV", "INTERIM_JSON",
+              "FORWARD_MANIFEST")
+
+
+def test_freeze_starting_holdings_once_then_read(tmp_path):
+    """Desk improvement of 2026-10-31 (BACKLOG item 8): the starting holdings are a committed file written once
+    from the frozen FRED files, not recomputed from the git-ignored data/raw/ at every run."""
+    fred = _fred("2026-09-30")
+    path = forward.freeze_starting_holdings(fred, tmp_path / "frozen_start.json", {"fred_DGS10.csv": "ab" * 32},
+                                            frozen_at_utc="2026-10-31T18:30:00Z")
+    frozen = json.loads(path.read_text(encoding="utf-8"))
+    assert frozen["starting_month"] == forward.STARTING_MONTH and frozen["signal_date"] == "2026-09-30"
+    assert frozen["frozen_at_utc"] == "2026-10-31T18:30:00Z" and frozen["source_sha256"] == {"fred_DGS10.csv": "ab" * 32}
+    assert frozen["inputs"] == forward.inputs_at(fred, pd.Timestamp("2026-09-30"))
+    assert frozen["targets"] == forward.targets_at(fred, pd.Timestamp("2026-09-30"))
+    assert frozen["holdings"] == START == forward.starting_holdings(path)
+    with pytest.raises(FileExistsError):
+        forward.freeze_starting_holdings(fred, path)
+    other = dict(frozen, starting_month="2026-08")
+    (tmp_path / "other.json").write_text(json.dumps(other), encoding="utf-8")
+    with pytest.raises(ValueError, match="frozen for 2026-08"):
+        forward.starting_holdings(tmp_path / "other.json")
+    bad = dict(frozen, holdings={**frozen["holdings"], "T1": "SPY"})
+    (tmp_path / "bad.json").write_text(json.dumps(bad), encoding="utf-8")
+    with pytest.raises(ValueError, match="neither"):
+        forward.starting_holdings(tmp_path / "bad.json")
+    # Review of 2026-10-31: the file is checked against itself; an edited holding or value is refused.
+    swapped = dict(frozen, holdings={**frozen["holdings"], "T1": "BIL"})
+    (tmp_path / "swapped.json").write_text(json.dumps(swapped), encoding="utf-8")
+    with pytest.raises(ValueError, match="not the target its own entry names"):
+        forward.starting_holdings(tmp_path / "swapped.json")
+    both = dict(frozen, holdings={**frozen["holdings"], "T1": "BIL"},
+                targets={**frozen["targets"], "T1": {**frozen["targets"]["T1"], "target": "BIL"}})
+    (tmp_path / "both.json").write_text(json.dumps(both), encoding="utf-8")
+    with pytest.raises(ValueError, match="implies IEF, not BIL"):
+        forward.starting_holdings(tmp_path / "both.json")
+    nan_value = dict(frozen, targets={**frozen["targets"], "T2": {**frozen["targets"]["T2"], "value": None}})
+    (tmp_path / "nan.json").write_text(json.dumps(nan_value), encoding="utf-8")
+    with pytest.raises(ValueError, match="not a number"):
+        forward.starting_holdings(tmp_path / "nan.json")
+    (tmp_path / "wrong_date.json").write_text(json.dumps(dict(frozen, signal_date="2026-08-31")), encoding="utf-8")
+    with pytest.raises(ValueError, match="is not in 2026-09"):
+        forward.starting_holdings(tmp_path / "wrong_date.json")
+    (tmp_path / "truncated.json").write_text(json.dumps({"starting_month": "2026-09"}), encoding="utf-8")
+    with pytest.raises(KeyError):
+        forward.starting_holdings(tmp_path / "truncated.json")
+
+
+def test_dry_run_without_inputs_refuses_and_writes_nothing(tmp_path, monkeypatch, capsys):
     """Found by the 2026-10-31 pre-flight: a missing forward input was a traceback, not a refusal
-    (Study 008 had refused cleanly since its code review of 2026-10-25; 006 and 007 were never back-ported)."""
-    for name in ("DECISIONS_DIR", "FORWARD_RAW_DIR", "SHADOW_CSV", "WAITS_CSV", "INTERIM_JSON", "FORWARD_MANIFEST"):
+    (Study 008 had refused cleanly since its code review of 2026-10-25; 006 and 007 were never back-ported).
+    Corrected 2026-10-31 18:xxZ: the test had passed locally for the wrong reason (the patched paths never
+    reached main's default arguments, so the real paper-log/raw/ was read and the run printed a wait line);
+    main now passes its paths by name and the test asserts the refusal text."""
+    for name in PATH_NAMES:
         monkeypatch.setattr(forward, name, tmp_path / name)
     monkeypatch.setattr(forward, "utc_now", lambda: "2026-10-31T09:00:00Z")
+    forward.freeze_starting_holdings(_fred("2026-09-30"), tmp_path / "FROZEN_START")
     assert forward.main(["decide", "--signal-month", "2026-10", "--fetch", "--dry-run"]) == 1
+    out = capsys.readouterr().out
+    assert "note: --dry-run does not fetch" in out and "refused: an input is not in paper-log/raw/" in out
     assert forward.main(["decide", "--signal-month", "2026-10", "--dry-run"]) == 1
-    assert list(tmp_path.iterdir()) == []
+    assert "refused: an input is not in paper-log/raw/" in capsys.readouterr().out
+    assert [p.name for p in tmp_path.iterdir()] == ["FROZEN_START"]
 
 
-def test_missing_frozen_input_refuses(tmp_path, monkeypatch, capsys):
-    """The starting holdings come from the study's data/raw/ (git-ignored); a fresh checkout refuses, never crashes."""
-    for name in ("DECISIONS_DIR", "FORWARD_RAW_DIR", "SHADOW_CSV", "WAITS_CSV", "INTERIM_JSON", "FORWARD_MANIFEST"):
+def test_missing_frozen_starting_state_refuses(tmp_path, monkeypatch, capsys):
+    """A checkout without the frozen starting-state file refuses, never crashes, and writes nothing; so does one
+    with an edited or malformed file (review of 2026-10-31)."""
+    for name in PATH_NAMES:
         monkeypatch.setattr(forward, name, tmp_path / name)
-    monkeypatch.setattr(forward, "RAW_DIR", tmp_path / "no-such-raw")
     monkeypatch.setattr(forward, "utc_now", lambda: "2026-10-31T09:00:00Z")
     assert forward.main(["decide", "--signal-month", "2026-10", "--dry-run"]) == 1
-    assert "refused: a frozen input is not in data/raw/" in capsys.readouterr().out
+    assert "refused: the frozen starting state is not in paper-log/" in capsys.readouterr().out
     assert list(tmp_path.iterdir()) == []
+    frozen = json.loads(forward.freeze_starting_holdings(_fred("2026-09-30"), tmp_path / "good.json").read_text())
+    (tmp_path / "FROZEN_START").write_text(json.dumps(dict(frozen, holdings={**frozen["holdings"], "T3": "BIL"})))
+    assert forward.main(["decide", "--signal-month", "2026-10", "--dry-run"]) == 1
+    assert "refused: the frozen starting state cannot be used (ValueError" in capsys.readouterr().out
+    (tmp_path / "FROZEN_START").write_text("{")
+    assert forward.main(["decide", "--signal-month", "2026-10", "--dry-run"]) == 1
+    assert "refused: the frozen starting state cannot be used (JSONDecodeError" in capsys.readouterr().out
+    assert sorted(p.name for p in tmp_path.iterdir()) == ["FROZEN_START", "good.json"]
+
+
+def test_wait_line_is_logged_only_without_dry_run(tmp_path, monkeypatch, capsys):
+    """Review of 2026-10-31: no test caught the --dry-run guard on the wait log being removed."""
+    for name in PATH_NAMES:
+        monkeypatch.setattr(forward, name, tmp_path / name)
+    monkeypatch.setattr(forward, "utc_now", lambda: "2026-10-31T09:00:00Z")
+    monkeypatch.setattr(forward, "load_fred", lambda raw_dir=None: _fred("2026-10-29"))
+    monkeypatch.setattr(forward, "file_hashes", lambda raw_dir, prefix: {})
+    forward.freeze_starting_holdings(_fred("2026-09-30"), tmp_path / "FROZEN_START")
+    assert forward.main(["decide", "--signal-month", "2026-10", "--dry-run"]) == 1
+    assert "wait: DGS10 has no row yet for 2026-10-30" in capsys.readouterr().out
+    assert not (tmp_path / "WAITS_CSV").exists()
+    assert forward.main(["decide", "--signal-month", "2026-10"]) == 1
+    waits = pd.read_csv(tmp_path / "WAITS_CSV")
+    assert len(waits) == 1 and waits["signal_month"].iloc[0] == "2026-10"
+    assert not (tmp_path / "DECISIONS_DIR").exists()

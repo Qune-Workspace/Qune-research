@@ -41,6 +41,7 @@ for ``t``.  A refused run writes nothing and exits 1.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 from datetime import UTC, datetime
 from pathlib import Path
@@ -59,6 +60,7 @@ from .config import (
     FORWARD_DECISIONS_DIR,
     FORWARD_EARLIEST_UTC,
     FORWARD_FIRST_SIGNAL_DATE,
+    FORWARD_FROZEN_START,
     FORWARD_LABEL,
     FORWARD_MANIFEST,
     FORWARD_RAW_DIR,
@@ -229,31 +231,85 @@ def _ok(record: dict) -> bool:
     return str(record["status"]).startswith("ok")
 
 
-def terminal_targets(universe: list[str], k: float, oos_dir: Path = RESULTS_DIR / "oos") -> dict:
-    """The held-back window's terminal position: the weights the 2026-09-30
-    signal set, from the committed signal and volatility files (§16 end-bar
-    amendment: computed and published, starts no period)."""
-    n = len(universe)
-    s12 = pd.read_csv(oos_dir / f"signal_s12_{n}assets.csv", index_col=0).iloc[-1]
-    vol = pd.read_csv(oos_dir / f"signal_vol_{n}assets.csv", index_col=0).iloc[-1]
-    signals = {a: float(s12[a]) for a in universe}
-    vols = {a: float(vol[a]) for a in universe}
+def _targets_from(universe: list[str], signals: dict, vols: dict, k: float) -> dict:
+    """T1, B3 and B4 weights from one signal date's signals and volatilities (§6.2, §9.1)."""
+    signals = {a: float(signals[a]) for a in universe}
+    vols = {a: float(vols[a]) for a in universe}
     t1 = target_weights(signals, vols, SIGMA_TARGET, WEIGHT_CAP)
     b3 = target_weights({a: 1.0 for a in universe}, vols, SIGMA_TARGET, WEIGHT_CAP)
     out = {"T1": {a: float(t1.get(a, 0.0)) for a in universe}, "B3": {a: float(b3.get(a, 0.0)) for a in universe}}
     out["B4"] = {a: w * k for a, w in out["B3"].items()}
-    return out, f"terminal position of the held-back window (signal date {s12.name})"
+    return out
+
+
+def freeze_terminal_position(universe: list[str], k: float, oos_dir: Path = RESULTS_DIR / "oos",
+                             path: Path = FORWARD_FROZEN_START, frozen_at_utc: str | None = None) -> Path:
+    """Write, once, the holdings before the first forward record: the
+    held-back window's terminal position, the weights its last signal date set
+    (§16 end-bar amendment: computed and published, starts no period), from
+    the last row of the out-of-sample signal and volatility files, with those
+    files' hashes.  Refuses to overwrite: the starting state is frozen and
+    never re-estimated (2026-10-31; the files themselves leave the tree,
+    tools/vendor_series_removed.md)."""
+    path = Path(path)
+    if path.exists():
+        raise FileExistsError(f"{path} exists; the starting state is frozen once and never rewritten")
+    n = len(universe)
+    files = {name: Path(oos_dir) / f"{name}_{n}assets.csv" for name in ("signal_s12", "signal_vol")}
+    s12 = pd.read_csv(files["signal_s12"], index_col=0).iloc[-1]
+    vol = pd.read_csv(files["signal_vol"], index_col=0).iloc[-1]
+    if str(s12.name) != str(vol.name):
+        raise ValueError(f"the signal and volatility files end on different dates ({s12.name}, {vol.name})")
+    signals = {a: float(s12[a]) for a in universe}
+    vols = {a: float(vol[a]) for a in universe}
+    payload = {
+        "what": ("the holdings before the first forward record: the held-back window's terminal position, the "
+                 "T1, B3 and B4 weights its last signal date set (section 16 end-bar amendment: computed and "
+                 "published, starts no period); frozen once from the last row of the out-of-sample signal and "
+                 "volatility files and never re-estimated"),
+        "signal_date": str(pd.Timestamp(s12.name).date()),
+        "frozen_at_utc": frozen_at_utc or utc_now(),
+        "source": {f.name: {"sha256": hashlib.sha256(f.read_bytes()).hexdigest(), "row": "last"}
+                   for f in files.values()},
+        "universe": list(universe),
+        "k_exposure_ratio_frozen": float(k),
+        "s12": signals,
+        "vol63_annualised": vols,
+        "targets": _targets_from(universe, signals, vols, k),
+    }
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    return path
+
+
+def terminal_targets(universe: list[str], k: float, path: Path = FORWARD_FROZEN_START) -> tuple[dict, str]:
+    """The held-back window's terminal position from the frozen starting-state
+    file (the 2026-09-30 signal).  The file's weights are recomputed from its
+    own signals and volatilities and must agree, so an edited file is refused."""
+    frozen = json.loads(Path(path).read_text(encoding="utf-8"))
+    if sorted(frozen["universe"]) != sorted(universe):
+        raise ValueError(f"{Path(path).name} was frozen for another universe ({sorted(frozen['universe'])})")
+    if not abs(float(frozen["k_exposure_ratio_frozen"]) - float(k)) <= 1e-12:  # "not <=" so that NaN fails too
+        raise ValueError(f"{Path(path).name} was frozen with k = {frozen['k_exposure_ratio_frozen']}, not {k}")
+    expected = _targets_from(universe, frozen["s12"], frozen["vol63_annualised"], k)
+    for name in STRATEGY_IDS:
+        for a in universe:
+            if not abs(expected[name][a] - float(frozen["targets"][name][a])) <= 1e-12:  # review 2026-10-31: NaN
+                raise ValueError(f"{Path(path).name}: the {name} weight of {a} does not follow from the file's own "
+                                 "signals and volatilities; the frozen starting state was edited")
+    targets = {name: {a: float(frozen["targets"][name][a]) for a in universe} for name in STRATEGY_IDS}
+    return targets, f"terminal position of the held-back window (signal date {frozen['signal_date']})"
 
 
 def previous_targets(universe: list[str], k: float, decisions_dir: Path = FORWARD_DECISIONS_DIR,
-                     oos_dir: Path = RESULTS_DIR / "oos", before=None) -> tuple[dict, str]:
+                     frozen_path: Path = FORWARD_FROZEN_START, before=None) -> tuple[dict, str]:
     """The holdings before a signal date: the targets of the latest earlier
     ok record, else the held-back window's terminal position."""
     ok = [r for r in load_records(decisions_dir, before=before) if _ok(r)]
     if ok:
         last = max(ok, key=lambda r: r["signal_date"])
         return {name: dict(last["targets"][name]) for name in STRATEGY_IDS}, f"decision record {last['signal_date']}"
-    return terminal_targets(universe, k, oos_dir)
+    return terminal_targets(universe, k, frozen_path)
 
 
 def write_record(record: dict, directory: Path = FORWARD_DECISIONS_DIR) -> Path:
@@ -439,17 +495,31 @@ def _check_only_historical(signal_date: str) -> int:
     print(json.dumps(record, indent=2, sort_keys=True))
     if not _ok(record):
         return 1
-    periods = pd.read_csv(RESULTS_DIR / "oos" / f"t1_periods_{len(universe)}assets_base.csv", index_col=0)
-    s12 = pd.read_csv(RESULTS_DIR / "oos" / f"signal_s12_{len(universe)}assets.csv", index_col=0)
-    vol = pd.read_csv(RESULTS_DIR / "oos" / f"signal_vol_{len(universe)}assets.csv", index_col=0)
+    oos = RESULTS_DIR / "oos"
+    periods = pd.read_csv(oos / f"t1_periods_{len(universe)}assets_base.csv", index_col=0)
+    try:
+        s12 = pd.read_csv(oos / f"signal_s12_{len(universe)}assets.csv", index_col=0)
+        vol = pd.read_csv(oos / f"signal_vol_{len(universe)}assets.csv", index_col=0)
+    except FileNotFoundError as missing:  # removed from the tree on 2026-10-31 (tools/vendor_series_removed.md)
+        print(f"note: {Path(missing.filename).name} is not in the tree; the check compares the T1 weights against "
+              "the committed period table only")
+        s12 = vol = None
     day = record["signal_date"]
-    worst = 0.0
+    worst, compared = 0.0, 0
     for a in universe:
-        worst = max(worst, abs(record["assets"][a]["s12"] - float(s12.loc[day, a])),
-                    abs(record["assets"][a]["vol63_annualised"] - float(vol.loc[day, a])))
+        if s12 is not None and vol is not None:
+            worst = max(worst, abs(record["assets"][a]["s12"] - float(s12.loc[day, a])),
+                        abs(record["assets"][a]["vol63_annualised"] - float(vol.loc[day, a])))
+            compared += 2
         if day in periods.index:
             worst = max(worst, abs(record["targets"]["T1"][a] - float(periods.loc[day, f"w_{a}"])))
-    print(f"largest absolute difference against the committed signal, volatility and T1 weight files for {day}: {worst:.3e}")
+            compared += 1
+    if not compared:  # review 2026-10-31: a zero that compared nothing read as a pass
+        print(f"nothing compared for {day}: no committed signal file is in the tree and the period table has no row "
+              "for that date (the terminal signal starts no period)")
+        return 0
+    print(f"largest absolute difference against the committed signal, volatility and T1 weight files for {day} "
+          f"({compared} numbers compared): {worst:.3e}")
     return 0
 
 
@@ -474,9 +544,25 @@ def main(argv: list[str] | None = None) -> int:
     k = frozen_k()
     if args.fetch and not args.dry_run:
         fetch_inputs(universe)
-    closes, hashes = load_inputs(universe)
+    elif args.fetch:
+        print("note: --dry-run does not fetch; paper-log/raw/ is read as it is")
+    try:  # paths passed by name so that a test can point them at an empty folder
+        closes, hashes = load_inputs(universe, FORWARD_RAW_DIR, FORWARD_MANIFEST)
+    except FileNotFoundError as missing:
+        print(f"refused: an input is not in paper-log/raw/ ({Path(missing.filename).name}); run with --fetch")
+        return 1
     if args.step == "decide":
-        holding_before, source = previous_targets(universe, k, before=args.signal_date)
+        try:
+            holding_before, source = previous_targets(universe, k, FORWARD_DECISIONS_DIR, FORWARD_FROZEN_START,
+                                                      before=args.signal_date)
+        except FileNotFoundError as missing:
+            print(f"refused: the frozen starting state is not in paper-log/ ({Path(missing.filename).name}); it is "
+                  "written once by forward.freeze_terminal_position and committed, never recomputed at run time")
+            return 1
+        except (KeyError, ValueError) as bad:  # an edited, truncated or malformed frozen file (review 2026-10-31)
+            print(f"refused: the frozen starting state cannot be used ({type(bad).__name__}: {bad}); restore "
+                  f"{FORWARD_FROZEN_START.name} from git, never rewrite it")
+            return 1
         record = decision_record(closes, args.signal_date, universe, k, holding_before, now, input_sha256=hashes)
         record["holding_before_source"] = source
         print(json.dumps(record, indent=2, sort_keys=True))

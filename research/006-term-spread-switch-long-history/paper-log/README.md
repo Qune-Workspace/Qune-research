@@ -2,7 +2,7 @@
 
 **Label: forward record; the history verdict is inconclusive (fragile)** (README.md). **No paper order is placed under this study** (§11): the programme's paper sleeve belongs to Study 003's rule. This folder is the only clean test of T1: the rule was fixed before these data existed. It is scored **once, after 60 holding periods** (§11.3–11.4), when it can see an edge of about 3% a year; until then every figure here is under **"Not yet scored"**.
 
-First signal month: **2026-10** (signal date 2026-10-30 if FRED holds both yields that day). First execution date: the first NYSE trading day after it, normally **2026-11-02**. Starting holdings (the 2026-09-30 signal from the study's frozen FRED files): **T1 IEF, T2 IEF, T3 IEF**. The holding period from 2026-10-01 to the first execution date is counted nowhere.
+First signal month: **2026-10** (signal date 2026-10-30 if FRED holds both yields that day). First execution date: the first NYSE trading day after it, normally **2026-11-02**. Starting holdings (the 2026-09-30 signal from the study's frozen FRED files): **T1 IEF, T2 IEF, T3 IEF**. The holding period from 2026-10-01 to the first execution date is counted nowhere. *Dated addition, 2026-10-31 18:2xZ:* the starting holdings are now the committed file [`frozen_start.json`](frozen_start.json) (signal date 2026-09-30; DGS10 5.29, DTB3 4.03, DGS7 5.19; the three targets; the SHA-256 of the three frozen FRED files, which match `results/data_manifest.json`), written once by `forward.freeze_starting_holdings` and never re-estimated. Until then every run recomputed them from the git-ignored `data/raw/`, so a fresh checkout could not write a record.
 
 ## What is written, by whom, when
 
@@ -24,6 +24,7 @@ First signal month: **2026-10** (signal date 2026-10-30 if FRED holds both yield
 - A record is never rewritten; a shadow line is appended once per period and only for the period that follows the last one.
 - Engine conventions are the study's own (`backtest.run_switching`, `backtest.benchmarks`): base cost 0.02% a side on a switch of the whole position, B1 free, B2 and B3 rebalanced at each execution date, B3 at w = 0.8702 frozen by the history run. `d = T1 − B3`.
 - The study's `data/raw/` and `results/data_manifest.json` are never touched.
+- The starting holdings (`frozen_start.json`) are written once and never recomputed at run time; a run without that file, or without the forward inputs in `raw/`, refuses with exit 1 and writes nothing (added 2026-10-31; the missing-input test now asserts the refusal text, because until then it passed locally only by reading the real `raw/`).
 
 ## Record
 

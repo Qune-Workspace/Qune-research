@@ -1,6 +1,6 @@
 # Paper dashboard: the forward records, as committed
 
-Generated 2026-10-31T18:18:47Z from the files at commit `dcb1653` by `tools/make_paper_dashboard.py`. Each study's forward code writes its own record once a month and never rewrites it; this page only counts and draws what is on disk at generation time, so an empty row means no record exists yet, not that one was missed. Nothing here is a backtest: every value is a forward observation after the study's publication. No study has a supported verdict; no order has been placed. Not advice.
+Generated 2026-10-31T18:26:10Z from the files at commit `2918149` by `tools/make_paper_dashboard.py`. Each study's forward code writes its own record once a month and never rewrites it; this page only counts and draws what is on disk at generation time, so an empty row means no record exists yet, not that one was missed. Nothing here is a backtest: every value is a forward observation after the study's publication. No study has a supported verdict; no order has been placed. Not advice.
 
 | Study | Kind | Records | Shadow lines | Next record due |
 |---|---|---|---|---|

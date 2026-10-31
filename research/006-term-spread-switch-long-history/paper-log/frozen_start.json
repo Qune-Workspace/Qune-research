@@ -1,0 +1,35 @@
+{
+  "frozen_at_utc": "2026-10-31T18:22:41Z",
+  "holdings": {
+    "T1": "IEF",
+    "T2": "IEF",
+    "T3": "IEF"
+  },
+  "inputs": {
+    "DGS10": 5.29,
+    "DGS7": 5.19,
+    "DTB3": 4.03
+  },
+  "signal_date": "2026-09-30",
+  "source_sha256": {
+    "fred_DGS10.csv": "ffc712cda8ff329de0f07ea6d5d9b97a094fe40da0486319ae12bbbe19d7381d",
+    "fred_DGS7.csv": "15e58680bd6283eba25615c69091640f21b292b1e6dade7b6701cff271c2e2fc",
+    "fred_DTB3.csv": "0ba63bf126e01aa6d6f0d54dde125e9d7b6125d835b26f2608c95b3f7d943892"
+  },
+  "starting_month": "2026-09",
+  "targets": {
+    "T1": {
+      "target": "IEF",
+      "value": 0.011619758248401002
+    },
+    "T2": {
+      "target": "IEF",
+      "value": 0.009516421281002838
+    },
+    "T3": {
+      "target": "IEF",
+      "value": 0.014182716233501627
+    }
+  },
+  "what": "the holdings before the first forward record: the T1, T2 and T3 targets of the 2026-09 signal from the study's frozen FRED files (section 11.1); frozen once, never re-estimated"
+}

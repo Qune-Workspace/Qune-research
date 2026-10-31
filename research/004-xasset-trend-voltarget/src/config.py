@@ -118,5 +118,6 @@ FORWARD_LABEL = "not supported; forward shadow record (section 11); no paper ord
 FORWARD_RAW_DIR = PAPER_LOG_DIR / "raw"          # git-ignored; data/raw/ and results/data_manifest.json are never touched
 FORWARD_MANIFEST = PAPER_LOG_DIR / "manifest.json"
 FORWARD_DECISIONS_DIR = PAPER_LOG_DIR / "decisions"
+FORWARD_FROZEN_START = PAPER_LOG_DIR / "frozen_start.json"  # the holdings before the first record; written once, never re-estimated
 FORWARD_SHADOW_CSV = PAPER_LOG_DIR / "shadow.csv"
 FORWARD_BOOKS_DIR = PAPER_LOG_DIR / "books"      # the three books' values and drifted weights at each period end

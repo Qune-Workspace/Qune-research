@@ -1,6 +1,6 @@
 {
-  "commit": "dcb1653",
-  "generated_at_utc": "2026-10-31T18:18:47Z",
+  "commit": "2918149",
+  "generated_at_utc": "2026-10-31T18:26:10Z",
   "outputs_sha256": {},
   "studies": [
     {
@@ -19,6 +19,7 @@
       "executions": 0,
       "inputs_sha256": {
         "research/004-xasset-trend-voltarget/paper-log/decisions/2026-10-30.json": "7eed5b6f3d7de7c90353708474aa0972ee0071ccc8e909b21ef952742e42cfa7",
+        "research/004-xasset-trend-voltarget/paper-log/frozen_start.json": "dbf55782aa3ec05d71ac30730fdc407b64b34be1d672926fbc1b9afc34bacdf8",
         "research/004-xasset-trend-voltarget/paper-log/manifest.json": "2cec268be5c4b10cb2d4ba60ec467792733db0ff870fb757b83015001fb9cd70"
       },
       "next_record_due": "2026-11-30",
@@ -40,6 +41,7 @@
     {
       "executions": 0,
       "inputs_sha256": {
+        "research/006-term-spread-switch-long-history/paper-log/frozen_start.json": "929873614fb912a8ffef6cd018d4a680f4c0ffaead9fef9792b2a3e7ded238f0",
         "research/006-term-spread-switch-long-history/paper-log/manifest.json": "af1447bd30683847387571120a9de55de3825fd807b7408b90d9d3c5b86ec7a9",
         "research/006-term-spread-switch-long-history/paper-log/waits.csv": "6c5289b8d356f44f3b2e447918aea2946d96711bf0254f567eb7f90d9f06bba9"
       },

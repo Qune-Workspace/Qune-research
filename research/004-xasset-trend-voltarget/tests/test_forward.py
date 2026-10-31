@@ -190,14 +190,72 @@ def test_append_shadow_and_books_order_and_duplicates(world, tmp_path):
     assert forward.latest_books(UNIVERSE, tmp_path / "nothing")["period_end"] is None
 
 
-def test_previous_targets_from_the_terminal_position_then_records(world, tmp_path):
+def _frozen(world, tmp_path):
+    """The frozen starting state written once from the out-of-sample signal and volatility tables."""
     table = world["table"]
     oos = tmp_path / "oos"
     oos.mkdir()
     table["s12"].to_csv(oos / f"signal_s12_{len(UNIVERSE)}assets.csv")
     table["vol"].to_csv(oos / f"signal_vol_{len(UNIVERSE)}assets.csv")
+    return forward.freeze_terminal_position(UNIVERSE, K, oos, tmp_path / "frozen_start.json",
+                                            frozen_at_utc="2026-10-31T18:30:00Z")
+
+
+def test_frozen_starting_state_is_the_tables_last_row_written_once(world, tmp_path):
+    """Desk improvement of 2026-10-31 (BACKLOG item 6): the starting state is a committed file, not the last row
+    of signal files read at run time; the file carries its inputs, their hashes and the weights they imply."""
+    table = world["table"]
+    path = _frozen(world, tmp_path)
+    frozen = json.loads(path.read_text(encoding="utf-8"))
     last = table["s12"].index[-1]
-    targets, source = forward.previous_targets(UNIVERSE, K, tmp_path / "decisions", oos, before="2026-10-30")
+    assert frozen["signal_date"] == str(last.date()) and frozen["frozen_at_utc"] == "2026-10-31T18:30:00Z"
+    assert frozen["universe"] == UNIVERSE and frozen["k_exposure_ratio_frozen"] == K
+    assert frozen["s12"] == {a: float(table["s12"].at[last, a]) for a in UNIVERSE}
+    assert frozen["vol63_annualised"] == pytest.approx({a: float(table["vol"].at[last, a]) for a in UNIVERSE}, abs=1e-15)
+    assert set(frozen["source"]) == {f"signal_s12_{len(UNIVERSE)}assets.csv", f"signal_vol_{len(UNIVERSE)}assets.csv"}
+    assert all(len(v["sha256"]) == 64 for v in frozen["source"].values())
+    expected = run.weights_from(run.trial_signal(table, "T1"), table["vol"])[last]
+    assert frozen["targets"]["T1"] == pytest.approx({a: expected.get(a, 0.0) for a in UNIVERSE}, abs=1e-12)
+    with pytest.raises(FileExistsError):
+        forward.freeze_terminal_position(UNIVERSE, K, tmp_path / "oos", path)
+
+
+def test_terminal_targets_read_the_frozen_file_and_refuse_an_edited_one(world, tmp_path):
+    path = _frozen(world, tmp_path)
+    frozen = json.loads(path.read_text(encoding="utf-8"))
+    targets, source = forward.terminal_targets(UNIVERSE, K, path)
+    assert source.startswith("terminal position") and frozen["signal_date"] in source
+    assert targets == frozen["targets"]
+    assert targets["B4"] == pytest.approx({a: K * w for a, w in targets["B3"].items()}, abs=1e-12)
+    with pytest.raises(ValueError, match="another universe"):
+        forward.terminal_targets(UNIVERSE + ["DDD"], K, path)
+    with pytest.raises(ValueError, match="frozen with k"):
+        forward.terminal_targets(UNIVERSE, K + 0.1, path)
+    edited = dict(frozen, targets={**frozen["targets"], "T1": {**frozen["targets"]["T1"], "AAA": 0.5}})
+    (tmp_path / "edited.json").write_text(json.dumps(edited), encoding="utf-8")
+    with pytest.raises(ValueError, match="was edited"):
+        forward.terminal_targets(UNIVERSE, K, tmp_path / "edited.json")
+    # Review of 2026-10-31: a NaN target slipped through "abs(diff) > tol"; an edited input must fail too.
+    nan_target = dict(frozen, targets={**frozen["targets"], "T1": {**frozen["targets"]["T1"], "AAA": float("nan")}})
+    (tmp_path / "nan.json").write_text(json.dumps(nan_target), encoding="utf-8")
+    with pytest.raises(ValueError, match="was edited"):
+        forward.terminal_targets(UNIVERSE, K, tmp_path / "nan.json")
+    edited_input = dict(frozen, vol63_annualised={**frozen["vol63_annualised"], "AAA": 0.5})
+    (tmp_path / "input.json").write_text(json.dumps(edited_input), encoding="utf-8")
+    with pytest.raises(ValueError, match="was edited"):
+        forward.terminal_targets(UNIVERSE, K, tmp_path / "input.json")
+    (tmp_path / "truncated.json").write_text(json.dumps({"universe": UNIVERSE}), encoding="utf-8")
+    with pytest.raises(KeyError):
+        forward.terminal_targets(UNIVERSE, K, tmp_path / "truncated.json")
+    with pytest.raises(FileNotFoundError):
+        forward.terminal_targets(UNIVERSE, K, tmp_path / "no-such-file.json")
+
+
+def test_previous_targets_from_the_terminal_position_then_records(world, tmp_path):
+    table = world["table"]
+    frozen_path = _frozen(world, tmp_path)
+    last = table["s12"].index[-1]
+    targets, source = forward.previous_targets(UNIVERSE, K, tmp_path / "decisions", frozen_path, before="2026-10-30")
     assert source.startswith("terminal position") and str(last.date()) in source
     expected = run.weights_from(run.trial_signal(table, "T1"), table["vol"])[last]
     assert targets["T1"] == pytest.approx({a: expected.get(a, 0.0) for a in UNIVERSE}, abs=1e-12)
@@ -206,10 +264,43 @@ def test_previous_targets_from_the_terminal_position_then_records(world, tmp_pat
     second = dict(_record(world, world["sched"]["signal_date"].iloc[4]), signal_date="2026-11-30")
     forward.write_record(first, tmp_path / "decisions")
     forward.write_record(second, tmp_path / "decisions")
-    later, source = forward.previous_targets(UNIVERSE, K, tmp_path / "decisions", oos, before="2026-12-31")
+    later, source = forward.previous_targets(UNIVERSE, K, tmp_path / "decisions", frozen_path, before="2026-12-31")
     assert source == "decision record 2026-11-30" and later == second["targets"]
-    earlier, source = forward.previous_targets(UNIVERSE, K, tmp_path / "decisions", oos, before="2026-11-30")
+    earlier, source = forward.previous_targets(UNIVERSE, K, tmp_path / "decisions", frozen_path, before="2026-11-30")
     assert source == "decision record 2026-10-30" and earlier == first["targets"]
+
+
+def test_dry_run_without_inputs_or_frozen_state_refuses_and_writes_nothing(tmp_path, monkeypatch, capsys):
+    """Same class as the 006/007 finding of 2026-10-31 12:15Z: a missing forward input or a missing frozen
+    starting state is a refusal, never a traceback; nothing is written."""
+    for name in ("FORWARD_RAW_DIR", "FORWARD_MANIFEST", "FORWARD_DECISIONS_DIR", "FORWARD_FROZEN_START"):
+        monkeypatch.setattr(forward, name, tmp_path / name)
+    monkeypatch.setattr(forward, "utc_now", lambda: "2026-10-31T09:00:00Z")
+    monkeypatch.setattr(forward, "universe_from_checks", lambda: list(UNIVERSE))
+    monkeypatch.setattr(forward, "frozen_k", lambda: K)
+    assert forward.main(["decide", "--signal-date", "2026-10-30", "--fetch", "--dry-run"]) == 1
+    assert "refused: an input is not in paper-log/raw/" in capsys.readouterr().out
+    assert list(tmp_path.iterdir()) == []
+    world = _world()
+    raw = tmp_path / "FORWARD_RAW_DIR"
+    raw.mkdir()
+    for symbol, series in world["closes"].items():
+        pd.DataFrame({"close": series.dropna()}).rename_axis("date").to_csv(raw / f"alpaca_{symbol}_1Day_all.csv")
+    (tmp_path / "FORWARD_MANIFEST").write_text("{}", encoding="utf-8")
+    assert forward.main(["decide", "--signal-date", "2026-10-30", "--dry-run"]) == 1
+    assert "refused: the frozen starting state is not in paper-log/" in capsys.readouterr().out
+    assert sorted(p.name for p in tmp_path.iterdir()) == ["FORWARD_MANIFEST", "FORWARD_RAW_DIR"]
+    # Review of 2026-10-31: an edited or truncated frozen file is a refusal, not a traceback.
+    (tmp_path / "good").mkdir()
+    frozen = json.loads(_frozen(world, tmp_path / "good").read_text(encoding="utf-8"))
+    edited = dict(frozen, targets={**frozen["targets"], "B3": {**frozen["targets"]["B3"], "BBB": 0.9}})
+    (tmp_path / "FORWARD_FROZEN_START").write_text(json.dumps(edited), encoding="utf-8")
+    assert forward.main(["decide", "--signal-date", "2026-10-30", "--dry-run"]) == 1
+    assert "refused: the frozen starting state cannot be used (ValueError" in capsys.readouterr().out
+    (tmp_path / "FORWARD_FROZEN_START").write_text("{", encoding="utf-8")
+    assert forward.main(["decide", "--signal-date", "2026-10-30", "--dry-run"]) == 1
+    assert "refused: the frozen starting state cannot be used (JSONDecodeError" in capsys.readouterr().out
+    assert not (tmp_path / "FORWARD_DECISIONS_DIR").exists()
 
 
 def test_cli_refuses_before_the_first_forward_date(capsys):

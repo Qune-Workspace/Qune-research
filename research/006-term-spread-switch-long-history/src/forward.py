@@ -55,10 +55,10 @@ import pandas as pd
 from . import backtest, stats
 from .alpaca_bars import fetch_bars, load_bars, total_return_index
 from .calendar import nyse_trading_days, signal_dates
-from .config import CASH_LEG, COST_CASES, DURATION_LEG, PAPER_LOG_DIR, RAW_DIR, STUDY_DIR
+from .config import CASH_LEG, COST_CASES, DURATION_LEG, PAPER_LOG_DIR, STUDY_DIR
 from .config006 import HISTORY_DIR
 from .fred import fetch_series, load_series, sha256_of
-from .signal import t1, t2, t3
+from .signal import t1, t2, t3, target_from_value
 
 FIRST_SIGNAL_MONTH = "2026-10"   # §11.1: the first month-end after the note (3663b77, 2026-10-25)
 STARTING_MONTH = "2026-09"       # its targets are the holdings before the first record
@@ -71,6 +71,7 @@ FORWARD_BARS_START = "2026-01-02"
 NEW_YORK = ZoneInfo("America/New_York")
 
 DECISIONS_DIR = PAPER_LOG_DIR / "decisions"
+FROZEN_START = PAPER_LOG_DIR / "frozen_start.json"  # the holdings before the first record; written once, never re-estimated
 FORWARD_RAW_DIR = PAPER_LOG_DIR / "raw"
 FORWARD_MANIFEST = PAPER_LOG_DIR / "manifest.json"
 SHADOW_CSV = PAPER_LOG_DIR / "shadow.csv"
@@ -178,11 +179,67 @@ def load_records(directory: Path = DECISIONS_DIR) -> list[dict]:
                   key=lambda r: r["signal_month"])
 
 
-def starting_holdings(fred_frozen: dict[str, pd.Series]) -> dict:
-    """The holdings before the first record: the targets of the 2026-09
-    signal from the study's frozen FRED files (no return involved)."""
+def freeze_starting_holdings(fred_frozen: dict[str, pd.Series], path: Path = FROZEN_START,
+                             source_sha256: dict[str, str] | None = None, frozen_at_utc: str | None = None) -> Path:
+    """Write, once, the holdings before the first record: the targets of the
+    ``STARTING_MONTH`` signal from the study's frozen FRED files (no return
+    involved), with the signal date, the inputs on it and the files' hashes.
+    Refuses to overwrite: the starting state is frozen and never re-estimated
+    (2026-10-31; until then it was recomputed from the git-ignored data/raw/
+    at every run, so a fresh checkout could not write a record)."""
+    path = Path(path)
+    if path.exists():
+        raise FileExistsError(f"{path} exists; the starting state is frozen once and never rewritten")
     t = pd.Timestamp(signal_dates(fred_frozen["DGS10"], fred_frozen["DTB3"], STARTING_MONTH, STARTING_MONTH).iloc[0])
-    return {trial: v["target"] for trial, v in targets_at(fred_frozen, t).items()}
+    targets = targets_at(fred_frozen, t)
+    payload = {
+        "what": (f"the holdings before the first forward record: the T1, T2 and T3 targets of the {STARTING_MONTH} "
+                 "signal from the study's frozen FRED files (section 11.1); frozen once, never re-estimated"),
+        "starting_month": STARTING_MONTH,
+        "signal_date": str(t.date()),
+        "frozen_at_utc": frozen_at_utc or utc_now(),
+        "source_sha256": dict(source_sha256 or {}),
+        "inputs": inputs_at(fred_frozen, t),
+        "targets": targets,
+        "holdings": {trial: targets[trial]["target"] for trial in TRIALS},
+    }
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    return path
+
+
+def starting_holdings(path: Path = FROZEN_START) -> dict:
+    """The holdings before the first record, from the frozen starting-state
+    file.  The file is checked against itself (review 2026-10-31): the month
+    and signal date agree, each holding is the target its own ``targets``
+    entry names and that target follows the sign of the entry's value by the
+    study's rule (positive spread: the duration leg), so an edited holding or
+    value is refused.  The values themselves need the history the file does
+    not carry; their provenance is the source hashes."""
+    frozen = json.loads(Path(path).read_text(encoding="utf-8"))
+    name = Path(path).name
+    if frozen["starting_month"] != STARTING_MONTH:
+        raise ValueError(f"{name} was frozen for {frozen['starting_month']}, not {STARTING_MONTH}")
+    if pd.Timestamp(frozen["signal_date"]).to_period("M") != pd.Period(STARTING_MONTH, "M"):
+        raise ValueError(f"{name}: signal date {frozen['signal_date']} is not in {STARTING_MONTH}")
+    held = {}
+    for trial in TRIALS:
+        entry = frozen["targets"][trial]
+        leg = frozen["holdings"][trial]
+        if leg not in (DURATION_LEG, CASH_LEG):
+            raise ValueError(f"{name}: the {trial} holding is neither {DURATION_LEG} nor {CASH_LEG}: {leg}")
+        if entry["target"] != leg:
+            raise ValueError(f"{name}: the {trial} holding ({leg}) is not the target its own entry names "
+                             f"({entry['target']}); the frozen starting state was edited")
+        value = entry["value"]
+        if value is None or not np.isfinite(float(value)):
+            raise ValueError(f"{name}: the {trial} value is not a number; the frozen starting state was edited")
+        implied = str(target_from_value(pd.Series([float(value)])).iloc[0])  # the study's own rule (§6.1)
+        if implied != leg:
+            raise ValueError(f"{name}: the {trial} value {value} implies {implied}, not {leg}; the frozen starting "
+                             "state was edited")
+        held[trial] = leg
+    return held
 
 
 def holdings_before(records: list[dict], start: dict) -> dict:
@@ -416,23 +473,32 @@ def main(argv: list[str] | None = None) -> int:
     if why:
         print(f"refused: {why}")
         return 1
-    records = load_records()
+    # In the decide step the paths are passed by name so that a test can point them at an empty folder: a default
+    # argument is bound at import and a patched module attribute never reaches it (found 2026-10-31: the
+    # missing-input test passed locally only because the real paper-log/raw/ was read). The shadow and interim
+    # steps still use the bound defaults.
+    records = load_records(DECISIONS_DIR)
     try:
-        start = starting_holdings({name: load_series(name, RAW_DIR) for name in FRED_IDS})
+        start = starting_holdings(FROZEN_START)
     except FileNotFoundError as missing:
-        print(f"refused: a frozen input is not in data/raw/ ({Path(missing.filename).name}); "
-              "run ./reproduce.sh --episode's data step first")
+        print(f"refused: the frozen starting state is not in paper-log/ ({Path(missing.filename).name}); it is "
+              "written once by forward.freeze_starting_holdings from the study's data/raw/ and committed, never "
+              "recomputed at run time")
+        return 1
+    except (KeyError, ValueError) as bad:  # an edited, truncated or malformed frozen file (review 2026-10-31)
+        print(f"refused: the frozen starting state cannot be used ({type(bad).__name__}: {bad}); restore "
+              f"{FROZEN_START.name} from git, never rewrite it")
         return 1
     if args.step == "decide":
         if any(r["signal_month"] == args.signal_month for r in records):
             print(f"refused: a record for {args.signal_month} exists")
             return 1
         if args.fetch and not args.dry_run:
-            fetch_fred()
+            fetch_fred(FORWARD_RAW_DIR, FORWARD_MANIFEST)
         elif args.fetch:
             print("note: --dry-run does not fetch; paper-log/raw/ is read as it is")
         try:
-            fred = load_fred()
+            fred = load_fred(FORWARD_RAW_DIR)
         except FileNotFoundError as missing:
             print(f"refused: an input is not in paper-log/raw/ ({Path(missing.filename).name}); run with --fetch")
             return 1
@@ -443,11 +509,11 @@ def main(argv: list[str] | None = None) -> int:
             reason = signal_status(fred, args.signal_month)[2]
             print(f"wait: {reason}; re-check on the next run")
             if not args.dry_run:
-                log_wait(args.signal_month, now, reason)
+                log_wait(args.signal_month, now, reason, WAITS_CSV)
             return 1
         print(json.dumps(record, indent=2, sort_keys=True))
         if not args.dry_run:
-            print(f"written: {write_record(record).relative_to(STUDY_DIR)}")
+            print(f"written: {write_record(record, DECISIONS_DIR).relative_to(STUDY_DIR)}")
         return 0 if record["status"] == "ok" else 1
     ok = [r for r in records if r["status"] == "ok"]
     upto = [r for r in ok if r["signal_month"] <= args.signal_month]

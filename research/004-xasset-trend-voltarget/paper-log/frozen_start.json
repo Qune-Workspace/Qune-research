@@ -1,0 +1,90 @@
+{
+  "frozen_at_utc": "2026-10-31T18:22:51Z",
+  "k_exposure_ratio_frozen": 0.8017666585509198,
+  "s12": {
+    "EEM": 1.0,
+    "EFA": 1.0,
+    "GLD": 1.0,
+    "HYG": 0.0,
+    "IEF": 0.0,
+    "IWM": 1.0,
+    "LQD": 0.0,
+    "SHY": 0.0,
+    "TLT": 0.0,
+    "VNQ": 0.0
+  },
+  "signal_date": "2026-09-30",
+  "source": {
+    "signal_s12_10assets.csv": {
+      "row": "last",
+      "sha256": "d4fcebd9e6178506d144441b1be3e9199d47dd701f80560337809aa69bed89a8"
+    },
+    "signal_vol_10assets.csv": {
+      "row": "last",
+      "sha256": "b1de49b39abf47ddd5ab31230a9d0c3066b2db72425cca8fa068b7361d17c0c8"
+    }
+  },
+  "targets": {
+    "B3": {
+      "EEM": 0.032036345765448435,
+      "EFA": 0.05987686950947302,
+      "GLD": 0.03150950527942129,
+      "HYG": 0.19585105022955937,
+      "IEF": 0.15224491095463408,
+      "IWM": 0.059654964800690345,
+      "LQD": 0.13160803197210538,
+      "SHY": 0.19585105022955937,
+      "TLT": 0.07928426274999228,
+      "VNQ": 0.06208300850911645
+    },
+    "B4": {
+      "EEM": 0.0256856738965455,
+      "EFA": 0.048007277591099635,
+      "GLD": 0.025263270760474174,
+      "HYG": 0.15702684211624215,
+      "IEF": 0.12206489353747929,
+      "IWM": 0.04782936179422224,
+      "LQD": 0.10551893203273754,
+      "SHY": 0.15702684211624215,
+      "TLT": 0.06356747842073447,
+      "VNQ": 0.049776086285142615
+    },
+    "T1": {
+      "EEM": 0.04089376305092345,
+      "EFA": 0.07643164210670637,
+      "GLD": 0.04022126156904523,
+      "HYG": 0.0,
+      "IEF": 0.0,
+      "IWM": 0.07614838512579847,
+      "LQD": 0.0,
+      "SHY": 0.0,
+      "TLT": 0.0,
+      "VNQ": 0.0
+    }
+  },
+  "universe": [
+    "IWM",
+    "EFA",
+    "EEM",
+    "SHY",
+    "IEF",
+    "TLT",
+    "LQD",
+    "HYG",
+    "GLD",
+    "VNQ"
+  ],
+  "vol63_annualised": {
+    "EEM": 0.2445360674572154,
+    "EFA": 0.1308358648900802,
+    "GLD": 0.2486247225943833,
+    "HYG": 0.0326848999234405,
+    "IEF": 0.0514568399039411,
+    "IWM": 0.1313225485147167,
+    "LQD": 0.059525561561796,
+    "SHY": 0.0145419884513921,
+    "TLT": 0.0988095460241022,
+    "VNQ": 0.1261865717740145
+  },
+  "what": "the holdings before the first forward record: the held-back window's terminal position, the T1, B3 and B4 weights its last signal date set (section 16 end-bar amendment: computed and published, starts no period); frozen once from the last row of the out-of-sample signal and volatility files and never re-estimated"
+}

@@ -1,6 +1,6 @@
 {
-  "commit": "b7a399b",
-  "generated_at_utc": "2026-10-31T06:20:06Z",
+  "commit": "03b5fd7",
+  "generated_at_utc": "2026-10-31T12:19:57Z",
   "outputs_sha256": {},
   "studies": [
     {
@@ -40,8 +40,8 @@
     {
       "executions": 0,
       "inputs_sha256": {
-        "research/006-term-spread-switch-long-history/paper-log/manifest.json": "60c93150bacab1410f330dcf13cd27dd5f2ab1f1532e0ac920899f36f856bbae",
-        "research/006-term-spread-switch-long-history/paper-log/waits.csv": "dcba7e093cf7b358d20d178e4ef2b2e12307a133ca936d3ad3be5e1d41e552fc"
+        "research/006-term-spread-switch-long-history/paper-log/manifest.json": "c115fe3182e7727c485805a18059dcdd61184a597814352392aec4ba09592f78",
+        "research/006-term-spread-switch-long-history/paper-log/waits.csv": "1106fe5fbe939fdcc1128d11b8df621625aec510f7245e051d23e9b7dd3873db"
       },
       "next_record_due": "2026-10-30",
       "records": 0,
@@ -51,8 +51,8 @@
     {
       "executions": 0,
       "inputs_sha256": {
-        "research/007-bond-carry-tilt-long-history/paper-log/manifest.json": "c11771e08bc70cb51cfb5fe46413640c3106b2d4727eae8951ff4bbd4427e678",
-        "research/007-bond-carry-tilt-long-history/paper-log/waits.csv": "29225995365570ff74efa32189bbb61b175e6957fad31e1c3e0c89c8189adfc1"
+        "research/007-bond-carry-tilt-long-history/paper-log/manifest.json": "edc6e25f33bdcccb1ab2b854d39f27399e4345da7df7c266ed53cdc102dfcc71",
+        "research/007-bond-carry-tilt-long-history/paper-log/waits.csv": "ac82fb52d17beb00b7ec449f2f0639654875ffec4b463d5d74fcc7255e254a5f"
       },
       "next_record_due": "2026-10-30",
       "records": 0,
@@ -62,8 +62,8 @@
     {
       "executions": 0,
       "inputs_sha256": {
-        "research/008-bond-value-tilt-long-history/paper-log/manifest.json": "4a0b0f958892f1b392f18097f0f8b7af4d37229f89bcf9820c92e716387e0365",
-        "research/008-bond-value-tilt-long-history/paper-log/waits.csv": "dd28ec02f778056edf0bfb2dccd75f5120e5ca75b9f57fc476472416a82014ee"
+        "research/008-bond-value-tilt-long-history/paper-log/manifest.json": "72ed8961a2d30e943726e154fe7d6972212d1ef09de26ca8491e30206360bc92",
+        "research/008-bond-value-tilt-long-history/paper-log/waits.csv": "632aac3774b1c71df0fd0b4c1eaae6f56e8ddcd8cb0676f67d0a530b47306399"
       },
       "next_record_due": "2026-10-30",
       "records": 0,
@@ -76,7 +76,7 @@
         "research/010-factor-momentum-french-us/paper-log/frozen_hbar.json": "4be2bcdeb2c7e3cb219b79f3ee039f50de7ab7f950b1f373e59955f90ef624fb",
         "research/010-factor-momentum-french-us/paper-log/positions.csv": "9cb109a293f31a41117b4feed25cd53c08bf3f11f926cdfd83fd8c547a799c2f",
         "research/010-factor-momentum-french-us/paper-log/releases/202609.json": "9ca27034e7da4f3b3eb71ee66b27c52a8c96a5c85ba5f75907e0e0488a834dc5",
-        "research/010-factor-momentum-french-us/paper-log/releases/fetch_log.csv": "42cd3ddcae265c6d559d5de25c4bf411ca3a9a7d81908c9f6526a398bf0bae02"
+        "research/010-factor-momentum-french-us/paper-log/releases/fetch_log.csv": "3eff175ceb8580b9b655f5d28761cc5c10f3850c252fc5c0dcb6c1af9a2db36f"
       },
       "next_record_due": "2026-11, from release 202610 (not yet archived)",
       "records": 2,
@@ -88,7 +88,7 @@
       "inputs_sha256": {
         "research/011-industry-momentum-french-us/paper-log/cohorts.csv": "abb0ef5965f7dde6c47700bed8f51e1ffc4cc8022b95582f3cd777b99a813639",
         "research/011-industry-momentum-french-us/paper-log/releases/202609.json": "5aa3fd914d3713612c30a49d902961aeb1352689610a4c738154a71e0f46eeb3",
-        "research/011-industry-momentum-french-us/paper-log/releases/fetch_log.csv": "b3d05f553b8c5ba7006456298b5cb275dc64292fa49a1beee44d28bc459efd84"
+        "research/011-industry-momentum-french-us/paper-log/releases/fetch_log.csv": "31294223ded86fa818f3fb7e0642506b8714101759a8a22181caa6422818354f"
       },
       "next_record_due": "2026-11, from release 202610 (not yet archived)",
       "records": 2,

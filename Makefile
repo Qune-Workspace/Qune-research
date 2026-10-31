@@ -5,7 +5,8 @@
 #   make lint           ruff over the repository, mypy over the shared library,
 #                       relative Markdown links (tools/check_links.py), front-page
 #                       figures against the study folders (tools/check_glance.py)
-#                       and the paper dashboard against a regeneration (tools/check_dashboard.py)
+#                       the paper dashboard against a regeneration (tools/check_dashboard.py)
+#                       and the question gate of every study from 012 (tools/check_question_gate.py)
 #   make coverage       line coverage of the shared library (tests excluded)
 #   make reproduce      the independent reviewers' recomputation of every published
 #                       statistic from the committed result files: Study 011's
@@ -90,6 +91,7 @@ lint:
 	$(PYTHON) tools/check_links.py
 	$(PYTHON) tools/check_glance.py
 	$(PYTHON) tools/check_dashboard.py
+	$(PYTHON) tools/check_question_gate.py
 
 coverage:
 	cd qune_research && $(PYTHON) -m pytest -q --cov=qune_research --cov-config=../pyproject.toml --cov-report=term-missing

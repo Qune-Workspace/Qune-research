@@ -83,6 +83,12 @@ jobs:
       # machines, chart hashes checked against the committed manifest).
       - name: paper dashboard current
         run: python tools/check_dashboard.py
+      # Every study from 012 has a QUESTION.md whose "Question gate" section
+      # states the power ratio, the persistence reason, the data terms and the
+      # unmined months before anything is computed (tools/check_question_gate.py;
+      # research/POST_MORTEMS.md, 2026-10-31). Studies 001-011 are exempt.
+      - name: question gate
+        run: python tools/check_question_gate.py
       # Line coverage of the shared library, tests excluded (pyproject.toml).
       # The floor is below the figure measured at adoption so that it catches
       # a drop, not a rounding.

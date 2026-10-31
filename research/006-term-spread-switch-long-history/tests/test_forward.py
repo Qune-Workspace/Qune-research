@@ -193,3 +193,25 @@ def test_score_refuses_early_and_without_a_scoring_date():
     records[60]["scoring"] = {"block": 1, "scoring_date": "2031-11-03"}
     out = forward.score(shadow, records)
     assert out["verdict"] == forward.VERDICT_NOT_TESTABLE and out["scoring_date"] == "2031-11-03"
+
+
+def test_dry_run_without_inputs_refuses_and_writes_nothing(tmp_path, monkeypatch):
+    """Found by the 2026-10-31 pre-flight: a missing forward input was a traceback, not a refusal
+    (Study 008 had refused cleanly since its code review of 2026-10-25; 006 and 007 were never back-ported)."""
+    for name in ("DECISIONS_DIR", "FORWARD_RAW_DIR", "SHADOW_CSV", "WAITS_CSV", "INTERIM_JSON", "FORWARD_MANIFEST"):
+        monkeypatch.setattr(forward, name, tmp_path / name)
+    monkeypatch.setattr(forward, "utc_now", lambda: "2026-10-31T09:00:00Z")
+    assert forward.main(["decide", "--signal-month", "2026-10", "--fetch", "--dry-run"]) == 1
+    assert forward.main(["decide", "--signal-month", "2026-10", "--dry-run"]) == 1
+    assert list(tmp_path.iterdir()) == []
+
+
+def test_missing_frozen_input_refuses(tmp_path, monkeypatch, capsys):
+    """The starting holdings come from the study's data/raw/ (git-ignored); a fresh checkout refuses, never crashes."""
+    for name in ("DECISIONS_DIR", "FORWARD_RAW_DIR", "SHADOW_CSV", "WAITS_CSV", "INTERIM_JSON", "FORWARD_MANIFEST"):
+        monkeypatch.setattr(forward, name, tmp_path / name)
+    monkeypatch.setattr(forward, "RAW_DIR", tmp_path / "no-such-raw")
+    monkeypatch.setattr(forward, "utc_now", lambda: "2026-10-31T09:00:00Z")
+    assert forward.main(["decide", "--signal-month", "2026-10", "--dry-run"]) == 1
+    assert "refused: a frozen input is not in data/raw/" in capsys.readouterr().out
+    assert list(tmp_path.iterdir()) == []

@@ -268,3 +268,15 @@ def test_frozen_rank_history_reproduces_the_episode_starting_weights():
     assert len(carry) == start["n"] == 687
     for k, m in {"T1": 60, "T1a": 36, "T1b": 120}.items():
         assert round(float(expanding_rank(carry, m).iloc[-1]), 4) == start[k]
+
+
+def test_dry_run_without_inputs_refuses_and_writes_nothing(tmp_path, monkeypatch, capsys):
+    """Found by the 2026-10-31 pre-flight: a missing forward input was a traceback, not a refusal
+    (Study 008 had refused cleanly since its code review of 2026-10-25; 006 and 007 were never back-ported)."""
+    for name in ("DECISIONS_DIR", "FORWARD_RAW_DIR", "SHADOW_CSV", "WAITS_CSV", "INTERIM_JSON", "FORWARD_MANIFEST"):
+        monkeypatch.setattr(fw, name, tmp_path / name)
+    monkeypatch.setattr(fw, "utc_now", lambda: "2026-10-31T09:00:00Z")
+    assert fw.main(["decide", "--signal-month", "2026-10", "--fetch", "--dry-run"]) == 1
+    assert fw.main(["decide", "--signal-month", "2026-10", "--dry-run"]) == 1
+    assert "refused: an input is not in paper-log/raw/" in capsys.readouterr().out
+    assert list(tmp_path.iterdir()) == []

@@ -417,14 +417,25 @@ def main(argv: list[str] | None = None) -> int:
         print(f"refused: {why}")
         return 1
     records = load_records()
-    start = starting_holdings({name: load_series(name, RAW_DIR) for name in FRED_IDS})
+    try:
+        start = starting_holdings({name: load_series(name, RAW_DIR) for name in FRED_IDS})
+    except FileNotFoundError as missing:
+        print(f"refused: a frozen input is not in data/raw/ ({Path(missing.filename).name}); "
+              "run ./reproduce.sh --episode's data step first")
+        return 1
     if args.step == "decide":
         if any(r["signal_month"] == args.signal_month for r in records):
             print(f"refused: a record for {args.signal_month} exists")
             return 1
         if args.fetch and not args.dry_run:
             fetch_fred()
-        fred = load_fred()
+        elif args.fetch:
+            print("note: --dry-run does not fetch; paper-log/raw/ is read as it is")
+        try:
+            fred = load_fred()
+        except FileNotFoundError as missing:
+            print(f"refused: an input is not in paper-log/raw/ ({Path(missing.filename).name}); run with --fetch")
+            return 1
         held = holdings_before(records, start)
         earlier_ok = sum(r["status"] == "ok" for r in records)
         record = decision_record(fred, args.signal_month, held, earlier_ok, now, file_hashes(FORWARD_RAW_DIR, "fred_"))

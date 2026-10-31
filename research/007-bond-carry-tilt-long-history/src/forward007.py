@@ -449,8 +449,19 @@ def main(argv: list[str] | None = None) -> int:
             return 1
         if args.fetch and not args.dry_run:
             fetch_inputs(FORWARD_RAW_DIR, FORWARD_MANIFEST)
-        fred, bars = load_inputs(FORWARD_RAW_DIR)
-        frozen = {name: load_series(name, RAW_DIR) for name in FRED_IDS}
+        elif args.fetch:
+            print("note: --dry-run does not fetch; paper-log/raw/ is read as it is")
+        try:
+            fred, bars = load_inputs(FORWARD_RAW_DIR)
+        except FileNotFoundError as missing:
+            print(f"refused: an input is not in paper-log/raw/ ({Path(missing.filename).name}); run with --fetch")
+            return 1
+        try:
+            frozen = {name: load_series(name, RAW_DIR) for name in FRED_IDS}
+        except FileNotFoundError as missing:
+            print(f"refused: a frozen input is not in data/raw/ ({Path(missing.filename).name}); "
+                  "run ./reproduce.sh --episode's data step first")
+            return 1
         held = weights_before(records, start)
         earlier_ok = sum(r["status"] == "ok" for r in records)
         hashes = {**file_hashes(FORWARD_RAW_DIR, "fred_"), **file_hashes(FORWARD_RAW_DIR, "alpaca_"),

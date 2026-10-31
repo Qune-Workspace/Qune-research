@@ -89,6 +89,12 @@ jobs:
       # research/POST_MORTEMS.md, 2026-10-31). Studies 001-011 are exempt.
       - name: question gate
         run: python tools/check_question_gate.py
+      # What the forward records and the desk owe by the NYSE calendar exists in
+      # the committed files, or its miss is logged (tools/check_due.py;
+      # research/POST_MORTEMS.md, 2026-10-31): red once a record is past the
+      # close of the third NYSE day after its signal date.
+      - name: due register
+        run: python tools/check_due.py
       # Line coverage of the shared library, tests excluded (pyproject.toml).
       # The floor is below the figure measured at adoption so that it catches
       # a drop, not a rounding.

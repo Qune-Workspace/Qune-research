@@ -92,6 +92,7 @@ lint:
 	$(PYTHON) tools/check_glance.py
 	$(PYTHON) tools/check_dashboard.py
 	$(PYTHON) tools/check_question_gate.py
+	$(PYTHON) tools/check_due.py
 
 coverage:
 	cd qune_research && $(PYTHON) -m pytest -q --cov=qune_research --cov-config=../pyproject.toml --cov-report=term-missing

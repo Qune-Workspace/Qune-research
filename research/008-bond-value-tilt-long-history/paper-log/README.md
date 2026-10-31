@@ -36,6 +36,6 @@ The code decisions behind these rules are in PREREGISTRATION.md §16 (entry of 2
 
 | Signal month | Signal date | Execution date | Record | Shadow line |
 |---|---|---|---|---|
-| 2026-10 | 2026-10-30 (expected) | 2026-11-02 (expected) | not yet | n/a (first period starts here) |
+| 2026-10 | 2026-10-30 (expected) | 2026-11-02 (expected) | not yet: wait line 2026-10-31 06:18Z in `waits.csv` (FRED's DGS10 had no row for 2026-10-30; the first check came about nine hours after the gate, see [`../../../MONTH_END.md`](../../../MONTH_END.md)); re-checked each run, deadline 2026-11-04 21:00Z | n/a (first period starts here) |
 
 Not yet scored: no holding period has ended.

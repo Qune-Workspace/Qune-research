@@ -26,4 +26,4 @@ First signal date: **2026-10-30** (the last NYSE trading day of the first month 
 
 | Signal date | Execution date | Record | Shadow line | Note |
 |---|---|---|---|---|
-| 2026-10-30 | 2026-11-02 | not yet (written after 21:15 UTC on 2026-10-30) | n/a (first period starts here) | |
+| 2026-10-30 | 2026-11-02 | [`decisions/2026-10-30.json`](decisions/2026-10-30.json), written 2026-10-31 06:18Z, about nine hours after the gate: the loop's cadence changed on 30 October and no run fell between 21:15Z and 00:15Z; same daily bars as on Friday night, no bar exists after the signal date; see [`../../../MONTH_END.md`](../../../MONTH_END.md) | n/a (first period starts here) | T1 on EEM, EFA, IWM and VNQ, gross exposure 28.7%; B3 always on; no order |

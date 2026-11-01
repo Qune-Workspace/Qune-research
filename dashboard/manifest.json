@@ -1,6 +1,6 @@
 {
-  "commit": "ea9949f",
-  "generated_at_utc": "2026-11-01T12:24:36Z",
+  "commit": "df56f41",
+  "generated_at_utc": "2026-11-01T18:17:51Z",
   "outputs_sha256": {},
   "studies": [
     {
@@ -42,8 +42,8 @@
       "executions": 0,
       "inputs_sha256": {
         "research/006-term-spread-switch-long-history/paper-log/frozen_start.json": "929873614fb912a8ffef6cd018d4a680f4c0ffaead9fef9792b2a3e7ded238f0",
-        "research/006-term-spread-switch-long-history/paper-log/manifest.json": "e0976341b962fa87d092015f2c49d04568e5cc14908d4f24edb66b102618845d",
-        "research/006-term-spread-switch-long-history/paper-log/waits.csv": "aea87ef88cd5febf7a120f1eee37ff2fcc965265b534679f6ddbcbe5cb25bfff"
+        "research/006-term-spread-switch-long-history/paper-log/manifest.json": "a8f45f57aeea2e72298212cdeaaf949762e6369b32a87232618c522150282ece",
+        "research/006-term-spread-switch-long-history/paper-log/waits.csv": "0762e9c3d013ee24ad431635bd4d5e1c2e44ad810a94ec8fe82b11849b8f45df"
       },
       "next_record_due": "2026-10-30",
       "records": 0,
@@ -53,8 +53,8 @@
     {
       "executions": 0,
       "inputs_sha256": {
-        "research/007-bond-carry-tilt-long-history/paper-log/manifest.json": "fdac1fe8d21b1bd4e97a96390ebb6af3450711ba5371636d43d9b1007441c956",
-        "research/007-bond-carry-tilt-long-history/paper-log/waits.csv": "63eea71cc1cf5a88d77133ef26db3c7bbe0d811c9a4eae811b3903b4818ab255"
+        "research/007-bond-carry-tilt-long-history/paper-log/manifest.json": "a8ff32da5c62973341f196be1ad721478ec839ef32c234b54c8775fda9aac8c9",
+        "research/007-bond-carry-tilt-long-history/paper-log/waits.csv": "8dcff7eafe3c3671c1c08d27ef41c47bfe71a88875bfc8b3e839ad7e0fad33d9"
       },
       "next_record_due": "2026-10-30",
       "records": 0,
@@ -64,8 +64,8 @@
     {
       "executions": 0,
       "inputs_sha256": {
-        "research/008-bond-value-tilt-long-history/paper-log/manifest.json": "0b6df3d31988767f9349bbab7e454006aec881094849cf5aba9f07f5915cb6be",
-        "research/008-bond-value-tilt-long-history/paper-log/waits.csv": "53a80f06d5710f0dad9de74a6a7c200c05cc3400f731599ad7d3c5769fb3a468"
+        "research/008-bond-value-tilt-long-history/paper-log/manifest.json": "3eee9c8735cf710af9e5d6b0c24afeb652a7cadc21835fb21261eecef9fbe676",
+        "research/008-bond-value-tilt-long-history/paper-log/waits.csv": "896980b2a569ee01117add37fb9e2e32f014c94020858053a4b3e32cf4d259fd"
       },
       "next_record_due": "2026-10-30",
       "records": 0,
@@ -78,7 +78,7 @@
         "research/010-factor-momentum-french-us/paper-log/frozen_hbar.json": "4be2bcdeb2c7e3cb219b79f3ee039f50de7ab7f950b1f373e59955f90ef624fb",
         "research/010-factor-momentum-french-us/paper-log/positions.csv": "9cb109a293f31a41117b4feed25cd53c08bf3f11f926cdfd83fd8c547a799c2f",
         "research/010-factor-momentum-french-us/paper-log/releases/202609.json": "9ca27034e7da4f3b3eb71ee66b27c52a8c96a5c85ba5f75907e0e0488a834dc5",
-        "research/010-factor-momentum-french-us/paper-log/releases/fetch_log.csv": "b243a9bef160870fe71b670affee986d00487e8d703c3e7e372102b13f40449a"
+        "research/010-factor-momentum-french-us/paper-log/releases/fetch_log.csv": "11211bff5738afeadf342dd5aa2b2399400f48f38aff95cc6b0e66a0710e7743"
       },
       "next_record_due": "2026-11, from release 202610 (not yet archived)",
       "records": 2,
@@ -90,7 +90,7 @@
       "inputs_sha256": {
         "research/011-industry-momentum-french-us/paper-log/cohorts.csv": "abb0ef5965f7dde6c47700bed8f51e1ffc4cc8022b95582f3cd777b99a813639",
         "research/011-industry-momentum-french-us/paper-log/releases/202609.json": "5aa3fd914d3713612c30a49d902961aeb1352689610a4c738154a71e0f46eeb3",
-        "research/011-industry-momentum-french-us/paper-log/releases/fetch_log.csv": "59aad328fa558aebd4018fb69d387e2714e454ae23eea7f9717a8251aa3c7f92"
+        "research/011-industry-momentum-french-us/paper-log/releases/fetch_log.csv": "0cd43e3f540898d0fbd253dfe4d66874885ca95c58a948f5e8f93777a4f521b2"
       },
       "next_record_due": "2026-11, from release 202610 (not yet archived)",
       "records": 2,

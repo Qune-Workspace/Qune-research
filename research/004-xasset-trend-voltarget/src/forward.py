@@ -231,6 +231,14 @@ def _ok(record: dict) -> bool:
     return str(record["status"]).startswith("ok")
 
 
+def _shown(path: Path) -> Path:
+    """The path as printed: relative to the study when inside it, else as it is (a test's patched folder)."""
+    try:
+        return path.relative_to(STUDY_DIR)
+    except ValueError:
+        return path
+
+
 def _targets_from(universe: list[str], signals: dict, vols: dict, k: float) -> dict:
     """T1, B3 and B4 weights from one signal date's signals and volatilities (§6.2, §9.1)."""
     signals = {a: float(signals[a]) for a in universe}
@@ -542,11 +550,16 @@ def main(argv: list[str] | None = None) -> int:
         return 1
     universe = universe_from_checks()
     k = frozen_k()
+    # Every path is passed by name from here on, so that a test can point the module's constants at a temporary
+    # folder: a default argument is bound at import and a patched module attribute never reaches it. Found in 006
+    # on 2026-10-31; the same class stood here in three call sites that the dry-run-only test never exercised,
+    # and a test of the write path would have written into the real paper-log/decisions/ (research/POST_MORTEMS.md,
+    # 2026-11-01). tools/check_bound_defaults.py keeps it so.
     if args.fetch and not args.dry_run:
-        fetch_inputs(universe)
+        fetch_inputs(universe, FORWARD_RAW_DIR, FORWARD_MANIFEST)
     elif args.fetch:
         print("note: --dry-run does not fetch; paper-log/raw/ is read as it is")
-    try:  # paths passed by name so that a test can point them at an empty folder
+    try:
         closes, hashes = load_inputs(universe, FORWARD_RAW_DIR, FORWARD_MANIFEST)
     except FileNotFoundError as missing:
         print(f"refused: an input is not in paper-log/raw/ ({Path(missing.filename).name}); run with --fetch")
@@ -567,9 +580,9 @@ def main(argv: list[str] | None = None) -> int:
         record["holding_before_source"] = source
         print(json.dumps(record, indent=2, sort_keys=True))
         if not args.dry_run:
-            print(f"written: {write_record(record).relative_to(STUDY_DIR)}")
+            print(f"written: {_shown(write_record(record, FORWARD_DECISIONS_DIR))}")
         return 0 if _ok(record) else 1
-    records = {r["signal_date"]: r for r in load_records()}
+    records = {r["signal_date"]: r for r in load_records(FORWARD_DECISIONS_DIR)}
     current = records.get(str(pd.Timestamp(args.signal_date).date()))
     if current is None or not _ok(current):
         print(f"refused: no ok decision record for {args.signal_date}; run decide first")
@@ -580,11 +593,11 @@ def main(argv: list[str] | None = None) -> int:
               "date and its line is written after the second record (section 11.2)")
         return 1
     previous = max(earlier, key=lambda r: r["signal_date"])
-    line, books = shadow_line(closes, previous, current, latest_books(universe), run_at_utc=now)
+    line, books = shadow_line(closes, previous, current, latest_books(universe, FORWARD_BOOKS_DIR), run_at_utc=now)
     print(json.dumps(line, indent=2, default=str))
     if not args.dry_run:
-        print(f"appended: {append_shadow(line).relative_to(STUDY_DIR)}")
-        print(f"written: {write_books(books).relative_to(STUDY_DIR)}")
+        print(f"appended: {_shown(append_shadow(line, FORWARD_SHADOW_CSV))}")
+        print(f"written: {_shown(write_books(books, FORWARD_BOOKS_DIR))}")
     return 0
 
 

@@ -303,6 +303,44 @@ def test_dry_run_without_inputs_or_frozen_state_refuses_and_writes_nothing(tmp_p
     assert not (tmp_path / "FORWARD_DECISIONS_DIR").exists()
 
 
+def test_decide_writes_into_the_patched_folder_never_the_real_one(tmp_path, monkeypatch, capsys):
+    """2026-11-01 (research/POST_MORTEMS.md): the test above patches four module paths and asserts refusals on
+    ``--dry-run`` only, so it never showed that main's write and read of the decisions folder went through a
+    default bound at import, that is, to the real paper-log/decisions/. A test that patched the folder and ran
+    decide without --dry-run would have written a real record and passed. Here the real folder's listing is
+    taken before and after, and the record must land in the patched folder."""
+    real_decisions = forward.FORWARD_DECISIONS_DIR
+    real_before = sorted(p.name for p in real_decisions.iterdir()) if real_decisions.exists() else []
+    for name in ("FORWARD_RAW_DIR", "FORWARD_MANIFEST", "FORWARD_DECISIONS_DIR", "FORWARD_FROZEN_START",
+                 "FORWARD_SHADOW_CSV", "FORWARD_BOOKS_DIR"):
+        monkeypatch.setattr(forward, name, tmp_path / name)
+    monkeypatch.setattr(forward, "utc_now", lambda: "2026-10-31T09:00:00Z")
+    monkeypatch.setattr(forward, "universe_from_checks", lambda: list(UNIVERSE))
+    monkeypatch.setattr(forward, "frozen_k", lambda: K)
+    world = _world()
+    shifted = pd.bdate_range(end="2026-10-30", periods=len(world["days"]))   # the constructed world, moved so
+    raw = tmp_path / "FORWARD_RAW_DIR"                                        # that its last close is the signal date
+    raw.mkdir()
+    for symbol, series in world["closes"].items():
+        moved = pd.Series(series.to_numpy(), index=shifted).dropna()
+        pd.DataFrame({"close": moved}).rename_axis("date").to_csv(raw / f"alpaca_{symbol}_1Day_all.csv")
+    (tmp_path / "FORWARD_MANIFEST").write_text("{}", encoding="utf-8")
+    (tmp_path / "good").mkdir()
+    (tmp_path / "FORWARD_FROZEN_START").write_bytes(_frozen(world, tmp_path / "good").read_bytes())
+    code = forward.main(["decide", "--signal-date", "2026-10-30"])
+    out = capsys.readouterr().out
+    assert "written: " in out, out
+    written = tmp_path / "FORWARD_DECISIONS_DIR" / "2026-10-30.json"
+    assert written.exists(), sorted(p.name for p in tmp_path.rglob("*"))
+    record = json.loads(written.read_text(encoding="utf-8"))
+    assert record["signal_date"] == "2026-10-30" and code == (0 if record["status"].startswith("ok") else 1)
+    real_after = sorted(p.name for p in real_decisions.iterdir()) if real_decisions.exists() else []
+    assert real_after == real_before
+    # the shadow step reads the records from the same patched folder, not the real one (no earlier record there)
+    assert forward.main(["shadow", "--signal-date", "2026-10-30", "--dry-run"]) == 1
+    assert "refused: no earlier decision record" in capsys.readouterr().out
+
+
 def test_cli_refuses_before_the_first_forward_date(capsys):
     assert forward.main(["decide", "--signal-date", "2026-09-30", "--dry-run"]) == 1
     assert "before the first forward signal date" in capsys.readouterr().out

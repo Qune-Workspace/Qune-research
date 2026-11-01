@@ -95,6 +95,12 @@ jobs:
       # close of the third NYSE day after its signal date.
       - name: due register
         run: python tools/check_due.py
+      # A path a test patches on a forward module is never reached through a
+      # default argument bound at import (tools/check_bound_defaults.py;
+      # research/POST_MORTEMS.md, 2026-11-01): such a test reads or writes the
+      # real paper-log and passes for the wrong reason.
+      - name: bound defaults
+        run: python tools/check_bound_defaults.py
       # Line coverage of the shared library, tests excluded (pyproject.toml).
       # The floor is below the figure measured at adoption so that it catches
       # a drop, not a rounding.

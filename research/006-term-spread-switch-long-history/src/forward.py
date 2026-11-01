@@ -291,6 +291,14 @@ def decision_record(fred: dict[str, pd.Series], month: str, held: dict, earlier_
     return record
 
 
+def _shown(path: Path) -> Path:
+    """The path as printed: relative to the study when inside it, else as it is (a test's patched folder)."""
+    try:
+        return path.relative_to(STUDY_DIR)
+    except ValueError:
+        return path
+
+
 def write_record(record: dict, directory: Path = DECISIONS_DIR) -> Path:
     directory = Path(directory)
     directory.mkdir(parents=True, exist_ok=True)
@@ -462,7 +470,7 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     now = utc_now()
     if args.step == "interim":
-        payload = interim(read_shadow(), now)
+        payload = interim(read_shadow(SHADOW_CSV), now)
         print(json.dumps(payload, indent=2))
         if not args.dry_run:
             INTERIM_JSON.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
@@ -473,10 +481,11 @@ def main(argv: list[str] | None = None) -> int:
     if why:
         print(f"refused: {why}")
         return 1
-    # In the decide step the paths are passed by name so that a test can point them at an empty folder: a default
+    # Every path is passed by name so that a test can point the module's constants at an empty folder: a default
     # argument is bound at import and a patched module attribute never reaches it (found 2026-10-31: the
-    # missing-input test passed locally only because the real paper-log/raw/ was read). The shadow and interim
-    # steps still use the bound defaults.
+    # missing-input test passed locally only because the real paper-log/raw/ was read). The decide step was fixed
+    # that day; the shadow and interim steps kept five bound defaults until tools/check_bound_defaults.py found
+    # them on 2026-11-01 (research/POST_MORTEMS.md).
     records = load_records(DECISIONS_DIR)
     try:
         start = starting_holdings(FROZEN_START)
@@ -513,7 +522,7 @@ def main(argv: list[str] | None = None) -> int:
             return 1
         print(json.dumps(record, indent=2, sort_keys=True))
         if not args.dry_run:
-            print(f"written: {write_record(record, DECISIONS_DIR).relative_to(STUDY_DIR)}")
+            print(f"written: {_shown(write_record(record, DECISIONS_DIR))}")
         return 0 if record["status"] == "ok" else 1
     ok = [r for r in records if r["status"] == "ok"]
     upto = [r for r in ok if r["signal_month"] <= args.signal_month]
@@ -521,16 +530,16 @@ def main(argv: list[str] | None = None) -> int:
         print("refused: the line needs an ok record for this month and an earlier one (section 11.3)")
         return 1
     if args.fetch and not args.dry_run:
-        fetch_alpaca()
+        fetch_alpaca(FORWARD_RAW_DIR, FORWARD_MANIFEST)
     indices = {leg: total_return_index(load_bars(leg, FORWARD_RAW_DIR)) for leg in (DURATION_LEG, CASH_LEG)}
     if _utc(now) < close_utc(upto[-1]["execution_date"]):
         print("refused: the line is written after the execution date's close")
         return 1
-    line = shadow_line(indices, upto, read_shadow(), start, frozen_weight(), now_utc=now)
+    line = shadow_line(indices, upto, read_shadow(SHADOW_CSV), start, frozen_weight(), now_utc=now)
     print(json.dumps(line, indent=2, default=str))
     if not args.dry_run:
-        print(f"appended: {append_shadow(line).relative_to(STUDY_DIR)}")
-        INTERIM_JSON.write_text(json.dumps(interim(read_shadow(), now), indent=2) + "\n", encoding="utf-8")
+        print(f"appended: {_shown(append_shadow(line, SHADOW_CSV))}")
+        INTERIM_JSON.write_text(json.dumps(interim(read_shadow(SHADOW_CSV), now), indent=2) + "\n", encoding="utf-8")
     return 0
 
 

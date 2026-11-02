@@ -31,6 +31,7 @@ jobs:
           - research/009-pooled-forward-duration-timing
           - research/010-factor-momentum-french-us
           - research/011-industry-momentum-french-us
+          - research/013-polymarket-calibration-forward
           - qune_research
           - desk-view
     steps:

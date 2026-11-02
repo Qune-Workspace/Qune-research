@@ -43,7 +43,8 @@ STUDIES := research/001-slope-duration-switch \
            research/008-bond-value-tilt-long-history \
            research/009-pooled-forward-duration-timing \
            research/010-factor-momentum-french-us \
-           research/011-industry-momentum-french-us
+           research/011-industry-momentum-french-us \
+           research/013-polymarket-calibration-forward
 SUITES  := $(STUDIES) qune_research desk-view
 
 # review_recompute.py scripts that ran from the committed outputs alone until

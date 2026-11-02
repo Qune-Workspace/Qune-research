@@ -78,3 +78,9 @@ Consequences, effective from this commit:
 ## How the documents were found, and the rule it leaves
 
 The venue's terms page had been tried on 2026-11-01 00:05–05:08 UTC (the desk's first data task): every `kalshi.com` path answered 429, the Wayback copies were empty shells, the CFTC filing index had no terms text. The verdict stood at "neither until read" for twelve hours while the question of whether the venue could be used at all stayed open. What found the documents in fifteen minutes was reading the sentence on the API documentation's own front page, which names the binding agreement, and then looking where that page's HTML points (a public document store). Rule, from this date: when a venue's terms page blocks a plain fetch, read the agreement its API documentation binds users to, and look in the venue's own public document store, before any further call; "not readable" is a blocker to record, never a verdict to work under. The data-terms line in a study's question gate (`tools/check_question_gate.py`) cites this file and its date.
+
+## Re-reads before each pre-registration
+
+| Date (UTC) | Study | Document | Observed | Verdict |
+|---|---|---|---|---|
+| 2026-11-02 12:24:19 | 013 | `https://polymarket.com/tos`, HTTP 200, 577,173 bytes, SHA-256 `19076bd1fba9585312f9b46a8ee4f64f319fe267677fb48af5c1ae831f84ea2d` | "Effective as of August 11, 2026": the same effective date as the 2026-11-01 read; the saved copy is under `tools/data/raw/pm-terms-2026-11-02/` (git-ignored) | `derived`, unchanged |

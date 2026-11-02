@@ -35,3 +35,6 @@ research/005-duration-trend-regime/results/episode/monthly_*.csv
 research/006-term-spread-switch-long-history/results/episode/actual/monthly_*.csv
 research/007-bond-carry-tilt-long-history/results/episode/actual/monthly_*.csv
 research/008-bond-value-tilt-long-history/results/episode/actual/monthly_*.csv
+
+# Study 013: the data-step sample (per-market rows; Polymarket verdict derived)
+research/013-polymarket-calibration-forward/results/sample.jsonl

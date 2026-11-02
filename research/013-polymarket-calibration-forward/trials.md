@@ -1,0 +1,24 @@
+# Trial log: Study 013, calibration of Polymarket prices at a fixed horizon before resolution
+
+Approval: the owner delegated all decisions on this research programme to the orchestrator on 2026-10-21 and set its scope to prediction markets on 2026-10-31. This pre-registration is approved by the orchestrator under that delegation on the date of its first commit. An `APPROVED` file is written at implementation time (PREREGISTRATION.md §14 step 5), after this commit, so that `reproduce.sh` keeps its refusal gate.
+
+Every trial is logged here before it is run. **Criterion C3 is decided at N = 3** (a new family, PREREGISTRATION.md §9.4; a Bonferroni bar, t_cl ≥ 2.128); the programme-wide count is re-counted immediately before the scoring run, written below, and has no decision weight. Any further rule, parameter or sub-sample choice is appended with a date before it is run. **Rows are never rewritten: every outcome is a new row appended below.** Time labels are read from `git log` or the machine clock, never estimated.
+
+## Registered trials (N = 3)
+
+| ID | Date logged | Description | Sample |
+|---|---|---|---|
+| C1 | 2026-11-02 (this commit) | Logistic recalibration slope b of the outcome on logit(p), p the midpoint of best bid and best ask of the first listed outcome token in the snapshot of record at h = 24 h before `closedTime` (§6.1–§6.2); eligibility at the snapshot (§6.3: binary, order book, no resolution begun, before the scheduled end, spread ≤ 0.10, 0.01 ≤ p ≤ 0.99, volume ≥ 10,000 USDC); outcome from UMA `resolved` with `outcomePrices` and the CLOB winner flag agreeing (§6.5); clustered by parent event; H1: b > 1 against the calibrated market b = 1 | W: `closedTime` in [2026-11-04, 2026-12-30), snapshots from S = 2026-11-03; W1 and W2 the four-week halves for C4 |
+| C1a | 2026-11-02 (this commit) | Sports companion: C1 with every market carrying the tag label `Sports` on its snapshot-of-record row set aside | W, as C1 |
+| C1b | 2026-11-02 (this commit) | Horizon companion: h′ = 168 h; otherwise C1 | W, as C1 (markets closing before t_s(S) + 168 h cannot have a snapshot of record and are counted) |
+
+None of the three has been run. No price at any horizon has been read; no outcome has been read; no snapshot row has been read by the author. The one snapshot that exists (S0 = 2026-11-02, 06:21:24Z–06:25:36Z, 2,026 pages, 202,575 distinct markets, hashes in `paper-log/snapshots.csv`) is excluded from every trial by rule (§0 item 4).
+
+## Log
+
+| Step | Date | Outcome |
+|---|---|---|
+| Question note (step 0) | 2026-11-02, commit `4fb3776` (01:17:49Z by git) | No price at a horizon fetched, no outcome read; power from counts only (`tools/power_pm013.txt`); question gate pass. |
+| Snapshot collector built and on the clock (step 1) | 2026-11-02, commits `bc5fd4f` and `faa2d56` (06:2xZ) | Seven tests on in-memory pages; one-page live dry run; first snapshot S0 taken after the commit; daily job from 2026-11-03 04:40 UTC. |
+| Design review of the pre-registration (separate session, Opus 5.5, isolated, read-only, no network) | 2026-11-02, 12:2x–12:3xZ, before the first commit of PREREGISTRATION.md | Approve with changes: 8 must-fix (the last serving snapshot day is 12-28 not 12-29, so 56 days; an undecidable dropped-field trigger; the low-power ratio's unit, E and K unstated and one floor's claim wrong; early closes carry a decided price into the snapshot of record; five departures from the note unlisted in §0; string-sorted event ids; kept fetch bodies would hold outcomes; no rule for a halt) and 14 should-fix, all changed in the draft before this commit ([DESIGN_REVIEW.md](DESIGN_REVIEW.md)). The terms verdict re-read at 12:24Z (`tools/pm_data_terms.md`, "Re-reads" row): `derived`, effective date unchanged. |
+| Pre-registration committed (§14 step 1) | 2026-11-02 (this commit; its own time is the record) | No price at a horizon read; no outcome read; pushed before the snapshot of S = 2026-11-03 04:40 UTC. `.gitignore` gains `research/013-polymarket-calibration-forward/results/sample.jsonl`. |

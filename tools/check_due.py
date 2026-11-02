@@ -73,6 +73,12 @@ DESK_VIEW_DUE_UTC = time(6, 0)
 DESK_VIEW_GRACE_DAYS = 2
 PREDICTION_GRACE_DAYS = 3
 RELEASE_STUDIES = ("010", "011")
+# Study 013: the daily snapshot of the open-market listing (research/013/collector.py), one a UTC day,
+# taken by the no-model job at 04:40 UTC; a learning run that finds today's missing takes it (same day,
+# the collector refuses only when the day's folder exists). A past day with no snapshot is a gap that
+# is never filled (QUESTION.md §3.2): it is listed, not owed.
+SNAPSHOT_STUDY = "013"
+SNAPSHOT_DUE_UTC = time(4, 40)
 
 
 @dataclass
@@ -286,8 +292,41 @@ def release_items(root: Path) -> list[Item]:
     return items
 
 
+def snapshot_items(root: Path, at: datetime) -> list[Item]:
+    folder = study_dir(root, SNAPSHOT_STUDY)
+    if folder is None:
+        return [Item(f"Study {SNAPSHOT_STUDY} snapshot", "info", "no folder")]
+    log = folder / "paper-log" / "snapshots.csv"
+    if not log.exists():
+        return [Item(f"Study {SNAPSHOT_STUDY} snapshot", "info", "no snapshot yet (collector not started)")]
+    with log.open(encoding="utf-8", newline="") as fh:
+        days = sorted({row["snapshot_date"] for row in csv.DictReader(fh) if row.get("snapshot_date")})
+    if not days:
+        return [Item(f"Study {SNAPSHOT_STUDY} snapshot", "info", "empty log")]
+    today = at.date()
+    first = date.fromisoformat(days[0])
+    have = set(days)
+    gaps = [d.isoformat() for d in (first + timedelta(days=k) for k in range((today - first).days))
+            if d.isoformat() not in have]
+    items = [Item(f"Study {SNAPSHOT_STUDY} snapshots", "info", f"{len(days)} complete since {days[0]}")]
+    if today < first:
+        return items
+    if gaps:
+        items.append(Item(f"Study {SNAPSHOT_STUDY} snapshot gaps", "missed (logged)",
+                          f"{len(gaps)} day(s) with no snapshot, never filled: {', '.join(gaps[-5:])}"))
+    due = datetime.combine(today, SNAPSHOT_DUE_UTC, tzinfo=UTC)
+    deadline = datetime.combine(today, time(23, 59), tzinfo=UTC)
+    evidence = "snapshots.csv row" if today.isoformat() in have else None
+    status, detail = classify(at, due, deadline, evidence, None, None)
+    if status == "DUE":
+        detail += "; run collector.py snapshot in the study folder (same UTC day), then commit the appended line"
+    items.append(Item(f"Study {SNAPSHOT_STUDY} snapshot {today}", status, detail))
+    return items
+
+
 def run(root: Path, at: datetime) -> tuple[list[Item], int]:
-    items = month_end_items(root, at) + desk_view_items(root, at) + prediction_items(root, at) + release_items(root)
+    items = (month_end_items(root, at) + desk_view_items(root, at) + prediction_items(root, at)
+             + release_items(root) + snapshot_items(root, at))
     overdue = sum(1 for i in items if i.status == "OVERDUE")
     return items, (1 if overdue else 0)
 
@@ -311,6 +350,11 @@ def _fixture(root: Path) -> None:
     (root / "predictions" / "ledger.csv").write_text(
         "id,made_on,due_on\nV1,2026-10-23,2026-10-29\nV2,2026-10-23,2026-12-31\n", encoding="utf-8")
     (root / "predictions" / "outcomes.csv").write_text("id,scored_on\n", encoding="utf-8")
+    (root / "research" / "013-f" / "paper-log").mkdir(parents=True)
+    (root / "research" / "013-f" / "paper-log" / "snapshots.csv").write_text(
+        "snapshot_date,started_utc,finished_utc,pages,rows,distinct_markets,bytes,records_sha256,pages_sha256\n"
+        "2026-11-02,2026-11-02T06:21:23Z,2026-11-02T06:40:00Z,1,1,1,10,0,0\n"
+        "2026-11-04,2026-11-04T04:40:10Z,2026-11-04T04:55:00Z,1,1,1,10,0,0\n", encoding="utf-8")
 
 
 def selftest() -> int:
@@ -337,6 +381,8 @@ def selftest() -> int:
 
         items, rc = run(root, datetime(2026, 11, 2, 22, 0, tzinfo=UTC))
         assert status_of(items, "Study 004 record 2026-10") == "ok"
+        assert status_of(items, "Study 013 snapshot 2026-11-02") == "ok"
+        assert not [i for i in items if i.label.startswith("Study 013 snapshot gaps")]
         assert status_of(items, "Study 004 record 2026-11") == "not due"
         assert status_of(items, "Study 006 record 2026-10") == "waiting"
         assert status_of(items, "Study 007 record 2026-10") == "DUE"
@@ -350,6 +396,13 @@ def selftest() -> int:
         assert status_of(items, "Study 006 record 2026-10") == "OVERDUE"
         assert status_of(items, "Study 007 record 2026-10") == "OVERDUE"
         assert rc == 1, rc
+        assert status_of(items, "Study 013 snapshot 2026-11-05") == "DUE"
+        assert status_of(items, "Study 013 snapshot gaps") == "missed (logged)"
+        assert "2026-11-03" in [i for i in items if i.label == "Study 013 snapshot gaps"][0].detail
+        items, _ = run(root, datetime(2026, 11, 5, 4, 0, tzinfo=UTC))
+        assert status_of(items, "Study 013 snapshot 2026-11-05") == "not due"
+        items, _ = run(root, datetime(2026, 10, 30, 20, 0, tzinfo=UTC))
+        assert not [i for i in items if i.label.startswith("Study 013 snapshot 2026")]
 
         # the first fixture item becomes ok once the record exists
         (root / "research" / "007-f" / "paper-log" / "decisions").mkdir()

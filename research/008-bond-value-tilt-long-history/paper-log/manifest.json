@@ -1,11 +1,11 @@
 {
   "alpaca_BIL_1Day_all.csv": {
-    "downloaded_at_utc": "2026-11-02T00:15:37Z",
+    "downloaded_at_utc": "2026-11-02T01:16:45Z",
     "first_bar": "2026-09-01",
     "last_bar": "2026-10-30",
     "params": {
       "adjustment": "all",
-      "end": "2026-11-02T00:00:37Z",
+      "end": "2026-11-02T01:01:45Z",
       "feed": "sip",
       "limit": 10000,
       "start": "2026-09-01",
@@ -18,12 +18,12 @@
     "url": "https://data.alpaca.markets/v2/stocks/BIL/bars"
   },
   "alpaca_IEF_1Day_all.csv": {
-    "downloaded_at_utc": "2026-11-02T00:15:36Z",
+    "downloaded_at_utc": "2026-11-02T01:16:45Z",
     "first_bar": "2026-09-01",
     "last_bar": "2026-10-30",
     "params": {
       "adjustment": "all",
-      "end": "2026-11-02T00:00:36Z",
+      "end": "2026-11-02T01:01:45Z",
       "feed": "sip",
       "limit": 10000,
       "start": "2026-09-01",
@@ -36,7 +36,7 @@
     "url": "https://data.alpaca.markets/v2/stocks/IEF/bars"
   },
   "fred_CPIAUCNS.csv": {
-    "downloaded_at_utc": "2026-11-02T00:15:36Z",
+    "downloaded_at_utc": "2026-11-02T01:16:44Z",
     "first_valid": "1913-01-01",
     "last_valid": "2026-09-01",
     "missing": 1,
@@ -47,7 +47,7 @@
     "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=CPIAUCNS"
   },
   "fred_CPILFENS.csv": {
-    "downloaded_at_utc": "2026-11-02T00:15:36Z",
+    "downloaded_at_utc": "2026-11-02T01:16:45Z",
     "first_valid": "1957-01-01",
     "last_valid": "2026-09-01",
     "missing": 1,
@@ -58,7 +58,7 @@
     "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=CPILFENS"
   },
   "fred_DGS10.csv": {
-    "downloaded_at_utc": "2026-11-02T00:15:36Z",
+    "downloaded_at_utc": "2026-11-02T01:16:44Z",
     "first_valid": "1962-01-02",
     "last_valid": "2026-10-29",
     "missing": 721,
@@ -69,7 +69,7 @@
     "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=DGS10"
   },
   "fred_DGS7.csv": {
-    "downloaded_at_utc": "2026-11-02T00:15:36Z",
+    "downloaded_at_utc": "2026-11-02T01:16:44Z",
     "first_valid": "1969-07-01",
     "last_valid": "2026-10-29",
     "missing": 636,
@@ -80,7 +80,7 @@
     "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=DGS7"
   },
   "fred_DTB3.csv": {
-    "downloaded_at_utc": "2026-11-02T00:15:36Z",
+    "downloaded_at_utc": "2026-11-02T01:16:44Z",
     "first_valid": "1954-01-04",
     "last_valid": "2026-10-29",
     "missing": 801,

@@ -255,4 +255,8 @@ It does not change h, h′, the floor, the window, the trials or the criteria af
 
 ## 16. Amendments
 
-None.
+None to h, h′, the floor, the window, the trials or the criteria.
+
+**Dated notes (precisions of the estimator's reading, found while building §14 step 3; no rule above is changed):**
+
+- **2026-11-02 (step 3, the scoring estimator `src/fit.py` and its tests, before any data step):** (1) §6.6's test "the clustered standard error equal to the ordinary one when every cluster has one member" is mathematically a statement about the unclustered sandwich, not the model-based standard error from H⁻¹: with one market a cluster, V_cl equals the HC0 sandwich times n/(n − 1) exactly, and equals H⁻¹ only in expectation under a correctly specified model. The test asserts the exact equality and the agreement within sampling error on a large correctly specified synthetic sample; §9.3's reporting is unchanged (SE_cl decides, the ordinary SE is reported beside it). (2) §9.3's stop rule (relative change in the log-likelihood below 1e-10) fires on perfectly separated data, because the log-likelihood tends to 0; the first draft of the estimator reported a slope of 410 as converged on such a sample. A fit is therefore reported as "no fit (separation)" when every observation is fitted to within 1e-6 of its outcome or the observed information is singular, and its row reads "not supported (no fit)" as §9.3 provides. Neither note reads any data; both are tested on synthetic samples (`tests/test_fit.py`).

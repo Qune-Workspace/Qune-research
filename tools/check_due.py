@@ -79,6 +79,17 @@ RELEASE_STUDIES = ("010", "011")
 # is never filled (QUESTION.md §3.2): it is listed, not owed.
 SNAPSHOT_STUDY = "013"
 SNAPSHOT_DUE_UTC = time(4, 40)
+# Study 013's window and scoring deadline (PREREGISTRATION.md §5.4, §11, §14 step 3): the snapshot days that
+# can serve C1 run from S = 2026-11-03 to 2026-12-28 (56 days); the study stops for a dated §16 amendment
+# when fewer than 42 of them exist or three or more consecutive days are gaps. The resolution fetch runs once
+# on or after 2027-01-20 00:00Z and is evidenced by the committed provenance line in
+# paper-log/resolution_fetch.csv (the fetch's two files and its hash manifest are git-ignored). The grace of
+# seven days for the fetch is this register's own: the pre-registration fixes "on or after", not a deadline.
+SNAPSHOT_WINDOW = (date(2026, 11, 3), date(2026, 12, 28))
+SNAPSHOT_STOP_MIN_DAYS = 42
+SNAPSHOT_STOP_RUN = 3
+RESOLUTION_DUE = datetime(2027, 1, 20, 0, 0, tzinfo=UTC)
+RESOLUTION_GRACE_DAYS = 7
 
 
 @dataclass
@@ -324,9 +335,53 @@ def snapshot_items(root: Path, at: datetime) -> list[Item]:
     return items
 
 
+def study013_items(root: Path, at: datetime) -> list[Item]:
+    """The window's serving days and the stop rule (info, or DUE once the rule has fired), and the resolution fetch."""
+    folder = study_dir(root, SNAPSHOT_STUDY)
+    if folder is None:
+        return []
+    items: list[Item] = []
+    first, last = SNAPSHOT_WINDOW
+    have: set[str] = set()
+    log = folder / "paper-log" / "snapshots.csv"
+    if log.exists():
+        with log.open(encoding="utf-8", newline="") as fh:
+            have = {row["snapshot_date"] for row in csv.DictReader(fh) if row.get("snapshot_date")}
+    total = (last - first).days + 1
+    if at.date() >= first:
+        # days owed so far: through yesterday, plus today once its due time has passed
+        through = min(last, at.date() if at.time() >= SNAPSHOT_DUE_UTC else at.date() - timedelta(days=1))
+        owed = [first + timedelta(days=k) for k in range((through - first).days + 1)] if through >= first else []
+        present = [d for d in owed if d.isoformat() in have]
+        run_len = best = 0
+        for d in owed:
+            run_len = 0 if d.isoformat() in have else run_len + 1
+            best = max(best, run_len)
+        lost = len(owed) - len(present)
+        fired = best >= SNAPSHOT_STOP_RUN or (total - lost) < SNAPSHOT_STOP_MIN_DAYS
+        amended = False
+        prereg = folder / "PREREGISTRATION.md"
+        if prereg.exists():
+            tail = prereg.read_text(encoding="utf-8").rsplit("## 16. Amendments", 1)[-1]
+            amended = "stop rule" in tail.lower() or "gap" in tail.lower()
+        detail = (f"{len(present)} of {len(owed)} serving days so far present ({total} in the window to {last}); "
+                  f"{lost} gap day(s), longest run {best}; stop rule at fewer than {SNAPSHOT_STOP_MIN_DAYS} days or a run of {SNAPSHOT_STOP_RUN}")
+        if fired and not amended:
+            items.append(Item(f"Study {SNAPSHOT_STUDY} snapshot window", "DUE",
+                              detail + "; §5.4 stop: write a dated §16 amendment on gap handling before the data step"))
+        else:
+            items.append(Item(f"Study {SNAPSHOT_STUDY} snapshot window", "info", detail + (" (amended)" if fired else "")))
+    evidence = "resolution_fetch.csv" if (folder / "paper-log" / "resolution_fetch.csv").exists() else None
+    status, detail = classify(at, RESOLUTION_DUE, RESOLUTION_DUE + timedelta(days=RESOLUTION_GRACE_DAYS), evidence, None, None)
+    if status == "DUE":
+        detail += "; log the row in trials.md, then run the resolution fetch detached (§14 step 4)"
+    items.append(Item(f"Study {SNAPSHOT_STUDY} resolution fetch", status, detail))
+    return items
+
+
 def run(root: Path, at: datetime) -> tuple[list[Item], int]:
     items = (month_end_items(root, at) + desk_view_items(root, at) + prediction_items(root, at)
-             + release_items(root) + snapshot_items(root, at))
+             + release_items(root) + snapshot_items(root, at) + study013_items(root, at))
     overdue = sum(1 for i in items if i.status == "OVERDUE")
     return items, (1 if overdue else 0)
 
@@ -403,6 +458,24 @@ def selftest() -> int:
         assert status_of(items, "Study 013 snapshot 2026-11-05") == "not due"
         items, _ = run(root, datetime(2026, 10, 30, 20, 0, tzinfo=UTC))
         assert not [i for i in items if i.label.startswith("Study 013 snapshot 2026")]
+        assert not [i for i in items if i.label == "Study 013 snapshot window"]  # before S
+        assert status_of(items, "Study 013 resolution fetch") == "not due"
+
+        # Study 013's window and resolution fetch
+        items, _ = run(root, datetime(2026, 11, 5, 22, 0, tzinfo=UTC))
+        window = [i for i in items if i.label == "Study 013 snapshot window"][0]
+        assert window.status == "info" and window.detail.startswith("1 of 3 serving days so far present (56 in the window to 2026-12-28); 2 gap day(s), longest run 1"), window.detail
+        assert status_of(items, "Study 013 resolution fetch") == "not due"
+        items, _ = run(root, datetime(2026, 11, 7, 22, 0, tzinfo=UTC))  # 11-05, 11-06, 11-07 missing: a run of three
+        assert status_of(items, "Study 013 snapshot window") == "DUE"
+        items, _ = run(root, datetime(2027, 1, 20, 1, 0, tzinfo=UTC))
+        assert status_of(items, "Study 013 resolution fetch") == "DUE"
+        items, rc = run(root, datetime(2027, 1, 28, 1, 0, tzinfo=UTC))
+        assert status_of(items, "Study 013 resolution fetch") == "OVERDUE"
+        assert rc == 1
+        (root / "research" / "013-f" / "paper-log" / "resolution_fetch.csv").write_text("fetched_at_utc\n", encoding="utf-8")
+        items, _ = run(root, datetime(2027, 1, 28, 1, 0, tzinfo=UTC))
+        assert status_of(items, "Study 013 resolution fetch") == "ok"
 
         # the first fixture item becomes ok once the record exists
         (root / "research" / "007-f" / "paper-log" / "decisions").mkdir()

@@ -1,3 +1,7 @@
-# Direct dependencies of Study 013's code (collector.py): the standard library only.
+# Direct dependencies of Study 013's code: collector.py uses the standard library only;
+# src/fit.py (the scoring estimator) uses numpy. The tests compare the estimator against
+# statsmodels (an independent implementation), a test-only dependency already pinned by qune_research.
 # pytest is pinned to the version the tests were run with (the same pin as qune_research).
+numpy==2.5.4
+statsmodels==0.15.0
 pytest==9.1.1

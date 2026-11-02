@@ -62,6 +62,8 @@ Counted across every trial of the 12-month momentum family the desk has run, Stu
 
 ## Why no question is queued
 
+*Dated addition, 2026-11-02 from 01:2xZ by the clock: a question is now chosen. Study 013's question note and power check are committed ([research/013-polymarket-calibration-forward/QUESTION.md](research/013-polymarket-calibration-forward/QUESTION.md); power ratio 0.26 on its decision row, the first question to pass the gate below). It is not yet pre-registered: the daily snapshot collector and a separate-session design review come first, and no outcome in its decision sample has been read because none has resolved. The section below is the record of the earlier candidates and is unchanged.*
+
 Moved here on 2026-10-28 from point 5 above, which had grown to 661 words; the figures are unchanged (the longer paragraph is in git at `08ff105`). "The pool" is Studies 006–008's average timing difference, Sharpe of d 0.321. Each row was decided by power first, before any return of the candidate was read. Since 2026-11-01 the programme is prediction markets only, so this table is the record of why the old programme stopped, not a waiting list: no row is reopened, and the reopeners at the end of the section are withdrawn ([RESEARCH_AGENDA.md](RESEARCH_AGENDA.md), status on 2026-11-01).
 
 | Candidate | What a test could see | Why it was not run | Files |

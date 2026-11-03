@@ -1,7 +1,7 @@
 """Study 013: reading the daily snapshots the collector wrote (PREREGISTRATION.md §5.1–§5.2).
 
 Shared by the resolution fetch (the candidate set, §6.4) and the data step
-(§5.3). Nothing here reads `outcome.jsonl`, fetches anything or knows about
+(§5.3). Nothing here reads the fetch's outcome file, fetches anything or knows about
 outcomes; it decodes the whitelisted rows `collector.py` kept and the
 provenance log `paper-log/snapshots.csv`.
 

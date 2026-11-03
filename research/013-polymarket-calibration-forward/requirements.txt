@@ -5,3 +5,4 @@
 numpy==2.5.4
 statsmodels==0.15.0
 pytest==9.1.1
+# charts/make_charts.py (§14 step 12) draws through qune_research/style.py, whose matplotlib pin is the shared library's.

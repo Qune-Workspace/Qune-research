@@ -229,6 +229,7 @@ class RowFacts:
     tag_labels: list[str]
     listing_mid: float | None  # the listing's own mid for the first token (§6.2 check), from the row
     volume: float
+    first_token: str  # the first listed outcome token's id on the snapshot-of-record row (§6.2; the scoring run's y)
 
 
 def eligibility(row: dict, t_s: dt.datetime) -> tuple[str | None, RowFacts | None]:
@@ -266,7 +267,7 @@ def eligibility(row: dict, t_s: dt.datetime) -> tuple[str | None, RowFacts | Non
     first_yes = str(outcomes[0]).strip().lower() == "yes"
     return None, RowFacts(p=p, cluster=cluster, cluster_unparsed=unparsed, n_events=n_events,
                           first_label_yes=first_yes, sports=sports, tag_labels=labels, listing_mid=listing_mid,
-                          volume=vol)
+                          volume=vol, first_token=str(tokens[0]))
 
 
 def cluster_of(row: dict) -> tuple[str, bool, int]:
@@ -401,6 +402,7 @@ def run_data_step(
                     "first_label_yes": facts.first_label_yes,
                     "volume_at_horizon": facts.volume,
                     "tag_family": tag_family(facts.tag_labels),
+                    "first_token": facts.first_token,
                 })
                 if name == "C1":
                     if facts.n_events > 1:

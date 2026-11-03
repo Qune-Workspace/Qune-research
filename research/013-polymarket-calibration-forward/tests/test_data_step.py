@@ -192,6 +192,7 @@ def test_eligible_row_gives_mid_price_cluster_and_facts():
     assert facts.p == pytest.approx(0.35)
     assert facts.cluster == "1000" and facts.n_events == 1 and not facts.cluster_unparsed
     assert facts.first_label_yes and not facts.sports and facts.listing_mid == pytest.approx(0.42)
+    assert facts.first_token == "10"  # clobTokenIds[0] of the row, decoded from its JSON string (§6.2)
     # the first failing reason counts: a row failing both the spread and the floor is counted under the spread
     reason, _ = ds.eligibility(row(2, bestBid=0.30, bestAsk=0.41, volumeNum=1.0), ts(dt.date(2026, 11, 10)))
     assert reason == ds.EXCLUSION_ORDER[6]
@@ -313,6 +314,8 @@ def test_data_step_end_to_end_samples_counts_and_power(tmp_path: Path):
     sample = [json.loads(line) for line in (w.results / "sample.jsonl").read_text().splitlines()]
     assert len(sample) == c1["n"] + c1a["n"] + c1b["n"]
     assert {s["trial"] for s in sample} == {"C1", "C1a", "C1b"}
+    # every sample row names the first listed token of its snapshot-of-record row, which the scoring run's outcome rule needs
+    assert all(s["first_token"] == str(10 * int(s["market"])) for s in sample)
     manifest = json.loads((w.results / "data_manifest.json").read_text())
     assert len(manifest["sample_jsonl_sha256"]) == 64 and manifest["snapshots_read"]
     md = (w.results / "data_step.md").read_text()

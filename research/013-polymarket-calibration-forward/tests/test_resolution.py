@@ -17,7 +17,7 @@ from pathlib import Path
 
 import pytest
 from src import resolution as rs
-from src.snapshots import Snapshot, candidate_set
+from src.snapshots import Snapshot, SnapshotHashMismatch, candidate_set
 
 UTC = dt.UTC
 AFTER = dt.datetime(2027, 1, 20, 0, 5, tzinfo=UTC)
@@ -155,8 +155,15 @@ def test_candidate_set_is_every_id_in_the_window_snapshots(tmp_path: Path):
     snaps = []
     for d, ids in days.items():
         (root / d.isoformat()).mkdir(parents=True)
-        (root / d.isoformat() / "records.jsonl").write_text(
-            "".join(json.dumps({"id": i, "conditionId": "0x" + i, "bestBid": 0.5}) + "\n" for i in ids), encoding="utf-8")
-        snaps.append(Snapshot(date=d, started=dt.datetime(d.year, d.month, d.day, 4, 40, tzinfo=UTC), distinct_markets=len(ids), records_sha256="x"))
+        text = "".join(json.dumps({"id": i, "conditionId": "0x" + i, "bestBid": 0.5}) + "\n" for i in ids)
+        (root / d.isoformat() / "records.jsonl").write_text(text, encoding="utf-8")
+        snaps.append(Snapshot(date=d, started=dt.datetime(d.year, d.month, d.day, 4, 40, tzinfo=UTC), distinct_markets=len(ids),
+                              records_sha256=hashlib.sha256(text.encode("utf-8")).hexdigest()))
     c = candidate_set(root, snaps, rs.FIRST_DAY, rs.LAST_DAY)
     assert c == {"2": "0x2", "3": "0x3", "4": "0x4"}  # S0's market 1 and 12-29's market 5 are not candidates
+    # every snapshot is verified against the hash logged on its day before a row is read (code review of
+    # 2026-11-03, must-fix 4): one edited byte in 12-28's file refuses the whole candidate set
+    target = root / "2026-12-28" / "records.jsonl"
+    target.write_bytes(target.read_bytes().replace(b"0.5", b"0.6", 1))
+    with pytest.raises(SnapshotHashMismatch, match="2026-12-28: records.jsonl hashes to"):
+        candidate_set(root, snaps, rs.FIRST_DAY, rs.LAST_DAY)

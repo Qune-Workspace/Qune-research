@@ -155,13 +155,15 @@ def test_end_to_end_counts_slope_outputs_and_no_per_market_row(tmp_path: Path):
     for name, v in s["verdicts"].items():
         assert f"h = {s['trials'][name]['horizon_hours']} h" in v and "floor 10,000 USDC" in v and "Sports share" in v
     assert "b-hat(168 h) > b-hat(24 h)" in s["verdicts"]["C1b"]
-    assert s["multiplicity_bars"]["C1"]["N=3 (decides C3)"]["z"] == pytest.approx(2.128, abs=5e-4)
+    assert s["multiplicity_bars"]["C1"]["N=3 (decides C3; the pre-registered 2.128)"]["z"] == fit.C3_T  # one C3 bar
     assert s["multiplicity_bars"]["C1"]["N=12 (one per study)"]["z"] == pytest.approx(2.638, abs=5e-4)
     assert "N=40 (public trials.md rows)" in s["multiplicity_bars"]["C1"] and "N=70 (with the desk registry)" in s["multiplicity_bars"]["C1"]
     assert not s["low_power_label"]
     # the four outputs, aggregates only: no token id and no per-market line count anywhere
     names = {p.name for p in w.out.iterdir()}
-    assert names == {"summary.json", "verdict.md", "slopes.csv", "reliability.csv"}
+    # started.txt is written before the outcome file is opened, so a crashed run leaves a trace (review should-fix 7)
+    assert names == {"started.txt", "summary.json", "verdict.md", "slopes.csv", "reliability.csv"}
+    assert (w.out / "started.txt").read_text(encoding="utf-8").startswith("scoring run started 2027-01-22")
     for p in w.out.iterdir():
         text = p.read_text(encoding="utf-8")
         assert "tok-" not in text and len(text.splitlines()) < w.n  # aggregates: never a line per market
@@ -260,10 +262,13 @@ def test_small_tag_families_pool_into_other():
     assert list(groups) == ["Sports", "other"] and len(groups["other"]) == 25
 
 
-def test_fit_subset_on_one_outcome_only_and_on_nothing():
+def test_fit_subset_on_one_outcome_only_on_a_small_cell_and_on_nothing():
     assert score.fit_subset([])["n"] == 0
-    r = score.fit_subset([{"price": 0.3, "y": 1, "cluster": "a"}, {"price": 0.6, "y": 1, "cluster": "b"}])
-    assert r["n"] == 2 and r.get("one_outcome_only") and not r["converged"] and not np.isfinite(r["b"])
+    r = score.fit_subset([{"price": 0.3 + 0.02 * i, "y": 1, "cluster": str(i)} for i in range(12)])
+    assert r["n"] == 12 and r.get("one_outcome_only") and not r["converged"] and not np.isfinite(r["b"])
+    # a cell below MIN_CELL reports its count only (code review of 2026-11-03: a cell of two is a per-market row)
+    s = score.fit_subset([{"price": 0.3, "y": 1, "cluster": "a"}, {"price": 0.6, "y": 0, "cluster": "b"}])
+    assert s["n"] == 2 and s.get("suppressed") and not s.get("one_outcome_only") and not np.isfinite(s["b"])
 
 
 def test_bonferroni_bars():

@@ -31,8 +31,7 @@ before the venue's rate budget is spent; nothing is counted for them.
 Field names follow the collector's observed listing rows (2026-11-02) and the
 CLOB documentation's market record (`tokens[]` with `token_id`, `outcome`,
 `winner`); the separate-session code review checks the reading before the
-first real call (§14 step 3). Every path is passed by name
-(tools/check_bound_defaults.py).
+first real call (§14 step 3). Every path is passed by name from `main`.
 """
 
 from __future__ import annotations
@@ -41,6 +40,7 @@ import argparse
 import csv
 import datetime as dt
 import hashlib
+import http.client
 import json
 import sys
 import time
@@ -119,7 +119,7 @@ def _retrying(fetch: Fetcher, key: str, manifest, api: str, market_id: str, atte
     for attempt in range(1, attempts + 1):
         try:
             body = fetch(key)
-        except (urllib.error.URLError, TimeoutError, OSError) as e:
+        except (urllib.error.URLError, http.client.HTTPException, TimeoutError, OSError) as e:  # incl. IncompleteRead
             manifest.write(json.dumps({"id": market_id, "api": api, "attempt": attempt, "ok": False,
                                        "error": type(e).__name__, "fetched_utc": stamp(now())}) + "\n")
             if attempt < attempts:

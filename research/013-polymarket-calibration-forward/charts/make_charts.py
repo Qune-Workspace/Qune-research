@@ -40,7 +40,7 @@ from qune_research import style  # noqa: E402
 
 STUDY_ID = "Study 013"
 SOURCE = "Polymarket public Gamma and CLOB endpoints, daily snapshots and one resolution fetch (derived aggregates only)"
-PERIOD = "markets closing 4 Nov to 29 Dec 2026, price read 24 h before close (C1b: 168 h)"
+PERIOD = "markets closing 4 Nov to 29 Dec 2026; price from the last daily snapshot at least 24 h before close (realised 24 to 72 h; C1b: 168 h, realised 168 to 216 h)"
 TRIAL_NAMES = {"C1": "C1: every market, 24 h", "C1a": "C1a: without Sports, 24 h", "C1b": "C1b: every market, 168 h"}
 
 
@@ -81,7 +81,10 @@ def reliability_chart(summary: dict, out_dir: Path) -> tuple[Path, dict]:
     ax.set_xlabel("price of the first listed outcome, 24 h before close (bin mean)")
     ax.set_ylabel("share of markets where it won")
     style.label_line_ends(ax, labels, x=1.0)
-    verdict = summary["headline_verdict"]
+    # §9.5: a "supported" sentence carries the window's dates, and the low-power label travels with the verdict
+    verdict = str(summary["verdicts"]["C1"]).split(";")[0].strip()
+    if summary.get("low_power_label"):
+        verdict += " (low-power check)"
     finding = (f"Slope b = {num(w['b'])} against 1.00 for a calibrated market: {verdict}" if fitted
                else f"No slope could be fitted: {verdict}")
     subtitle = (f"Outcome share by price bin with clustered 95% intervals, {w['n']:,} resolved markets in {w['G']:,} events; "

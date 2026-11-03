@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import csv
 import datetime as dt
+import hashlib
 import json
 from collections.abc import Iterator
 from dataclasses import dataclass
@@ -111,13 +112,44 @@ def iter_rows(snapshot_root: Path, snap: Snapshot) -> Iterator[dict]:
                 yield json.loads(line)
 
 
+class SnapshotHashMismatch(ValueError):
+    """A snapshot's records file does not hash to the line logged on its day (§5.1, §11)."""
+
+
+def sha256_file(path: Path) -> str:
+    h = hashlib.sha256()
+    with open(path, "rb") as f:
+        for chunk in iter(lambda: f.read(1 << 20), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+def verify_records(snapshot_root: Path, snap: Snapshot) -> str:
+    """Hash a snapshot's `records.jsonl` and check it against the log line committed on its day; returns the hash.
+
+    Code review of 2026-11-03, must-fix 4: the rows were read without this check, so an edited snapshot would have
+    gone through while the manifest copied the log's hash as if it had been verified."""
+    path = snapshot_root / snap.folder_name / "records.jsonl"
+    if not path.exists():
+        raise SnapshotHashMismatch(f"snapshot {snap.folder_name} is logged but {path.name} is missing")
+    h = sha256_file(path)
+    if h != snap.records_sha256:
+        raise SnapshotHashMismatch(
+            f"snapshot {snap.folder_name}: records.jsonl hashes to {h[:12]}..., the log of its day says "
+            f"{snap.records_sha256[:12]}...; refused, nothing read (§5.1, §11)"
+        )
+    return h
+
+
 def candidate_set(snapshot_root: Path, snapshots: list[Snapshot], first_day: dt.date, last_day: dt.date) -> dict[str, str]:
     """§6.4: every market id in any snapshot dated from `first_day` to `last_day` inclusive, with its
-    condition id (the CLOB key). Only these two identifiers are read from each row."""
+    condition id (the CLOB key). Only these two identifiers are read from each row. Every snapshot is
+    verified against its logged hash before it is read (raises SnapshotHashMismatch)."""
     out: dict[str, str] = {}
     for snap in snapshots:
         if snap.date < first_day or snap.date > last_day:
             continue
+        verify_records(snapshot_root, snap)
         for row in iter_rows(snapshot_root, snap):
             mid = str(row.get("id"))
             cid = row.get("conditionId")

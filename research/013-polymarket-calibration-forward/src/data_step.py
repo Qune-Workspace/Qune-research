@@ -22,12 +22,16 @@ the study's own words, never a venue field name: Polymarket's verdict is
 Refusals (exit 1, nothing written): the resolution fetch has not completed
 (`paper-log/resolution_fetch.csv` missing) or `status.jsonl` is missing; the
 step has already run (`results/data_step.json` exists) and no `--amendment`
-is named (§14 step 8: a re-run after a dated §16 gap amendment names it).
-Exit 0 when the study proceeds, 4 when it stops for an amendment, 5 when it
-halts permanently; the outputs are written in every one of the three cases,
+is named, or the earlier run halted (a halt is permanent, §5.4), or it did not
+stop for a gap amendment (§14 step 8 allows a re-run after a stop only), or
+the named amendment's date is not in PREREGISTRATION.md §16; a snapshot's
+`records.jsonl` does not hash to the line logged on its day (§5.1, §11: every
+snapshot is verified before any row is read). Exit 0 when the study proceeds,
+4 when it stops for an amendment, 5 when it halts permanently (a halt wins
+when both fire); the outputs are written in every one of the three cases,
 because the counts are published whatever they show (§5.4).
 
-Every path is passed by name (tools/check_bound_defaults.py).
+Every path is passed by name from `main`.
 """
 
 from __future__ import annotations
@@ -36,6 +40,7 @@ import argparse
 import datetime as dt
 import hashlib
 import json
+import re
 import statistics
 import sys
 from collections import Counter, defaultdict
@@ -46,7 +51,16 @@ from typing import Any
 import numpy as np
 
 from src import fit
-from src.snapshots import Snapshot, as_float, decode_list, iter_rows, parse_time, read_snapshot_log
+from src.snapshots import (
+    Snapshot,
+    SnapshotHashMismatch,
+    as_float,
+    decode_list,
+    iter_rows,
+    parse_time,
+    read_snapshot_log,
+    verify_records,
+)
 
 UTC = dt.UTC
 
@@ -102,7 +116,8 @@ EXCLUSION_ORDER = (
     "volume below 10,000 USDC",
 )
 SPORTS_REASON = "Sports tag (C1a only)"
-NO_SNAPSHOT_REASON = "no snapshot of record (none before T - h after S, or gap cap)"
+NO_SNAPSHOT_REASON = "no snapshot of record (none on or after S with t_s <= T - h)"
+GAP_CAP_REASON = "no snapshot of record (gap cap: T - t_s >= h + 48 h)"  # §9.6: the markets the gap days removed
 NO_ROW_REASON = "market absent from its snapshot of record"
 
 
@@ -140,10 +155,11 @@ class GapReport:
     gap_days: dict[str, str]  # date -> kind
     longest_run: int
     usable_dates: list[dt.date]
+    floor_applies: bool = True  # §5.4: the 42-day floor names the C1 window only; the run rule applies to both
 
     @property
     def stop(self) -> bool:
-        return self.serving_days_present < STOP_MIN_SERVING_DAYS or self.longest_run >= STOP_GAP_RUN
+        return (self.floor_applies and self.serving_days_present < STOP_MIN_SERVING_DAYS) or self.longest_run >= STOP_GAP_RUN
 
 
 def all_null_fields(snapshot_root: Path, snap: Snapshot) -> list[str]:
@@ -163,13 +179,18 @@ def all_null_fields(snapshot_root: Path, snap: Snapshot) -> list[str]:
 
 
 def classify_gaps(snapshot_root: Path, snapshots: list[Snapshot], last_day: dt.date,
-                  null_fields: dict[dt.date, list[str]] | None = None) -> GapReport:
+                  null_fields: dict[dt.date, list[str]] | None = None, *, median: float | None = None,
+                  floor: bool = True) -> GapReport:
     """Gap days from S to `last_day` inclusive, by kind: `missing`, `short listing` (distinct markets below half
     the median of the window's snapshots), `field null on every row` (§5.4). Snapshots dated before S are not
-    looked at. `null_fields` may be given (tests); otherwise the rows are scanned."""
+    looked at. `null_fields` may be given (tests); otherwise the rows are scanned. `median` is the one median of
+    the 56-day window when the caller has it (the data step passes the same median for both horizons, so that a day
+    is a gap day for every trial or for none); `floor` says whether the 42-day floor applies (the C1 window only).
+    Code review of 2026-11-03, must-fix 2 and should-fix 4."""
     by_date = {s.date: s for s in snapshots if S <= s.date <= last_day}
     counts = [s.distinct_markets for s in by_date.values()]
-    median = statistics.median(counts) if counts else 0
+    if median is None:
+        median = statistics.median(counts) if counts else 0
     gaps: dict[str, str] = {}
     usable: list[dt.date] = []
     d = S
@@ -192,15 +213,17 @@ def classify_gaps(snapshot_root: Path, snapshots: list[Snapshot], last_day: dt.d
         run = run + 1 if d.isoformat() in gaps else 0
         longest = max(longest, run)
         d += dt.timedelta(days=1)
-    return GapReport(serving_days_present=len(usable), gap_days=gaps, longest_run=longest, usable_dates=usable)
+    return GapReport(serving_days_present=len(usable), gap_days=gaps, longest_run=longest, usable_dates=usable,
+                     floor_applies=floor)
 
 
 # ---- snapshot of record (§5.2) ----
 
 
-def snapshot_of_record(t_close: dt.datetime, h_hours: int, usable: list[Snapshot]) -> Snapshot | None:
-    """The usable snapshot dated on or after S with the latest t_s <= T - h; None when there is none or when
-    T - t_s >= h + 48 h (the gap cap). `usable` holds the non-gap snapshots, any order."""
+def snapshot_of_record_or_reason(t_close: dt.datetime, h_hours: int, usable: list[Snapshot]) -> tuple[Snapshot | None, str]:
+    """The usable snapshot dated on or after S with the latest t_s <= T - h, or (None, reason): no such snapshot,
+    or the gap cap T - t_s >= h + 48 h (§5.2; the two reasons are counted apart, §9.6). `usable` holds the non-gap
+    snapshots, any order."""
     limit = t_close - dt.timedelta(hours=h_hours)
     best: Snapshot | None = None
     for s in usable:
@@ -209,10 +232,32 @@ def snapshot_of_record(t_close: dt.datetime, h_hours: int, usable: list[Snapshot
         if best is None or s.started > best.started:
             best = s
     if best is None:
-        return None
+        return None, NO_SNAPSHOT_REASON
     if t_close - best.started >= dt.timedelta(hours=h_hours + GAP_CAP_HOURS):
-        return None
-    return best
+        return None, GAP_CAP_REASON
+    return best, ""
+
+
+def snapshot_of_record(t_close: dt.datetime, h_hours: int, usable: list[Snapshot]) -> Snapshot | None:
+    """`snapshot_of_record_or_reason` without the reason."""
+    return snapshot_of_record_or_reason(t_close, h_hours, usable)[0]
+
+
+def check_amendment_named(amendment: str, register: Path | None) -> None:
+    """§14 step 8: a re-run names a dated §16 gap amendment; the date must appear in the register's §16 section.
+    `register` is PREREGISTRATION.md (None skips the lookup: unit tests without a register)."""
+    m = re.search(r"\d{4}-\d{2}-\d{2}", amendment)
+    if not m:
+        raise Refusal("the --amendment text must carry the amendment's date (YYYY-MM-DD) as written in §16")
+    if register is None:
+        return
+    if not register.exists():
+        raise Refusal(f"{register} is missing: the §16 amendment cannot be checked")
+    text = register.read_text(encoding="utf-8")
+    start = text.find("## 16. Amendments")
+    section = text[start:] if start >= 0 else ""
+    if m.group(0) not in section:
+        raise Refusal(f"no §16 amendment dated {m.group(0)} in {register.name}: a re-run follows a dated amendment (§14 step 8)")
 
 
 # ---- eligibility (§6.3) and the row's derived quantities ----
@@ -315,6 +360,7 @@ def run_data_step(
     results_dir: Path,
     fetch_log_csv: Path,
     amendment: str | None = None,
+    amendment_register: Path | None = None,
     null_fields: dict[dt.date, list[str]] | None = None,
     now: dt.datetime | None = None,
 ) -> dict:
@@ -324,14 +370,36 @@ def run_data_step(
     if not status_jsonl.exists():
         raise Refusal(f"{status_jsonl.name} is missing: nothing to window on")
     report_json = results_dir / "data_step.json"
-    if report_json.exists() and not amendment:
-        raise Refusal(f"{report_json} exists: the data step runs once; a re-run after a dated §16 gap amendment names it with --amendment")
+    if report_json.exists():
+        # code review of 2026-11-03, must-fix 3: any --amendment text used to allow a re-run, even after a halt
+        if not amendment:
+            raise Refusal(f"{report_json} exists: the data step runs once; a re-run after a dated §16 gap amendment names it with --amendment")
+        previous = json.loads(report_json.read_text(encoding="utf-8"))
+        if previous.get("halted"):
+            raise Refusal("the earlier run halted the study permanently (§5.4): no amendment re-runs the data step")
+        if not previous.get("stopped_for_amendment"):
+            raise Refusal("the earlier run did not stop for a gap amendment: a re-run follows a stop only (§14 step 8)")
+        check_amendment_named(amendment, amendment_register)
     now = now or dt.datetime.now(UTC)
 
     snapshots = read_snapshot_log(snapshot_log)
-    gaps = {h: classify_gaps(snapshot_root, snapshots, LAST_SERVING_DAY[h], null_fields) for h in (H_HOURS, H_PRIME_HOURS)}
+    # §5.1, §11: every snapshot this step can read is hashed first and must match the line logged on its day
+    # (code review of 2026-11-03, must-fix 4); the computed hashes go to the manifest as verified
+    in_window = [s for s in snapshots if S <= s.date <= LAST_SERVING_DAY[H_HOURS]]
+    verified: dict[str, str] = {}
+    for s in in_window:
+        try:
+            verified[s.date.isoformat()] = verify_records(snapshot_root, s)
+        except SnapshotHashMismatch as e:
+            raise Refusal(str(e)) from None
+    window_counts = [s.distinct_markets for s in in_window]
+    median = float(statistics.median(window_counts)) if window_counts else 0.0  # one median for both horizons
+    gaps = {
+        H_HOURS: classify_gaps(snapshot_root, snapshots, LAST_SERVING_DAY[H_HOURS], null_fields, median=median, floor=True),
+        H_PRIME_HOURS: classify_gaps(snapshot_root, snapshots, LAST_SERVING_DAY[H_PRIME_HOURS], null_fields, median=median, floor=False),
+    }
     stop = gaps[H_HOURS].stop or gaps[H_PRIME_HOURS].stop
-    usable_dates = set(gaps[H_HOURS].usable_dates) | set(gaps[H_PRIME_HOURS].usable_dates)
+    usable_dates = set(gaps[H_HOURS].usable_dates)  # one set of usable days: the C1b window lies inside the C1 window
     usable = [s for s in snapshots if s.date in usable_dates]
     by_date = {s.date: s for s in snapshots}
 
@@ -357,14 +425,15 @@ def run_data_step(
     need: dict[dt.date, dict[str, list[str]]] = defaultdict(lambda: defaultdict(list))  # date -> id -> trial names
     for mid, t_close in windowed.items():
         for name, spec in TRIALS.items():
-            sor = snapshot_of_record(t_close, spec["h"], usable)
+            sor, why = snapshot_of_record_or_reason(t_close, spec["h"], usable)
             if sor is None:
-                trials[name].excluded[NO_SNAPSHOT_REASON] += 1
+                trials[name].excluded[why] += 1
                 continue
             need[sor.date][mid].append(name)
 
     price_check_rows = 0
     price_check_ok = 0
+    price_check_no_mid = 0
     multi_event = 0
     unparsed_clusters = 0
     labels_present: Counter = Counter()
@@ -410,10 +479,13 @@ def run_data_step(
                     if facts.cluster_unparsed:
                         unparsed_clusters += 1
                     labels_present.update(set(facts.tag_labels))
-                    if facts.listing_mid is not None:
-                        price_check_rows += 1
-                        if abs(facts.p - facts.listing_mid) <= PRICE_CHECK_TOL:
-                            price_check_ok += 1
+                    # §6.2: every C1 sample row is in the denominator; a row without a decodable listing mid counts
+                    # as outside 0.02 (code review of 2026-11-03, must-fix 1: such rows were dropped from the count)
+                    price_check_rows += 1
+                    if facts.listing_mid is None:
+                        price_check_no_mid += 1
+                    elif abs(facts.p - facts.listing_mid) <= PRICE_CHECK_TOL:
+                        price_check_ok += 1
         for mid, names in wanted.items():
             if mid not in found:
                 for name in names:
@@ -425,7 +497,8 @@ def run_data_step(
     price_check_fail = price_check_rows == 0 or price_share < PRICE_CHECK_MIN_SHARE
     halt_reasons: list[str] = []
     if price_check_fail:
-        halt_reasons.append(f"price-field check (§6.2): {price_check_ok} of {price_check_rows} rows within 0.02 of the listing's mid")
+        halt_reasons.append(f"price-field check (§6.2): {price_check_ok} of {price_check_rows} C1 sample rows within 0.02 of the "
+                            f"listing's mid ({price_check_no_mid} without a decodable mid)")
     if g_c1 < HALT_MIN_CLUSTERS:
         halt_reasons.append(f"C1 data-step sample has {g_c1} clusters, fewer than {HALT_MIN_CLUSTERS} (§5.4)")
     if len(c1.markets) < HALT_MIN_MARKETS:
@@ -468,6 +541,7 @@ def run_data_step(
         "price_field_check": {
             "rows": price_check_rows,
             "within_0.02": price_check_ok,
+            "rows_without_listing_mid": price_check_no_mid,
             "share": price_share,
             "required_share": PRICE_CHECK_MIN_SHARE,
             "pass": not price_check_fail,
@@ -479,7 +553,7 @@ def run_data_step(
         p = np.array([m["price"] for m in tr.markets], dtype=np.float64)
         horizons = np.array([m["realised_horizon_hours"] for m in tr.markets], dtype=np.float64)
         hist = np.histogram(p, bins=np.array(fit.BIN_EDGES))[0].tolist() if p.size else [0] * (len(fit.BIN_EDGES) - 1)
-        excluded_in_order = {k: tr.excluded.get(k, 0) for k in (NO_SNAPSHOT_REASON, NO_ROW_REASON, *EXCLUSION_ORDER)}
+        excluded_in_order = {k: tr.excluded.get(k, 0) for k in (NO_SNAPSHOT_REASON, GAP_CAP_REASON, NO_ROW_REASON, *EXCLUSION_ORDER)}
         if TRIALS[name]["non_sports"]:
             excluded_in_order[SPORTS_REASON] = tr.excluded.get(SPORTS_REASON, 0)
         report["trials"][name] = {
@@ -513,7 +587,8 @@ def run_data_step(
         "sample_jsonl_sha256": _sha256(sample_path),
         "status_jsonl_sha256": _sha256(status_jsonl),
         "snapshot_log_sha256": _sha256(snapshot_log),
-        "snapshots_read": {s.date.isoformat(): s.records_sha256 for s in snapshots if s.date in need or s.date in usable_dates},
+        "snapshots_verified_against_log": True,  # hashes computed by this run and checked against paper-log/snapshots.csv
+        "snapshots_read": {d: verified[d] for d in sorted(verified) if dt.date.fromisoformat(d) in need or dt.date.fromisoformat(d) in usable_dates},
     }
     (results_dir / "data_manifest.json").write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     report_json.write_text(json.dumps(report, indent=2, sort_keys=True, allow_nan=True) + "\n", encoding="utf-8")
@@ -597,6 +672,7 @@ def main(argv: list[str] | None = None) -> int:
             results_dir=study / "results",
             fetch_log_csv=study / "paper-log" / "resolution_fetch.csv",
             amendment=a.amendment,
+            amendment_register=study / "PREREGISTRATION.md",
         )
     except Refusal as e:
         print(f"refused: {e}; nothing written")

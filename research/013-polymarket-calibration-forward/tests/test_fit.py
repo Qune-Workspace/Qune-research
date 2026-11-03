@@ -153,7 +153,7 @@ def test_criteria_and_verdict_precedence():
     assert not fit.criteria(b=1.05, se_cl=0.02, b_w1=1.03, b_w2=1.06, converged=False)["all"]
     assert fit.headline_verdict(True, True, False, True) == "inconclusive (halted at the data step)"
     assert fit.headline_verdict(False, True, False, False) == "not supported"
-    assert fit.headline_verdict(True, False, False, False) == "not supported"
+    assert fit.headline_verdict(True, False, False, False) == "not supported (no fit)"  # §9.3; code review 2026-11-03
     assert fit.headline_verdict(True, True, True, False) == "inconclusive (fragile: Sports)"
     assert fit.headline_verdict(True, True, False, False) == "supported in one forward window"
 
@@ -174,8 +174,13 @@ def test_reliability_bins_edges_and_interval():
     p = np.array([0.01, 0.099, 0.10, 0.5, 0.899, 0.90, 0.99, 0.95])
     y = np.array([0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0])
     g = np.arange(p.size)
-    rows = fit.reliability_table(p, y, g)
+    rows = fit.reliability_table(p, y, g, min_cell=1)  # the bins here hold one to three markets: no suppression
     assert len(rows) == 10
+    # at the default floor a bin with fewer than MIN_CELL markets reports its count only (code review of 2026-11-03)
+    small = fit.reliability_table(p, y, g)
+    assert [r["n"] for r in small] == [r["n"] for r in rows]
+    assert all(np.isnan(r["mean_p"]) and np.isnan(r["outcome_share"]) for r in small)
+    assert small[-1]["suppressed"] == 1.0 and small[-1]["clusters"] == 3.0 and small[2]["suppressed"] == 0.0
     # 0.01 and 0.099 in the first bin; 0.10 opens the second; 0.5 opens the sixth; 0.899 in the ninth;
     # 0.90, 0.95 and 0.99 in the last (closed) bin
     assert [r["n"] for r in rows] == [2, 1, 0, 0, 0, 1, 0, 0, 1, 3]
@@ -185,6 +190,29 @@ def test_reliability_bins_edges_and_interval():
     assert last["diff_pp"] == pytest.approx(100 * (2 / 3 - (0.90 + 0.99 + 0.95) / 3))
     assert last["ci_low_pp"] < last["diff_pp"] < last["ci_high_pp"]
     assert np.isnan(rows[2]["mean_p"])
+
+
+def test_c4_needs_both_half_fits_to_have_converged():
+    # code review of 2026-11-03, must-fix 5: C4 took a half's slope whether or not that fit converged
+    assert fit.criteria(b=1.05, se_cl=0.02, b_w1=1.03, b_w2=1.06)["C4"]
+    assert not fit.criteria(b=1.05, se_cl=0.02, b_w1=410.0, b_w2=1.06, w1_converged=False)["C4"]
+    c = fit.criteria(b=1.05, se_cl=0.02, b_w1=1.03, b_w2=1.06, w2_converged=False)
+    assert c["C1"] and c["C2"] and c["C3"] and not c["C4"] and not c["all"]
+    # §9.3: a window fit that did not converge reads "not supported (no fit)" in the headline too (should-fix 3)
+    assert fit.headline_verdict(False, False, False, False) == "not supported (no fit)"
+    assert fit.headline_verdict(False, True, False, False) == "not supported"
+
+
+def test_quasi_complete_separation_is_no_fit():
+    # should-fix 2: the outcomes overlap at one x only; the MLE does not exist, and the first version returned
+    # b = 24.6 as converged with an ordinary standard error of 1.5e5
+    x = np.array([-2.0, -1.0, 0.0, 0.0, 1.0, 2.0])
+    y = np.array([0.0, 0.0, 0.0, 1.0, 1.0, 1.0])
+    f = fit.fit_logistic(x, y)
+    assert f.separated and not f.converged
+    # a well-posed sample keeps a small condition number and is not flagged
+    _, x2, y2, _ = sample(n=500)
+    assert not fit.fit_logistic(x2, y2).separated
 
 
 def test_scores_by_hand():

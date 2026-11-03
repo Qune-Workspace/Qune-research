@@ -35,7 +35,7 @@ been followed by a re-run; no `results/programme_count.json` or a malformed one
 §14 step 7); a sample, status or outcome file whose SHA-256 differs from the
 one recorded when it was written.
 
-Every path is passed by name (tools/check_bound_defaults.py). The bootstrap's
+Every path is passed by name from `main`. The bootstrap's
 resample count is a parameter only so that the tests can lower it; the command
 line never changes it.
 """
@@ -131,6 +131,10 @@ def fit_subset(rows: list[dict], resamples: int = 0) -> dict[str, Any]:
     n = len(rows)
     if n == 0:
         return _nan_row(0)
+    if n < fit.MIN_CELL:
+        out = _nan_row(n)  # the count only: a cell this small is a per-market row in effect (`derived` verdict)
+        out["suppressed"] = True
+        return out
     p = np.array([r["price"] for r in rows], dtype=np.float64)
     y = np.array([r["y"] for r in rows], dtype=np.float64)
     g = np.array([r["cluster"] for r in rows])
@@ -177,15 +181,16 @@ def score_trial(name: str, rows: list[dict], status: dict[str, dict], outcomes: 
     for r in rows:
         mid = str(r["market"])
         kind = outcome.classify(status.get(mid), outcomes.get(mid), str(r["first_token"]))
-        y = outcome.y_of(kind)
-        if y is None:
+        y_val = outcome.y_of(kind)
+        if y_val is None:
             kinds[kind] += 1
             continue
-        scored.append({**r, "y": y})
+        scored.append({**r, "y": y_val})
     rows_w = fit_subset(scored, resamples=resamples)
     rows_w1 = fit_subset([r for r in scored if r["half"] == "W1"])
     rows_w2 = fit_subset([r for r in scored if r["half"] == "W2"])
-    crit = fit.criteria(rows_w["b"], rows_w["se_cl"], rows_w1["b"], rows_w2["b"], rows_w["converged"])
+    crit = fit.criteria(rows_w["b"], rows_w["se_cl"], rows_w1["b"], rows_w2["b"], rows_w["converged"],
+                        w1_converged=rows_w1["converged"], w2_converged=rows_w2["converged"])
     p = np.array([r["price"] for r in scored], dtype=np.float64)
     y = np.array([r["y"] for r in scored], dtype=np.float64)
     g = np.array([r["cluster"] for r in scored])
@@ -297,6 +302,10 @@ def run_score(
     now = now or dt.datetime.now(UTC)
     sample = read_sample(sample_jsonl)
     status = read_jsonl_by_id(status_jsonl)
+    # the once-only rule holds through a crash: the folder exists from the moment the outcome file is opened, so a
+    # run that dies between here and the outputs leaves `started.txt` and the next attempt is refused (§14 step 9)
+    out_dir.mkdir(parents=True, exist_ok=False)
+    (out_dir / "started.txt").write_text(f"scoring run started {now.strftime('%Y-%m-%dT%H:%M:%SZ')}; the outcome file is opened after this line\n", encoding="utf-8")
     outcomes = read_jsonl_by_id(outcome_jsonl)
     trials = {name: score_trial(name, sample.get(name, []), status, outcomes, resamples) for name in TRIALS}
 
@@ -312,7 +321,8 @@ def run_score(
         "C1a": verdict_sentence(companion_row(c1a), c1a, low_power),
         "C1b": verdict_sentence(companion_row(c1b), c1b, low_power) + f"; b-hat(168 h) > b-hat(24 h): {direction} (descriptive, [WA26]'s direction)",
     }
-    bars = {"N=3 (decides C3)": bonferroni_bar(N_FAMILY), "N=12 (one per study)": bonferroni_bar(N_STUDIES),
+    # one C3 bar: the pre-registered 2.128 (fit.C3_T) decides; the other rows are reported beside it, no weight
+    bars = {"N=3 (decides C3; the pre-registered 2.128)": fit.C3_T, "N=12 (one per study)": bonferroni_bar(N_STUDIES),
             f"N={programme['public_trials_md']} (public trials.md rows)": bonferroni_bar(programme["public_trials_md"]),
             f"N={programme['with_desk_registry']} (with the desk registry)": bonferroni_bar(programme["with_desk_registry"])}
     multiplicity = {name: {bar: {"z": z, "t_cl": trials[name]["rows"]["W"]["t_cl"],
@@ -361,7 +371,7 @@ def _fmt(v: Any, nd: int = 4) -> str:
 
 
 def _write_outputs(summary: dict[str, Any], out_dir: Path) -> None:
-    out_dir.mkdir(parents=True, exist_ok=False)
+    out_dir.mkdir(parents=True, exist_ok=True)  # created with started.txt before the outcome file was opened
     (out_dir / "summary.json").write_text(json.dumps(summary, indent=2, sort_keys=True, allow_nan=True) + "\n", encoding="utf-8")
     with open(out_dir / "slopes.csv", "w", newline="", encoding="utf-8") as f:
         w = csv.DictWriter(f, fieldnames=SLOPE_COLUMNS, lineterminator="\n")

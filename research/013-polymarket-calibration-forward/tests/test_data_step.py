@@ -10,10 +10,14 @@ the outcome file; the gap-day rules of §5.4; plus the halt rules, the early fla
 
 from __future__ import annotations
 
+import ast
 import builtins
 import csv
 import datetime as dt
+import hashlib
+import io
 import json
+import os
 from pathlib import Path
 
 import numpy as np
@@ -90,13 +94,15 @@ class World:
     def snapshot(self, day: dt.date, rows: list[dict], started: dt.datetime | None = None, distinct: int | None = None) -> None:
         folder = self.snapshot_root / day.isoformat()
         folder.mkdir(parents=True)
-        (folder / "records.jsonl").write_text("".join(json.dumps(r) + "\n" for r in rows), encoding="utf-8")
+        text = "".join(json.dumps(r) + "\n" for r in rows)
+        (folder / "records.jsonl").write_text(text, encoding="utf-8")
         (folder / "pages.jsonl").write_text("", encoding="utf-8")
         t0 = started or ts(day)
         with open(self.log, "a", newline="", encoding="utf-8") as f:
             csv.writer(f, lineterminator="\n").writerow(
                 [day.isoformat(), t0.strftime("%Y-%m-%dT%H:%M:%SZ"), (t0 + dt.timedelta(minutes=4)).strftime("%Y-%m-%dT%H:%M:%SZ"),
-                 1, len(rows), distinct if distinct is not None else len(rows), 1, "a" * 64, "b" * 64]
+                 1, len(rows), distinct if distinct is not None else len(rows), 1,
+                 hashlib.sha256(text.encode("utf-8")).hexdigest(), "b" * 64]  # the real hash, as the collector logs it
             )
 
     def status_row(self, mid: str, closed: dt.datetime | None, failed: bool = False) -> None:
@@ -247,9 +253,19 @@ def test_gap_days_missing_short_listing_and_all_null_field():
     # a run of three stops; fewer than 42 present stops
     g3 = ds.classify_gaps(Path("unused"), [s for s in snapshots if s.date != days[5]], dt.date(2026, 12, 28), null_fields=nulls)
     assert g3.longest_run == 3 and g3.stop
-    few = [s for s in snapshots if s.date in set(days[:41]) | {dt.date(2026, 11, 2)}]
-    g41 = ds.classify_gaps(Path("unused"), few, dt.date(2026, 12, 28), null_fields=nulls)
-    assert g41.serving_days_present <= 41 and g41.stop
+    # fewer than 42 present stops on the floor alone: fifteen isolated gaps (no run above one), 41 present
+    isolated = {days[k] for k in range(0, 56, 4)} | {days[54]}
+    few = [Snapshot(date=d, started=ts(d), distinct_markets=200_000, records_sha256="x") for d in days if d not in isolated]
+    nulls_few = {d: [] for d in days}
+    g41 = ds.classify_gaps(Path("unused"), few, dt.date(2026, 12, 28), null_fields=nulls_few)
+    assert g41.serving_days_present == 41 and g41.longest_run == 1 and g41.stop
+    # the floor names the C1 window only (§5.4; code review of 2026-11-03, must-fix 2): the C1b window, nine
+    # isolated gaps, 41 of 50 present, does not stop; with the floor applied it would
+    nine = [S + dt.timedelta(days=k) for k in range(50) if k % 5 != 2]
+    nulls_nine = {d: [] for d in nine}
+    gb = ds.classify_gaps(Path("unused"), snaps(*nine), dt.date(2026, 12, 22), null_fields=nulls_nine, median=10, floor=False)
+    assert gb.serving_days_present == 40 and gb.longest_run == 1 and not gb.stop
+    assert ds.classify_gaps(Path("unused"), snaps(*nine), dt.date(2026, 12, 22), null_fields=nulls_nine, median=10, floor=True).stop
 
 
 def test_all_null_fields_reads_rows(tmp_path: Path):
@@ -268,7 +284,7 @@ def test_all_null_fields_reads_rows(tmp_path: Path):
 # ---- the step end to end on a synthetic world ----
 
 
-def build_world(tmp_path: Path, n_markets: int = 5200, clusters: int = 2600, seed: int = 13) -> World:
+def build_world(tmp_path: Path, n_markets: int = 5200, clusters: int = 2600, seed: int = 13, skip: set[dt.date] = frozenset()) -> World:
     """A full window of identical snapshots over n_markets eligible markets, each closing inside the window."""
     rng = np.random.default_rng(seed)
     bids = rng.uniform(0.05, 0.90, size=n_markets)
@@ -278,7 +294,7 @@ def build_world(tmp_path: Path, n_markets: int = 5200, clusters: int = 2600, see
         rows.append(row(i, bestBid=bid, bestAsk=round(bid + 0.02, 2), outcomePrices=json.dumps([f"{bid + 0.01:.3f}", f"{1 - bid - 0.01:.3f}"]),
                         eventIds=[str(5000 + i % clusters)], tagLabels=["Sports"] if i % 3 == 0 else ["Politics"]))
     w = World(tmp_path)
-    full_window(w, rows_by_day=lambda d: rows)
+    full_window(w, rows_by_day=lambda d: rows, skip=skip)
     for i in range(n_markets):
         # closes at 12:00Z on a day spread over the window [11-04, 12-30)
         close_day = dt.date(2026, 11, 4) + dt.timedelta(days=i % 56)
@@ -330,19 +346,39 @@ def test_data_step_never_opens_the_outcome_file(tmp_path: Path, monkeypatch):
     w = build_world(tmp_path, n_markets=60, clusters=30)
     forbidden = w.status.parent / "outcome.jsonl"
     forbidden.write_text('{"id": "0"}\n', encoding="utf-8")
-    real_open = builtins.open
+    real_open, real_io_open, real_os_open = builtins.open, io.open, os.open
 
     def guard(file, *a, **k):
         if "outcome.jsonl" in str(file):
             raise AssertionError("the data step opened the outcome file")
         return real_open(file, *a, **k)
 
+    def io_guard(file, *a, **k):  # Path.read_text / Path.open go through io.open, not builtins.open
+        if "outcome.jsonl" in str(file):
+            raise AssertionError("the data step opened the outcome file")
+        return real_io_open(file, *a, **k)
+
+    def os_guard(path, *a, **k):
+        if "outcome.jsonl" in str(path):
+            raise AssertionError("the data step opened the outcome file")
+        return real_os_open(path, *a, **k)
+
     monkeypatch.setattr(builtins, "open", guard)
+    monkeypatch.setattr(io, "open", io_guard)
+    monkeypatch.setattr(os, "open", os_guard)
     r = w.run()
     assert r["no_outcome_read"] and r["trials"]["C1"]["n"] == 60
-    # and the module's source does not even name the file
+    # and no string literal in the module names the file or any .jsonl with "outcome" in it, so no path to it
+    # can be built (the first version of this check compared against a list that was always empty)
     src = Path(ds.__file__).read_text(encoding="utf-8")
-    assert "outcome.jsonl" not in src and "outcome" not in [m for m in src.split() if m.endswith(".jsonl")]
+    tree = ast.parse(src)
+    docstrings = {id(node.body[0].value) for node in ast.walk(tree)
+                  if isinstance(node, ast.Module | ast.FunctionDef | ast.ClassDef) and node.body
+                  and isinstance(node.body[0], ast.Expr) and isinstance(node.body[0].value, ast.Constant)}
+    literals = [n.value for n in ast.walk(tree) if isinstance(n, ast.Constant) and isinstance(n.value, str) and id(n) not in docstrings]
+    jsonl_literals = [s for s in literals if ".jsonl" in s]
+    assert jsonl_literals  # the check is not vacuous: the module does name status.jsonl and sample.jsonl
+    assert "outcome.jsonl" not in src and not [s for s in jsonl_literals if "outcome" in s.lower()]
 
 
 def test_data_step_halts_on_small_samples_and_on_the_price_check(tmp_path: Path):
@@ -363,19 +399,26 @@ def test_data_step_halts_on_small_samples_and_on_the_price_check(tmp_path: Path)
 
 
 def test_data_step_stops_for_amendment_on_gap_run_and_refuses_twice_without_one(tmp_path: Path):
-    w = World(tmp_path)
-    rows = [row(i) for i in range(20)]
-    skip = {S + dt.timedelta(days=k) for k in (10, 11, 12)}
-    full_window(w, rows_by_day=lambda d: rows, skip=skip)
-    for i in range(20):
-        w.status_row(str(i), ts(dt.date(2026, 11, 20), 12, 0))
+    # a full-size world (no halt) with a run of three missing days: stops for an amendment, and only then re-runs
+    w = build_world(tmp_path, skip={S + dt.timedelta(days=k) for k in (10, 11, 12)})
     r = w.run()
-    assert r["stopped_for_amendment"] and r["gap_days"]["C1 and C1a (to 2026-12-28)"]["longest_run"] == 3
+    assert r["stopped_for_amendment"] and not r["halted"]
+    assert r["gap_days"]["C1 and C1a (to 2026-12-28)"]["longest_run"] == 3
     assert r["gap_days"]["C1 and C1a (to 2026-12-28)"]["serving_days_present"] == 53
     with pytest.raises(ds.Refusal, match="runs once"):
         w.run()
     r2 = w.run(amendment="§16 note of 2027-01-22: gap cap widened to h + 72 h")
     assert r2["amendment"].startswith("§16")
+    # a run that both stops and halts: the halt wins and no amendment re-runs it (§16 note of 2026-11-03)
+    w2 = World(tmp_path / "w2")
+    rows = [row(i) for i in range(20)]
+    full_window(w2, rows_by_day=lambda d: rows, skip={S + dt.timedelta(days=k) for k in (10, 11, 12)})
+    for i in range(20):
+        w2.status_row(str(i), ts(dt.date(2026, 11, 20), 12, 0))
+    r3 = w2.run()
+    assert r3["stopped_for_amendment"] and r3["halted"] and r3["verdict_row"] == "inconclusive (halted at the data step)"
+    with pytest.raises(ds.Refusal, match="halted the study permanently"):
+        w2.run(amendment="§16 note of 2027-01-22: gap cap widened to h + 72 h")
 
 
 def test_data_step_refuses_before_the_fetch_and_counts_failed_and_unwindowed(tmp_path: Path):
@@ -405,3 +448,101 @@ def test_market_absent_from_its_snapshot_of_record_is_counted(tmp_path: Path):
     w.status_row("2", ts(dt.date(2026, 11, 20), 12, 0))
     r = w.run()
     assert r["trials"]["C1"]["excluded"][ds.NO_ROW_REASON] == 1 and r["trials"]["C1"]["n"] == 1
+
+
+# ---- the code review of 2026-11-03 (must-fix 1 to 4; should-fix 5) ----
+
+
+def test_price_check_counts_every_c1_row_and_a_missing_mid_as_outside(tmp_path: Path):
+    # must-fix 1: rows without a decodable listing mid were dropped from the denominator, so 20 null mids out of
+    # 40 rows read as "20 of 20 within" and passed; §6.2 names the C1 sample's rows as the denominator
+    w = World(tmp_path)
+    rows = [row(i, outcomePrices=None if i % 2 else '["0.42", "0.58"]') for i in range(40)]
+    full_window(w, rows_by_day=lambda d: rows)
+    for i in range(40):
+        w.status_row(str(i), ts(dt.date(2026, 11, 20), 12, 0))
+    r = w.run()
+    pc = r["price_field_check"]
+    assert pc["rows"] == 40 and pc["within_0.02"] == 20 and pc["rows_without_listing_mid"] == 20 and not pc["pass"]
+    assert r["halted"] and any("price-field" in h and "20 without a decodable mid" in h for h in r["halt_reasons"])
+
+
+def test_the_floor_applies_to_the_c1_window_only_and_one_median_serves_both(tmp_path: Path):
+    # must-fix 2: nine isolated gaps before 12-22 leave C1 with 47 of 56 days and C1b with 41 of 50; the first
+    # version applied the floor to both and stopped for an amendment §5.4 does not require. Should-fix 4: one
+    # median over the 56-day window, one set of usable days.
+    w = World(tmp_path)
+    rows = [row(i) for i in range(20)]
+    skip = {S + dt.timedelta(days=k) for k in (2, 5, 8, 11, 14, 17, 20, 23, 26)}
+    full_window(w, rows_by_day=lambda d: rows, skip=skip)
+    for i in range(20):
+        w.status_row(str(i), ts(dt.date(2026, 12, 27), 12, 0))
+    r = w.run()
+    g1, g1b = r["gap_days"]["C1 and C1a (to 2026-12-28)"], r["gap_days"]["C1b (to 2026-12-22)"]
+    assert g1["serving_days_present"] == 47 and g1["longest_run"] == 1
+    assert g1b["serving_days_present"] == 41 and g1b["longest_run"] == 1
+    assert not r["stopped_for_amendment"]
+    # the gap-cap reason is counted apart from "none before T - h" (should-fix 5): with 11-05 and 11-06 missing, a
+    # market closing at 12:00Z on 11-06 reads the 11-04 snapshot (04:40Z), 55.3 h before close, inside the cap of
+    # 72 h; one closing at 12:00Z on 11-07 would read the same snapshot 79.3 h before close, outside it
+    w2 = World(tmp_path / "w2")
+    full_window(w2, rows_by_day=lambda d: rows, skip={dt.date(2026, 11, 5), dt.date(2026, 11, 6)})
+    w2.status_row("0", ts(dt.date(2026, 11, 6), 12, 0))
+    w2.status_row("1", ts(dt.date(2026, 11, 7), 12, 0))
+    r2 = w2.run()
+    c1 = r2["trials"]["C1"]
+    assert c1["n"] == 1 and c1["excluded"][ds.GAP_CAP_REASON] == 1 and c1["excluded"][ds.NO_SNAPSHOT_REASON] == 0
+    assert c1["realised_horizon_hours"]["max"] == pytest.approx(55.3333, abs=1e-3)
+    assert not r2["stopped_for_amendment"]  # two missing days in a row: no stop
+
+
+def test_a_rerun_follows_a_stop_only_and_names_an_amendment_dated_in_the_register(tmp_path: Path):
+    # must-fix 3: any --amendment text allowed a re-run, even after a permanent halt, and overwrote the report
+    w = World(tmp_path)
+    rows = [row(i) for i in range(5)]
+    full_window(w, rows_by_day=lambda d: rows)
+    for i in range(5):
+        w.status_row(str(i), ts(dt.date(2026, 11, 20), 12, 0))
+    w.results.mkdir()
+    report = w.results / "data_step.json"
+    report.write_text(json.dumps({"halted": True, "stopped_for_amendment": True}), encoding="utf-8")
+    with pytest.raises(ds.Refusal, match="halted the study permanently"):
+        w.run(amendment="§16 note of 2027-01-22: anything")
+    report.write_text(json.dumps({"halted": False, "stopped_for_amendment": False}), encoding="utf-8")
+    with pytest.raises(ds.Refusal, match="did not stop for a gap amendment"):
+        w.run(amendment="§16 note of 2027-01-22: gap cap widened")
+    report.write_text(json.dumps({"halted": False, "stopped_for_amendment": True}), encoding="utf-8")
+    register = tmp_path / "PREREGISTRATION.md"
+    register.write_text("## 15. Not\n\n2027-01-23 is mentioned here only.\n\n## 16. Amendments\n\n- **2027-01-22 (gap amendment):** the cap is h + 72 h.\n", encoding="utf-8")
+    with pytest.raises(ds.Refusal, match="must carry the amendment's date"):
+        w.run(amendment="gap cap widened", amendment_register=register)
+    with pytest.raises(ds.Refusal, match="no §16 amendment dated 2027-01-23"):
+        w.run(amendment="§16 note of 2027-01-23: gap cap widened", amendment_register=register)
+    assert report.read_text(encoding="utf-8").startswith('{"halted": false')  # nothing overwritten by a refusal
+    r = w.run(amendment="§16 note of 2027-01-22: gap cap widened to h + 72 h", amendment_register=register)
+    assert r["amendment"].startswith("§16") and r["trials"]["C1"]["n"] == 5
+
+
+def test_an_edited_snapshot_is_refused_before_any_row_is_read(tmp_path: Path):
+    # must-fix 4: the rows were read without a check against the hash logged on the snapshot's day
+    w = World(tmp_path)
+    rows = [row(i) for i in range(5)]
+    full_window(w, rows_by_day=lambda d: rows)
+    for i in range(5):
+        w.status_row(str(i), ts(dt.date(2026, 11, 20), 12, 0))
+    target = w.snapshot_root / "2026-11-10" / "records.jsonl"
+    data = target.read_bytes()
+    edited = data.replace(b'"bestBid": 0.41', b'"bestBid": 0.61', 1)
+    assert edited != data
+    target.write_bytes(edited)
+    with pytest.raises(ds.Refusal, match="2026-11-10: records.jsonl hashes to"):
+        w.run()
+    assert not w.results.exists()
+    target.unlink()
+    with pytest.raises(ds.Refusal, match="logged but records.jsonl is missing"):
+        w.run()
+    target.write_bytes(data)
+    r = w.run()
+    assert r["trials"]["C1"]["n"] == 5
+    manifest = json.loads((w.results / "data_manifest.json").read_text(encoding="utf-8"))
+    assert manifest["snapshots_verified_against_log"] and manifest["snapshots_read"]["2026-11-10"] == hashlib.sha256(data).hexdigest()

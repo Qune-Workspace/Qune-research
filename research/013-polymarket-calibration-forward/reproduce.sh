@@ -3,7 +3,9 @@
 #
 #   ./reproduce.sh --test                  the synthetic-data tests of §6.6 (no network, no data)
 #   ./reproduce.sh --fetch                 §14 step 4: the resolution fetch, on or after 2027-01-20 00:00Z (two files, bodies hashed, not kept)
-#   ./reproduce.sh --data-step             §14 step 6: sample, exclusions, power; never opens outcome.jsonl
+#   ./reproduce.sh --data-step [--amendment "<dated §16 gap amendment>"]
+#                                          §14 step 6: sample, exclusions, power; never opens outcome.jsonl;
+#                                          the re-run of §14 step 8 names its amendment
 #   ./reproduce.sh --count <registry.jsonl> §14 step 7: the programme-wide re-count -> results/programme_count.json
 #   ./reproduce.sh --score                 §14 step 9, once: the scoring run -> results/score/
 #   ./reproduce.sh --charts                §14 step 12: charts from results/score/ only
@@ -21,12 +23,15 @@ if [ -z "${PYTHON:-}" ]; then
   if [ -x ../../.venv/bin/python ]; then PYTHON=../../.venv/bin/python; else PYTHON=python3; fi
 fi
 
-usage() { echo "usage: $0 --test | --fetch | --data-step | --count <desk-registry.jsonl> | --score | --charts" >&2; exit 2; }
+usage() { echo "usage: $0 --test | --fetch | --data-step [--amendment <text>] | --count <desk-registry.jsonl> | --score | --charts" >&2; exit 2; }
 [ $# -ge 1 ] || usage
 case "$1" in
   --test)      exec "$PYTHON" -m pytest -q ;;
   --fetch)     exec "$PYTHON" -m src.resolution ;;
-  --data-step) exec "$PYTHON" -m src.data_step ;;
+  --data-step) shift
+               if [ $# -eq 0 ]; then exec "$PYTHON" -m src.data_step; fi
+               { [ $# -eq 2 ] && [ "$1" = "--amendment" ]; } || usage
+               exec "$PYTHON" -m src.data_step --amendment "$2" ;;
   --count)     [ $# -eq 2 ] || usage; exec "$PYTHON" programme_count.py --desk-registry "$2" ;;
   --charts)    exec "$PYTHON" charts/make_charts.py ;;
   --score)     [ $# -eq 1 ] || usage ;;

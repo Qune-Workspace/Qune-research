@@ -1,6 +1,6 @@
 {
-  "commit": "e42e452",
-  "generated_at_utc": "2026-11-02T18:16:09Z",
+  "commit": "fc00a0c",
+  "generated_at_utc": "2026-11-03T00:16:37Z",
   "outputs_sha256": {},
   "studies": [
     {
@@ -41,34 +41,37 @@
     {
       "executions": 0,
       "inputs_sha256": {
+        "research/006-term-spread-switch-long-history/paper-log/decisions/2026-10-30.json": "679fde8d89e8714299f4eb777bbdc6741da47d996683719b93edfe5eff5b51b9",
         "research/006-term-spread-switch-long-history/paper-log/frozen_start.json": "929873614fb912a8ffef6cd018d4a680f4c0ffaead9fef9792b2a3e7ded238f0",
-        "research/006-term-spread-switch-long-history/paper-log/manifest.json": "34821e2a3d4f85b718f0fda046a7b248988ab109cdcc1e7697945a284f470144",
+        "research/006-term-spread-switch-long-history/paper-log/manifest.json": "50eb280a82070042d523c7eb88a77fa8a313d348e34e65dc4e1dfa3290154663",
         "research/006-term-spread-switch-long-history/paper-log/waits.csv": "f08e4a6b9a8c70e67c3e2d9fe87f1435cf707acfb9fd1abae25e10b76cdce69a"
       },
-      "next_record_due": "2026-10-30",
-      "records": 0,
+      "next_record_due": "2026-11-30",
+      "records": 1,
       "shadow_lines": 0,
       "study": "Study 006"
     },
     {
       "executions": 0,
       "inputs_sha256": {
-        "research/007-bond-carry-tilt-long-history/paper-log/manifest.json": "9bd566049b263b1e023afcb72910c31603b7acfaa80224b022b7caf802096008",
+        "research/007-bond-carry-tilt-long-history/paper-log/decisions/2026-10-30.json": "bd75628b5a812d780a7100be65c03ca7d5a10090cf05c2ac5b82ad19f88ed37d",
+        "research/007-bond-carry-tilt-long-history/paper-log/manifest.json": "e3644804f6a4d68254da4341899c928d543635c7c4ddb77d0d1eea5722e14eb0",
         "research/007-bond-carry-tilt-long-history/paper-log/waits.csv": "8ec920276d92e5f9db4e8d903f2055176fcd1000e7f9cffd817d64eed5712cce"
       },
-      "next_record_due": "2026-10-30",
-      "records": 0,
+      "next_record_due": "2026-11-30",
+      "records": 1,
       "shadow_lines": 0,
       "study": "Study 007"
     },
     {
       "executions": 0,
       "inputs_sha256": {
-        "research/008-bond-value-tilt-long-history/paper-log/manifest.json": "73f5f392a714d44a04d4ff05f2324f9c9597607eb8a64e8893ce26c69052ec39",
+        "research/008-bond-value-tilt-long-history/paper-log/decisions/2026-10-30.json": "10b649506732be4261fcdaf2fcf11732cda635ca9bfe62a9f0522d683323fc86",
+        "research/008-bond-value-tilt-long-history/paper-log/manifest.json": "1fc37e7818bead24f570109f2f8479fc9b3fd52f5402d88483815c36eb9f3fd1",
         "research/008-bond-value-tilt-long-history/paper-log/waits.csv": "391b8d35921aa4f42a71f354ef162517234549e7897f518b2111287deec256f5"
       },
-      "next_record_due": "2026-10-30",
-      "records": 0,
+      "next_record_due": "2026-11-30",
+      "records": 1,
       "shadow_lines": 0,
       "study": "Study 008"
     },
@@ -78,7 +81,7 @@
         "research/010-factor-momentum-french-us/paper-log/frozen_hbar.json": "4be2bcdeb2c7e3cb219b79f3ee039f50de7ab7f950b1f373e59955f90ef624fb",
         "research/010-factor-momentum-french-us/paper-log/positions.csv": "9cb109a293f31a41117b4feed25cd53c08bf3f11f926cdfd83fd8c547a799c2f",
         "research/010-factor-momentum-french-us/paper-log/releases/202609.json": "9ca27034e7da4f3b3eb71ee66b27c52a8c96a5c85ba5f75907e0e0488a834dc5",
-        "research/010-factor-momentum-french-us/paper-log/releases/fetch_log.csv": "21f5f69d02697a430bb5d212acb8b0c8b9632088c0feebca248be2e989286e43"
+        "research/010-factor-momentum-french-us/paper-log/releases/fetch_log.csv": "d8b2b36d4d9280194864618bb9ed534a1e44d2e85680530fc806791ef62e25cc"
       },
       "next_record_due": "2026-11, from release 202610 (not yet archived)",
       "records": 2,
@@ -90,7 +93,7 @@
       "inputs_sha256": {
         "research/011-industry-momentum-french-us/paper-log/cohorts.csv": "abb0ef5965f7dde6c47700bed8f51e1ffc4cc8022b95582f3cd777b99a813639",
         "research/011-industry-momentum-french-us/paper-log/releases/202609.json": "5aa3fd914d3713612c30a49d902961aeb1352689610a4c738154a71e0f46eeb3",
-        "research/011-industry-momentum-french-us/paper-log/releases/fetch_log.csv": "23d3598b4b5911dd2087fda9c79d18e8228618ca6bea7054899017af0ba4dad1"
+        "research/011-industry-momentum-french-us/paper-log/releases/fetch_log.csv": "e6b8ab511fde31c08e84ff70183c4f6ae10e3e1fe0b19381c19d11decedb981b"
       },
       "next_record_due": "2026-11, from release 202610 (not yet archived)",
       "records": 2,

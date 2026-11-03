@@ -1,0 +1,53 @@
+{
+  "days_slipped": 1,
+  "execution_date": "2026-11-03",
+  "holding_after": {
+    "T1": "IEF",
+    "T2": "IEF",
+    "T3": "IEF"
+  },
+  "holding_before": {
+    "T1": "IEF",
+    "T2": "IEF",
+    "T3": "IEF"
+  },
+  "input_sha256": {
+    "fred_DGS10.csv": "548c7978740bf6c50df3026343d817121fce046e8685bfa1883769c606b443cf",
+    "fred_DGS7.csv": "b2c19f748866ff5d66be4823cd0de1c476b73eab6e58d9682f9daa30039370bc",
+    "fred_DTB3.csv": "3b653f5fdb20c46b1d89296350be720bfcfdabf99e03ddb2cb897190c0ded47b"
+  },
+  "inputs_on_signal_date": {
+    "DGS10": 4.94,
+    "DGS7": 4.8,
+    "DTB3": 3.99
+  },
+  "label": "forward record, no paper order (section 11); history verdict: inconclusive (fragile)",
+  "notes": "T1 on trial; T2 and T3 registered trials. A trial undefined on t holds its position. No order is placed for any of them.",
+  "orders": [],
+  "paper_order": false,
+  "run_at_utc": "2026-11-03T00:15:51Z",
+  "signal_date": "2026-10-30",
+  "signal_month": "2026-10",
+  "spread": 0.008533662261963795,
+  "status": "ok",
+  "study": "006-term-spread-switch-long-history",
+  "switch": {
+    "T1": false,
+    "T2": false,
+    "T3": false
+  },
+  "targets": {
+    "T1": {
+      "target": "IEF",
+      "value": 0.008533662261963795
+    },
+    "T2": {
+      "target": "IEF",
+      "value": 0.0098173403244664
+    },
+    "T3": {
+      "target": "IEF",
+      "value": 0.01218146275099423
+    }
+  }
+}

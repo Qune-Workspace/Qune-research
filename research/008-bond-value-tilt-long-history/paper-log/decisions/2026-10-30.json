@@ -1,0 +1,101 @@
+{
+  "cpi": {
+    "CPIAUCNS": {
+      "cpi_k": 336.94,
+      "cpi_k_minus_12": 324.8,
+      "k": "2026-09",
+      "k_minus_12": "2025-09",
+      "last_month_in_file": "2026-09",
+      "pi": 0.03737684729064039,
+      "status_k": "in the fetched file",
+      "status_k_minus_12": "in the fetched file",
+      "status_m_minus_1": "in the fetched file"
+    },
+    "CPILFENS": {
+      "cpi_k": 339.287,
+      "cpi_k_minus_12": 330.804,
+      "k": "2026-09",
+      "k_minus_12": "2025-09",
+      "last_month_in_file": "2026-09",
+      "pi": 0.025643583511686607,
+      "status_k": "in the fetched file",
+      "status_k_minus_12": "in the fetched file",
+      "status_m_minus_1": "in the fetched file"
+    }
+  },
+  "cpi_fetched_at_utc": {
+    "CPIAUCNS": "2026-11-03T00:15:59Z",
+    "CPILFENS": "2026-11-03T00:15:59Z"
+  },
+  "days_slipped": 1,
+  "execution_date": "2026-11-03",
+  "forward_real_yields_used": {
+    "CPIAUCNS": {
+      "2026-10": 0.012023152709359615
+    },
+    "CPILFENS": {
+      "2026-10": 0.0237564164883134
+    }
+  },
+  "input_sha256": {
+    "alpaca_BIL_1Day_all.csv": "dd025d34fe61dcd33dc854a53b6cf49dbcec4af50a2c16eb0fb8c1044e49d067",
+    "alpaca_IEF_1Day_all.csv": "c47418815f627d63af3437f8d45a7f646535d822fc95073b3bf39884bc7b228f",
+    "fred_CPIAUCNS.csv": "cfab9b9be4a5d4f06253c4dcc3f7e0b28b1d58837e710dd7cb1fd54a49e7ad7c",
+    "fred_CPILFENS.csv": "15fb27ab0a444bc2e68eb5301987bd57890254910b20a87d54dacac55486efa5",
+    "fred_DGS10.csv": "548c7978740bf6c50df3026343d817121fce046e8685bfa1883769c606b443cf",
+    "fred_DGS7.csv": "b2c19f748866ff5d66be4823cd0de1c476b73eab6e58d9682f9daa30039370bc",
+    "fred_DTB3.csv": "3b653f5fdb20c46b1d89296350be720bfcfdabf99e03ddb2cb897190c0ded47b",
+    "frozen/fred_CPIAUCNS.csv": "cfab9b9be4a5d4f06253c4dcc3f7e0b28b1d58837e710dd7cb1fd54a49e7ad7c",
+    "frozen/fred_CPILFENS.csv": "15fb27ab0a444bc2e68eb5301987bd57890254910b20a87d54dacac55486efa5",
+    "frozen/fred_DGS10.csv": "ffc712cda8ff329de0f07ea6d5d9b97a094fe40da0486319ae12bbbe19d7381d",
+    "frozen/fred_DGS7.csv": "15e58680bd6283eba25615c69091640f21b292b1e6dade7b6701cff271c2e2fc",
+    "frozen/fred_DTB3.csv": "0ba63bf126e01aa6d6f0d54dde125e9d7b6125d835b26f2608c95b3f7d943892",
+    "frozen/results/cpi_availability.csv": "5843c6c5569aefd6abebc0f329b05ea5b85f340a23645c78a97524dae97a15d4",
+    "frozen/results/episode/summary.json": "222e4b460526d454ae390cfc30c719cb4052d8bd9e247d8dc45a5ad888dd079a"
+  },
+  "inputs_on_signal_date": {
+    "DGS10": 4.94,
+    "DGS7": 4.8,
+    "DTB3": 3.99
+  },
+  "label": "forward record, no paper order (section 11); history verdict: not supported",
+  "notes": "T1 on trial (headline CPI, expanding rank); T1a (core CPI) and T1b (trailing 120-month rank) its fragility companions. A weight of null means the trial holds its position (no trade). No order is placed for any of them. ['CPIAUCNS', 'CPILFENS'] fetched after the day of t (see cpi_fetched_at_utc): an index first released between t and the fetch would be in the file; check the BLS release date of k",
+  "orders": [],
+  "paper_order": false,
+  "rank_history_n": {
+    "CPIAUCNS": 687,
+    "CPILFENS": 687
+  },
+  "rank_unrounded": {
+    "T1": 0.3892128279883382,
+    "T1a": 0.5728862973760933,
+    "T1b": 0.8235294117647058
+  },
+  "real_yield": {
+    "CPIAUCNS": 0.012023152709359615,
+    "CPILFENS": 0.0237564164883134
+  },
+  "recomputed_months": {},
+  "run_at_utc": "2026-11-03T00:15:58Z",
+  "signal_date": "2026-10-30",
+  "signal_month": "2026-10",
+  "starting_weights": {
+    "T1": 0.5241,
+    "T1a": 0.654,
+    "T1b": 0.9916,
+    "signal_month": "2026-09",
+    "source": "results/episode/summary.json (section 11.2)"
+  },
+  "status": "ok",
+  "study": "008-bond-value-tilt-long-history",
+  "weights_after": {
+    "T1": 0.3892,
+    "T1a": 0.5729,
+    "T1b": 0.8235
+  },
+  "weights_before": {
+    "T1": 0.5241,
+    "T1a": 0.654,
+    "T1b": 0.9916
+  }
+}

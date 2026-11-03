@@ -1,15 +1,15 @@
 # Paper dashboard: the forward records, as committed
 
-Generated 2026-11-02T18:16:09Z from the files at commit `e42e452` by `tools/make_paper_dashboard.py`. Each study's forward code writes its own record once a month and never rewrites it; this page only counts and draws what is on disk at generation time, so an empty row means no record exists yet, not that one was missed. Nothing here is a backtest: every value is a forward observation after the study's publication. No study has a supported verdict; no order has been placed. Not advice.
+Generated 2026-11-03T00:16:37Z from the files at commit `fc00a0c` by `tools/make_paper_dashboard.py`. Each study's forward code writes its own record once a month and never rewrites it; this page only counts and draws what is on disk at generation time, so an empty row means no record exists yet, not that one was missed. Nothing here is a backtest: every value is a forward observation after the study's publication. No study has a supported verdict; no order has been placed. Not advice.
 
 | Study | Kind | Records | Shadow lines | Next record due |
 |---|---|---|---|---|
 | Study 003 | paper sleeve, not supported; paper record of a not-supported rule; orders only once Independent Risk clears the sleeve | 1 | 0 | 30 Nov 2026 |
 | Study 004 | shadow record, not supported; no paper order | 1 | 0 | 30 Nov 2026 |
 | Study 005 | shadow record, refuted in-sample; no paper order | 1 | 0 | 30 Nov 2026 |
-| Study 006 | shadow record, inconclusive (fragile) on 1969–2018; forward record, scored once after 60 periods; no paper order | 0 | 0 | 30 Oct 2026 |
-| Study 007 | shadow record, inconclusive (fragile) on 1974–2018; forward record, scored once after 60 periods; no paper order | 0 | 0 | 30 Oct 2026 |
-| Study 008 | shadow record, not supported on 1974–2018; forward record, scored once after 60 periods; no paper order | 0 | 0 | 30 Oct 2026 |
+| Study 006 | shadow record, inconclusive (fragile) on 1969–2018; forward record, scored once after 60 periods; no paper order | 1 | 0 | 30 Nov 2026 |
+| Study 007 | shadow record, inconclusive (fragile) on 1974–2018; forward record, scored once after 60 periods; no paper order | 1 | 0 | 30 Nov 2026 |
+| Study 008 | shadow record, not supported on 1974–2018; forward record, scored once after 60 periods; no paper order | 1 | 0 | 30 Nov 2026 |
 | Study 010 | monthly position record, not supported on 1927–2026; shadow-only, scored once after 60 holding months; no paper order | 2 | none (scored once at the end) | 2026-11, from release 202610 (not yet archived) |
 | Study 011 | monthly cohort record, not supported (a variant of [MG99]'s rule on the library's industries) on 806 months outside [MG99]'s 1963–1995 sample; shadow-only, scored once after 60 holding months; no paper order | 2 | none (scored once at the end) | 2026-11, from release 202610 (not yet archived) |
 
@@ -73,12 +73,16 @@ No chart yet: the first shadow line follows the record after 30 Nov 2026.
 
 | | |
 |---|---|
-| Decision records | 0 |
-| Last record | none yet |
+| Decision records | 1 |
+| Last record | 2026-10-30 (ok) |
 | Shadow lines (holding periods ended) | 0 |
-| Next record due (signal date) | 30 Oct 2026 |
+| Next record due (signal date) | 30 Nov 2026 |
 
-No chart yet: the first shadow line follows the record after 30 Oct 2026.
+| Signal date | Execution date | Status | Target |
+|---|---|---|---|
+| 2026-10-30 | 2026-11-03 | ok | none |
+
+No chart yet: the first shadow line follows the record after 30 Nov 2026.
 
 ## Study 007 (shadow record)
 
@@ -86,12 +90,16 @@ No chart yet: the first shadow line follows the record after 30 Oct 2026.
 
 | | |
 |---|---|
-| Decision records | 0 |
-| Last record | none yet |
+| Decision records | 1 |
+| Last record | 2026-10-30 (ok) |
 | Shadow lines (holding periods ended) | 0 |
-| Next record due (signal date) | 30 Oct 2026 |
+| Next record due (signal date) | 30 Nov 2026 |
 
-No chart yet: the first shadow line follows the record after 30 Oct 2026.
+| Signal date | Execution date | Status | Target |
+|---|---|---|---|
+| 2026-10-30 | 2026-11-03 | ok | none |
+
+No chart yet: the first shadow line follows the record after 30 Nov 2026.
 
 ## Study 008 (shadow record)
 
@@ -99,12 +107,16 @@ No chart yet: the first shadow line follows the record after 30 Oct 2026.
 
 | | |
 |---|---|
-| Decision records | 0 |
-| Last record | none yet |
+| Decision records | 1 |
+| Last record | 2026-10-30 (ok) |
 | Shadow lines (holding periods ended) | 0 |
-| Next record due (signal date) | 30 Oct 2026 |
+| Next record due (signal date) | 30 Nov 2026 |
 
-No chart yet: the first shadow line follows the record after 30 Oct 2026.
+| Signal date | Execution date | Status | Target |
+|---|---|---|---|
+| 2026-10-30 | 2026-11-03 | ok | none |
+
+No chart yet: the first shadow line follows the record after 30 Nov 2026.
 
 ## Study 010 (monthly position record)
 
@@ -114,7 +126,7 @@ No chart yet: the first shadow line follows the record after 30 Oct 2026.
 |---|---|
 | Monthly records | 2 |
 | Last record | 2026-10 from release 202609 |
-| Last release check | 2 Nov 2026 18:15Z: release 202609, not kept (already archived (one download per release)) |
+| Last release check | 3 Nov 2026 00:16Z: release 202609, not kept (already archived (one download per release)) |
 | Next record due | 2026-11, from release 202610 (not yet archived) |
 | Scoring | once, by `python -m src.forward010 score --release YYYYMM`, after 60 holding months (2026-09 to 2031-08), from the first archived release that contains 2031-08; a low-power check (detects a Sharpe of d of about 1.27 at 80% power); lateness is set at scoring from the commit time; `interim` gives months recorded, months with a return, cumulative T and B3 and the mean of d, without a t-statistic or verdict |
 
@@ -133,7 +145,7 @@ No equity line: positions are +1 (long) or −1 (short) per factor; the factor r
 |---|---|
 | Monthly records | 2 |
 | Last record | 2026-10 from release 202609 |
-| Last release check | 2 Nov 2026 18:15Z: release 202609, not kept (already archived (one download per release)) |
+| Last release check | 3 Nov 2026 00:16Z: release 202609, not kept (already archived (one download per release)) |
 | Next record due | 2026-11, from release 202610 (not yet archived) |
 | Scoring | once, by `python -m src.forward011 score --release YYYYMM`, after 60 holding months (2026-09 to 2031-08), from the first archived release that contains 2031-08; a low-power check (detects a Sharpe of d of about 1.27 at 80% power); lateness is set at scoring from the commit time; `interim` gives counts and the mean and sum of d without a t-statistic or verdict |
 

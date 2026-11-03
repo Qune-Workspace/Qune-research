@@ -1,0 +1,58 @@
+{
+  "carry": 0.01218146275099423,
+  "days_slipped": 1,
+  "execution_date": "2026-11-03",
+  "forward_carries_used": {
+    "2026-10": 0.01218146275099423
+  },
+  "input_sha256": {
+    "alpaca_BIL_1Day_all.csv": "99ae7c48a17b940570037a2e12189a825ff6de6443c2a69f570db8c24b0b3896",
+    "alpaca_IEF_1Day_all.csv": "79ca4e2f1278b61536670c2996c50fce4ac0bce633780590d902926f09d2f31e",
+    "fred_DGS10.csv": "548c7978740bf6c50df3026343d817121fce046e8685bfa1883769c606b443cf",
+    "fred_DGS7.csv": "b2c19f748866ff5d66be4823cd0de1c476b73eab6e58d9682f9daa30039370bc",
+    "fred_DTB3.csv": "3b653f5fdb20c46b1d89296350be720bfcfdabf99e03ddb2cb897190c0ded47b",
+    "frozen/fred_DGS10.csv": "ffc712cda8ff329de0f07ea6d5d9b97a094fe40da0486319ae12bbbe19d7381d",
+    "frozen/fred_DGS7.csv": "15e58680bd6283eba25615c69091640f21b292b1e6dade7b6701cff271c2e2fc",
+    "frozen/fred_DTB3.csv": "0ba63bf126e01aa6d6f0d54dde125e9d7b6125d835b26f2608c95b3f7d943892",
+    "frozen/results/episode/summary.json": "195085000918b1f4fbb441e2a20a6adc29f31ff53c90e3115664c915c53d5652"
+  },
+  "inputs_on_signal_date": {
+    "DGS10": 4.94,
+    "DGS7": 4.8,
+    "DTB3": 3.99
+  },
+  "label": "forward record, no paper order (section 11); history verdict: inconclusive (fragile)",
+  "notes": "T1 on trial; T1a and T1b its fragility companions; T2 and T3 registered secondary trials. A weight of null means the trial holds its position (no trade). No order is placed for any of them.",
+  "orders": [],
+  "paper_order": false,
+  "rank_history_n": 688,
+  "run_at_utc": "2026-11-03T00:15:54Z",
+  "signal_date": "2026-10-30",
+  "signal_month": "2026-10",
+  "starting_weights": {
+    "T1": 0.4111,
+    "T1a": 0.4111,
+    "T1b": 0.4111,
+    "T2": 0.2055,
+    "T3": 0.0,
+    "signal_month": "2026-09",
+    "source": "results/episode/summary.json (section 11.2)"
+  },
+  "status": "ok",
+  "study": "007-bond-carry-tilt-long-history",
+  "trend": 0,
+  "weights_after": {
+    "T1": 0.3857,
+    "T1a": 0.3857,
+    "T1b": 0.3857,
+    "T2": 0.1928,
+    "T3": 0.0
+  },
+  "weights_before": {
+    "T1": 0.4111,
+    "T1a": 0.4111,
+    "T1b": 0.4111,
+    "T2": 0.2055,
+    "T3": 0.0
+  }
+}

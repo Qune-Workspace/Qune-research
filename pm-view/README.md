@@ -1,0 +1,25 @@
+# Prediction-market view
+
+The desk's calls on Polymarket markets, each written down with the market's own probability before the desk's and scored by Brier against it when the market settles. Started 2026-11-03 under the prediction-market programme ([`../RESEARCH_AGENDA.md`](../RESEARCH_AGENDA.md), 2026-11-01); it replaces the rates desk view ([`../desk-view/`](../desk-view/)) once that view's open calls settle on 2026-12-31. Until then both run.
+
+Why it is built this way: the rates view's first call, V1, was made against the market with no stated reason why the market was wrong, and missed ([`../predictions/POST_MORTEMS.md`](../predictions/POST_MORTEMS.md)). The rules adopted then (baseline before confidence; a departure needs a testable reason; Brier against the baseline every time) are simpler on a prediction market, because the baseline is the market: the mid of the best bid and ask on the YES token is a probability. So:
+
+1. **The market first.** `fetch.py quote <market id>` reads the market record and the YES token's order book, keeps the raw bodies git-ignored with their hashes in `data/manifest.json`, and prints the mid, spread, volume, scheduled end and whether the market is eligible for a call (the same floors as Study 013's §6.3: binary, order book open, resolution not begun, two-sided book, spread at most 0.10, mid inside [0.01, 0.99], at least 10,000 USDC traded). The desk writes its own probability only after that line exists.
+2. **A call needs a departure and a reason.** A call is logged only when the desk's probability differs from the market mid by at least 0.10, and its basis names the market's number and says in one testable sentence what the market is missing. Nearer than that the desk has nothing to add and says so in the view instead of logging a call. Enforced on the committed ledger by `tests/test_ledger_discipline.py`.
+3. **Scored on the venue's settlement, once.** `score.py` scores each due call by the outcome rule Study 013 pre-registered ([`../research/013-polymarket-calibration-forward/PREREGISTRATION.md`](../research/013-polymarket-calibration-forward/PREREGISTRATION.md) §6.5, `src/outcome.py`, imported unchanged): YES when the UMA status is `resolved`, the settlement prices are 1 and 0 and the CLOB winner flags agree; NO on the reverse; a fractional settlement or a disagreement closes the call as excluded, never scored. Both Brier scores, the desk's and the market mid's, go in the row. A call is never scored twice; the ledger is never edited.
+4. **Skill, not hit rate.** `score.py --summary` writes `SKILL.md`: desk and market Brier over the scored calls and their difference. With fewer than about thirty scored calls the figure is descriptive.
+
+Files:
+
+- [`PM_VIEW.md`](PM_VIEW.md): the current view, dated; what was read, what was called or why not, the running score.
+- `ledger.csv`: one row per call, **append-only**: `id`, `made_on` (UTC), `venue`, `market_id`, `condition_id`, `yes_token_id`, `proposition` (the desk's own words for what YES means), `due_on` (the market's scheduled end date), `market_mid`, `market_spread`, `volume_usdc` (all three from the quote line), `desk_p`, `basis`, `quote_sha256` (the book body's hash in `data/manifest.json`).
+- `outcomes.csv`: created by the first scoring run; `id`, `scored_on`, `kind`, `y`, `desk_p`, `market_mid`, `brier_desk`, `brier_market`, and the hashes of the two settlement records read.
+- [`SKILL.md`](SKILL.md): the running score.
+- `pm_lib.py`: the pure functions (book touch, eligibility in §6.3 order, the call rule, Brier); `fetch.py`, `score.py` as above; `tests/`.
+- `data/manifest.json`: one entry per quote (time, ids, hashes, the computed numbers). `data/raw/` is not committed.
+
+**Data terms.** Polymarket's verdict is `derived` ([`../tools/pm_data_terms.md`](../tools/pm_data_terms.md)): no raw response is committed. A call row carries the market's identifiers and three numbers the desk computed from the book at the time of the call (mid, spread, cumulative volume), and the view quotes the same; the bodies stay in `data/raw/`, hashed. Reads are public, no key, no wallet, read-only, inside the documented rate limits, with a declared user agent. Paper only: no order, no wallet, no account.
+
+Run from this folder with the repository's virtualenv: `python fetch.py quote <ids>`, `python score.py [--dry-run]`, `python score.py --summary`, `python -m pytest -q`.
+
+Nothing here is investment advice. The calls are written to be falsified, and some will be.

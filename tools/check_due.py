@@ -276,6 +276,38 @@ def prediction_items(root: Path, at: datetime) -> list[Item]:
     return items
 
 
+def pm_view_items(root: Path, at: datetime) -> list[Item]:
+    """The prediction-market view's calls (pm-view/ledger.csv, added 2026-11-03): a call is due
+    the day after its market's scheduled end; scored when pm-view/outcomes.csv holds its id
+    (settled or excluded); an unresolved market past the grace period is reported, not filled."""
+    ledger = root / "pm-view" / "ledger.csv"
+    outcomes = root / "pm-view" / "outcomes.csv"
+    if not ledger.exists():
+        return [Item("PM view calls", "info", "no ledger")]
+    scored: set[str] = set()
+    if outcomes.exists():
+        with outcomes.open(encoding="utf-8", newline="") as fh:
+            scored = {row["id"] for row in csv.DictReader(fh) if row.get("id")}
+    items: list[Item] = []
+    pending = 0
+    with ledger.open(encoding="utf-8", newline="") as fh:
+        for row in csv.DictReader(fh):
+            try:
+                due_on = date.fromisoformat(row["due_on"]) + timedelta(days=1)
+            except (KeyError, ValueError):
+                continue
+            if due_on > at.date():
+                pending += 1
+                continue
+            due = datetime.combine(due_on, time(0, 0), tzinfo=UTC)
+            deadline = datetime.combine(due_on + timedelta(days=PREDICTION_GRACE_DAYS), time(23, 59), tzinfo=UTC)
+            evidence = "pm-view/outcomes.csv row" if row["id"] in scored else None
+            status, detail = classify(at, due, deadline, evidence, None, None)
+            items.append(Item(f"PM call {row['id']} scored", status, detail))
+    items.append(Item("PM calls not yet due", "info", f"{pending}"))
+    return items
+
+
 def release_items(root: Path) -> list[Item]:
     items: list[Item] = []
     for sid in RELEASE_STUDIES:
@@ -381,7 +413,8 @@ def study013_items(root: Path, at: datetime) -> list[Item]:
 
 def run(root: Path, at: datetime) -> tuple[list[Item], int]:
     items = (month_end_items(root, at) + desk_view_items(root, at) + prediction_items(root, at)
-             + release_items(root) + snapshot_items(root, at) + study013_items(root, at))
+             + pm_view_items(root, at) + release_items(root) + snapshot_items(root, at)
+             + study013_items(root, at))
     overdue = sum(1 for i in items if i.status == "OVERDUE")
     return items, (1 if overdue else 0)
 

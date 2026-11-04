@@ -8,6 +8,10 @@ every call from the first:
 3. A call departs from the market by at least MIN_DEPARTURE, and its basis names
    the market's number and what it is missing (the word 'market' appears).
 4. Ids are unique; the ledger's columns are the ones pm_lib declares.
+5. (2026-11-04, predictions/POST_MORTEMS.md "PM view 2026-11-03") The call's
+   `settles_on` restates the market's own resolution rule, with its source and
+   the level or date, and is not the title; and the quote it rests on recorded
+   the description's hash, so the rule was fetched before the desk wrote.
 """
 import csv
 import json
@@ -59,8 +63,17 @@ def test_the_market_was_quoted_before_the_desk_wrote():
 
 def test_every_call_departs_from_the_market_with_a_reason_that_names_it():
     for call in read("ledger.csv"):
-        v = L.call_violations(float(call["desk_p"]), float(call["market_mid"]), call["basis"])
+        v = L.call_violations(float(call["desk_p"]), float(call["market_mid"]), call["basis"],
+                              call.get("settles_on", ""), call.get("proposition", ""))
         assert v == [], f"{call['id']}: {'; '.join(v)}"
+
+
+def test_the_market_rules_were_fetched_with_the_quote():
+    quotes = manifest_by_book_hash()
+    for call in read("ledger.csv"):
+        q = quotes.get(call["quote_sha256"])
+        assert q is not None, f"{call['id']}: quote_sha256 not in data/manifest.json"
+        assert q.get("description_sha256"), f"{call['id']}: the quote did not record the market's rules (re-quote)"
 
 
 def test_ids_are_unique_and_outcomes_refer_to_calls():

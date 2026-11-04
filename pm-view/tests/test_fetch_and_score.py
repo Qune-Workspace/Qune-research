@@ -11,7 +11,9 @@ import score as S
 AT = datetime(2026, 11, 3, 18, 20, tzinfo=UTC)
 GAMMA = {"id": "3215008", "conditionId": "0xcond", "clobTokenIds": '["111", "222"]', "outcomes": '["Yes", "No"]',
          "enableOrderBook": True, "active": True, "closed": False, "acceptingOrders": True,
-         "umaResolutionStatus": None, "endDate": "2026-12-09T23:59:00Z", "volumeNum": 2_661_872.09}
+         "umaResolutionStatus": None, "endDate": "2026-12-09T23:59:00Z", "volumeNum": 2_661_872.09,
+         "question": "Fed decision in December?",
+         "description": "This market will resolve to \"Yes\" if the upper bound of the target range is raised by 25 bp."}
 BOOK = {"bids": [{"price": "0.70", "size": "1"}, {"price": "0.73", "size": "2"}],
         "asks": [{"price": "0.80", "size": "1"}, {"price": "0.74", "size": "2"}]}
 
@@ -40,6 +42,17 @@ def test_quote_writes_raw_bodies_hashes_and_the_computed_numbers(tmp_path):
     folder = raw / "2026-11-03T182000Z"
     assert (folder / "gamma_3215008.json").exists() and (folder / "book_3215008.json").exists()
     assert len(e["gamma_sha256"]) == 64 and len(e["book_sha256"]) == 64
+    assert len(e["description_sha256"]) == 64 and e["description_chars"] == len(GAMMA["description"])
+    assert e["question"] == "Fed decision in December?"
+    assert "rules_excerpt" not in e  # the rules text is printed, never written to the manifest
+
+
+def test_quote_prints_the_market_rules_before_the_desk_writes(capsys, tmp_path):
+    F.run(["3215008"], fetcher({"/markets/3215008": GAMMA}), fetcher({"token_id=111": BOOK}), tmp_path / "raw",
+          tmp_path / "m.json", dry_run=True, now=lambda: AT)
+    out = capsys.readouterr().out
+    assert "title: 'Fed decision in December?'" in out
+    assert "settles on (" in out and "upper bound of the target range is raised by 25 bp" in out
 
 
 def test_quote_dry_run_writes_nothing_and_a_failed_fetch_is_reported(tmp_path, capsys):
@@ -55,7 +68,7 @@ def test_quote_dry_run_writes_nothing_and_a_failed_fetch_is_reported(tmp_path, c
 def ledger(path, rows):
     with path.open("w", newline="", encoding="utf-8") as fh:
         w = csv.DictWriter(fh, fieldnames=["id", "made_on", "venue", "market_id", "condition_id", "yes_token_id",
-                                           "proposition", "due_on", "market_mid", "market_spread", "volume_usdc",
+                                           "proposition", "settles_on", "due_on", "market_mid", "market_spread", "volume_usdc",
                                            "desk_p", "basis", "quote_sha256"])
         w.writeheader()
         for r in rows:
@@ -64,6 +77,7 @@ def ledger(path, rows):
 
 CALL = {"id": "P1-2026-11-03", "made_on": "2026-11-03T18:20Z", "venue": "polymarket", "market_id": "3215008",
         "condition_id": "0xcond", "yes_token_id": "111", "proposition": "25 bp hike on 9 Dec",
+        "settles_on": "the upper bound of the target range after the 9 December 2026 meeting is 25 bp higher",
         "due_on": "2026-12-09", "market_mid": "0.735", "market_spread": "0.01", "volume_usdc": "2661872",
         "desk_p": "0.60", "basis": "the market prices 0.735; the bill curve says 0.57", "quote_sha256": "x"}
 

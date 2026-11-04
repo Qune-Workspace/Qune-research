@@ -29,6 +29,7 @@ pass the rows in.  The functions are tested on dicts built in memory.
 from __future__ import annotations
 
 import json
+import math
 from datetime import datetime
 from typing import Any
 
@@ -38,9 +39,10 @@ SPREAD_CAP = 0.10
 RESOLUTION_BEGUN = ("proposed", "disputed", "resolved")
 
 LEDGER_COLUMNS = (
-    "id", "made_on", "venue", "market_id", "condition_id", "yes_token_id", "proposition",
+    "id", "made_on", "venue", "market_id", "condition_id", "yes_token_id", "proposition", "settles_on",
     "due_on", "market_mid", "market_spread", "volume_usdc", "desk_p", "basis", "quote_sha256",
 )
+MIN_SETTLES_ON_CHARS = 20  # the resolution rule restated: source and measure, not the title
 OUTCOME_COLUMNS = (
     "id", "scored_on", "kind", "y", "desk_p", "market_mid", "brier_desk", "brier_market",
     "gamma_sha256", "clob_sha256",
@@ -145,8 +147,15 @@ def departure(desk_p: float, market_mid: float) -> float:
     return abs(desk_p - market_mid)
 
 
-def call_violations(desk_p: float, market_mid: float, basis: str) -> list[str]:
-    """What stops a draft call from being logged; empty when it may be."""
+def call_violations(desk_p: float, market_mid: float, basis: str, settles_on: str = "",
+                    proposition: str = "") -> list[str]:
+    """What stops a draft call from being logged; empty when it may be.
+
+    `settles_on` (added 2026-11-04 after the first view described two touch
+    markets as price-level markets from their titles, predictions/POST_MORTEMS.md)
+    restates the market's resolution rule in the desk's words: the source and
+    the measure that settle YES.  It must be present, long enough to say both,
+    and not a copy of the proposition or of the title."""
     out: list[str] = []
     if not (0.0 < desk_p < 1.0):
         out.append("desk_p is not a probability")
@@ -154,7 +163,84 @@ def call_violations(desk_p: float, market_mid: float, basis: str) -> list[str]:
         out.append(f"desk_p is within {MIN_DEPARTURE:.2f} of the market mid: no call")
     if "market" not in basis.lower():
         out.append("basis must name the market's probability and what it is missing")
+    so = settles_on.strip()
+    if len(so) < MIN_SETTLES_ON_CHARS or not any(c.isdigit() for c in so):
+        out.append("settles_on must restate the market's resolution rule with its source and the measured level or date")
+    elif so.lower() == proposition.strip().lower():
+        out.append("settles_on repeats the proposition; restate the rule, not the title")
     return out
+
+
+def rules_excerpt(row: dict[str, Any], chars: int = 400) -> str:
+    """The first `chars` characters of the market's own resolution text (Gamma
+    `description`), one line, for the quote's printed output: the desk reads
+    how YES settles before it writes a proposition or a probability.  Nothing
+    of this is written to a committed file; the manifest carries its hash."""
+    d = row.get("description")
+    if not isinstance(d, str) or not d.strip():
+        return "(no description on the record)"
+    one = " ".join(d.split())
+    return one if len(one) <= chars else one[:chars] + "..."
+
+
+# --- Touch (first-passage) probability for the barrier markets -----------------
+#
+# Added 2026-11-04 with the post-mortem above: the monthly Bitcoin markets
+# settle YES if ANY one-minute Binance BTC/USDT candle in the month has a High
+# at or above the level (or a Low at or below it), so the desk's number is a
+# first-passage probability, not the probability of ending above the level.
+# Model: driftless geometric Brownian motion of the price with annualised
+# volatility `sigma` over `days` calendar days (crypto trades every day, so the
+# year is 365 days).  Reflection principle: P(max_{t<=T} S_t >= B) =
+# 2 * Phi(-ln(B/S) / (sigma * sqrt(T))) for an upper barrier B > S, and the
+# mirror for a lower barrier.  One-minute monitoring is treated as continuous
+# (the Broadie-Glasserman-Kou correction at dt = 1 minute moves the barrier
+# by exp(0.5826 * sigma * sqrt(dt)), under 0.1% at sigma = 0.6: inside the
+# rounding of the view).  The drift is set to zero on purpose: any drift the
+# desk believes in is a reason it must state in the basis, not a parameter.
+# What the formula does NOT carry, and the view's basis sentence must say:
+# a volatility estimated from Coinbase daily closes understates the intraday
+# range Binance's one-minute extremes see, so the probability below is a
+# lower reading of the touch chance, and the two venues' prices differ by a
+# basis of their own (tools/pm_data_terms.md, "Price series for the Bitcoin
+# barrier markets", condition 3).
+
+
+def realised_vol(closes: list[float], days_per_year: int = 365) -> float:
+    """Annualised close-to-close volatility: standard deviation (ddof = 1) of the
+    log returns of consecutive daily closes, times sqrt(days_per_year).  Needs at
+    least three closes; a non-positive close is refused."""
+    if len(closes) < 3:
+        raise ValueError("realised_vol needs at least three closes")
+    if any(c <= 0 for c in closes):
+        raise ValueError("realised_vol: a close is not positive")
+    rets = [math.log(b / a) for a, b in zip(closes[:-1], closes[1:], strict=True)]
+    n = len(rets)
+    m = sum(rets) / n
+    var = sum((r - m) ** 2 for r in rets) / (n - 1)
+    return math.sqrt(var) * math.sqrt(days_per_year)
+
+
+def touch_probability(spot: float, barrier: float, sigma: float, days: float, days_per_year: int = 365) -> float:
+    """Probability that a driftless lognormal price with annualised volatility
+    `sigma` touches `barrier` (above or below `spot`) within `days` calendar
+    days.  1.0 when the barrier is already at or past the spot; 0.0 when no
+    time or no volatility is left."""
+    if spot <= 0 or barrier <= 0:
+        raise ValueError("touch_probability: spot and barrier must be positive")
+    if sigma < 0 or days < 0:
+        raise ValueError("touch_probability: sigma and days must be non-negative")
+    if barrier == spot:
+        return 1.0
+    if days == 0 or sigma == 0:
+        return 0.0
+    dist = abs(math.log(barrier / spot))
+    return 2.0 * _phi(-dist / (sigma * math.sqrt(days / days_per_year)))
+
+
+def _phi(x: float) -> float:
+    """Standard normal CDF."""
+    return 0.5 * math.erfc(-x / math.sqrt(2.0))
 
 
 def skill_summary(outcomes: list[dict[str, Any]]) -> dict[str, Any]:

@@ -38,7 +38,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from pm_lib import as_float, best_of_book, decode_list, eligibility, mid
+from pm_lib import as_float, best_of_book, decode_list, eligibility, mid, rules_excerpt
 
 HERE = Path(__file__).resolve().parent
 GAMMA_MARKET = "https://gamma-api.polymarket.com/markets/"
@@ -79,6 +79,11 @@ def quote_one(market_id: str, gamma: Fetcher, book: Fetcher, at: datetime) -> di
         return out
     tokens = decode_list(row.get("clobTokenIds")) or []
     out["condition_id"] = row.get("conditionId")
+    out["question"] = row.get("question") if isinstance(row.get("question"), str) else None
+    desc: str = row["description"] if isinstance(row.get("description"), str) else ""
+    out["description_sha256"] = sha256(desc.encode("utf-8")) if desc else None
+    out["description_chars"] = len(desc)
+    out["rules_excerpt"] = rules_excerpt(row)
     out["yes_token_id"] = str(tokens[0]) if tokens else None
     out["end_date"] = row.get("endDate")
     out["volume_usdc"] = as_float(row.get("volumeNum"))
@@ -104,11 +109,19 @@ def quote_one(market_id: str, gamma: Fetcher, book: Fetcher, at: datetime) -> di
 
 
 def line(q: dict[str, Any]) -> str:
+    """The quote line, then the market's title and the start of its own resolution
+    text on a second line (added 2026-11-04, predictions/POST_MORTEMS.md: the
+    first view named two touch markets from their titles; the rule is read
+    before the desk writes).  The excerpt is printed, never written to a
+    committed file; the manifest carries the description's hash and length."""
     if "error" in q:
         return f"{q['market_id']}: FAILED {q['error']}"
     return (f"{q['market_id']}: mid={q['market_mid']} spread={q['market_spread']} "
             f"volume={q['volume_usdc']:,.0f} end={q['end_date']} cond={q['condition_id']} "
-            f"yes_token={q['yes_token_id']} {q['eligibility']} (fetched {q['fetched_utc']})")
+            f"yes_token={q['yes_token_id']} {q['eligibility']} (fetched {q['fetched_utc']})\n"
+            f"    title: {q.get('question')!r}\n"
+            f"    settles on ({q.get('description_chars', 0)} chars, sha256 {str(q.get('description_sha256'))[:12]}): "
+            f"{q.get('rules_excerpt')}")
 
 
 def write_quote(q: dict[str, Any], raw_dir: Path, manifest: Path) -> None:
@@ -120,7 +133,8 @@ def write_quote(q: dict[str, Any], raw_dir: Path, manifest: Path) -> None:
         (folder / f"book_{q['market_id']}.json").write_bytes(q["book_body"])
     entry = {k: q.get(k) for k in ("fetched_utc", "market_id", "condition_id", "yes_token_id", "gamma_sha256",
                                    "book_sha256", "best_bid", "best_ask", "market_mid", "market_spread",
-                                   "volume_usdc", "end_date", "eligibility")}
+                                   "volume_usdc", "end_date", "eligibility", "question", "description_sha256",
+                                   "description_chars")}
     entry["source"] = "Polymarket Gamma /markets/<id> and CLOB /book?token_id=<yes token>"
     entries: list[dict[str, Any]] = []
     if manifest.exists():

@@ -58,6 +58,29 @@ HOSTS: dict[str, tuple[str, ...]] = {
         "demo-api.kalshi.co",
         "kalshi.com/trade-api",
     ),
+    # Added 2026-11-04 (tools/pm_data_terms.md, "Price series for the Bitcoin
+    # barrier markets"): Binance is the resolution source of those markets and
+    # Coinbase the origin of the FRED series; neither's terms could be read,
+    # so neither may be called. The FRED series is a fetch URL, not a host:
+    # under `derived` it may be fetched, but its rows may not be committed.
+    "binance": (
+        "api.binance.com",
+        "api1.binance.com",
+        "api2.binance.com",
+        "api3.binance.com",
+        "api4.binance.com",
+        "api-gcp.binance.com",
+        "data-api.binance.vision",
+        "stream.binance.com",
+        "api.binance.us",
+    ),
+    "coinbase": (
+        "api.exchange.coinbase.com",
+        "api.coinbase.com",
+        "api.pro.coinbase.com",
+        "ws-feed.exchange.coinbase.com",
+    ),
+    "fred-cbbtcusd": ("fredgraph.csv?id=CBBTCUSD",),
 }
 
 # Field names that only a raw venue response carries. A derived aggregate
@@ -65,11 +88,16 @@ HOSTS: dict[str, tuple[str, ...]] = {
 RAW_MARKERS: dict[str, tuple[tuple[str, ...], ...]] = {
     "polymarket": (('"clobTokenIds"',), ('"outcomePrices"',), ('"asset_id"', '"bids"')),
     "kalshi": (('"yes_bid_dollars"',), ('"orderbook_fp"',), ('"event_ticker"', '"ticker"')),
+    "binance": (),
+    "coinbase": (),
+    # The FRED download's own header, and the JSON observation form; a
+    # realised-volatility figure or a barrier probability carries neither.
+    "fred-cbbtcusd": (("CBBTCUSD", "observation_date"), ("CBBTCUSD", "DATE,"), ('"series_id"', '"CBBTCUSD"')),
 }
 DATA_SUFFIXES = {".json", ".csv", ".txt", ".jsonl"}
-DATA_DIRS = ("research/", "desk-view/", "predictions/")
+DATA_DIRS = ("research/", "desk-view/", "predictions/", "pm-view/")  # pm-view/ added 2026-11-04
 VERDICTS = ("raw", "derived", "neither")
-VERDICT_RE = re.compile(r"^verdict:\s*([a-z]+)\s*=\s*(raw|derived|neither)\s*$", re.M)
+VERDICT_RE = re.compile(r"^verdict:\s*([a-z][a-z0-9-]*)\s*=\s*(raw|derived|neither)\s*$", re.M)
 
 
 def parse_verdicts(text: str) -> dict[str, str]:
@@ -133,7 +161,8 @@ def run(root: Path) -> int:
 
 def selftest() -> int:
     ok = True
-    v = {"polymarket": "derived", "kalshi": "neither"}
+    v = {"polymarket": "derived", "kalshi": "neither", "binance": "neither", "coinbase": "neither",
+         "fred-cbbtcusd": "derived"}
     # A clean tree under the recorded verdicts passes.
     clean = [
         ("README.md", "prose about Polymarket and Kalshi without hostnames"),
@@ -156,12 +185,34 @@ def selftest() -> int:
         print("selftest: raw Polymarket file did not fail under derived")
         ok = False
     # The same raw file passes under `raw`, and the hostname passes under `derived`.
-    if check(bad_raw, {"polymarket": "raw", "kalshi": "neither"}):
+    if check(bad_raw, {**v, "polymarket": "raw"}):
         print("selftest: raw verdict still failed")
         ok = False
     # A missing verdict line fails even with a clean tree.
     if not any("no verdict line for kalshi" in f for f in check(clean, {"polymarket": "derived"})):
         print("selftest: missing verdict did not fail")
+        ok = False
+    # 2026-11-04: a Binance or Coinbase endpoint anywhere in the tree fails (`neither` until read);
+    # the FRED series may be fetched but its rows may not be committed, in pm-view/ too.
+    bad_binance = clean + [("pm-view/btc.py", 'KLINES = "https://api.binance.com/api/v3/klines"')]
+    if not any("btc.py" in f and "binance" in f for f in check(bad_binance, v)):
+        print("selftest: binance hostname in a script did not fail")
+        ok = False
+    bad_coinbase = clean + [("pm-view/btc.py", 'CANDLES = "https://api.exchange.coinbase.com/products/BTC-USD/candles"')]
+    if not any("btc.py" in f and "coinbase" in f for f in check(bad_coinbase, v)):
+        print("selftest: coinbase hostname in a script did not fail")
+        ok = False
+    fred_fetch = clean + [("pm-view/btc.py", 'URL = "https://fred.stlouisfed.org/graph/fredgraph.csv?id=CBBTCUSD"')]
+    if check(fred_fetch, v):
+        print("selftest: fetching the FRED series under derived failed:", check(fred_fetch, v))
+        ok = False
+    bad_rows = clean + [("pm-view/data/cbbtcusd.csv", "observation_date,CBBTCUSD\n2026-11-03,77000.0\n")]
+    if not any("cbbtcusd.csv" in f for f in check(bad_rows, v)):
+        print("selftest: committed FRED rows under pm-view/ did not fail")
+        ok = False
+    derived_ok = clean + [("pm-view/data/btc_vol.json", '{"series": "CBBTCUSD via FRED", "realised_vol_30d": 0.52}')]
+    if check(derived_ok, v):
+        print("selftest: a derived statistic naming the series failed:", check(derived_ok, v))
         ok = False
     # The marker rule needs both halves of a pair: "asset_id" alone is not a book.
     half = clean + [("predictions/raw_note.txt", 'the field "asset_id" is the token id')]
@@ -169,8 +220,9 @@ def selftest() -> int:
         print("selftest: a lone marker half failed")
         ok = False
     # Parsing: only the exact line form counts.
-    parsed = parse_verdicts("verdict: polymarket = derived\nverdict: kalshi = neither\nverdict: manifold = maybe\n")
-    if parsed != {"polymarket": "derived", "kalshi": "neither"}:
+    parsed = parse_verdicts("verdict: polymarket = derived\nverdict: kalshi = neither\nverdict: manifold = maybe\n"
+                            "verdict: fred-cbbtcusd = derived\n")
+    if parsed != {"polymarket": "derived", "kalshi": "neither", "fred-cbbtcusd": "derived"}:
         print("selftest: verdict parsing", parsed)
         ok = False
     print("selftest: " + ("pass" if ok else "FAIL"))

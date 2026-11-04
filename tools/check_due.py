@@ -29,6 +29,10 @@ What it checks (each line: item, status, detail):
   Desk view, weekly. Due Fridays from 2026-10-30 at 06:00 UTC (the morning
       run); deadline the Sunday 23:59 UTC. Evidence:
       desk-view/data/numbers_<friday>.json; desk-view/missed.csv as above.
+  PM view, weekly (added 2026-11-04). Due Fridays from 2026-11-06 at 06:00
+      UTC with the desk view; deadline the Sunday 23:59 UTC. Evidence: a
+      quote in pm-view/data/manifest.json fetched on the Friday or in the
+      two grace days; pm-view/missed.csv (key, logged_at_utc, why) as above.
   Predictions. Every predictions/ledger.csv row whose due_on has passed must
       have a row in outcomes.csv (score.py scores once a FRED row dated on
       or after the due date exists, usually the next day); deadline three
@@ -69,6 +73,7 @@ GATE_UTC = time(21, 15)
 DEADLINE_CLOSE_UTC = time(21, 0)
 MAX_NYSE_DAYS_SLIP = 3
 FIRST_DESK_VIEW = date(2026, 10, 30)
+FIRST_PM_VIEW = date(2026, 11, 6)  # the weekly prediction-market view, with the rates view (2026-11-04)
 DESK_VIEW_DUE_UTC = time(6, 0)
 DESK_VIEW_GRACE_DAYS = 2
 PREDICTION_GRACE_DAYS = 3
@@ -126,9 +131,9 @@ def months_through(at: datetime) -> list[tuple[int, int]]:
     return out
 
 
-def fridays_through(at: datetime) -> list[date]:
+def fridays_through(at: datetime, first: date = FIRST_DESK_VIEW) -> list[date]:
     out: list[date] = []
-    d = FIRST_DESK_VIEW
+    d = first
     while d <= at.date():
         out.append(d)
         d += timedelta(days=7)
@@ -227,6 +232,37 @@ def month_end_items(root: Path, at: datetime) -> list[Item]:
             items.append(Item(f"Study {sid} record {month} (signal date {t})", status, detail))
             if status == "not due":
                 break
+    return items
+
+
+def pm_view_weekly_items(root: Path, at: datetime) -> list[Item]:
+    """The weekly prediction-market view (pm-view/, added 2026-11-04): due Fridays from
+    2026-11-06 at 06:00 UTC with the rates desk view, deadline the Sunday 23:59 UTC. Evidence is
+    a quote in pm-view/data/manifest.json fetched on the Friday or inside the grace days (the
+    README's rule 1: every view starts with the market's own numbers); pm-view/missed.csv
+    (key, logged_at_utc, why) logs a lost week."""
+    items: list[Item] = []
+    folder = root / "pm-view"
+    if not folder.exists():
+        return [Item("PM view", "info", "no pm-view folder")]
+    manifest = folder / "data" / "manifest.json"
+    fetched: set[date] = set()
+    if manifest.exists():
+        try:
+            for entry in json.loads(manifest.read_text(encoding="utf-8")):
+                fetched.add(date.fromisoformat(str(entry.get("fetched_utc", ""))[:10]))
+        except (ValueError, TypeError, AttributeError):
+            pass
+    for friday in fridays_through(at, FIRST_PM_VIEW):
+        due = datetime.combine(friday, DESK_VIEW_DUE_UTC, tzinfo=UTC)
+        deadline = datetime.combine(friday + timedelta(days=DESK_VIEW_GRACE_DAYS), time(23, 59), tzinfo=UTC)
+        days = [friday + timedelta(days=k) for k in range(DESK_VIEW_GRACE_DAYS + 1)]
+        hit = next((d for d in days if d in fetched), None)
+        evidence = f"pm-view/data/manifest.json quote fetched {hit}" if hit else None
+        status, detail = classify(at, due, deadline, evidence, None, logged_miss(folder, friday.isoformat()))
+        items.append(Item(f"PM view {friday}", status, detail))
+        if status == "not due":
+            break
     return items
 
 
@@ -413,7 +449,8 @@ def study013_items(root: Path, at: datetime) -> list[Item]:
 
 def run(root: Path, at: datetime) -> tuple[list[Item], int]:
     items = (month_end_items(root, at) + desk_view_items(root, at) + prediction_items(root, at)
-             + pm_view_items(root, at) + release_items(root) + snapshot_items(root, at)
+             + pm_view_weekly_items(root, at) + pm_view_items(root, at) + release_items(root)
+             + snapshot_items(root, at)
              + study013_items(root, at))
     overdue = sum(1 for i in items if i.status == "OVERDUE")
     return items, (1 if overdue else 0)
@@ -438,6 +475,9 @@ def _fixture(root: Path) -> None:
     (root / "predictions" / "ledger.csv").write_text(
         "id,made_on,due_on\nV1,2026-10-23,2026-10-29\nV2,2026-10-23,2026-12-31\n", encoding="utf-8")
     (root / "predictions" / "outcomes.csv").write_text("id,scored_on\n", encoding="utf-8")
+    (root / "pm-view" / "data").mkdir(parents=True)
+    (root / "pm-view" / "data" / "manifest.json").write_text(
+        json.dumps([{"market_id": "1", "fetched_utc": "2026-11-03T18:23:14Z"}]), encoding="utf-8")
     (root / "research" / "013-f" / "paper-log").mkdir(parents=True)
     (root / "research" / "013-f" / "paper-log" / "snapshots.csv").write_text(
         "snapshot_date,started_utc,finished_utc,pages,rows,distinct_markets,bytes,records_sha256,pages_sha256\n"
@@ -509,6 +549,32 @@ def selftest() -> int:
         (root / "research" / "013-f" / "paper-log" / "resolution_fetch.csv").write_text("fetched_at_utc\n", encoding="utf-8")
         items, _ = run(root, datetime(2027, 1, 28, 1, 0, tzinfo=UTC))
         assert status_of(items, "Study 013 resolution fetch") == "ok"
+
+        # the weekly PM view (2026-11-04): a Saturday quote covers the Friday; a week without one is DUE,
+        # then OVERDUE after the Sunday, then "missed (logged)" once pm-view/missed.csv has the key
+        items, _ = run(root, datetime(2026, 11, 2, 22, 0, tzinfo=UTC))
+        assert status_of(items, "PM view 2026-11-06") == "not due"
+        assert not [i for i in items if i.label.startswith("PM view 2026-11-13")]
+        items, _ = run(root, datetime(2026, 11, 6, 5, 0, tzinfo=UTC))
+        assert status_of(items, "PM view 2026-11-06") == "not due"  # the Tuesday quote is not this week's
+        items, _ = run(root, datetime(2026, 11, 6, 8, 0, tzinfo=UTC))
+        assert status_of(items, "PM view 2026-11-06") == "DUE"
+        (root / "pm-view" / "data" / "manifest.json").write_text(
+            json.dumps([{"market_id": "1", "fetched_utc": "2026-11-03T18:23:14Z"},
+                        {"market_id": "1", "fetched_utc": "2026-11-07T09:00:00Z"}]), encoding="utf-8")
+        items, _ = run(root, datetime(2026, 11, 7, 22, 0, tzinfo=UTC))
+        assert status_of(items, "PM view 2026-11-06") == "ok"
+        assert status_of(items, "PM view 2026-11-13") == "not due"
+        items, _ = run(root, datetime(2026, 11, 13, 8, 0, tzinfo=UTC))
+        assert status_of(items, "PM view 2026-11-13") == "DUE"
+        items, rc = run(root, datetime(2026, 11, 16, 1, 0, tzinfo=UTC))
+        assert status_of(items, "PM view 2026-11-13") == "OVERDUE"
+        assert rc == 1
+        (root / "pm-view" / "missed.csv").write_text(
+            "key,logged_at_utc,why\n2026-11-13,2026-11-16T00:30:00Z,fixture\n", encoding="utf-8")
+        items, _ = run(root, datetime(2026, 11, 16, 1, 0, tzinfo=UTC))
+        assert status_of(items, "PM view 2026-11-13") == "missed (logged)"
+        (root / "pm-view" / "missed.csv").unlink()
 
         # the first fixture item becomes ok once the record exists
         (root / "research" / "007-f" / "paper-log" / "decisions").mkdir()

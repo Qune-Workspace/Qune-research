@@ -6,7 +6,10 @@
 #                       relative Markdown links (tools/check_links.py), front-page
 #                       figures against the study folders (tools/check_glance.py)
 #                       the paper dashboard against a regeneration (tools/check_dashboard.py)
-#                       and the question gate of every study from 012 (tools/check_question_gate.py)
+#                       the question gate of every study from 012 (tools/check_question_gate.py),
+#                       the due register, bound defaults, data terms, and the
+#                       self-test of the detached-fetch launcher (tools/detach.sh;
+#                       skipped where no user service manager is reachable)
 #   make coverage       line coverage of the shared library (tests excluded)
 #   make reproduce      the independent reviewers' recomputation of every published
 #                       statistic from the committed result files: Study 011's
@@ -96,6 +99,7 @@ lint:
 	$(PYTHON) tools/check_due.py
 	$(PYTHON) tools/check_bound_defaults.py
 	$(PYTHON) tools/check_data_terms.py
+	bash tools/detach.sh --self-test
 
 coverage:
 	cd qune_research && $(PYTHON) -m pytest -q --cov=qune_research --cov-config=../pyproject.toml --cov-report=term-missing

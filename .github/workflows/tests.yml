@@ -108,6 +108,13 @@ jobs:
       # (tools/check_data_terms.py; tools/pm_data_terms.md, 2026-11-01).
       - name: data terms
         run: python tools/check_data_terms.py
+      # The launcher a learning run uses for any fetch longer than a minute
+      # starts the command as a transient systemd user unit, in its own control
+      # group, so it outlives the shell that launched it (tools/detach.sh;
+      # research/POST_MORTEMS.md, 2026-11-04). Skipped with a line where no user
+      # service manager is reachable, as on this runner.
+      - name: detached-fetch launcher
+        run: bash tools/detach.sh --self-test
       # Line coverage of the shared library, tests excluded (pyproject.toml).
       # The floor is below the figure measured at adoption so that it catches
       # a drop, not a rounding.

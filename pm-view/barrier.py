@@ -38,7 +38,13 @@ research/POST_MORTEMS.md "thresholds before data", tools/check_question_gate.py)
   figure from the market's mid is printed against the 0.10 threshold of the
   call rule.  A figure above the threshold is NOT a call; the view decides,
   with a basis sentence that names the market's number and the reading's
-  limits.
+  limits.  Two departures can never be a call, and the line says so
+  (added 2026-11-04 12:3x UTC after the first live run, BUILD_LOG): a reading
+  BELOW the market, because the method's known bias is downward, so a market
+  above it is at least as consistent with the bias as with a mispricing; and a
+  market mid that lies between the primary and the sensitivity readings,
+  because the reading's own window range then covers the market (the V1
+  lesson: a range wider than the gap is not a reason).
 
 Data terms (tools/pm_data_terms.md, verdict fred-cbbtcusd = derived): the raw
 download stays under data/raw/fred/<UTC time>/ (git-ignored); data/fred_manifest.json
@@ -229,14 +235,28 @@ def lines(a: dict[str, Any], mids: dict[float, float], show_level: bool) -> list
         if r["barrier"] in mids:
             m = mids[r["barrier"]]
             dep = r["p_primary"] - m
-            verdict = "at or over the 0.10 threshold: a call needs a basis sentence" if abs(dep) >= CALL_THRESHOLD \
-                else "under the 0.10 threshold: nothing to add"
-            s += f"; market mid {m:.3f}, departure {dep:+.3f} ({verdict})"
+            s += f"; market mid {m:.3f}, departure {dep:+.3f} ({departure_verdict(r['p_primary'], r['p_sensitivity'], m)})"
         out.append(s)
     out.append("  basis: daily Coinbase closes understate an intraday Binance one-minute touch, and the two venues' "
                "prices differ by a basis of their own; zero drift; the figure is a lower reading of the touch chance")
     out.append(f"  source: {CITATION}")
     return out
+
+
+def departure_verdict(p_primary: float, p_sensitivity: float | None, market_mid: float) -> str:
+    """What the departure of the primary reading from the market can and cannot be,
+    in the order the reasons are checked: a reading below the market is in the
+    direction of the method's known downward bias, never a call; a market inside
+    the [primary, sensitivity] range is covered by the reading's own window
+    range, never a call; then the 0.10 threshold of README.md rule 2."""
+    dep = p_primary - market_mid
+    if dep <= 0:
+        return "no call: the reading is below the market, the direction of the method's known downward bias"
+    if p_sensitivity is not None and min(p_primary, p_sensitivity) <= market_mid <= max(p_primary, p_sensitivity):
+        return "no call: the market lies inside the reading's own window range (primary to sensitivity)"
+    if dep < CALL_THRESHOLD:
+        return "under the 0.10 threshold: nothing to add"
+    return "at or over the 0.10 threshold, against the bias, outside the window range: a call needs a basis sentence"
 
 
 def parse_barrier(s: str) -> tuple[float, str]:

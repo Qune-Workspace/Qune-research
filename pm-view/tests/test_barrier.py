@@ -139,6 +139,19 @@ def test_run_prints_the_figures_and_withholds_the_level_unless_asked(tmp_path, c
     assert not (tmp_path / "m.json").exists()  # --from-file fetches and writes nothing
 
 
+def test_departure_verdict_refuses_the_bias_direction_and_a_covered_market_before_the_threshold():
+    # Below the market: the method under-reads a touch, so this is never a call, whatever the size.
+    assert B.departure_verdict(0.607, 0.705, 0.805).startswith("no call: the reading is below the market")
+    assert B.departure_verdict(0.60, 0.70, 0.60).startswith("no call: the reading is below the market")  # equal counts
+    # Above the market but the market sits between the two windows' readings: covered, never a call.
+    assert B.departure_verdict(0.80, 0.60, 0.65).startswith("no call: the market lies inside")
+    assert B.departure_verdict(0.80, 0.60, 0.60).startswith("no call: the market lies inside")  # the edge counts
+    # Above the market, outside the range: the threshold decides.
+    assert B.departure_verdict(0.737, 0.805, 0.645) == "under the 0.10 threshold: nothing to add"
+    assert B.departure_verdict(0.80, 0.85, 0.65).startswith("at or over the 0.10 threshold, against the bias")
+    assert B.departure_verdict(0.80, None, 0.65).startswith("at or over the 0.10 threshold")  # no sensitivity: no range test
+
+
 def test_run_reports_a_failed_fetch_and_a_short_series_as_a_refusal(tmp_path, capsys):
     def boom(url: str) -> bytes:
         raise OSError("no route")

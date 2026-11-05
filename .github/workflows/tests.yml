@@ -115,6 +115,12 @@ jobs:
       # service manager is reachable, as on this runner.
       - name: detached-fetch launcher
         run: bash tools/detach.sh --self-test
+      # The leak scan that runs before every commit and push reads only the
+      # files git could publish, never a git-ignored path (tools/scan.sh;
+      # research/POST_MORTEMS.md, 2026-11-05). Skipped with a line where
+      # gitleaks is not installed, as on this runner.
+      - name: leak scan reads only publishable files
+        run: bash tools/scan.sh --self-test
       # Line coverage of the shared library, tests excluded (pyproject.toml).
       # The floor is below the figure measured at adoption so that it catches
       # a drop, not a rounding.

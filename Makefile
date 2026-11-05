@@ -9,7 +9,9 @@
 #                       the question gate of every study from 012 (tools/check_question_gate.py),
 #                       the due register, bound defaults, data terms, and the
 #                       self-test of the detached-fetch launcher (tools/detach.sh;
-#                       skipped where no user service manager is reachable)
+#                       skipped where no user service manager is reachable) and of
+#                       the leak scan (tools/scan.sh: git-ignored files are never
+#                       read; skipped where gitleaks is not installed)
 #   make coverage       line coverage of the shared library (tests excluded)
 #   make reproduce      the independent reviewers' recomputation of every published
 #                       statistic from the committed result files: Study 011's
@@ -100,6 +102,7 @@ lint:
 	$(PYTHON) tools/check_bound_defaults.py
 	$(PYTHON) tools/check_data_terms.py
 	bash tools/detach.sh --self-test
+	bash tools/scan.sh --self-test
 
 coverage:
 	cd qune_research && $(PYTHON) -m pytest -q --cov=qune_research --cov-config=../pyproject.toml --cov-report=term-missing

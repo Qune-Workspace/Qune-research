@@ -1,0 +1,4 @@
+snapshot_date,previous_date,previous_markets,markets,carried,left,appeared,appeared_created_before_previous_start,previous_missed_at_most,computed_utc
+2026-11-03,2026-11-02,202575,226389,182258,20317,44131,3,0,2026-11-05T06:23:07Z
+2026-11-04,2026-11-03,226389,234222,204245,22144,29977,1,0,2026-11-05T06:23:10Z
+2026-11-05,2026-11-04,234222,238680,213500,20722,25180,12,0,2026-11-05T06:23:14Z

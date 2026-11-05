@@ -207,3 +207,101 @@ def test_dry_run_fetches_one_page_and_writes_nothing(tmp_path: Path):
     assert fetch.calls == [None]
     assert out["rows"] == "100" and out["more"] == "yes"
     assert not root.exists() and not log.exists()
+
+
+# --- consistency: id-only comparison of consecutive snapshots (2026-11-05) ---------------------
+
+
+def write_snapshot(root: Path, day: str, started: str, rows: list[dict]) -> None:
+    """A logged snapshot folder with whitelisted rows, as take_snapshot leaves it."""
+    folder = root / "snapshots" / day
+    folder.mkdir(parents=True)
+    with open(folder / "records.jsonl", "w", encoding="utf-8") as f:
+        for r in rows:
+            f.write(json.dumps(collector.strip(r)) + "\n")
+    (folder / "pages.jsonl").write_text("{}\n", encoding="utf-8")
+    collector.append_log(
+        root / "snapshots.csv",
+        {
+            "snapshot_date": day,
+            "started_utc": started,
+            "finished_utc": started,
+            "pages": "1",
+            "rows": str(len(rows)),
+            "distinct_markets": str(len(rows)),
+            "bytes": "1",
+            "records_sha256": "0",
+            "pages_sha256": "0",
+        },
+    )
+
+
+def test_consistency_counts_carried_left_appeared_early_and_missed(tmp_path: Path):
+    # day 1: markets 1-5; day 2: 1-4 (5 left) plus 6 (new, created after day 1 started) and 7 (created before);
+    # day 3: 1-7 plus 5 back again, so day 2 missed at most one (market 5), and 8 appears.
+    d1 = [row(i) for i in range(1, 6)]
+    d2 = [row(i) for i in range(1, 5)] + [row(6, createdAt="2026-11-02T10:00:00Z"), row(7, createdAt="2026-10-01T00:00:00Z")]
+    d3 = [row(i) for i in range(1, 9)]
+    write_snapshot(tmp_path, "2026-11-02", "2026-11-02T04:40:00Z", d1)
+    write_snapshot(tmp_path, "2026-11-03", "2026-11-03T04:40:00Z", d2)
+    write_snapshot(tmp_path, "2026-11-04", "2026-11-04T04:40:00Z", d3)
+    out = tmp_path / "consistency.csv"
+    rows = collector.consistency(tmp_path / "snapshots", tmp_path / "snapshots.csv", out)
+    assert [r["snapshot_date"] for r in rows] == ["2026-11-03", "2026-11-04"]
+    r2, r3 = rows
+    assert r2["previous_date"] == "2026-11-02"
+    assert (r2["previous_markets"], r2["markets"], r2["carried"], r2["left"], r2["appeared"]) == ("5", "6", "4", "1", "2")
+    assert r2["appeared_created_before_previous_start"] == "1"  # market 7; market 6 was created after day 1 started
+    assert r2["previous_missed_at_most"] == "0"  # no snapshot before day 1 to compare with
+    assert (r3["previous_markets"], r3["markets"], r3["carried"], r3["left"], r3["appeared"]) == ("6", "8", "6", "0", "2")
+    assert r3["previous_missed_at_most"] == "1"  # market 5: in day 1 and day 3, absent from day 2
+    # the committed file holds counts only: no market id, no field name of the listing
+    text = out.read_text(encoding="utf-8")
+    assert text.splitlines()[0] == ",".join(collector.CONSISTENCY_COLUMNS)
+    assert len(text.splitlines()) == 3
+    for word in ("bestBid", "outcomePrices", "conditionId", "Yes"):
+        assert word not in text
+    # append-only and idempotent: a second run adds nothing and rewrites nothing
+    assert collector.consistency(tmp_path / "snapshots", tmp_path / "snapshots.csv", out) == []
+    assert out.read_text(encoding="utf-8") == text
+    # a fourth snapshot appends exactly one more line
+    write_snapshot(tmp_path, "2026-11-05", "2026-11-05T04:40:00Z", d3)
+    rows = collector.consistency(tmp_path / "snapshots", tmp_path / "snapshots.csv", out)
+    assert [r["snapshot_date"] for r in rows] == ["2026-11-05"]
+    assert rows[0]["carried"] == "8" and rows[0]["previous_missed_at_most"] == "0"
+
+
+def test_consistency_reads_only_the_id_and_creation_time(tmp_path: Path):
+    """A row that carries nothing but the two fields is enough: the check never touches a price,
+    status, label or outcome field."""
+    folder = tmp_path / "snapshots"
+    for day, ids in (("2026-11-02", [1, 2]), ("2026-11-03", [1, 2, 3])):
+        (folder / day).mkdir(parents=True)
+        with open(folder / day / "records.jsonl", "w", encoding="utf-8") as f:
+            for i in ids:
+                f.write(json.dumps({"id": str(i), "createdAt": "2026-11-01T00:00:00Z"}) + "\n")
+        collector.append_log(
+            tmp_path / "snapshots.csv",
+            {"snapshot_date": day, "started_utc": f"{day}T04:40:00Z", "finished_utc": f"{day}T04:41:00Z", "pages": "1",
+             "rows": str(len(ids)), "distinct_markets": str(len(ids)), "bytes": "1", "records_sha256": "0", "pages_sha256": "0"},
+        )
+    rows = collector.consistency(folder, tmp_path / "snapshots.csv", tmp_path / "consistency.csv")
+    assert rows[0]["appeared"] == "1" and rows[0]["appeared_created_before_previous_start"] == "1"
+    assert collector.CONSISTENCY_FIELDS == ("id", "createdAt")
+
+
+def test_consistency_line_flags_a_page_or_more_missed():
+    base = {"snapshot_date": "2026-11-04", "previous_date": "2026-11-03", "previous_markets": "1000", "markets": "1000",
+            "carried": "900", "left": "100", "appeared": "100", "appeared_created_before_previous_start": "0"}
+    quiet = collector.consistency_line({**base, "previous_missed_at_most": "99"})
+    loud = collector.consistency_line({**base, "previous_missed_at_most": "100"})
+    assert "FINDING" not in quiet and "missed at most 99 (9.900% of its 1000)" in quiet
+    assert "FINDING" in loud
+    assert collector.MISSED_PAGE_THRESHOLD == 100
+
+
+def test_compare_snapshots_without_a_snapshot_before_the_previous_reports_zero_missed():
+    started = dt.datetime(2026, 11, 3, 4, 40, tzinfo=dt.UTC)
+    counts = collector.compare_snapshots({"1": "", "2": ""}, started, {"2": "", "3": "x-not-a-time"}, None)
+    assert counts == {"previous_markets": 2, "markets": 2, "carried": 1, "left": 1, "appeared": 1,
+                      "appeared_created_before_previous_start": 0, "previous_missed_at_most": 0}

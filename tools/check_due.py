@@ -93,6 +93,9 @@ SNAPSHOT_DUE_UTC = time(4, 40)
 SNAPSHOT_WINDOW = (date(2026, 11, 3), date(2026, 12, 28))
 SNAPSHOT_STOP_MIN_DAYS = 42
 SNAPSHOT_STOP_RUN = 3
+# collector.py consistency (2026-11-05): a previous snapshot that missed at most one page of markets or more
+# (the smallest unit a pagination fault can lose) is a finding to investigate while the window is still open.
+SNAPSHOT_MISSED_PAGE = 100
 RESOLUTION_DUE = datetime(2027, 1, 20, 0, 0, tzinfo=UTC)
 RESOLUTION_GRACE_DAYS = 7
 
@@ -439,6 +442,25 @@ def study013_items(root: Path, at: datetime) -> list[Item]:
                               detail + "; §5.4 stop: write a dated §16 amendment on gap handling before the data step"))
         else:
             items.append(Item(f"Study {SNAPSHOT_STUDY} snapshot window", "info", detail + (" (amended)" if fired else "")))
+    # completeness of the record (collector.py consistency, 2026-11-05): the latest id-only comparison of
+    # consecutive snapshots; a previous snapshot that missed at most one page (100 markets) or more is a
+    # finding to investigate before the window closes, not after it.
+    cons = folder / "paper-log" / "consistency.csv"
+    if cons.exists():
+        with cons.open(encoding="utf-8", newline="") as fh:
+            rows = [r for r in csv.DictReader(fh) if r.get("snapshot_date")]
+        if rows:
+            latest = max(rows, key=lambda r: r["snapshot_date"])
+            worst = max(int(r.get("previous_missed_at_most") or 0) for r in rows)
+            detail = (f"latest {latest['snapshot_date']} vs {latest['previous_date']}: {latest['markets']} markets, "
+                      f"appeared {latest['appeared']} ({latest['appeared_created_before_previous_start']} created before the previous "
+                      f"snapshot started), left {latest['left']}; previous snapshot missed at most {latest['previous_missed_at_most']}; "
+                      f"worst missed-at-most over {len(rows)} comparison(s): {worst}")
+            if worst >= SNAPSHOT_MISSED_PAGE:
+                items.append(Item(f"Study {SNAPSHOT_STUDY} snapshot consistency", "DUE",
+                                  detail + f"; at or above one page ({SNAPSHOT_MISSED_PAGE}): investigate the collector before the window closes"))
+            else:
+                items.append(Item(f"Study {SNAPSHOT_STUDY} snapshot consistency", "info", detail))
     evidence = "resolution_fetch.csv" if (folder / "paper-log" / "resolution_fetch.csv").exists() else None
     status, detail = classify(at, RESOLUTION_DUE, RESOLUTION_DUE + timedelta(days=RESOLUTION_GRACE_DAYS), evidence, None, None)
     if status == "DUE":
@@ -549,6 +571,20 @@ def selftest() -> int:
         (root / "research" / "013-f" / "paper-log" / "resolution_fetch.csv").write_text("fetched_at_utc\n", encoding="utf-8")
         items, _ = run(root, datetime(2027, 1, 28, 1, 0, tzinfo=UTC))
         assert status_of(items, "Study 013 resolution fetch") == "ok"
+
+        # snapshot consistency (2026-11-05): info below one page missed, DUE at or above it; absent without the file
+        assert not [i for i in items if i.label == "Study 013 snapshot consistency"]
+        cons = root / "research" / "013-f" / "paper-log" / "consistency.csv"
+        header = ("snapshot_date,previous_date,previous_markets,markets,carried,left,appeared,"
+                  "appeared_created_before_previous_start,previous_missed_at_most,computed_utc\n")
+        cons.write_text(header + "2026-11-04,2026-11-02,5,6,4,1,2,1,0,2026-11-05T06:30:00Z\n", encoding="utf-8")
+        items, _ = run(root, datetime(2026, 11, 5, 22, 0, tzinfo=UTC))
+        assert status_of(items, "Study 013 snapshot consistency") == "info"
+        cons.write_text(header + "2026-11-04,2026-11-02,5,6,4,1,2,1,0,2026-11-05T06:30:00Z\n"
+                        "2026-11-05,2026-11-04,6,8,6,0,2,0,100,2026-11-05T06:31:00Z\n", encoding="utf-8")
+        items, _ = run(root, datetime(2026, 11, 5, 22, 0, tzinfo=UTC))
+        assert status_of(items, "Study 013 snapshot consistency") == "DUE"
+        assert "worst missed-at-most over 2 comparison(s): 100" in [i for i in items if i.label == "Study 013 snapshot consistency"][0].detail
 
         # the weekly PM view (2026-11-04): a Saturday quote covers the Friday; a week without one is DUE,
         # then OVERDUE after the Sunday, then "missed (logged)" once pm-view/missed.csv has the key

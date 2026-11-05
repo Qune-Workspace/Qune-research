@@ -40,12 +40,32 @@ pages, rows, distinct markets, bytes, SHA-256 of `records.jsonl` and of
 No raw field name appears in it (Polymarket's verdict is `derived`,
 tools/pm_data_terms.md; tools/check_data_terms.py holds the tree to it).
 
+Completeness (added 2026-11-05, after the open-market count rose by 23,814
+between the first two snapshots): `consistency` compares each logged snapshot
+with the one logged before it by market id, reading two fields of a row and
+nothing else (`id`, `createdAt`; no price, status, label or outcome field is
+decoded into a name).  Per snapshot it counts the markets carried over, the
+markets that left the listing, the markets that appeared, how many of those
+were created before the previous snapshot started (a market the previous
+snapshot could have listed and did not, or one re-opened), and, for the
+previous snapshot, how many markets are present both in this snapshot and in
+the one before it yet absent from it ("missed at most": an upper bound on
+what the previous snapshot failed to list, because a market can also leave
+and return).  One line per snapshot date is appended to
+`paper-log/consistency.csv` (counts only, never an id); an existing line is
+never rewritten.  The rule, fixed before the first live run: a previous
+snapshot that missed at most 100 markets or more (one page, the smallest unit
+a pagination fault can lose) is a finding to investigate (exit 3, and the due
+register lists it); below that the line is information.
+
 Usage (from the study folder, the scheduled job runs it daily):
     .venv/bin/python collector.py snapshot            # fetch today's snapshot
     .venv/bin/python collector.py snapshot --dry-run  # one page, nothing written
     .venv/bin/python collector.py check               # gaps since the first snapshot
+    .venv/bin/python collector.py consistency         # id-only comparison of consecutive snapshots
 Exit 0 on a complete snapshot (or a check with no gap), 1 on a fetch failure
-(nothing counted), 2 when today's snapshot already exists, 3 on gaps.
+(nothing counted), 2 when today's snapshot already exists, 3 on gaps or on a
+consistency finding at or above the page threshold.
 """
 
 from __future__ import annotations
@@ -120,6 +140,24 @@ LOG_COLUMNS = (
     "records_sha256",
     "pages_sha256",
 )
+
+CONSISTENCY_LOG = STUDY_DIR / "paper-log" / "consistency.csv"
+CONSISTENCY_COLUMNS = (
+    "snapshot_date",
+    "previous_date",
+    "previous_markets",
+    "markets",
+    "carried",
+    "left",
+    "appeared",
+    "appeared_created_before_previous_start",
+    "previous_missed_at_most",
+    "computed_utc",
+)
+# One page: the smallest unit a pagination fault can lose. Fixed on 2026-11-05 before the first live run.
+MISSED_PAGE_THRESHOLD = 100
+# The two fields the consistency check reads from a row; nothing else is looked at.
+CONSISTENCY_FIELDS = ("id", "createdAt")
 
 # A page fetcher returns (rows, next cursor or None, body hash, body bytes).
 Fetcher = Callable[[str | None], tuple[list[dict], str | None, str, int]]
@@ -310,12 +348,119 @@ def gaps(log_csv: Path, today: dt.date) -> list[str]:
     return out
 
 
+def parse_utc(s: str) -> dt.datetime | None:
+    """An ISO-8601 time with or without a trailing Z; None when absent or unreadable."""
+    if not s:
+        return None
+    try:
+        t = dt.datetime.fromisoformat(s.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    return t if t.tzinfo else t.replace(tzinfo=dt.UTC)
+
+
+def read_ids(records: Path) -> dict[str, str]:
+    """Market id -> creation time of every row of a snapshot. The only two
+    fields this check reads; the rest of each row is decoded and dropped."""
+    out: dict[str, str] = {}
+    with open(records, encoding="utf-8") as f:
+        for line in f:
+            if not line.strip():
+                continue
+            r = json.loads(line)
+            out[str(r.get(CONSISTENCY_FIELDS[0]))] = str(r.get(CONSISTENCY_FIELDS[1]) or "")
+    return out
+
+
+def compare_snapshots(
+    prev_ids: dict[str, str], prev_started: dt.datetime, cur_ids: dict[str, str], before_prev_ids: set[str] | None
+) -> dict[str, int]:
+    """Counts for one consecutive pair; ``before_prev_ids`` (the snapshot before
+    the previous one, when logged) gives the previous snapshot's missed-at-most."""
+    prev = set(prev_ids)
+    cur = set(cur_ids)
+    appeared = cur - prev
+    early = 0
+    for mid in appeared:
+        created = parse_utc(cur_ids[mid])
+        if created is not None and created < prev_started:
+            early += 1
+    missed = len((cur & before_prev_ids) - prev) if before_prev_ids is not None else 0
+    return {
+        "previous_markets": len(prev),
+        "markets": len(cur),
+        "carried": len(cur & prev),
+        "left": len(prev - cur),
+        "appeared": len(appeared),
+        "appeared_created_before_previous_start": early,
+        "previous_missed_at_most": missed,
+    }
+
+
+def consistency(snapshot_root: Path, log_csv: Path, out_csv: Path) -> list[dict[str, str]]:
+    """Compare each logged snapshot with the one logged before it and append
+    one counts line per snapshot date to ``out_csv`` (dates already there are
+    kept as they are). Returns the rows appended."""
+    log = sorted(read_log(log_csv), key=lambda r: r["snapshot_date"])
+    done = {r["snapshot_date"] for r in read_log(out_csv)}
+    appended: list[dict[str, str]] = []
+    cache: dict[str, dict[str, str]] = {}
+
+    def ids_of(day: str) -> dict[str, str]:
+        if day not in cache:
+            cache[day] = read_ids(snapshot_root / day / "records.jsonl")
+        return cache[day]
+
+    for k in range(1, len(log)):
+        day = log[k]["snapshot_date"]
+        if day in done:
+            continue
+        needed = {log[j]["snapshot_date"] for j in range(max(0, k - 2), k + 1)}
+        for old in [d for d in cache if d not in needed]:
+            cache.pop(old)  # at most three snapshots' ids in memory
+        prev = log[k - 1]
+        prev_started = parse_utc(prev["started_utc"])
+        if prev_started is None:
+            raise ValueError(f"unreadable started_utc on {prev['snapshot_date']}")
+        before_prev = set(ids_of(log[k - 2]["snapshot_date"])) if k >= 2 else None
+        counts = compare_snapshots(ids_of(prev["snapshot_date"]), prev_started, ids_of(day), before_prev)
+        row = {
+            "snapshot_date": day,
+            "previous_date": prev["snapshot_date"],
+            **{c: str(v) for c, v in counts.items()},
+            "computed_utc": stamp(utc_now()),
+        }
+        out_csv.parent.mkdir(parents=True, exist_ok=True)
+        new = not out_csv.exists() or out_csv.stat().st_size == 0
+        with open(out_csv, "a", newline="", encoding="utf-8") as f:
+            w = csv.DictWriter(f, fieldnames=CONSISTENCY_COLUMNS, lineterminator="\n")
+            if new:
+                w.writeheader()
+            w.writerow({c: row[c] for c in CONSISTENCY_COLUMNS})
+        appended.append(row)
+    return appended
+
+
+def consistency_line(row: dict[str, str]) -> str:
+    prev_n = int(row["previous_markets"])
+    missed = int(row["previous_missed_at_most"])
+    pct = (100.0 * missed / prev_n) if prev_n else 0.0
+    flag = " FINDING (at or above one page)" if missed >= MISSED_PAGE_THRESHOLD else ""
+    return (
+        f"{row['snapshot_date']} vs {row['previous_date']}: {row['markets']} markets ({prev_n} before); "
+        f"carried {row['carried']}, left {row['left']}, appeared {row['appeared']} "
+        f"({row['appeared_created_before_previous_start']} created before the previous snapshot started); "
+        f"previous snapshot missed at most {missed} ({pct:.3f}% of its {prev_n}){flag}"
+    )
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     sub = ap.add_subparsers(dest="cmd", required=True)
     s = sub.add_parser("snapshot", help="fetch today's snapshot of the open-market listing")
     s.add_argument("--dry-run", action="store_true", help="fetch one page, write nothing")
     sub.add_parser("check", help="list UTC dates with no snapshot since the first one")
+    sub.add_parser("consistency", help="id-only comparison of consecutive snapshots; appends paper-log/consistency.csv")
     a = ap.parse_args(argv)
 
     if a.cmd == "check":
@@ -326,6 +471,19 @@ def main(argv: list[str] | None = None) -> int:
             return 3
         print(f"snapshots: {n} complete, no gap")
         return 0
+
+    if a.cmd == "consistency":
+        rows = consistency(SNAPSHOT_ROOT, SNAPSHOT_LOG, CONSISTENCY_LOG)
+        if not rows:
+            print(f"consistency: nothing new to compare ({len(read_log(CONSISTENCY_LOG))} line(s) in {CONSISTENCY_LOG.relative_to(STUDY_DIR)})")
+            return 0
+        rc = 0
+        for row in rows:
+            print("consistency: " + consistency_line(row))
+            if int(row["previous_missed_at_most"]) >= MISSED_PAGE_THRESHOLD:
+                rc = 3
+        print(f"consistency: {len(rows)} line(s) appended to {CONSISTENCY_LOG.relative_to(STUDY_DIR)}; fields read per row: {', '.join(CONSISTENCY_FIELDS)}")
+        return rc
 
     try:
         row = take_snapshot(

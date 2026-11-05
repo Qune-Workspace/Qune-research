@@ -4,6 +4,7 @@ reading and the decision and a 4-week bill that spans the meeting, the outcome
 classes follow the target's change, the baselines never look ahead and start
 after twelve earlier meetings, the rules fire on known differences, and the
 written file holds aggregates only.  Nothing touches the network."""
+import argparse
 import json
 from datetime import date, timedelta
 
@@ -146,3 +147,37 @@ def test_end_to_end_on_a_synthetic_history_writes_aggregates_only(tmp_path):
         assert f"{d.date()},{v:.2f}" not in text and f'"{d.date()}": {v:.2f}' not in text
     # the synthetic bill is informative, so the reading should beat climatology here
     assert s["pooled_brier"]["net"] < s["pooled_brier"]["climatology"]
+    # the live mode reads the same folder and the written calibration, prints, writes nothing
+    before = sorted(p.name for p in tmp_path.iterdir())
+    lines = F.live_lines(F.load_dir(raw_dir), meetings, date(2026, 12, 9), date(2026, 11, 4),
+                         F.load_calibration(out), {"hike": 0.635, "none": 0.325})
+    assert lines[0].startswith("FOMC 2026-12-09: prints as of 2026-11-04") and any("p_hike" in ln for ln in lines)
+    assert any("calibration:" in ln for ln in lines)
+    assert sorted(p.name for p in tmp_path.iterdir()) == before
+
+
+def test_live_verdict_order_gate_range_then_threshold():
+    cal = {"rules": {"R1_primary": "net", "R2_basis_for_a_call": True},
+           "live_bin": {"net": {"n": 4, "observed_minus_predicted": -0.32}, "raw": {"n": 7, "observed_minus_predicted": 0.08}}}
+    gated = {**cal, "rules": {**cal["rules"], "R2_basis_for_a_call": False}}
+    assert F.live_verdict(None, 0.6, 0.5, 0.7, 0.2).startswith("no call: no calibration")
+    assert F.live_verdict(gated, 0.6, 0.5, 0.7, 0.2).startswith("no call: the reading does not beat")
+    assert "inside the reading's range under the historical basis" in F.live_verdict(cal, 0.6, 0.5, 0.7, 0.6)
+    assert "under 0.1" in F.live_verdict(cal, 0.6, 0.58, 0.62, 0.52)   # outside a narrow range, departure 0.08
+    v = F.live_verdict(cal, 0.6, 0.5, 0.7, 0.3)
+    assert v.startswith("call candidate: departure +0.300") and "on 4 meetings" in v
+    assert "departure -0.100" in F.live_verdict(cal, 0.7, 0.5, 0.7, 0.8, "raw")
+    # a point range (the day's basis exactly zero) must not pass a mid through: the range is the history's
+    s = constant_set()
+    assert F.basis_range(s["DTB4WK"], s["EFFR"], date(2026, 12, 31)) == pytest.approx((0.03, 0.03))
+    assert F.basis_range(s["DTB4WK"], s["EFFR"], date(2026, 3, 1)) is None   # fewer than 252 observations
+    wide = constant_set(dtb4wk=None)
+    wide["DTB4WK"] = daily(date(2026, 1, 1), date(2026, 12, 31), lambda d: 3.88 + (0.08 if d.day % 2 else 0.0))
+    lo, hi = F.basis_range(wide["DTB4WK"], wide["EFFR"], date(2026, 12, 31))
+    assert lo == pytest.approx(0.0) and hi == pytest.approx(0.08)
+    assert F.bin_frequency({"reliability": {"net": [{"bin": "0.9-1.0", "n": 19, "mean_p_hike": 0.99, "observed_hike": 0.79}]}},
+                           "net", 0.993)["n"] == 19
+    assert F.bin_frequency({"reliability": {"net": []}}, "net", 0.5) is None
+    with pytest.raises(argparse.ArgumentTypeError):
+        F.parse_mid("up=0.5")
+    assert F.parse_mid("hike=0.635") == ("hike", 0.635)

@@ -367,6 +367,122 @@ def report(s: dict[str, Any]) -> list[str]:
     return out
 
 
+# --- the live reading, with the calibration beside it (added after the first run, 18:3xZ) -----
+
+def load_calibration(path: Path) -> dict[str, Any] | None:
+    if not path.exists():
+        return None
+    cal = json.loads(path.read_text(encoding="utf-8"))
+    if "rules" not in cal or "live_bin" not in cal:
+        raise ValueError(f"{path} is not a calibration written by this script")
+    return cal
+
+
+BASIS_LOOKBACK_OBS = 252
+BASIS_PERCENTILES = (5, 95)
+
+
+def basis_range(dtb4wk: pd.Series, effr: pd.Series, today: date, lookback: int = BASIS_LOOKBACK_OBS,
+                percentiles: tuple[int, int] = BASIS_PERCENTILES) -> tuple[float, float] | None:
+    """The 4-week bill minus funds over the last ``lookback`` common observations
+    on or before ``today``: its 5th and 95th percentiles, in percentage points.
+    The basis the reading nets out is itself uncertain (the 2026-11-03 view put
+    it at 0 to 8 bp by hand); this is that range from the series.  Added 18:3xZ
+    after the first live run, when a basis of exactly zero on the day collapsed
+    the NET-RAW range to a point and the range test protected nothing."""
+    b = (dtb4wk - effr).dropna().loc[: pd.Timestamp(today)]
+    if len(b) < lookback:
+        return None
+    tail = b.iloc[-lookback:]
+    lo, hi = (float(tail.quantile(p / 100)) for p in percentiles)
+    return lo, hi
+
+
+def live_verdict(cal: dict[str, Any] | None, p_primary: float, range_lo: float, range_hi: float,
+                 market_mid: float, primary: str = "net") -> str:
+    """The order of the view's rules for the bill reading against one market mid:
+    the calibration gate (R2), the reading's range under the historical basis,
+    then the 0.10 threshold on the primary.  Never writes a call."""
+    if cal is None:
+        return "no call: no calibration file (run fomc_calibrate.py first)"
+    rules = cal["rules"]
+    if not rules["R2_basis_for_a_call"]:
+        return "no call: the reading does not beat its baselines on its own history (R2)"
+    lo, hi = sorted((range_lo, range_hi))
+    if lo <= market_mid <= hi:
+        return f"no call: the market mid {market_mid:.3f} lies inside the reading's range under the historical basis [{lo:.3f}, {hi:.3f}]"
+    dep = p_primary - market_mid
+    if abs(dep) < CALL_THRESHOLD:
+        return f"no call: departure {dep:+.3f} of the {primary} reading from the mid is under {CALL_THRESHOLD}"
+    lb = cal["live_bin"][primary]
+    return (f"call candidate: departure {dep:+.3f} of the {primary} reading from the mid, range [{lo:.3f}, {hi:.3f}] outside it; "
+            f"needs a basis sentence naming the market's number; R3 note: in [{LIVE_BIN_LOW}, {LIVE_BIN_HIGH}) the {primary} "
+            f"reading's observed minus predicted was {lb['observed_minus_predicted']:+.3f} on {lb['n']} meetings")
+
+
+def bin_frequency(cal: dict[str, Any], model: str, p_hike: float) -> dict[str, Any] | None:
+    """The calibration's reliability row the reading falls in: what happened on
+    the meetings where the reading said about this much."""
+    for row in cal["reliability"][model]:
+        lo, hi = (float(x) for x in row["bin"].split("-"))
+        if lo <= p_hike < hi or (hi == 1.0 and p_hike == 1.0):
+            return row
+    return None
+
+
+def live_lines(s: Series, meetings: list[date], d: date, today: date, cal: dict[str, Any] | None,
+               mids: dict[str, float]) -> list[str]:
+    """The reading for meeting ``d`` from the latest prints on or before ``today``."""
+    lag = (d - today).days
+    if lag <= 0:
+        return [f"meeting {d} is not after {today}"]
+    rd = reading(s, meetings, d, lag)
+    if rd is None:
+        return [f"no reading for {d} as of {today}: stale print, a meeting in between, or outside the bill's life"]
+    obs = {k: last_on_or_before(s[k], today) for k in ("DTB3", "DTB4WK", "EFFR")}
+    dtb3, dtb4wk, effr = (obs[k][1] for k in ("DTB3", "DTB4WK", "EFFR"))  # type: ignore[index]
+    out = [f"FOMC {d}: prints as of {today} (DTB3 {obs['DTB3'][0]}, DTB4WK {obs['DTB4WK'][0]}, EFFR {obs['EFFR'][0]}); "  # type: ignore[index]
+           f"{rd['days_to_meeting']} days to the meeting; policy content of one step {100 * rd['content_pct']:.1f} bp",
+           f"  raw spread (3m bill - funds) {100 * (dtb3 - effr):+.1f} bp; basis (4w bill - funds) {100 * (dtb4wk - effr):+.1f} bp; "
+           f"net {100 * (dtb3 - dtb4wk):+.1f} bp",
+           f"  implied steps: net {rd['x_net'] if rd['x_net'] is None else round(rd['x_net'], 3)}, raw {rd['x_raw']:.3f}"]
+    if rd["net"] is None:
+        out.append("  the 4-week bill spans the meeting: no net reading; the view uses raw with that said")
+        return out
+    primary = cal["rules"]["R1_primary"] if cal is not None else "net"
+    br = basis_range(s["DTB4WK"], s["EFFR"], today)
+    if br is None:
+        out.append(f"  basis history shorter than {BASIS_LOOKBACK_OBS} observations: no range, no verdict")
+        return out
+    x_at = [implied_steps(dtb3 - effr - b, rd["content_pct"]) for b in br]
+    out.append(f"  basis over the last {BASIS_LOOKBACK_OBS} observations, {BASIS_PERCENTILES[0]}th-{BASIS_PERCENTILES[1]}th percentile: "
+               f"{100 * br[0]:+.1f} to {100 * br[1]:+.1f} bp; the reading under those bases: steps {x_at[0]:.3f} to {x_at[1]:.3f}")
+    for cls in ("hike", "none", "cut"):
+        rng = sorted(forecast(x)[cls] for x in x_at)
+        line = f"  p_{cls}: net {rd['net'][cls]:.3f}, raw {rd['raw'][cls]:.3f}, range under the basis [{rng[0]:.3f}, {rng[1]:.3f}]"
+        if cls in mids:
+            line += f"; market {mids[cls]:.3f}; " + live_verdict(cal, rd[primary][cls], rng[0], rng[1], mids[cls], primary)
+        out.append(line)
+    if cal is not None:
+        b, r = cal["pooled_brier"], cal["rules"]
+        out.append(f"  calibration: {cal['sample']['scored_meetings']} meetings {cal['sample']['first_meeting']}..{cal['sample']['last_meeting']}; "
+                   f"Brier net {b['net']:.3f}, raw {b['raw']:.3f}, climatology {b['climatology']:.3f}, persistence {b['persistence']:.3f}; "
+                   f"R1 {r['R1_primary']}, R2 {r['R2_basis_for_a_call']}, R3 {r['R3_live_bin_sign']} "
+                   f"({r['R3_observed_minus_predicted']:+.3f} on {cal['live_bin'][r['R1_primary']]['n']} meetings in [{LIVE_BIN_LOW}, {LIVE_BIN_HIGH}))")
+        row = bin_frequency(cal, primary, rd[primary]["hike"])
+        if row is not None:
+            out.append(f"  in the reading's own bin ({row['bin']}) the {primary} reading averaged {row['mean_p_hike']:.3f} and a hike "
+                       f"followed on {row['observed_hike']:.3f} of {row['n']} meetings [reported, not a rule]")
+    return out
+
+
+def parse_mid(s: str) -> tuple[str, float]:
+    cls, _, v = s.partition("=")
+    if cls not in CLASSES:
+        raise argparse.ArgumentTypeError(f"mid class must be one of {CLASSES}")
+    return cls, float(v)
+
+
 # --- entry point ---------------------------------------------------------------------------
 
 def load_dir(raw_dir: Path) -> Series:
@@ -402,8 +518,20 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--manifest", type=Path, default=HERE / "data" / "fred_rates_manifest.json")
     ap.add_argument("--out", type=Path, default=HERE / "data" / "fomc_calibration.json")
     ap.add_argument("--no-write", action="store_true")
+    ap.add_argument("--live", type=date.fromisoformat, default=None,
+                    help="print the reading for this meeting date from the kept download, with the calibration beside it; writes nothing")
+    ap.add_argument("--today", type=date.fromisoformat, default=None, help="as-of date for --live (default: the machine clock, UTC)")
+    ap.add_argument("--mid", type=parse_mid, action="append", default=[], help="market mid per class for --live, e.g. hike=0.635")
     a = ap.parse_args(argv)
     raw_dir = a.from_dir if a.from_dir is not None else HERE / "data" / "raw" / "fred_rates"
+    if a.live is not None:
+        if a.fetch:
+            for k in SERIES:
+                qdata.fetch_fred(k, raw_dir, a.manifest)
+        today = a.today or date.fromisoformat(qdata.utc_now()[:10])
+        for line in live_lines(load_dir(raw_dir), meeting_dates(), a.live, today, load_calibration(a.out), dict(a.mid)):
+            print(line)
+        return 0
     return run(raw_dir, a.manifest, None if a.no_write else a.out, a.fetch)
 
 

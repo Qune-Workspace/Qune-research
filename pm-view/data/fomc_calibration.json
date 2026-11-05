@@ -1,0 +1,265 @@
+{
+  "bootstrap": {
+    "net_minus_climatology": {
+      "hi": -0.03996215103900147,
+      "lo": -0.45606485564464233,
+      "n_blocks": 10,
+      "n_rows": 74,
+      "point": -0.23017525694155383
+    },
+    "net_minus_persistence": {
+      "hi": -0.11029515444885668,
+      "lo": -0.635239410625738,
+      "n_blocks": 10,
+      "n_rows": 74,
+      "point": -0.32328119924056276
+    },
+    "net_minus_raw": {
+      "hi": 0.11731767938412757,
+      "lo": -0.31910811202938427,
+      "n_blocks": 10,
+      "n_rows": 74,
+      "point": -0.0974050062541878
+    },
+    "raw_minus_climatology": {
+      "hi": 0.12848497205499643,
+      "lo": -0.36443860383649757,
+      "n_blocks": 10,
+      "n_rows": 74,
+      "point": -0.13277025068736603
+    },
+    "raw_minus_persistence": {
+      "hi": 0.13464659598583184,
+      "lo": -0.7078184040141678,
+      "n_blocks": 10,
+      "n_rows": 74,
+      "point": -0.22587619298637496
+    }
+  },
+  "disagreement_share": 0.4189189189189189,
+  "inputs_manifest": {
+    "fred_DFEDTARU.csv": {
+      "downloaded_at_utc": "2026-11-05T18:22:47Z",
+      "first_bar": "2008-12-16",
+      "last_bar": "2026-11-05",
+      "last_valid": "2026-11-05",
+      "rows": 6534,
+      "series_id": "DFEDTARU",
+      "sha256": "a2ef714ae4433162fe3748bd66b174245bfa8d095148d2ae18b457fb78780bec",
+      "source": "FRED (fredgraph.csv)",
+      "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=DFEDTARU"
+    },
+    "fred_DTB3.csv": {
+      "downloaded_at_utc": "2026-11-05T18:22:47Z",
+      "first_bar": "1954-01-04",
+      "last_bar": "2026-11-03",
+      "last_valid": "2026-11-03",
+      "rows": 19002,
+      "series_id": "DTB3",
+      "sha256": "e5fa1cb672371e23f5eb5fa45c23dc61e122b1a97cd9b3ebc641bcdaf68f45ac",
+      "source": "FRED (fredgraph.csv)",
+      "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=DTB3"
+    },
+    "fred_DTB4WK.csv": {
+      "downloaded_at_utc": "2026-11-05T18:22:47Z",
+      "first_bar": "2001-07-31",
+      "last_bar": "2026-11-03",
+      "last_valid": "2026-11-03",
+      "rows": 6591,
+      "series_id": "DTB4WK",
+      "sha256": "438c52665d99986f683287c055c241e265e7c528b5792545f2602330a03fc43c",
+      "source": "FRED (fredgraph.csv)",
+      "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=DTB4WK"
+    },
+    "fred_EFFR.csv": {
+      "downloaded_at_utc": "2026-11-05T18:22:47Z",
+      "first_bar": "2000-07-03",
+      "last_bar": "2026-11-04",
+      "last_valid": "2026-11-04",
+      "rows": 6873,
+      "series_id": "EFFR",
+      "sha256": "21b2c8f6bdf48c9164e7aacac070b5a252ab1895011219a516b94edfdab4826d",
+      "source": "FRED (fredgraph.csv)",
+      "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=EFFR"
+    }
+  },
+  "limits": [
+    "outcome = change in DFEDTARU within 7 days of the scheduled date; the reading's scale is one step, so larger moves score as one step and x is clipped",
+    "the whole spread is attributed to the first meeting inside the bill's life, as the view did",
+    "a move between scheduled meetings enters only through the level it left behind",
+    "sample = scheduled meetings 2016-2026 with twelve earlier sample meetings; no earlier history"
+  ],
+  "live_bin": {
+    "net": {
+      "mean_p_hike": 0.5687500000000001,
+      "n": 4,
+      "observed_hike": 0.25,
+      "observed_minus_predicted": -0.3187500000000001
+    },
+    "raw": {
+      "mean_p_hike": 0.4921428571428578,
+      "n": 7,
+      "observed_hike": 0.5714285714285714,
+      "observed_minus_predicted": 0.07928571428571357
+    }
+  },
+  "pooled_brier": {
+    "climatology": 0.5285156793226127,
+    "net": 0.29834042238105885,
+    "persistence": 0.6216216216216216,
+    "raw": 0.39574542863524664
+  },
+  "reliability": {
+    "net": [
+      {
+        "bin": "0.0-0.1",
+        "mean_p_hike": 0.014255681818181872,
+        "n": 32,
+        "observed_hike": 0.0
+      },
+      {
+        "bin": "0.1-0.2",
+        "mean_p_hike": 0.1715113636363643,
+        "n": 8,
+        "observed_hike": 0.0
+      },
+      {
+        "bin": "0.2-0.3",
+        "mean_p_hike": 0.26000000000000006,
+        "n": 5,
+        "observed_hike": 0.0
+      },
+      {
+        "bin": "0.3-0.4",
+        "mean_p_hike": 0.3250000000000007,
+        "n": 3,
+        "observed_hike": 0.0
+      },
+      {
+        "bin": "0.5-0.6",
+        "mean_p_hike": 0.5416666666666666,
+        "n": 3,
+        "observed_hike": 0.0
+      },
+      {
+        "bin": "0.6-0.7",
+        "mean_p_hike": 0.6500000000000006,
+        "n": 1,
+        "observed_hike": 1.0
+      },
+      {
+        "bin": "0.8-0.9",
+        "mean_p_hike": 0.8449999999999994,
+        "n": 3,
+        "observed_hike": 0.3333333333333333
+      },
+      {
+        "bin": "0.9-1.0",
+        "mean_p_hike": 0.9865789473684214,
+        "n": 19,
+        "observed_hike": 0.7894736842105263
+      }
+    ],
+    "raw": [
+      {
+        "bin": "0.0-0.1",
+        "mean_p_hike": 0.0036329966329966077,
+        "n": 54,
+        "observed_hike": 0.037037037037037035
+      },
+      {
+        "bin": "0.1-0.2",
+        "mean_p_hike": 0.12999999999999867,
+        "n": 2,
+        "observed_hike": 0.5
+      },
+      {
+        "bin": "0.3-0.4",
+        "mean_p_hike": 0.3250000000000003,
+        "n": 1,
+        "observed_hike": 1.0
+      },
+      {
+        "bin": "0.4-0.5",
+        "mean_p_hike": 0.4550000000000005,
+        "n": 4,
+        "observed_hike": 0.25
+      },
+      {
+        "bin": "0.5-0.6",
+        "mean_p_hike": 0.5416666666666676,
+        "n": 3,
+        "observed_hike": 1.0
+      },
+      {
+        "bin": "0.8-0.9",
+        "mean_p_hike": 0.8449999999999993,
+        "n": 2,
+        "observed_hike": 1.0
+      },
+      {
+        "bin": "0.9-1.0",
+        "mean_p_hike": 0.9856250000000002,
+        "n": 8,
+        "observed_hike": 0.875
+      }
+    ]
+  },
+  "rules": {
+    "R1_primary": "net",
+    "R2_basis_for_a_call": true,
+    "R3_live_bin_sign": "over-reads",
+    "R3_observed_minus_predicted": -0.3187500000000001
+  },
+  "sample": {
+    "first_meeting": "2017-07-26",
+    "last_meeting": "2026-10-28",
+    "outcomes": {
+      "cut": 9,
+      "hike": 17,
+      "none": 48
+    },
+    "scored_meetings": 74,
+    "years": 10
+  },
+  "secondary_lag": {
+    "live_bin_raw": {
+      "mean_p_hike": 0.612857142857143,
+      "n": 7,
+      "observed_hike": 0.5714285714285714,
+      "observed_minus_predicted": -0.04142857142857159
+    },
+    "pooled_brier": {
+      "climatology": 0.5285156793226127,
+      "net": null,
+      "persistence": 0.6216216216216216,
+      "raw": 0.1899165165165168
+    },
+    "scored_meetings": 74
+  },
+  "spec": {
+    "basis_bill_days": 28,
+    "bill_days": 91,
+    "bootstrap_draws": 2000,
+    "call_threshold": 0.1,
+    "citation": "Board of Governors of the Federal Reserve System (US), DTB3, DTB4WK, DFEDTARU; Federal Reserve Bank of New York, EFFR; all retrieved from FRED, Federal Reserve Bank of St. Louis",
+    "live_bin": [
+      0.4,
+      0.8
+    ],
+    "min_baseline_meetings": 12,
+    "move_threshold": 0.125,
+    "outcome_lag_days": 7,
+    "prespecified": "2026-11-05 18:2x UTC, committed before the first run",
+    "primary_lag_days": 35,
+    "secondary_lag_days": 7,
+    "seed": 20261105,
+    "series": [
+      "DTB3",
+      "DTB4WK",
+      "EFFR",
+      "DFEDTARU"
+    ],
+    "step": 0.25
+  }
+}

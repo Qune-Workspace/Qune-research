@@ -131,7 +131,8 @@ def test_run_prints_the_figures_and_withholds_the_level_unless_asked(tmp_path, c
     assert "primary 30 obs" in out and "sensitivity 90 obs" in out
     assert "barrier 80,000 up: P(touch) primary" in out and "market mid 0.765, departure" in out
     assert "barrier 75,000 down: P(touch) primary" in out and "departure" not in out.split("75,000 down")[1].split("\n")[0]
-    assert "understate an intraday Binance" in out and B.CITATION in out
+    assert "net sign of its error against the market's rule is not known" in out and B.CITATION in out
+    assert "calibration: none read" in out and "R2 gate is not applied" in out
     rc = B.run("2026-11", [(80_000.0, "up")], {}, None, tmp_path / "kept.csv", tmp_path / "raw", tmp_path / "m.json",
                dry_run=False, show_level=True, now=lambda: NOW) if (tmp_path / "kept.csv").write_bytes(body) else 1
     out = capsys.readouterr().out
@@ -139,8 +140,44 @@ def test_run_prints_the_figures_and_withholds_the_level_unless_asked(tmp_path, c
     assert not (tmp_path / "m.json").exists()  # --from-file fetches and writes nothing
 
 
+def calibration(r2: bool) -> dict:
+    return {"rules": {"R1_primary_window": 30, "R2_method_is_a_basis_for_a_call": r2,
+                      "R3_mid_bins": {"n": 638, "observed_minus_predicted": -0.108}},
+            "pooled": {"months": 126, "first_month": "2016-05", "last_month": "2026-10",
+                       "brier30": 0.2171, "brier90": 0.2170, "brier_base": 0.2147},
+            "per_barrier": [{"distance": 0.025, "side": "up", "n": 126, "touch_rate": 0.825},
+                            {"distance": 0.05, "side": "up", "n": 126, "touch_rate": 0.698},
+                            {"distance": 0.025, "side": "down", "n": 126, "touch_rate": 0.690}]}
+
+
+def test_calibration_gate_decides_first_and_the_climatology_is_printed_beside_each_barrier(tmp_path, capsys):
+    # R2 false: every verdict is "no call", whatever the departure; R2 true: the old order applies.
+    assert B.departure_verdict(0.80, 0.85, 0.65, calibration(False)).startswith("no call: the method does not beat")
+    assert B.departure_verdict(0.80, 0.85, 0.65, calibration(True)).startswith("at or over the 0.10 threshold")
+    cal_path = tmp_path / "calibration.json"
+    cal_path.write_text(json.dumps(calibration(False)), encoding="utf-8")
+    obs = series(120)
+    (tmp_path / "kept.csv").write_bytes(csv_text(obs).encode())
+    rc = B.run("2026-11", [(80_000.0, "up"), (75_000.0, "down")], {80_000.0: 0.65, 75_000.0: 0.60}, None,
+               tmp_path / "kept.csv", tmp_path / "raw", tmp_path / "m.json", dry_run=True, show_level=False,
+               now=lambda: NOW, calibration=cal_path)
+    out = capsys.readouterr().out
+    assert rc == 0
+    up_line = out.split("80,000 up")[1].split("\n")[0]
+    assert "climatology at distance 0.025 up: touch rate 0.825 over 126 months" in up_line  # the nearest distance
+    assert "no call: the method does not beat its climatological baseline" in up_line
+    down_line = out.split("75,000 down")[1].split("\n")[0]
+    assert "climatology at distance 0.025 down: touch rate 0.690" in down_line
+    assert "calibration (calibrate.py, 126 months 2016-05..2026-10): Brier primary 0.2171 vs climatology 0.2147; R2 does NOT beat" in out
+    assert "R3 observed - predicted in the 0.5-0.9 bins -0.108" in out
+    (tmp_path / "bad.json").write_text("{}", encoding="utf-8")
+    rc = B.run("2026-11", [(80_000.0, "up")], {}, None, tmp_path / "kept.csv", tmp_path / "raw", tmp_path / "m.json",
+               dry_run=True, show_level=False, now=lambda: NOW, calibration=tmp_path / "bad.json")
+    assert rc == 1 and "FAILED bad.json is not a calibrate.py output" in capsys.readouterr().out
+
+
 def test_departure_verdict_refuses_the_bias_direction_and_a_covered_market_before_the_threshold():
-    # Below the market: the method under-reads a touch, so this is never a call, whatever the size.
+    # Below the market: the direction of the one-minute gap the method cannot see, never a call, whatever the size.
     assert B.departure_verdict(0.607, 0.705, 0.805).startswith("no call: the reading is below the market")
     assert B.departure_verdict(0.60, 0.70, 0.60).startswith("no call: the reading is below the market")  # equal counts
     # Above the market but the market sits between the two windows' readings: covered, never a call.

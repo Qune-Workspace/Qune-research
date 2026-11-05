@@ -45,6 +45,18 @@ research/POST_MORTEMS.md "thresholds before data", tools/check_question_gate.py)
   market mid that lies between the primary and the sensitivity readings,
   because the reading's own window range then covers the market (the V1
   lesson: a range wider than the gap is not a reason).
+* Calibration gate (added 2026-11-05 12:2x UTC after calibrate.py's first run on
+  the series, BUILD_LOG): data/calibration.json, written by calibrate.py under
+  rules fixed before its run, decides first.  While its R2 is false (the
+  method's Brier on 126 months is not below the climatological touch rate's),
+  every verdict begins "no call": the reading is printed beside the market and
+  beside the climatological touch rate at the nearest pre-specified distance,
+  and no call is made from the method.  The same run measured the method's
+  direction of error on its own outcome: in the bins 0.5-0.9 it OVER-reads a
+  daily-close touch by 0.108, so the "downward bias" the rule above asserted
+  on 2026-11-04 was an assumption about the one-minute gap, never measured,
+  and the measurable part of the bias runs the other way; the net sign against
+  a Binance one-minute touch is unknown.  The basis sentence says so.
 
 Data terms (tools/pm_data_terms.md, verdict fred-cbbtcusd = derived): the raw
 download stays under data/raw/fred/<UTC time>/ (git-ignored); data/fred_manifest.json
@@ -215,7 +227,26 @@ def fetch_series(fetcher: Fetcher, raw_dir: Path, manifest: Path, now: datetime,
     return rows, entry
 
 
-def lines(a: dict[str, Any], mids: dict[float, float], show_level: bool) -> list[str]:
+def load_calibration(path: Path) -> dict[str, Any] | None:
+    """calibrate.py's aggregates, or None when the file is absent."""
+    if not path.exists():
+        return None
+    c = json.loads(path.read_text(encoding="utf-8"))
+    if "rules" not in c or "per_barrier" not in c:
+        raise ValueError(f"{path.name} is not a calibrate.py output")
+    return c
+
+
+def climatology(cal: dict[str, Any], log_distance: float, side: str) -> dict[str, Any] | None:
+    """The calibration's touch rate at the pre-specified distance nearest |log_distance| on this side."""
+    rows = [b for b in cal["per_barrier"] if b["side"] == side]
+    if not rows:
+        return None
+    return min(rows, key=lambda b: abs(b["distance"] - abs(log_distance)))
+
+
+def lines(a: dict[str, Any], mids: dict[float, float], show_level: bool,
+          cal: dict[str, Any] | None = None) -> list[str]:
     """The printed report.  The spot level appears only when asked for."""
     level = f"{a['spot_level']:,.2f}" if show_level else "withheld (--show-level prints it; one dated level per view)"
     sens = "n/a" if a["sigma_sensitivity"] is None else f"{a['sigma_sensitivity']:.4f}"
@@ -232,26 +263,48 @@ def lines(a: dict[str, Any], mids: dict[float, float], show_level: bool) -> list
         touched = f" TOUCHED on {r['touched_on']} (a daily close at or beyond the level)" if r["touched_on"] else ""
         ps = "n/a" if r["p_sensitivity"] is None else f"{r['p_sensitivity']:.3f}"
         s = f"  barrier {r['barrier']:,.0f} {r['side']}: P(touch) primary {r['p_primary']:.3f}, sensitivity {ps}{touched}"
+        if cal is not None:
+            c = climatology(cal, r["log_distance"], r["side"])
+            if c is not None:
+                s += (f"; climatology at distance {c['distance']:.3f} {c['side']}: touch rate {c['touch_rate']:.3f} over "
+                      f"{c['n']} months (first-of-month evaluation, a longer horizon than today's)")
         if r["barrier"] in mids:
             m = mids[r["barrier"]]
             dep = r["p_primary"] - m
-            s += f"; market mid {m:.3f}, departure {dep:+.3f} ({departure_verdict(r['p_primary'], r['p_sensitivity'], m)})"
+            s += f"; market mid {m:.3f}, departure {dep:+.3f} ({departure_verdict(r['p_primary'], r['p_sensitivity'], m, cal)})"
         out.append(s)
-    out.append("  basis: daily Coinbase closes understate an intraday Binance one-minute touch, and the two venues' "
-               "prices differ by a basis of their own; zero drift; the figure is a lower reading of the touch chance")
+    if cal is not None:
+        rules, pooled = cal["rules"], cal["pooled"]
+        r3 = rules.get("R3_mid_bins") or {}
+        out.append(f"  calibration (calibrate.py, {pooled['months']} months {pooled['first_month']}..{pooled['last_month']}): "
+                   f"Brier primary {pooled['brier' + str(rules['R1_primary_window'])]:.4f} vs climatology {pooled['brier_base']:.4f}; "
+                   f"R2 {'beats' if rules['R2_method_is_a_basis_for_a_call'] else 'does NOT beat'} the baseline"
+                   + (f"; R3 observed - predicted in the 0.5-0.9 bins {r3['observed_minus_predicted']:+.3f} on its own outcome"
+                      if r3 else ""))
+    out.append("  basis: the figure is a continuous-path touch probability under zero drift; on its own outcome (daily "
+               "Coinbase closes) it over-reads a touch (calibrate.py R3), while a Binance one-minute extreme is reached more "
+               "often than a daily close and the two venues' prices differ by a basis of their own: the net sign of its "
+               "error against the market's rule is not known")
     out.append(f"  source: {CITATION}")
     return out
 
 
-def departure_verdict(p_primary: float, p_sensitivity: float | None, market_mid: float) -> str:
+def departure_verdict(p_primary: float, p_sensitivity: float | None, market_mid: float,
+                      cal: dict[str, Any] | None = None) -> str:
     """What the departure of the primary reading from the market can and cannot be,
-    in the order the reasons are checked: a reading below the market is in the
-    direction of the method's known downward bias, never a call; a market inside
-    the [primary, sensitivity] range is covered by the reading's own window
-    range, never a call; then the 0.10 threshold of README.md rule 2."""
+    in the order the reasons are checked: the calibration gate (R2 of
+    calibrate.py: while the method does not beat climatology on its own history
+    it is never a basis for a call); a reading below the market, which is in the
+    direction of the one-minute gap the method cannot see, never a call; a
+    market inside the [primary, sensitivity] range is covered by the reading's
+    own window range, never a call; then the 0.10 threshold of README.md rule 2."""
+    if cal is not None and not cal["rules"]["R2_method_is_a_basis_for_a_call"]:
+        return ("no call: the method does not beat its climatological baseline on its own history "
+                "(calibrate.py R2); the reading is reported beside the market only")
     dep = p_primary - market_mid
     if dep <= 0:
-        return "no call: the reading is below the market, the direction of the method's known downward bias"
+        return ("no call: the reading is below the market, the direction of the one-minute gap the daily-close "
+                "method cannot see (its net bias is unmeasured)")
     if p_sensitivity is not None and min(p_primary, p_sensitivity) <= market_mid <= max(p_primary, p_sensitivity):
         return "no call: the market lies inside the reading's own window range (primary to sensitivity)"
     if dep < CALL_THRESHOLD:
@@ -271,9 +324,10 @@ def parse_mid(s: str) -> tuple[float, float]:
 
 def run(month: str, barriers: list[tuple[float, str]], mids: dict[float, float], fetcher: Fetcher | None,
         from_file: Path | None, raw_dir: Path, manifest: Path, dry_run: bool, show_level: bool,
-        now: Callable[[], datetime] = lambda: datetime.now(UTC)) -> int:
+        now: Callable[[], datetime] = lambda: datetime.now(UTC), calibration: Path | None = None) -> int:
     at = now()
     try:
+        cal = load_calibration(calibration) if calibration is not None else None
         if from_file is not None:
             rows = parse_fred_csv(from_file.read_text(encoding="utf-8"))
             print(f"{SERIES}: read from {from_file.name} ({len(rows)} observations; nothing fetched or written)")
@@ -288,7 +342,10 @@ def run(month: str, barriers: list[tuple[float, str]], mids: dict[float, float],
     except (urllib.error.URLError, OSError, ValueError, UnicodeDecodeError) as e:
         print(f"{SERIES}: FAILED {e}")
         return 1
-    for ln in lines(a, mids, show_level):
+    if cal is None:
+        print(f"  calibration: none read (calibrate.py has not written {calibration.name if calibration else 'a file'}); "
+              f"the R2 gate is not applied")
+    for ln in lines(a, mids, show_level, cal):
         print(ln)
     return 0
 
@@ -303,13 +360,15 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--show-level", action="store_true")
     ap.add_argument("--raw-dir", type=Path, default=None)
     ap.add_argument("--manifest", type=Path, default=None)
+    ap.add_argument("--calibration", type=Path, default=None, help="calibrate.py's aggregates (default data/calibration.json)")
     a = ap.parse_args(argv)
     raw_dir = a.raw_dir if a.raw_dir is not None else HERE / "data" / "raw" / "fred"
     manifest = a.manifest if a.manifest is not None else HERE / "data" / "fred_manifest.json"
+    calibration = a.calibration if a.calibration is not None else HERE / "data" / "calibration.json"
     barriers = [parse_barrier(b) for b in a.barrier]
     mids = dict(parse_mid(m) for m in a.mid)
     return run(a.month, barriers, mids, None if a.from_file else http_get, a.from_file, raw_dir, manifest,
-               a.dry_run, a.show_level)
+               a.dry_run, a.show_level, calibration=calibration)
 
 
 if __name__ == "__main__":

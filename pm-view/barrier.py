@@ -309,7 +309,13 @@ def departure_verdict(p_primary: float, p_sensitivity: float | None, market_mid:
         return "no call: the market lies inside the reading's own window range (primary to sensitivity)"
     if dep < CALL_THRESHOLD:
         return "under the 0.10 threshold: nothing to add"
-    return "at or over the 0.10 threshold, against the bias, outside the window range: a call needs a basis sentence"
+    # 2026-11-06: the ledger row's method fields, printed so they are copied, not retyped; the committed
+    # ledger is held to pm_lib.method_violations, and tests hold this printer to the same answer.
+    lo = min(p_primary, p_sensitivity) if p_sensitivity is not None else p_primary
+    hi = max(p_primary, p_sensitivity) if p_sensitivity is not None else p_primary
+    return ("at or over the 0.10 threshold, against the bias, outside the window range "
+            f"(ledger: method=btc_touch method_p={p_primary:.3f} range_lo={lo:.3f} range_hi={hi:.3f}): "
+            "a call needs a basis sentence")
 
 
 def parse_barrier(s: str) -> tuple[float, str]:

@@ -40,9 +40,29 @@ RESOLUTION_BEGUN = ("proposed", "disputed", "resolved")
 
 LEDGER_COLUMNS = (
     "id", "made_on", "venue", "market_id", "condition_id", "yes_token_id", "proposition", "settles_on",
-    "due_on", "market_mid", "market_spread", "volume_usdc", "desk_p", "basis", "quote_sha256",
+    "due_on", "market_mid", "market_spread", "volume_usdc", "desk_p",
+    "method", "method_p", "range_lo", "range_hi",  # added 2026-11-06: the method gate on the committed row
+    "basis", "quote_sha256",
 )
 MIN_SETTLES_ON_CHARS = 20  # the resolution rule restated: source and measure, not the title
+
+# The methods a call may rest on, and where each one's calibration gate (rule R2:
+# the method beats its dumb baseline on its own history, or it is no basis for a
+# call) is written.  Added 2026-11-06 (predictions/POST_MORTEMS.md, "A call gate
+# that knew one rule of three"): until then README rule 2 stated the R2 gate and
+# the range rule, barrier.py and fomc_calibrate.py printed them as advice and
+# never wrote a call, and the only check on the committed ledger was the 0.10
+# departure plus `settles_on`, so a hand-written row could pass every test while
+# breaking two of the three rules.  `stated` is the README's other path, a
+# reason outside any method (a data release, written before the market moves on
+# it); it carries no method reading and no gate beyond the departure, and the
+# ledger shows that plainly.
+METHODS = ("fomc_bills", "btc_touch", "stated")
+METHOD_CALIBRATION = {  # method -> (calibration file under pm-view/, the R2 key in its "rules")
+    "fomc_bills": ("data/fomc_calibration.json", "R2_basis_for_a_call"),
+    "btc_touch": ("data/calibration.json", "R2_method_is_a_basis_for_a_call"),
+}
+BELOW_MARKET_NEVER = ("btc_touch",)  # a reading below the market is in the direction of the one-minute gap: never a call
 OUTCOME_COLUMNS = (
     "id", "scored_on", "kind", "y", "desk_p", "market_mid", "brier_desk", "brier_market",
     "gamma_sha256", "clob_sha256",
@@ -147,15 +167,81 @@ def departure(desk_p: float, market_mid: float) -> float:
     return abs(desk_p - market_mid)
 
 
+def method_gate(method: str, calibration: dict[str, Any] | None) -> bool | None:
+    """R2 of the method's calibration file (already loaded by the caller): True
+    when the method beats its baselines on its own history, False when it does
+    not, None when the file is missing or is not that method's calibration."""
+    if method not in METHOD_CALIBRATION or calibration is None:
+        return None
+    key = METHOD_CALIBRATION[method][1]
+    rules = calibration.get("rules") if isinstance(calibration, dict) else None
+    v = rules.get(key) if isinstance(rules, dict) else None
+    return v if isinstance(v, bool) else None
+
+
+def method_violations(method: str, method_p: float | None, range_lo: float | None, range_hi: float | None,
+                      market_mid: float, r2: bool | None, desk_p: float | None = None) -> list[str]:
+    """The method gate of README rule 2, in the order the reasons are checked,
+    on the numbers a ledger row carries; empty when the method may be a basis
+    for a call.  The one copy of the rule: barrier.departure_verdict and
+    fomc_calibrate.live_verdict print the same reasons and the tests hold them
+    to this function.
+
+    1. the method is one the desk has (METHODS);
+    2. `stated` carries no method reading and no range (the gate is the
+       departure alone, and the row says so);
+    3. the method's calibration gate R2 is true (None: no calibration, refused);
+    4. the reading and its range are probabilities with lo <= p <= hi (the
+       range the ledger carries is the hull of the reading and its range under
+       the method's own uncertainty: the historical basis for the bills, the
+       primary-to-sensitivity window for the touch formula);
+    5. the market mid lies outside the range (inside: covered, never a call);
+    6. for BELOW_MARKET_NEVER methods the reading is above the market;
+    7. the reading departs from the mid by at least MIN_DEPARTURE;
+    8. the desk's probability sits on the same side of the market as the
+       reading it rests on."""
+    out: list[str] = []
+    if method not in METHODS:
+        return [f"method must be one of {', '.join(METHODS)}"]
+    if method == "stated":
+        if any(v is not None for v in (method_p, range_lo, range_hi)):
+            out.append("a stated reason carries no method reading or range: leave method_p, range_lo, range_hi empty")
+        return out
+    if r2 is None:
+        out.append(f"no calibration gate for {method}: run its calibration first ({METHOD_CALIBRATION[method][0]})")
+    elif not r2:
+        out.append(f"{method} does not beat its baselines on its own history (R2): not a basis for a call")
+    if method_p is None or range_lo is None or range_hi is None:
+        out.append("method_p, range_lo and range_hi are required for a method call")
+        return out
+    if not (0.0 <= range_lo <= method_p <= range_hi <= 1.0):
+        out.append(f"the range [{range_lo:.3f}, {range_hi:.3f}] must bracket the method reading {method_p:.3f} inside [0, 1]")
+        return out
+    if range_lo <= market_mid <= range_hi:
+        out.append(f"the market mid {market_mid:.3f} lies inside the reading's range [{range_lo:.3f}, {range_hi:.3f}]: no call")
+    if method in BELOW_MARKET_NEVER and method_p <= market_mid:
+        out.append(f"{method}: the reading is at or below the market, the direction of the gap the method cannot see: never a call")
+    if departure(method_p, market_mid) < MIN_DEPARTURE:
+        out.append(f"the method reading is within {MIN_DEPARTURE:.2f} of the market mid: no call")
+    if desk_p is not None and (desk_p - market_mid) * (method_p - market_mid) <= 0:
+        out.append("desk_p and the method reading sit on opposite sides of the market (or on it)")
+    return out
+
+
 def call_violations(desk_p: float, market_mid: float, basis: str, settles_on: str = "",
-                    proposition: str = "") -> list[str]:
+                    proposition: str = "", method: str | None = None, method_p: float | None = None,
+                    range_lo: float | None = None, range_hi: float | None = None,
+                    r2: bool | None = None) -> list[str]:
     """What stops a draft call from being logged; empty when it may be.
 
     `settles_on` (added 2026-11-04 after the first view described two touch
     markets as price-level markets from their titles, predictions/POST_MORTEMS.md)
     restates the market's resolution rule in the desk's words: the source and
     the measure that settle YES.  It must be present, long enough to say both,
-    and not a copy of the proposition or of the title."""
+    and not a copy of the proposition or of the title.
+
+    `method` and the three numbers beside it (added 2026-11-06) carry the
+    method gate: see method_violations.  A call with no method is refused."""
     out: list[str] = []
     if not (0.0 < desk_p < 1.0):
         out.append("desk_p is not a probability")
@@ -168,7 +254,20 @@ def call_violations(desk_p: float, market_mid: float, basis: str, settles_on: st
         out.append("settles_on must restate the market's resolution rule with its source and the measured level or date")
     elif so.lower() == proposition.strip().lower():
         out.append("settles_on repeats the proposition; restate the rule, not the title")
+    if method is None:
+        out.append(f"method must be stated: one of {', '.join(METHODS)}")
+    else:
+        out.extend(method_violations(method, method_p, range_lo, range_hi, market_mid, r2, desk_p))
     return out
+
+
+def ledger_method_fields(call: dict[str, Any]) -> tuple[str | None, float | None, float | None, float | None]:
+    """The four method columns of a ledger row as typed values; an empty cell is None."""
+    def num(k: str) -> float | None:
+        v = call.get(k, "")
+        return as_float(v) if isinstance(v, str) and v.strip() else None
+    m = call.get("method", "")
+    return (m.strip() if isinstance(m, str) and m.strip() else None, num("method_p"), num("range_lo"), num("range_hi"))
 
 
 def rules_excerpt(row: dict[str, Any], chars: int = 400) -> str:

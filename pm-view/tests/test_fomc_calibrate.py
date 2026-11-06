@@ -166,6 +166,7 @@ def test_live_verdict_order_gate_range_then_threshold():
     assert "under 0.1" in F.live_verdict(cal, 0.6, 0.58, 0.62, 0.52)   # outside a narrow range, departure 0.08
     v = F.live_verdict(cal, 0.6, 0.5, 0.7, 0.3)
     assert v.startswith("call candidate: departure +0.300") and "on 4 meetings" in v
+    assert "ledger: method=fomc_bills method_p=0.600 range_lo=0.500 range_hi=0.700" in v  # 2026-11-06: copied, not retyped
     assert "departure -0.100" in F.live_verdict(cal, 0.7, 0.5, 0.7, 0.8, "raw")
     # a point range (the day's basis exactly zero) must not pass a mid through: the range is the history's
     s = constant_set()
@@ -181,3 +182,27 @@ def test_live_verdict_order_gate_range_then_threshold():
     with pytest.raises(argparse.ArgumentTypeError):
         F.parse_mid("up=0.5")
     assert F.parse_mid("hike=0.635") == ("hike", 0.635)
+
+
+def test_live_verdict_agrees_with_the_ledger_gate_on_a_grid():
+    # 2026-11-06: the printer is advice; pm_lib.method_violations is the rule the committed ledger is held to.
+    # On every grid point where the reading lies inside its range (the live range is the hull of both), the
+    # printer says "call candidate" exactly when the gate is empty, under both states of R2 and with no file.
+    import pm_lib as L
+    cal = {"rules": {"R1_primary": "net", "R2_basis_for_a_call": True},
+           "live_bin": {"net": {"n": 4, "observed_minus_predicted": -0.32}}}
+    gated = {**cal, "rules": {**cal["rules"], "R2_basis_for_a_call": False}}
+    grid = [x / 20 for x in range(1, 20)]
+    checked = 0
+    for file, r2 in ((cal, True), (gated, False), (None, None)):
+        for lo in grid:
+            for hi in grid:
+                if hi < lo:
+                    continue
+                for p in (lo, (lo + hi) / 2, hi):
+                    for mid in grid:
+                        printed = F.live_verdict(file, p, lo, hi, mid).startswith("call candidate")
+                        gate = L.method_violations("fomc_bills", p, lo, hi, mid, r2) == []
+                        assert printed == gate, (r2, p, lo, hi, mid)
+                        checked += 1
+    assert checked > 10_000

@@ -189,6 +189,27 @@ def test_departure_verdict_refuses_the_bias_direction_and_a_covered_market_befor
     assert B.departure_verdict(0.80, None, 0.65).startswith("at or over the 0.10 threshold")  # no sensitivity: no range test
 
 
+def test_departure_verdict_agrees_with_the_ledger_gate_on_a_grid():
+    # 2026-11-06: the printer is advice; pm_lib.method_violations is the rule the committed ledger is held to.
+    # On every grid point with a sensitivity reading, the printer says "a call needs a basis sentence" exactly
+    # when the gate is empty, under both states of R2.
+    import pm_lib as L
+    grid = [x / 20 for x in range(1, 20)]
+    checked = 0
+    for r2 in (True, False):
+        for p in grid:
+            for s in grid:
+                for mid in grid:
+                    printed = B.departure_verdict(p, s, mid, calibration(r2)).endswith("a call needs a basis sentence")
+                    gate = L.method_violations("btc_touch", p, min(p, s), max(p, s), mid, r2) == []
+                    assert printed == gate, (r2, p, s, mid)
+                    checked += 1
+    assert checked == 2 * 19 ** 3
+    # the candidate line carries the four ledger fields so the row is copied, not retyped
+    v = B.departure_verdict(0.80, 0.85, 0.65, calibration(True))
+    assert "ledger: method=btc_touch method_p=0.800 range_lo=0.800 range_hi=0.850" in v
+
+
 def test_run_reports_a_failed_fetch_and_a_short_series_as_a_refusal(tmp_path, capsys):
     def boom(url: str) -> bytes:
         raise OSError("no route")

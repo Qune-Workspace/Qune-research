@@ -415,9 +415,13 @@ def live_verdict(cal: dict[str, Any] | None, p_primary: float, range_lo: float, 
     if abs(dep) < CALL_THRESHOLD:
         return f"no call: departure {dep:+.3f} of the {primary} reading from the mid is under {CALL_THRESHOLD}"
     lb = cal["live_bin"][primary]
+    # 2026-11-06: the ledger row's method fields (the range the ledger carries is the hull of the reading and
+    # its range under the historical basis), printed so they are copied, not retyped; the committed ledger is
+    # held to pm_lib.method_violations, and tests hold this printer to the same answer.
     return (f"call candidate: departure {dep:+.3f} of the {primary} reading from the mid, range [{lo:.3f}, {hi:.3f}] outside it; "
             f"needs a basis sentence naming the market's number; R3 note: in [{LIVE_BIN_LOW}, {LIVE_BIN_HIGH}) the {primary} "
-            f"reading's observed minus predicted was {lb['observed_minus_predicted']:+.3f} on {lb['n']} meetings")
+            f"reading's observed minus predicted was {lb['observed_minus_predicted']:+.3f} on {lb['n']} meetings "
+            f"(ledger: method=fomc_bills method_p={p_primary:.3f} range_lo={min(lo, p_primary):.3f} range_hi={max(hi, p_primary):.3f})")
 
 
 def bin_frequency(cal: dict[str, Any], model: str, p_hike: float) -> dict[str, Any] | None:

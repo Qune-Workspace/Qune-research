@@ -12,6 +12,14 @@ every call from the first:
    `settles_on` restates the market's own resolution rule, with its source and
    the level or date, and is not the title; and the quote it rests on recorded
    the description's hash, so the rule was fetched before the desk wrote.
+6. (2026-11-06, predictions/POST_MORTEMS.md "A call gate that knew one rule of
+   three") The call names its method; a method call carries the method's
+   reading and range, the method's committed calibration says R2 true, the
+   market mid lies outside the range, a touch reading is above the market, and
+   the desk's probability sits on the reading's side of the market
+   (pm_lib.method_violations).  Until this rule the committed ledger was held
+   to the departure and `settles_on` only, while the R2 gate and the range rule
+   lived in two printers that never wrote a call.
 """
 import csv
 import json
@@ -20,6 +28,16 @@ from pathlib import Path
 import pm_lib as L
 
 HERE = Path(__file__).resolve().parent.parent
+
+
+def calibration_gates() -> dict[str, bool | None]:
+    """R2 per method from the committed calibration files, as the ledger test reads them."""
+    out: dict[str, bool | None] = {}
+    for method, (rel, _key) in L.METHOD_CALIBRATION.items():
+        path = HERE / rel
+        cal = json.loads(path.read_text(encoding="utf-8")) if path.exists() else None
+        out[method] = L.method_gate(method, cal)
+    return out
 
 
 def read(name: str) -> list[dict]:
@@ -61,11 +79,24 @@ def test_the_market_was_quoted_before_the_desk_wrote():
         assert q["eligibility"] == "eligible", f"{call['id']}: the market was not eligible ({q['eligibility']})"
 
 
-def test_every_call_departs_from_the_market_with_a_reason_that_names_it():
+def test_every_call_departs_from_the_market_with_a_reason_that_names_it_and_passes_its_method_gate():
+    gates = calibration_gates()
     for call in read("ledger.csv"):
+        method, method_p, lo, hi = L.ledger_method_fields(call)
         v = L.call_violations(float(call["desk_p"]), float(call["market_mid"]), call["basis"],
-                              call.get("settles_on", ""), call.get("proposition", ""))
+                              call.get("settles_on", ""), call.get("proposition", ""),
+                              method, method_p, lo, hi, gates.get(method or ""))
         assert v == [], f"{call['id']}: {'; '.join(v)}"
+
+
+def test_the_committed_calibration_files_carry_the_gate_the_ledger_reads():
+    # Both method calibrations are committed and readable; the gate is a bool, never a guess.
+    gates = calibration_gates()
+    assert set(gates) == {"fomc_bills", "btc_touch"}
+    for method, r2 in gates.items():
+        assert isinstance(r2, bool), f"{method}: calibration missing or without its R2 key"
+    # as written on 2026-11-05: the bills pass, the touch formula does not
+    assert gates["fomc_bills"] is True and gates["btc_touch"] is False
 
 
 def test_the_market_rules_were_fetched_with_the_quote():

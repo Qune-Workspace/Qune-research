@@ -298,7 +298,13 @@ def departure_verdict(p_primary: float, p_sensitivity: float | None, market_mid:
     direction of the one-minute gap the method cannot see, never a call; a
     market inside the [primary, sensitivity] range is covered by the reading's
     own window range, never a call; then the 0.10 threshold of README.md rule 2."""
-    if cal is not None and not cal["rules"]["R2_method_is_a_basis_for_a_call"]:
+    # 2026-11-06 12:15Z: no calibration file is a refusal, as it is in pm_lib.method_violations (r2 None) and in
+    # fomc_calibrate.live_verdict; until this date this printer passed a reading through to "a call needs a basis
+    # sentence" when no file was given, the one disagreement with the gate the grid test's two R2 states missed
+    # (predictions/POST_MORTEMS.md "A rule in prose, a check elsewhere: the mechanical search").
+    if cal is None:
+        return "no call: no calibration file (run calibrate.py first)"
+    if not cal["rules"]["R2_method_is_a_basis_for_a_call"]:
         return ("no call: the method does not beat its climatological baseline on its own history "
                 "(calibrate.py R2); the reading is reported beside the market only")
     dep = p_primary - market_mid

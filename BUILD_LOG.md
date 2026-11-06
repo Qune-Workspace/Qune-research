@@ -537,3 +537,15 @@ Due register at 00:15Z: pass (due 0, waiting 0, overdue 0; 013 snapshot 2026-11-
 **My own mistakes this run.** The desk-view build was launched with a bare `&` inside the tool call, against the detach rule of 4 November; it survived only because it finished in five seconds. A fetch that could take longer is launched with `tools/detach.sh` or the exec tool's own background mode, as the rule says.
 
 Due register at 06:3xZ: pass. No result; front page results unchanged.
+
+## 2026-11-06, 12:15–12:3xZ by the clock: the mechanical search for a rule in prose with its check elsewhere, and what its first run found
+
+**Decided.** The 00:15Z post-mortem's "next candidate" was built instead of a fourth post-mortem of the same class: the ledger gate's refusals now carry rule tags from one tuple (`pm_lib.GATE_TAGS`, twelve tags), README rule 2 carries the same tag beside each rule, and `tests/test_rule_tags.py` holds the prose, the declaration and the emitted refusals equal, requires every bold rule in rule 2 to carry a tag and refuses a tag anywhere else (`predictions/POST_MORTEMS.md`, "A rule in prose, a check elsewhere: the mechanical search"). No reading, market, call or result changed; the ledger is still empty.
+
+**What the first run found (observed).** A check with no prose: the gate refused a desk probability outside (0, 1) and the README had never said so (sentence added). A printer that disagreed with the gate in the state the grid did not enumerate: `barrier.departure_verdict` with no calibration file printed "a call needs a basis sentence" where the gate refuses; the 00:15Z grid covered R2 true and false, not the missing file, and an older order test passed no file in every call and depended on the pass-through. The committed calibration file meant no live view could have met the state. Fixed: the printer refuses, the grid covers three states (3 × 19³ points), the order test passes R2 true and asserts the refusal. pm-view 65 tests became 70; ruff and mypy clean; make lint pass.
+
+**Rule.** A rule written in prose names its check with a tag, and a test holds the prose tags, the declared tags and the emitted tags equal. A grid test that holds two copies to each other enumerates every state the reference distinguishes, including the absent input.
+
+**My own mistakes this run.** The first version of the shape rule failed on my own sentence: the note explaining the tags was written in bold and carried no tag, so the test refused it; the note is in italics now, and the failure is the test doing what it was written for. The search's scope is one folder; the desk view and the studies are not covered, and this entry does not claim they are.
+
+Due register at 12:15Z: pass. No result; front page results unchanged.

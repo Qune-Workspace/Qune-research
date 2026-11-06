@@ -177,34 +177,41 @@ def test_calibration_gate_decides_first_and_the_climatology_is_printed_beside_ea
 
 
 def test_departure_verdict_refuses_the_bias_direction_and_a_covered_market_before_the_threshold():
+    # 2026-11-06 12:15Z: with the calibration gate open (R2 true); until this date these calls passed no file and
+    # the printer let that through, which the gate never did (predictions/POST_MORTEMS.md, the mechanical search).
+    cal = calibration(True)
+    assert B.departure_verdict(0.80, 0.85, 0.65, None).startswith("no call: no calibration file")
     # Below the market: the direction of the one-minute gap the method cannot see, never a call, whatever the size.
-    assert B.departure_verdict(0.607, 0.705, 0.805).startswith("no call: the reading is below the market")
-    assert B.departure_verdict(0.60, 0.70, 0.60).startswith("no call: the reading is below the market")  # equal counts
+    assert B.departure_verdict(0.607, 0.705, 0.805, cal).startswith("no call: the reading is below the market")
+    assert B.departure_verdict(0.60, 0.70, 0.60, cal).startswith("no call: the reading is below the market")  # equal counts
     # Above the market but the market sits between the two windows' readings: covered, never a call.
-    assert B.departure_verdict(0.80, 0.60, 0.65).startswith("no call: the market lies inside")
-    assert B.departure_verdict(0.80, 0.60, 0.60).startswith("no call: the market lies inside")  # the edge counts
+    assert B.departure_verdict(0.80, 0.60, 0.65, cal).startswith("no call: the market lies inside")
+    assert B.departure_verdict(0.80, 0.60, 0.60, cal).startswith("no call: the market lies inside")  # the edge counts
     # Above the market, outside the range: the threshold decides.
-    assert B.departure_verdict(0.737, 0.805, 0.645) == "under the 0.10 threshold: nothing to add"
-    assert B.departure_verdict(0.80, 0.85, 0.65).startswith("at or over the 0.10 threshold, against the bias")
-    assert B.departure_verdict(0.80, None, 0.65).startswith("at or over the 0.10 threshold")  # no sensitivity: no range test
+    assert B.departure_verdict(0.737, 0.805, 0.645, cal) == "under the 0.10 threshold: nothing to add"
+    assert B.departure_verdict(0.80, 0.85, 0.65, cal).startswith("at or over the 0.10 threshold, against the bias")
+    assert B.departure_verdict(0.80, None, 0.65, cal).startswith("at or over the 0.10 threshold")  # no sensitivity: no range test
 
 
 def test_departure_verdict_agrees_with_the_ledger_gate_on_a_grid():
     # 2026-11-06: the printer is advice; pm_lib.method_violations is the rule the committed ledger is held to.
     # On every grid point with a sensitivity reading, the printer says "a call needs a basis sentence" exactly
-    # when the gate is empty, under both states of R2.
+    # when the gate is empty, under both states of R2 and (2026-11-06 12:15Z) with no calibration file at all:
+    # the gate refuses a method with no calibration, and until that date this printer did not.
     import pm_lib as L
     grid = [x / 20 for x in range(1, 20)]
     checked = 0
-    for r2 in (True, False):
+    for r2 in (True, False, None):
+        cal = calibration(r2) if r2 is not None else None
         for p in grid:
             for s in grid:
                 for mid in grid:
-                    printed = B.departure_verdict(p, s, mid, calibration(r2)).endswith("a call needs a basis sentence")
+                    printed = B.departure_verdict(p, s, mid, cal).endswith("a call needs a basis sentence")
                     gate = L.method_violations("btc_touch", p, min(p, s), max(p, s), mid, r2) == []
                     assert printed == gate, (r2, p, s, mid)
                     checked += 1
-    assert checked == 2 * 19 ** 3
+    assert checked == 3 * 19 ** 3
+    assert B.departure_verdict(0.80, 0.85, 0.65, None).startswith("no call: no calibration file")
     # the candidate line carries the four ledger fields so the row is copied, not retyped
     v = B.departure_verdict(0.80, 0.85, 0.65, calibration(True))
     assert "ledger: method=btc_touch method_p=0.800 range_lo=0.800 range_hi=0.850" in v

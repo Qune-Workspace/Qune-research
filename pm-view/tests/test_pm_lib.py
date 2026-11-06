@@ -64,13 +64,14 @@ SETTLES = "the upper bound of the target range after the 9 December 2026 meeting
 def test_a_call_needs_a_departure_and_a_basis_that_names_the_market():
     assert L.call_violations(0.60, 0.735, "the market prices 0.735; the bill curve says 0.57", SETTLES, method="stated") == []
     v = L.call_violations(0.68, 0.735, "the market prices 0.735; a reason", SETTLES, method="stated")
-    assert v == ["desk_p is within 0.10 of the market mid: no call"]
+    # 2026-11-06 12:15Z: every refusal carries the tag of its rule (tests/test_rule_tags.py)
+    assert v == ["[gate:departure] desk_p is within 0.10 of the market mid: no call"]
     v = L.call_violations(0.50, 0.735, "no mention of the venue's number", SETTLES, method="stated")
-    assert v == ["basis must name the market's probability and what it is missing"]
-    assert "desk_p is not a probability" in L.call_violations(1.0, 0.5, "market", method="stated")
+    assert v == ["[gate:basis-names-market] basis must name the market's probability and what it is missing"]
+    assert "[gate:probability] desk_p is not a probability" in L.call_violations(1.0, 0.5, "market", method="stated")
     # 2026-11-06: a call with no method is refused; the ledger can no longer carry a row the gate never saw
     v = L.call_violations(0.60, 0.735, "the market prices 0.735; ...", SETTLES)
-    assert v == ["method must be stated: one of fomc_bills, btc_touch, stated"]
+    assert v == ["[gate:method-named] method must be stated: one of fomc_bills, btc_touch, stated"]
 
 
 def test_method_gate_reads_r2_from_the_methods_own_calibration_and_nothing_else():
@@ -87,33 +88,37 @@ def test_method_gate_reads_r2_from_the_methods_own_calibration_and_nothing_else(
 def test_method_violations_in_the_readme_order():
     ok = L.method_violations("fomc_bills", 0.99, 0.60, 1.00, 0.45, True, desk_p=0.90)
     assert ok == []
-    assert L.method_violations("bills", 0.9, 0.6, 1.0, 0.4, True) == ["method must be one of fomc_bills, btc_touch, stated"]
+    assert L.method_violations("bills", 0.9, 0.6, 1.0, 0.4, True) == [
+        "[gate:method-named] method must be one of fomc_bills, btc_touch, stated"]
     # stated: no reading, no range, no gate beyond the departure
     assert L.method_violations("stated", None, None, None, 0.4, None) == []
     assert L.method_violations("stated", 0.9, None, None, 0.4, None) == [
-        "a stated reason carries no method reading or range: leave method_p, range_lo, range_hi empty"]
+        "[gate:stated-bare] a stated reason carries no method reading or range: leave method_p, range_lo, range_hi empty"]
     # the calibration gate comes first
-    assert L.method_violations("fomc_bills", 0.99, 0.60, 1.00, 0.45, None)[0].startswith("no calibration gate for fomc_bills")
+    assert L.method_violations("fomc_bills", 0.99, 0.60, 1.00, 0.45, None)[0].startswith(
+        "[gate:calibrated] no calibration gate for fomc_bills")
     assert L.method_violations("btc_touch", 0.80, 0.80, 0.85, 0.65, False)[0] == (
-        "btc_touch does not beat its baselines on its own history (R2): not a basis for a call")
+        "[gate:calibrated] btc_touch does not beat its baselines on its own history (R2): not a basis for a call")
     # the numbers must be there and the range must bracket the reading
-    assert L.method_violations("fomc_bills", None, 0.6, 1.0, 0.4, True) == ["method_p, range_lo and range_hi are required for a method call"]
+    assert L.method_violations("fomc_bills", None, 0.6, 1.0, 0.4, True) == [
+        "[gate:range-brackets] method_p, range_lo and range_hi are required for a method call"]
     assert L.method_violations("fomc_bills", 0.55, 0.60, 1.00, 0.40, True) == [
-        "the range [0.600, 1.000] must bracket the method reading 0.550 inside [0, 1]"]
+        "[gate:range-brackets] the range [0.600, 1.000] must bracket the method reading 0.550 inside [0, 1]"]
     # the market inside the range: covered (the 2026-11-05 18:26Z case: 0.993 in [0.596, 1.000] against 0.635)
     v = L.method_violations("fomc_bills", 0.993, 0.596, 1.000, 0.635, True, desk_p=0.90)
-    assert v == ["the market mid 0.635 lies inside the reading's range [0.596, 1.000]: no call"]
+    assert v == ["[gate:range] the market mid 0.635 lies inside the reading's range [0.596, 1.000]: no call"]
     # a touch reading below the market is never a call, even outside the range and over the threshold
     v = L.method_violations("btc_touch", 0.607, 0.607, 0.705, 0.805, True)
-    assert v == ["btc_touch: the reading is at or below the market, the direction of the gap the method cannot see: never a call"]
+    assert v == ["[gate:touch-below] btc_touch: the reading is at or below the market, "
+                 "the direction of the gap the method cannot see: never a call"]
     # the bills reading below the market may be a call (no one-sided gap in that method)
     assert L.method_violations("fomc_bills", 0.30, 0.20, 0.40, 0.60, True, desk_p=0.35) == []
     # under the threshold outside the range
     v = L.method_violations("fomc_bills", 0.60, 0.58, 0.62, 0.52, True)
-    assert v == ["the method reading is within 0.10 of the market mid: no call"]
+    assert v == ["[gate:method-departure] the method reading is within 0.10 of the market mid: no call"]
     # the desk on the other side of the market from its own method
     v = L.method_violations("fomc_bills", 0.99, 0.60, 1.00, 0.45, True, desk_p=0.40)
-    assert v == ["desk_p and the method reading sit on opposite sides of the market (or on it)"]
+    assert v == ["[gate:desk-side] desk_p and the method reading sit on opposite sides of the market (or on it)"]
 
 
 def test_ledger_method_fields_type_the_four_columns_and_read_blanks_as_none():
@@ -157,7 +162,8 @@ def test_a_call_needs_settles_on_with_source_and_level_and_not_the_title():
                              "fomc_bills", 0.99, 0.60, 1.00, True)
     assert full == []
     gated = L.call_violations(0.90, 0.45, "the market prices 0.45; ...", good, "x", "btc_touch", 0.99, 0.60, 1.00, False)
-    assert gated == ["btc_touch does not beat its baselines on its own history (R2): not a basis for a call"]
+    assert gated == ["[gate:calibrated] btc_touch does not beat its baselines on its own history (R2): "
+                     "not a basis for a call"]
 
 
 def test_rules_excerpt_is_one_line_cut_at_the_limit_and_names_a_missing_description():

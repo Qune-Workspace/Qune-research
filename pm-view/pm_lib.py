@@ -30,6 +30,7 @@ from __future__ import annotations
 
 import json
 import math
+import re
 from datetime import datetime
 from typing import Any
 
@@ -63,6 +64,47 @@ METHOD_CALIBRATION = {  # method -> (calibration file under pm-view/, the R2 key
     "btc_touch": ("data/calibration.json", "R2_method_is_a_basis_for_a_call"),
 }
 BELOW_MARKET_NEVER = ("btc_touch",)  # a reading below the market is in the direction of the one-minute gap: never a call
+
+# The gate's rule tags (2026-11-06 12:15Z, predictions/POST_MORTEMS.md "A rule in
+# prose, a check elsewhere: the mechanical search").  Every reason the gate can
+# give for refusing a call carries one of these tags, and README.md rule 2 carries
+# the same tag beside the sentence that states the rule.  tests/test_rule_tags.py
+# holds the three lists equal (prose, this tuple, the reasons the gate actually
+# emits), so a rule written in prose without a check, or a check without its
+# prose, fails a test instead of waiting for a reader; that is the class of defect
+# found three times before this registry existed (the refusal fixed in the newest
+# copy only, 31 Oct; the leak scan that read what it could never publish, 5 Nov;
+# the ledger gate that knew one rule of three, 6 Nov; all in research/ and
+# predictions/ POST_MORTEMS.md).
+GATE_TAGS = (
+    "probability",         # the desk's number is a probability strictly inside (0, 1)
+    "departure",           # the desk's number departs from the market mid by at least MIN_DEPARTURE
+    "basis-names-market",  # the basis names the market's probability and what it is missing
+    "settles-on",          # the resolution rule restated with source and measure, not the title
+    "method-named",        # a call names the method it rests on, one of METHODS
+    "stated-bare",         # `stated` carries no method reading and no range
+    "calibrated",          # the method's committed calibration says R2 true (missing: refused)
+    "range-brackets",      # a method call carries its reading and a range that brackets it inside [0, 1]
+    "range",               # the market mid lies outside the reading's range
+    "touch-below",         # a touch reading at or below the market is never a call
+    "method-departure",    # the method reading departs from the mid by at least MIN_DEPARTURE
+    "desk-side",           # the desk's number sits on the reading's side of the market
+)
+GATE_TAG_RE = re.compile(r"\[gate:([a-z-]+)\]")
+
+
+def gate(tag: str, reason: str) -> str:
+    """A refusal of the call gate with its rule tag in front, `[gate:<tag>] <reason>`."""
+    if tag not in GATE_TAGS:
+        raise ValueError(f"unknown gate tag {tag!r}; add it to GATE_TAGS and to README.md rule 2")
+    return f"[gate:{tag}] {reason}"
+
+
+def gate_tags(text: str) -> set[str]:
+    """The gate tags written in a text (a README, a source file, a list of refusals joined)."""
+    return set(GATE_TAG_RE.findall(text))
+
+
 OUTCOME_COLUMNS = (
     "id", "scored_on", "kind", "y", "desk_p", "market_mid", "brier_desk", "brier_market",
     "gamma_sha256", "clob_sha256",
@@ -224,29 +266,35 @@ def method_violations(method: str, method_p: float | None, range_lo: float | Non
        reading it rests on."""
     out: list[str] = []
     if method not in METHODS:
-        return [f"method must be one of {', '.join(METHODS)}"]
+        return [gate("method-named", f"method must be one of {', '.join(METHODS)}")]
     if method == "stated":
         if any(v is not None for v in (method_p, range_lo, range_hi)):
-            out.append("a stated reason carries no method reading or range: leave method_p, range_lo, range_hi empty")
+            out.append(gate("stated-bare", "a stated reason carries no method reading or range: "
+                                           "leave method_p, range_lo, range_hi empty"))
         return out
     if r2 is None:
-        out.append(f"no calibration gate for {method}: run its calibration first ({METHOD_CALIBRATION[method][0]})")
+        out.append(gate("calibrated", f"no calibration gate for {method}: run its calibration first "
+                                      f"({METHOD_CALIBRATION[method][0]})"))
     elif not r2:
-        out.append(f"{method} does not beat its baselines on its own history (R2): not a basis for a call")
+        out.append(gate("calibrated", f"{method} does not beat its baselines on its own history (R2): "
+                                      "not a basis for a call"))
     if method_p is None or range_lo is None or range_hi is None:
-        out.append("method_p, range_lo and range_hi are required for a method call")
+        out.append(gate("range-brackets", "method_p, range_lo and range_hi are required for a method call"))
         return out
     if not (0.0 <= range_lo <= method_p <= range_hi <= 1.0):
-        out.append(f"the range [{range_lo:.3f}, {range_hi:.3f}] must bracket the method reading {method_p:.3f} inside [0, 1]")
+        out.append(gate("range-brackets", f"the range [{range_lo:.3f}, {range_hi:.3f}] must bracket the method "
+                                          f"reading {method_p:.3f} inside [0, 1]"))
         return out
     if range_lo <= market_mid <= range_hi:
-        out.append(f"the market mid {market_mid:.3f} lies inside the reading's range [{range_lo:.3f}, {range_hi:.3f}]: no call")
+        out.append(gate("range", f"the market mid {market_mid:.3f} lies inside the reading's range "
+                                 f"[{range_lo:.3f}, {range_hi:.3f}]: no call"))
     if method in BELOW_MARKET_NEVER and method_p <= market_mid:
-        out.append(f"{method}: the reading is at or below the market, the direction of the gap the method cannot see: never a call")
+        out.append(gate("touch-below", f"{method}: the reading is at or below the market, the direction of the gap "
+                                       "the method cannot see: never a call"))
     if departure(method_p, market_mid) < MIN_DEPARTURE:
-        out.append(f"the method reading is within {MIN_DEPARTURE:.2f} of the market mid: no call")
+        out.append(gate("method-departure", f"the method reading is within {MIN_DEPARTURE:.2f} of the market mid: no call"))
     if desk_p is not None and (desk_p - market_mid) * (method_p - market_mid) <= 0:
-        out.append("desk_p and the method reading sit on opposite sides of the market (or on it)")
+        out.append(gate("desk-side", "desk_p and the method reading sit on opposite sides of the market (or on it)"))
     return out
 
 
@@ -266,18 +314,19 @@ def call_violations(desk_p: float, market_mid: float, basis: str, settles_on: st
     method gate: see method_violations.  A call with no method is refused."""
     out: list[str] = []
     if not (0.0 < desk_p < 1.0):
-        out.append("desk_p is not a probability")
+        out.append(gate("probability", "desk_p is not a probability"))
     if departure(desk_p, market_mid) < MIN_DEPARTURE:
-        out.append(f"desk_p is within {MIN_DEPARTURE:.2f} of the market mid: no call")
+        out.append(gate("departure", f"desk_p is within {MIN_DEPARTURE:.2f} of the market mid: no call"))
     if "market" not in basis.lower():
-        out.append("basis must name the market's probability and what it is missing")
+        out.append(gate("basis-names-market", "basis must name the market's probability and what it is missing"))
     so = settles_on.strip()
     if len(so) < MIN_SETTLES_ON_CHARS or not any(c.isdigit() for c in so):
-        out.append("settles_on must restate the market's resolution rule with its source and the measured level or date")
+        out.append(gate("settles-on", "settles_on must restate the market's resolution rule with its source "
+                                      "and the measured level or date"))
     elif so.lower() == proposition.strip().lower():
-        out.append("settles_on repeats the proposition; restate the rule, not the title")
+        out.append(gate("settles-on", "settles_on repeats the proposition; restate the rule, not the title"))
     if method is None:
-        out.append(f"method must be stated: one of {', '.join(METHODS)}")
+        out.append(gate("method-named", f"method must be stated: one of {', '.join(METHODS)}"))
     else:
         out.extend(method_violations(method, method_p, range_lo, range_hi, market_mid, r2, desk_p))
     return out

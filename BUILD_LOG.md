@@ -562,3 +562,5 @@ Due register at 12:15Z: pass. No result; front page results unchanged.
 
 pm-view 70 tests became 85; ruff and mypy clean; `tools/check_due.py` lists due readings (self-test extended for a market that settles before its scheduled end). Due register at 18:15Z and 18:24Z: pass. Front page results unchanged.
 
+*Correction, 2026-11-06 18:3xZ, to the commit above (9611a6d).* Its message says "make lint pass". The lint run before that commit **failed**: `tools/check_links.py` reported `PM_VIEW.md: missing target readings.csv`, because the link checker reads tracked files and `readings.csv` was still untracked when it ran. The failure did not stop the commit because the command piped `make lint` through `tail`, whose exit code is the one `&&` saw. `make lint` re-run after the commit, with the file tracked, passes (rc 0); nothing in the tree changed between the two runs except the tracking. The claim stands for the pushed tree, not for the moment the message was written, and that is the mistake: a claim about a check goes in the message only after the check's own exit code was read (`set -o pipefail`, or no pipe at all). Observed, not inferred.
+

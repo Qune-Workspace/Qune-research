@@ -1,0 +1,86 @@
+{
+  "made_at_utc": "2026-10-30T00:18:06+00:00",
+  "repository_commit_at_run": "ec8eef6cef087ff782236b22257be33d64cfbd1b",
+  "asof": "2026-10-30",
+  "inputs_sha256": {
+    "desk-view/data/raw/fred_DGS3MO.csv": "e943b3452a5b6ed887b7f278435f998a269e1d4afd9a66b33c179fff652f127a",
+    "desk-view/data/raw/fred_DGS2.csv": "f41850fd89160bc5d71e28e92dca5368f191c83f31c6c24c7f4092255afd1991",
+    "desk-view/data/raw/fred_DGS10.csv": "f3b6b3956f888551c21cfbae007f157bb6433b4db8f557bd7a08b9eb8fd5a97b",
+    "desk-view/data/raw/fred_DGS30.csv": "f6351307e475627f9aa596ae5e2b914186e2d283bc0dcee27cee3e9a6eeff37d",
+    "desk-view/data/raw/fred_DFII10.csv": "77de242a43c9b6be67b1c2a85d607fc89d02606bef47d76840516914957f33f2",
+    "desk-view/data/raw/fred_T10YIE.csv": "7fe90f7452497d3191e0ddb0ea1d0727d4ede4ae1c71dd1c2c0d1abf98311362",
+    "desk-view/data/raw/fred_T5YIFR.csv": "b551eb9af9adf2e57ebf331c0f6e64dd92d69a2431d8addf58a51d5ce40f949f",
+    "desk-view/data/raw/fred_EFFR.csv": "1ed6178d486411bc950f3f73392ccbbf969d609ea7fc2e758bc5532802cee496",
+    "desk-view/data/raw/fred_DFEDTARU.csv": "b2e6184f413720b12ceb0e7ca835bc9db3f75866a182d0516952c21347a2873e",
+    "desk-view/data/raw/fred_DFEDTARL.csv": "406c0bd5f4041f9c5b783e20f5e68b2f8d461bf9991fbe549835e9bd975e64f0",
+    "desk-view/data/raw/fred_THREEFYTP10.csv": "39eca7a9cf4d7c475b40abdcbf2fbd921725d7f22ef7c3ad96b01e6c47f44775",
+    "desk-view/data/raw/fred_BAMLH0A0HYM2.csv": "0e180e1559d55e6fc54925d86050be1a966cb929cb955019c765806fe138a7a1",
+    "desk-view/data/raw/fred_SP500.csv": "49faa5a4f87574084a5e525e44013bad74e831947c2cc98b8031e87508d0d6b9",
+    "desk-view/data/raw/fred_VIXCLS.csv": "1cdbbe4643427b9915cf1c53c50f9eb9e327717d89a6bd3e101d3726f56f5cec",
+    "desk-view/data/numbers_2026-10-30.json": "033ddfc61817e207427e9545d67ae25635873210706b6744f4faf1f95e44de48"
+  },
+  "style": "qune_research/style.py (chart standard of 2026-10-23); SVG and 2x PNG per chart",
+  "title_wording": "chosen by view_lib.curve_finding, front_end_finding, decomposition_finding, correlation_finding from the numbers below; never typed",
+  "charts": {
+    "curve": {
+      "finding": "Every tenor yields more than a year ago, by 26 to 106 bp, most at the 2y; the front end no longer inverts",
+      "one_year_change_bp_by_tenor": {
+        "3m": 25.99999999999998,
+        "2y": 106.0,
+        "10y": 93.99999999999994,
+        "30y": 71.99999999999997
+      },
+      "front_inverted_a_year_ago": true,
+      "front_inverted_now": false,
+      "dates": {
+        "now": "2026-10-28",
+        "3m": "2026-07-30",
+        "1y": "2025-10-30"
+      },
+      "yields_now_pct": {
+        "3m": 4.18,
+        "2y": 4.67,
+        "10y": 5.05,
+        "30y": 5.37
+      }
+    },
+    "policy_vs_front_end": {
+      "finding": "The front end prices a higher policy rate: the 3-month bill sits +30 bp and the 2-year note +79 bp from the effective funds rate",
+      "bill_3m_minus_effr_bp": 29.999999999999982,
+      "note_2y_minus_effr_bp": 79.0,
+      "on": "2026-10-28"
+    },
+    "decomposition_10y": {
+      "finding": "Of the 10-year's 94 bp rise over the year, +85 bp is real yield and only +9 bp breakeven inflation; the term premium accounts for +44 bp of it",
+      "one_year_change_bp": {
+        "DGS10": 93.99999999999994,
+        "DFII10": 84.99999999999999,
+        "T10YIE": 8.999999999999986,
+        "THREEFYTP10": 44.11
+      },
+      "accent_series": "DFII10",
+      "change_from": {
+        "DGS10": "2025-10-30",
+        "DFII10": "2025-10-30",
+        "T10YIE": "2025-10-30",
+        "THREEFYTP10": "2025-10-30"
+      },
+      "change_to": {
+        "DGS10": "2026-10-28",
+        "DFII10": "2026-10-28",
+        "T10YIE": "2026-10-28",
+        "THREEFYTP10": "2026-10-23"
+      },
+      "breakeven_pct_on_nominal_date": 2.38
+    },
+    "stock_bond_corr": {
+      "finding": "Stocks and bonds have moved together on 62% of days since 2022, against 8% in 2017\u20132021; the proxy is still positive at +0.24",
+      "now": 0.23750109918959933,
+      "on": "2026-10-28",
+      "share_of_days_positive_since_2022": 0.6164725457570716,
+      "share_of_days_positive_before_2022": 0.080553295362083,
+      "before_period_first_day": "2017-02-02",
+      "before_period_last_year": 2021
+    }
+  }
+}

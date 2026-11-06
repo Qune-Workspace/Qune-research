@@ -18,7 +18,16 @@ so it is closed and never retried.  A call whose market is not yet resolved
 is not written: the scorer prints `NOT SCORED ... retry on a later run`.
 An id already in `outcomes.csv` is refused.  The ledger is never written.
 
-`--summary` rewrites SKILL.md from the three files: desk and market Brier over
+The readings record (added 2026-11-06 18:15Z, `readings.csv`, written by
+readings.py) is scored the same way into `readings_outcomes.csv`: a reading is
+checked once its `due_on` has passed, or earlier when a later written quote of
+the same market carries a `settlement` (a market can resolve before its
+scheduled end, as the 80,000 touch market did on 4 November).  Each scored row
+carries the Brier of the method's reading, of the market mid and, where the row
+has one, of the climatological probability, against the same outcome.  It is
+information about the methods, not a call.
+
+`--summary` rewrites SKILL.md from the five files: desk and market Brier over
 the scored calls and the skill (market minus desk), with the count.  With
 fewer than about thirty scored calls the figure is descriptive.
 
@@ -42,7 +51,7 @@ from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import Any
 
-from pm_lib import OUTCOME_COLUMNS, brier, skill_summary
+from pm_lib import OUTCOME_COLUMNS, READING_OUTCOME_COLUMNS, brier, reading_summary, skill_summary
 
 HERE = Path(__file__).resolve().parent
 STUDY_013 = HERE.parent / "research" / "013-polymarket-calibration-forward"
@@ -138,6 +147,63 @@ def run(ledger: Path, outcomes: Path, gamma: Fetcher, clob: Fetcher, today: date
     return rc
 
 
+def reading_due(reading: dict[str, str], today: date, manifest_entries: list[dict[str, Any]]) -> bool:
+    """Due once due_on has passed, or when a written quote of the market made after the reading carries a settlement."""
+    if date.fromisoformat(reading["due_on"]) <= today:
+        return True
+    return any(e.get("market_id") == reading["market_id"] and e.get("settlement")
+               and str(e.get("fetched_utc", "")) > str(reading["quote_fetched_utc"]) for e in manifest_entries)
+
+
+def score_reading(reading: dict[str, str], status: dict | None, outcome: dict | None, gsha: str, csha: str,
+                  today: date) -> dict[str, Any] | None:
+    """The readings_outcomes.csv row for one reading, or None when it is not scored today."""
+    kind = classify(status, outcome, reading["yes_token_id"])
+    if kind in (NOT_RESOLVED, UNFETCHED):
+        return None
+    clim = reading.get("climatology_p") or ""
+    row: dict[str, Any] = {"id": reading["id"], "scored_on": today.isoformat(), "kind": kind, "y": None,
+                           "method_p": reading["method_p"], "market_mid": reading["market_mid"],
+                           "climatology_p": clim or None, "brier_method": None, "brier_market": None,
+                           "brier_climatology": None, "gamma_sha256": gsha, "clob_sha256": csha}
+    if kind in (FIRST, SECOND):
+        y = 1 if kind == FIRST else 0
+        row["y"] = y
+        row["brier_method"] = f"{brier(float(reading['method_p']), y):.4f}"
+        row["brier_market"] = f"{brier(float(reading['market_mid']), y):.4f}"
+        if clim:
+            row["brier_climatology"] = f"{brier(float(clim), y):.4f}"
+    return row
+
+
+def run_readings(readings: Path, outcomes: Path, manifest: Path, gamma: Fetcher, clob: Fetcher, today: date,
+                 dry_run: bool) -> int:
+    entries: list[dict[str, Any]] = json.loads(manifest.read_text(encoding="utf-8")) if manifest.exists() else []
+    scored = {r["id"] for r in read_csv(outcomes)}
+    rc = 0
+    checked = 0
+    for reading in read_csv(readings):
+        if reading["id"] in scored or not reading_due(reading, today, entries):
+            continue
+        checked += 1
+        status, outcome, gsha, csha = fetch_records(reading, gamma, clob)
+        row = score_reading(reading, status, outcome, gsha, csha, today)
+        if row is None:
+            kind = classify(status, outcome, reading["yes_token_id"])
+            if kind == UNFETCHED:
+                rc = 1
+            print(f"READING NOT SCORED {reading['id']}: {kind}; retry on a later run")
+            continue
+        print(f"{'DRY RUN ' if dry_run else ''}READING SCORED {reading['id']}: {row['kind']} y={row['y']} "
+              f"brier method={row['brier_method']} market={row['brier_market']} "
+              f"climatology={row['brier_climatology']}")
+        if not dry_run:
+            append_row(outcomes, READING_OUTCOME_COLUMNS, row)
+    if checked == 0:
+        print(f"readings: none due (of {len(read_csv(readings))} on the record)")
+    return rc
+
+
 def write_summary(ledger: Path, outcomes: Path, skill: Path, today: date) -> None:
     calls = read_csv(ledger)
     done = {r["id"]: r for r in read_csv(outcomes)}
@@ -172,7 +238,42 @@ def write_summary(ledger: Path, outcomes: Path, skill: Path, today: date) -> Non
         lines.append(f"Scored calls: {s['n']}. Brier, desk: {s['brier_desk']:.4f}. Brier, market mid: "
                      f"{s['brier_market']:.4f}. Skill (market minus desk): {s['skill']:+.4f}.")
     lines.append("With fewer than about thirty scored calls this figure is descriptive, not evidence.")
+    lines += readings_lines(ledger.parent / "readings.csv", ledger.parent / "readings_outcomes.csv", today)
     skill.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def _f(v: float | None) -> str:
+    return "–" if v is None else f"{v:.4f}"
+
+
+def readings_lines(readings: Path, outcomes: Path, today: date) -> list[str]:
+    """The readings section of SKILL.md: per method, the scored count and the three Brier figures; information only."""
+    rows = read_csv(readings)
+    done = {r["id"]: r for r in read_csv(outcomes)}
+    merged = [{**r, **done.get(r["id"], {})} for r in rows]
+    s = reading_summary(merged)
+    pending = sum(1 for r in rows if r["id"] not in done)
+    lines = [
+        "",
+        "## Method readings against the market, as information",
+        "",
+        "From `readings.csv` and `readings_outcomes.csv` (readings.py, score.py; added 2026-11-06). Each row is a "
+        "method's reading recorded beside the market mid of a written quote while the market was open, scored on the "
+        "venue's settlement by the same rule as a call. These are not calls: the call gate refused each of them for the "
+        "reason in its `gate` column, and nothing here is a position. Brier is lower-better; the climatology column is "
+        "the method's own baseline where one was on record at the time of the reading.",
+        "",
+        "| method | readings on record | scored | Brier, reading | Brier, market mid | Brier, climatology (n) |",
+        "|---|---|---|---|---|---|",
+    ]
+    for method, e in s.items():
+        on_record = sum(1 for r in rows if r["method"] == method)
+        lines.append(f"| {method} | {on_record} | {e['n']} | {_f(e['brier_method'])} | {_f(e['brier_market'])} | "
+                     f"{_f(e['brier_climatology'])} ({e['n_climatology']}) |")
+    lines.append("")
+    lines.append(f"Readings on record: {len(rows)}; scored: {len(done)}; not yet due or not yet resolved: {pending}. "
+                 "With fewer than about thirty scored readings per method the figures describe the rows, nothing more.")
+    return lines
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -183,6 +284,9 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--ledger", type=Path, default=None)
     ap.add_argument("--outcomes", type=Path, default=None)
     ap.add_argument("--skill", type=Path, default=None)
+    ap.add_argument("--readings", type=Path, default=None)
+    ap.add_argument("--readings-outcomes", type=Path, default=None)
+    ap.add_argument("--manifest", type=Path, default=None)
     a = ap.parse_args(argv)
     today = a.today or datetime.now(UTC).date()
     ledger = a.ledger if a.ledger is not None else HERE / "ledger.csv"
@@ -192,7 +296,11 @@ def main(argv: list[str] | None = None) -> int:
         write_summary(ledger, outcomes, skill, today)
         print(f"wrote {skill.name}")
         return 0
-    return run(ledger, outcomes, http_get, http_get, today, a.dry_run)
+    rc = run(ledger, outcomes, http_get, http_get, today, a.dry_run)
+    readings = a.readings if a.readings is not None else HERE / "readings.csv"
+    r_out = a.readings_outcomes if a.readings_outcomes is not None else HERE / "readings_outcomes.csv"
+    manifest = a.manifest if a.manifest is not None else HERE / "data" / "manifest.json"
+    return max(rc, run_readings(readings, r_out, manifest, http_get, http_get, today, a.dry_run))
 
 
 if __name__ == "__main__":

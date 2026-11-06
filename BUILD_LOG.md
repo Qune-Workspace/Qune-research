@@ -549,3 +549,16 @@ Due register at 06:3xZ: pass. No result; front page results unchanged.
 **My own mistakes this run.** The first version of the shape rule failed on my own sentence: the note explaining the tags was written in bold and carried no tag, so the test refused it; the note is in italics now, and the failure is the test doing what it was written for. The search's scope is one folder; the desk view and the studies are not covered, and this entry does not claim they are.
 
 Due register at 12:15Z: pass. No result; front page results unchanged.
+
+## 2026-11-06, 18:15–18:4xZ by the clock: the readings record, and the week's one settled case that cannot enter it
+
+**Decided.** The 06:15Z view's named candidate was built: a committed, append-only record of every method reading beside the market mid it was read against, scored on the venue's settlement by the same rule as a call, as information (`pm-view/readings.csv`, `readings.py`, `score.py`, README rule 5; `predictions/POST_MORTEMS.md`, "A week of readings that no record could score"). The gate, `pm_lib.reading_violations`, admits a row only on a quote `fetch.py` wrote while the market was eligible, mid copied from the entry; the row's `gate` column carries the call gate's refusal tags for the same numbers. Four rows admitted: the 6 November view's three readings and the 3 November bill reading. No call, no result, no reading changed.
+
+**What the rule found (observed).** Five of the week's nine readings cannot enter: the 4 November touch readings and the 5 November bill readings were made on `--dry-run` quotes, which write no hash. Among them is the one settled case of the week (80,000 up: 0.607 against 0.805, resolved YES three hours later). The record refuses it; the commit that holds the reading proves the time, and the record does not accept commits as evidence of a quote. The case stays in the 6 November view as prose.
+
+**Rule.** A reading that may later be compared with a settlement is made on a written quote and goes on the record the day it is made; a dry run is for testing the tool. A method the gate keeps from calling is still scored against the market it is read beside, or the gate can never be revisited on evidence.
+
+**My own mistakes this run.** Three dry-run quotes in three days were my choice each time, noted as a courtesy to the rate limits, and each cost a row that no later run can recover. The first refusal message listed "market_mid is not a probability" under a missing quote as if it were a second defect; it is a consequence, and the message now names the dry run alone.
+
+pm-view 70 tests became 85; ruff and mypy clean; `tools/check_due.py` lists due readings (self-test extended for a market that settles before its scheduled end). Due register at 18:15Z and 18:24Z: pass. Front page results unchanged.
+

@@ -110,6 +110,98 @@ OUTCOME_COLUMNS = (
     "gamma_sha256", "clob_sha256",
 )
 
+# --- The readings record (added 2026-11-06 18:15Z, predictions/POST_MORTEMS.md
+# "A week of readings that no record could score") -------------------------------
+#
+# A call is rare by design (the gate above), so the ledger alone would take years
+# to say whether a method's reading carries information against the market.  The
+# readings record keeps, per view, each method reading beside the market mid it
+# was read against, and score.py scores both on the venue's settlement by the
+# same §6.5 rule as a call.  It is information, not a call: nothing in it is a
+# position, and SKILL.md says so.  A row is admitted only on a quote that
+# fetch.py wrote to data/manifest.json while the market was eligible, with the
+# mid copied from that entry; a reading made on a dry-run quote has no hash and
+# is not on the record.  That rule is what kept three of the week's five
+# readings off this file on the day it was created, among them the one case
+# that had already settled (the 80,000 touch market, read 0.607 against 0.805
+# three hours before it resolved YES on 4 November): the quote behind it was
+# a dry run.  The record starts where the written quotes start.
+READING_COLUMNS = (
+    "id", "made_on", "recorded_utc", "venue", "market_id", "condition_id", "yes_token_id", "proposition",
+    "method", "method_p", "range_lo", "range_hi", "market_mid", "climatology_p", "due_on", "gate",
+    "quote_fetched_utc", "quote_sha256", "source",
+)
+READING_OUTCOME_COLUMNS = (
+    "id", "scored_on", "kind", "y", "method_p", "market_mid", "climatology_p",
+    "brier_method", "brier_market", "brier_climatology", "gamma_sha256", "clob_sha256",
+)
+READING_METHODS = tuple(m for m in METHODS if m in METHOD_CALIBRATION)  # a reading comes from a method, never `stated`
+
+
+def reading_violations(method: str, method_p: float | None, range_lo: float | None, range_hi: float | None,
+                       market_mid: float | None, climatology_p: float | None, quote: dict[str, Any] | None,
+                       made_on: str, due_on: str) -> list[str]:
+    """What stops a reading row from being admitted to readings.csv; empty when it may be.
+
+    1. the method is one with a calibration file (READING_METHODS; `stated` has no reading);
+    2. the reading and its range are probabilities in [0, 1] with lo <= p <= hi;
+    3. the market mid is a probability inside (0, 1) and equals the quote's mid;
+    4. the quote is a written manifest entry for this market, fetched on `made_on`,
+       with the market eligible at the fetch (so the reading was made while the
+       market was open, before any settlement);
+    5. the climatological probability, when given, is a probability in [0, 1];
+    6. `due_on` is the quote's scheduled end date (the day the row becomes due)."""
+    out: list[str] = []
+    if method not in READING_METHODS:
+        out.append(f"method must be one of {', '.join(READING_METHODS)}: a reading comes from a method")
+    if method_p is None or range_lo is None or range_hi is None:
+        out.append("method_p, range_lo and range_hi are required")
+    elif not (0.0 <= range_lo <= method_p <= range_hi <= 1.0):
+        out.append(f"the range [{range_lo:.3f}, {range_hi:.3f}] must bracket the reading {method_p:.3f} inside [0, 1]")
+    if market_mid is None or not (0.0 < market_mid < 1.0):
+        out.append("market_mid is not a probability inside (0, 1)")
+    if climatology_p is not None and not (0.0 <= climatology_p <= 1.0):
+        out.append("climatology_p is not a probability")
+    if quote is None:
+        out.append("no written quote: the row's quote_sha256 is not a gamma_sha256 in data/manifest.json "
+                   "(a --dry-run quote leaves no record; re-quote without it)")
+        return out
+    qmid = as_float(quote.get("market_mid"))
+    if market_mid is not None and (qmid is None or abs(qmid - market_mid) > 1e-9):
+        out.append(f"market_mid {market_mid} differs from the quote's {qmid}: copy the mid from the quote")
+    if quote.get("eligibility") != "eligible":
+        out.append(f"the market was not eligible at the quote ({quote.get('eligibility')}): a reading on a market "
+                   "the record excludes is not scored against its settlement")
+    fetched = str(quote.get("fetched_utc", ""))
+    if fetched[:10] != made_on:
+        out.append(f"made_on {made_on} is not the quote's date {fetched[:10]}: a reading is made on the day of its quote")
+    end = str(quote.get("end_date", ""))
+    if end[:10] != due_on:
+        out.append(f"due_on {due_on} is not the quote's scheduled end {end[:10]}")
+    return out
+
+
+def reading_summary(rows: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
+    """Per method: the count of scored readings (y present) and the mean Brier of
+    the reading, the market mid and, over the rows that carry one, the
+    climatological probability.  Information: with a handful of rows the figures
+    describe the rows and nothing else."""
+    out: dict[str, dict[str, Any]] = {}
+    for method in READING_METHODS:
+        scored = [r for r in rows if r.get("method") == method and r.get("y") not in (None, "")]
+        n = len(scored)
+        entry: dict[str, Any] = {"n": n, "brier_method": None, "brier_market": None, "brier_climatology": None,
+                                 "n_climatology": 0}
+        if n:
+            entry["brier_method"] = sum(brier(float(r["method_p"]), int(r["y"])) for r in scored) / n
+            entry["brier_market"] = sum(brier(float(r["market_mid"]), int(r["y"])) for r in scored) / n
+            clim = [r for r in scored if r.get("climatology_p") not in (None, "")]
+            entry["n_climatology"] = len(clim)
+            if clim:
+                entry["brier_climatology"] = sum(brier(float(r["climatology_p"]), int(r["y"])) for r in clim) / len(clim)
+        out[method] = entry
+    return out
+
 
 def as_float(v: object) -> float | None:
     """A decimal number from a float, an int or a numeric string; None otherwise."""

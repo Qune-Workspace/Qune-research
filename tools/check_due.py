@@ -347,6 +347,51 @@ def pm_view_items(root: Path, at: datetime) -> list[Item]:
     return items
 
 
+def pm_readings_items(root: Path, at: datetime) -> list[Item]:
+    """The prediction-market view's readings record (pm-view/readings.csv, added 2026-11-06 18:15Z):
+    a reading is due the day after its market's scheduled end, or at once when a later written
+    quote of the market carries a settlement; scored when pm-view/readings_outcomes.csv holds its
+    id.  Information rows, never calls; an unresolved market past the grace period is reported."""
+    readings = root / "pm-view" / "readings.csv"
+    outcomes = root / "pm-view" / "readings_outcomes.csv"
+    manifest = root / "pm-view" / "data" / "manifest.json"
+    if not readings.exists():
+        return [Item("PM readings", "info", "no readings record")]
+    scored: set[str] = set()
+    if outcomes.exists():
+        with outcomes.open(encoding="utf-8", newline="") as fh:
+            scored = {row["id"] for row in csv.DictReader(fh) if row.get("id")}
+    entries: list[dict] = []
+    if manifest.exists():
+        try:
+            entries = json.loads(manifest.read_text(encoding="utf-8"))
+        except ValueError:
+            entries = []
+    items: list[Item] = []
+    pending = 0
+    with readings.open(encoding="utf-8", newline="") as fh:
+        for row in csv.DictReader(fh):
+            try:
+                due_on = date.fromisoformat(row["due_on"]) + timedelta(days=1)
+            except (KeyError, ValueError):
+                continue
+            settled = [e for e in entries if e.get("market_id") == row.get("market_id") and e.get("settlement")
+                       and str(e.get("fetched_utc", "")) > str(row.get("quote_fetched_utc", ""))]
+            if settled:
+                early = min(str(e["fetched_utc"])[:10] for e in settled)
+                due_on = min(due_on, date.fromisoformat(early) + timedelta(days=1))
+            if due_on > at.date():
+                pending += 1
+                continue
+            due = datetime.combine(due_on, time(0, 0), tzinfo=UTC)
+            deadline = datetime.combine(due_on + timedelta(days=PREDICTION_GRACE_DAYS), time(23, 59), tzinfo=UTC)
+            evidence = "pm-view/readings_outcomes.csv row" if row["id"] in scored else None
+            status, detail = classify(at, due, deadline, evidence, None, None)
+            items.append(Item(f"PM reading {row['id']} scored", status, detail))
+    items.append(Item("PM readings not yet due", "info", f"{pending}"))
+    return items
+
+
 def release_items(root: Path) -> list[Item]:
     items: list[Item] = []
     for sid in RELEASE_STUDIES:
@@ -471,7 +516,8 @@ def study013_items(root: Path, at: datetime) -> list[Item]:
 
 def run(root: Path, at: datetime) -> tuple[list[Item], int]:
     items = (month_end_items(root, at) + desk_view_items(root, at) + prediction_items(root, at)
-             + pm_view_weekly_items(root, at) + pm_view_items(root, at) + release_items(root)
+             + pm_view_weekly_items(root, at) + pm_view_items(root, at) + pm_readings_items(root, at)
+             + release_items(root)
              + snapshot_items(root, at)
              + study013_items(root, at))
     overdue = sum(1 for i in items if i.status == "OVERDUE")
@@ -499,7 +545,12 @@ def _fixture(root: Path) -> None:
     (root / "predictions" / "outcomes.csv").write_text("id,scored_on\n", encoding="utf-8")
     (root / "pm-view" / "data").mkdir(parents=True)
     (root / "pm-view" / "data" / "manifest.json").write_text(
-        json.dumps([{"market_id": "1", "fetched_utc": "2026-11-03T18:23:14Z"}]), encoding="utf-8")
+        json.dumps([{"market_id": "1", "fetched_utc": "2026-11-03T18:23:14Z"},
+                    {"market_id": "9", "fetched_utc": "2026-11-05T06:00:00Z", "settlement": "record says closed=True"}]),
+        encoding="utf-8")
+    (root / "pm-view" / "readings.csv").write_text(
+        "id,market_id,due_on,quote_fetched_utc\nR-A,9,2026-12-01,2026-11-03T18:23:14Z\nR-B,1,2026-12-09,2026-11-03T18:23:14Z\n",
+        encoding="utf-8")
     (root / "research" / "013-f" / "paper-log").mkdir(parents=True)
     (root / "research" / "013-f" / "paper-log" / "snapshots.csv").write_text(
         "snapshot_date,started_utc,finished_utc,pages,rows,distinct_markets,bytes,records_sha256,pages_sha256\n"
@@ -528,6 +579,12 @@ def selftest() -> int:
         assert status_of(items, "Desk view 2026-10-30") == "ok"
         assert status_of(items, "Call V1") == "DUE"
         assert rc == 0, rc
+        # the readings record (2026-11-06): neither reading due on 30 Oct (the settlement quote is dated 5 Nov)
+        assert status_of(items, "PM readings not yet due") == "info"
+        assert [i for i in items if i.label == "PM readings not yet due"][0].detail == "2"
+        r_items, _ = run(root, datetime(2026, 11, 6, 18, 0, tzinfo=UTC))
+        assert status_of(r_items, "PM reading R-A scored") == "DUE"   # settled early per the 5 Nov written quote
+        assert not [i for i in r_items if i.label.startswith("PM reading R-B")]  # due 10 Dec, not listed yet
 
         items, rc = run(root, datetime(2026, 11, 2, 22, 0, tzinfo=UTC))
         assert status_of(items, "Study 004 record 2026-10") == "ok"

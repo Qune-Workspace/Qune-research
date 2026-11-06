@@ -133,3 +133,33 @@ def test_score_closes_a_fractional_settlement_as_excluded_and_a_failed_fetch_as_
     assert S.run(led, out2, fetcher({}), fetcher({}), date(2026, 12, 10), dry_run=False) == 1
     assert "NOT SCORED P2-2026-11-03: missing or failed fetch" in capsys.readouterr().out
     assert not out2.exists()
+
+
+def test_quote_of_a_settled_market_comes_from_the_record_not_a_failed_book(tmp_path, capsys):
+    """2026-11-06: the 80,000 touch market had resolved on 4 November, its book was gone
+    (CLOB 404) and the quote reported a fetch failure, exit 1, record thrown away.  The
+    record alone decides a settled market: quoted from it, settlement fields printed as
+    the record's own words, gamma body written, no book file, exit 0.  An OPEN market
+    whose book fails is still a failure."""
+    raw = tmp_path / "raw"
+    manifest = tmp_path / "manifest.json"
+    settled = dict(GAMMA, id="6507378", closed=True, acceptingOrders=False, umaResolutionStatus="resolved",
+                   outcomePrices='["1", "0"]', closedTime="2026-11-04 15:16:24.040261+00")
+    rc = F.run(["6507378"], fetcher({"/markets/6507378": settled}), fetcher({}), raw, manifest,
+               dry_run=False, now=lambda: AT)
+    out = capsys.readouterr().out
+    assert rc == 0 and "FAILED" not in out
+    assert "not open and accepting orders" in out
+    assert "record says closed=True" in out and "umaResolutionStatus='resolved'" in out
+    assert "outcomePrices=['1', '0']" in out and "closedTime='2026-11-04 15:16:24.040261+00'" in out
+    assert "settles on (" in out  # the rules are still printed
+    e = json.loads(manifest.read_text())[0]
+    assert e["eligibility"] == "not open and accepting orders" and e["market_mid"] is None
+    assert e["settlement"].startswith("record says closed=True") and e["book_sha256"] is None
+    folder = raw / "2026-11-03T182000Z"
+    assert (folder / "gamma_6507378.json").exists() and not (folder / "book_6507378.json").exists()
+    # an open market whose book cannot be read is still a failed quote
+    rc = F.run(["3215008"], fetcher({"/markets/3215008": GAMMA}), fetcher({}), raw, manifest,
+               dry_run=False, now=lambda: AT)
+    assert rc == 1 and "FAILED book fetch failed" in capsys.readouterr().out
+    assert len(json.loads(manifest.read_text())) == 1

@@ -38,7 +38,16 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from pm_lib import as_float, best_of_book, decode_list, eligibility, mid, rules_excerpt
+from pm_lib import (
+    as_float,
+    best_of_book,
+    decode_list,
+    eligibility,
+    mid,
+    record_eligibility,
+    rules_excerpt,
+    settlement_state,
+)
 
 HERE = Path(__file__).resolve().parent
 GAMMA_MARKET = "https://gamma-api.polymarket.com/markets/"
@@ -88,6 +97,17 @@ def quote_one(market_id: str, gamma: Fetcher, book: Fetcher, at: datetime) -> di
     out["end_date"] = row.get("endDate")
     out["volume_usdc"] = as_float(row.get("volumeNum"))
     best = None
+    record_reason = record_eligibility(row, at)
+    if record_reason is not None:
+        # The record alone excludes the market (settled, closed, no book, past its
+        # end): it is quoted from the record, with what the record says about its
+        # settlement, and no book is read.  Added 2026-11-06 after the 80,000 touch
+        # market, resolved on 4 November, came back as "FAILED book fetch failed:
+        # HTTP Error 404" and the record was thrown away (predictions/POST_MORTEMS.md).
+        out["best_bid"], out["best_ask"], out["market_mid"], out["market_spread"] = None, None, None, None
+        out["eligibility"] = record_reason
+        out["settlement"] = settlement_state(row)
+        return out
     if out["yes_token_id"]:
         try:
             bbody = book(CLOB_BOOK + out["yes_token_id"])
@@ -116,9 +136,12 @@ def line(q: dict[str, Any]) -> str:
     committed file; the manifest carries the description's hash and length."""
     if "error" in q:
         return f"{q['market_id']}: FAILED {q['error']}"
+    vol = q.get("volume_usdc")
+    volume = f"{vol:,.0f}" if isinstance(vol, float) else "none"
+    settled = f"\n    {q['settlement']}" if q.get("settlement") else ""
     return (f"{q['market_id']}: mid={q['market_mid']} spread={q['market_spread']} "
-            f"volume={q['volume_usdc']:,.0f} end={q['end_date']} cond={q['condition_id']} "
-            f"yes_token={q['yes_token_id']} {q['eligibility']} (fetched {q['fetched_utc']})\n"
+            f"volume={volume} end={q['end_date']} cond={q['condition_id']} "
+            f"yes_token={q['yes_token_id']} {q['eligibility']} (fetched {q['fetched_utc']}){settled}\n"
             f"    title: {q.get('question')!r}\n"
             f"    settles on ({q.get('description_chars', 0)} chars, sha256 {str(q.get('description_sha256'))[:12]}): "
             f"{q.get('rules_excerpt')}")
@@ -134,7 +157,7 @@ def write_quote(q: dict[str, Any], raw_dir: Path, manifest: Path) -> None:
     entry = {k: q.get(k) for k in ("fetched_utc", "market_id", "condition_id", "yes_token_id", "gamma_sha256",
                                    "book_sha256", "best_bid", "best_ask", "market_mid", "market_spread",
                                    "volume_usdc", "end_date", "eligibility", "question", "description_sha256",
-                                   "description_chars")}
+                                   "description_chars", "settlement")}
     entry["source"] = "Polymarket Gamma /markets/<id> and CLOB /book?token_id=<yes token>"
     entries: list[dict[str, Any]] = []
     if manifest.exists():

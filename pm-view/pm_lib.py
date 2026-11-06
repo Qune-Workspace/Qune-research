@@ -118,11 +118,12 @@ def best_of_book(book: dict[str, Any]) -> tuple[float, float] | None:
     return max(bb), min(aa)
 
 
-def eligibility(row: dict[str, Any], best: tuple[float, float] | None, at: datetime) -> str | None:
-    """The first reason, in Study 013's §6.3 order, that excludes a market from a call; None when eligible.
-
-    `row` is the Gamma market record; `best` the CLOB book's best bid and ask
-    (None for a one-sided or empty book)."""
+def record_eligibility(row: dict[str, Any], at: datetime) -> str | None:
+    """The reasons of `eligibility` that the Gamma record alone decides, in the
+    same §6.3 order, before any book is read (added 2026-11-06: a settled
+    market's book is gone (CLOB 404), and the quote had thrown the record away
+    as a fetch failure, predictions/POST_MORTEMS.md).  None when the record
+    leaves the market open to a call, so the book decides the rest."""
     outcomes = decode_list(row.get("outcomes"))
     tokens = decode_list(row.get("clobTokenIds"))
     if outcomes is None or tokens is None or len(outcomes) != 2 or len(tokens) != 2:
@@ -143,6 +144,27 @@ def eligibility(row: dict[str, Any], best: tuple[float, float] | None, at: datet
         return "no scheduled end"
     if at >= end_at:
         return "past the scheduled end"
+    return None
+
+
+def settlement_state(row: dict[str, Any]) -> str:
+    """What the Gamma record says about a market that is no longer open, in the
+    record's own fields (closed, closedTime, umaResolutionStatus, outcomePrices),
+    reported as information: the outcome rule that scores a call is Study 013
+    §6.5 in score.py, not this line."""
+    prices = decode_list(row.get("outcomePrices"))
+    return (f"record says closed={row.get('closed')!r} closedTime={row.get('closedTime')!r} "
+            f"umaResolutionStatus={row.get('umaResolutionStatus')!r} outcomePrices={prices!r}")
+
+
+def eligibility(row: dict[str, Any], best: tuple[float, float] | None, at: datetime) -> str | None:
+    """The first reason, in Study 013's §6.3 order, that excludes a market from a call; None when eligible.
+
+    `row` is the Gamma market record; `best` the CLOB book's best bid and ask
+    (None for a one-sided or empty book)."""
+    reason = record_eligibility(row, at)
+    if reason is not None:
+        return reason
     if best is None:
         return "one-sided or empty book"
     bid, ask = best

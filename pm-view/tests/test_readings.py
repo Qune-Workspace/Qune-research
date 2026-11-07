@@ -39,10 +39,17 @@ def write_manifest(tmp_path: Path, entries: list[dict]) -> Path:
     data.mkdir(exist_ok=True)
     m = data / "manifest.json"
     m.write_text(json.dumps(entries))
-    # the method calibration files the gate column reads, as committed today (touch R2 false, bills R2 true)
+    # the method calibration files the gate column reads, as committed today (touch R2 false, bills R2 true),
+    # each put on record in data/calibration_history.csv before NOW
     (data / "calibration.json").write_text(json.dumps({"rules": {"R2_method_is_a_basis_for_a_call": False}}))
     (data / "fomc_calibration.json").write_text(json.dumps({"rules": {"R2_basis_for_a_call": True}}))
+    for method in ("btc_touch", "fomc_bills"):
+        assert R.record_calibration(method, "test", tmp_path, datetime(2026, 11, 5, 12, 0, tzinfo=UTC)) == 0
     return m
+
+
+def history(tmp_path: Path) -> list[dict]:
+    return S.read_csv(tmp_path / L.CALIBRATION_HISTORY)
 
 
 # --- the gate on synthetic rows -----------------------------------------------
@@ -116,6 +123,54 @@ def test_add_dry_run_writes_nothing(tmp_path):
     out = tmp_path / "readings.csv"
     assert R.add(ns(dry_run=True), m, out, NOW) == 0
     assert not out.exists()
+
+
+def test_add_refuses_while_a_rerun_calibration_is_not_on_record_and_record_calibration_puts_it_there(tmp_path, capsys):
+    # 2026-11-07 06:15Z: a re-run of calibrate.py that flips R2 overwrites the file; until its dated line is
+    # in data/calibration_history.csv no reading is admitted under it, and the line is appended once
+    m = write_manifest(tmp_path, [QUOTE])
+    out = tmp_path / "readings.csv"
+    (tmp_path / "data" / "calibration.json").write_text(json.dumps({"rules": {"R2_method_is_a_basis_for_a_call": True}}))
+    assert R.add(ns(), m, out, NOW) == 1
+    assert "[reading:calibration-on-record]" in capsys.readouterr().out and not out.exists()
+    assert R.record_calibration("btc_touch", "re-run", tmp_path, NOW) == 0
+    assert R.record_calibration("btc_touch", "re-run", tmp_path, NOW) == 1  # the same file twice: refused
+    assert "already its latest line" in capsys.readouterr().out
+    lines = [h for h in history(tmp_path) if h["method"] == "btc_touch"]
+    assert [h["r2"] for h in lines] == ["false", "true"] and lines[1]["in_force_utc"] == "2026-11-06T18:30:00Z"
+    assert R.add(ns(), m, out, NOW) == 0
+    assert list(csv.DictReader(out.open()))[0]["gate"] == "method-departure;touch-below"  # R2 true: no `calibrated`
+
+
+def test_add_refuses_with_no_calibration_on_record(tmp_path, capsys):
+    m = write_manifest(tmp_path, [QUOTE])
+    (tmp_path / L.CALIBRATION_HISTORY).unlink()
+    assert R.add(ns(), m, tmp_path / "readings.csv", NOW) == 1
+    assert "[reading:calibration-on-record]" in capsys.readouterr().out
+
+
+def test_a_row_is_judged_under_the_calibration_in_force_when_it_was_recorded_not_todays(tmp_path):
+    # the defect of 2026-11-07 06:15Z: the committed-file test judged every row under today's file, so a
+    # correct re-run flipping R2 failed rows that were right when written
+    m = write_manifest(tmp_path, [QUOTE])
+    out = tmp_path / "readings.csv"
+    assert R.add(ns(), m, out, NOW) == 0
+    row = list(csv.DictReader(out.open()))[0]
+    assert row["gate"] == "calibrated;method-departure;touch-below"
+    (tmp_path / "data" / "calibration.json").write_text(json.dumps({"rules": {"R2_method_is_a_basis_for_a_call": True}}))
+    later = datetime(2026, 11, 20, 12, 0, tzinfo=UTC)
+    assert R.record_calibration("btc_touch", "re-run", tmp_path, later) == 0
+    h = history(tmp_path)
+    def judged(at: str) -> list[str]:
+        return L.reading_violations(row["method"], float(row["method_p"]), float(row["range_lo"]),
+                                    float(row["range_hi"]), float(row["market_mid"]), 0.690, QUOTE, row["made_on"],
+                                    row["due_on"], gate_col=row["gate"],
+                                    calibration=L.calibration_in_force(h, "btc_touch", at))
+    assert judged(row["recorded_utc"]) == []  # under the line in force when recorded: right, as written
+    assert any("[reading:gate-column]" in x for x in judged("2026-11-20T12:00:00Z"))  # under today's: stale
+    # and a reading admitted after the re-run is judged under the new line
+    assert L.calibration_in_force(h, "btc_touch", "2026-11-20T12:00:00Z")["r2"] == "true"
+    assert L.calibration_in_force(h, "btc_touch", "2026-11-05T11:59:59Z") is None
 
 
 def test_add_gate_column_is_open_when_the_call_gate_would_pass(tmp_path):
@@ -254,15 +309,18 @@ def test_every_committed_reading_passes_the_gate_on_a_written_eligible_quote_of_
     entries = json.loads((HERE / "data" / "manifest.json").read_text(encoding="utf-8"))
     by_hash = {e["gamma_sha256"]: e for e in entries if e.get("gamma_sha256")}
     earlier: list[str] = []  # the ids above this row: the gate's one-per-day rule on the committed order
+    hist = read(L.CALIBRATION_HISTORY)
     for r in read("readings.csv"):
         q = by_hash.get(r["quote_sha256"])
         assert q is not None, f"{r['id']}: quote_sha256 is not a written quote's gamma_sha256"
         assert q["market_id"] == r["market_id"] and q["yes_token_id"] == r["yes_token_id"]
         assert q["condition_id"] == r["condition_id"] and q["fetched_utc"] == r["quote_fetched_utc"]
         clim = L.as_float(r["climatology_p"]) if r["climatology_p"] else None
+        # the gate column under the calibration in force when the row was recorded, never today's (2026-11-07)
         v = L.reading_violations(r["method"], float(r["method_p"]), float(r["range_lo"]), float(r["range_hi"]),
                                  float(r["market_mid"]), clim, q, r["made_on"], r["due_on"],
-                                 market_id=r["market_id"], existing_ids=earlier)
+                                 market_id=r["market_id"], existing_ids=earlier, gate_col=r["gate"],
+                                 calibration=L.calibration_in_force(hist, r["method"], r["recorded_utc"]))
         assert v == [], f"{r['id']}: {'; '.join(v)}"
         assert r["id"] == L.reading_id(r["made_on"], r["method"], r["market_id"]), f"{r['id']}: id off its rule"
         earlier.append(r["id"])
@@ -270,12 +328,30 @@ def test_every_committed_reading_passes_the_gate_on_a_written_eligible_quote_of_
         assert r["source"].strip(), f"{r['id']}: source is empty"
 
 
-def test_committed_gate_column_agrees_with_the_call_gate_from_the_committed_calibrations():
-    for r in read("readings.csv"):
-        r2 = R.calibration_r2(r["method"], HERE)
-        tags = L.gate_tags(" ".join(L.method_violations(r["method"], float(r["method_p"]), float(r["range_lo"]),
-                                                        float(r["range_hi"]), float(r["market_mid"]), r2)))
-        assert r["gate"] == (";".join(sorted(tags)) or "open"), f"{r['id']}: gate column is stale"
+def test_committed_calibration_history_is_dated_append_only_and_ends_at_the_committed_files():
+    # Replaces, 2026-11-07 06:15Z, a test that recomputed every row's gate column from the calibration files as
+    # they stand today: a correct re-run flipping R2 would have failed it on rows right when written.  Now each
+    # calibration that has been in force is a dated line, rows are judged under theirs (the test above), and
+    # the committed file must be its method's latest line, so a re-run not put on record fails here at once.
+    with (HERE / L.CALIBRATION_HISTORY).open(newline="", encoding="utf-8") as fh:
+        assert tuple(next(csv.reader(fh))) == L.CALIBRATION_HISTORY_COLUMNS
+    hist = read(L.CALIBRATION_HISTORY)
+    last: dict[str, str] = {}
+    for h in hist:
+        assert h["method"] in L.METHOD_CALIBRATION and h["r2"] in ("true", "false") and h["source"].strip()
+        assert len(h["sha256"]) == 64 and all(c in "0123456789abcdef" for c in h["sha256"])
+        datetime.strptime(h["in_force_utc"], "%Y-%m-%dT%H:%M:%SZ")
+        assert h["in_force_utc"] >= last.get(h["method"], ""), f"{h['method']}: a line dated before the one above it"
+        last[h["method"]] = h["in_force_utc"]
+    for method in L.METHOD_CALIBRATION:
+        latest = L.calibration_in_force(hist, method, "9999")
+        assert latest is not None, f"{method}: no calibration on record"
+        assert latest["sha256"] == R.calibration_sha256(method, HERE), (
+            f"{method}: the committed calibration file is not its latest line; run readings.py record-calibration")
+        assert L.history_r2(latest) is R.calibration_r2(method, HERE)
+    # the first lines, as written on 2026-11-05: the bills pass R2, the touch formula does not
+    first = {m: next(h for h in hist if h["method"] == m) for m in L.METHOD_CALIBRATION}
+    assert first["fomc_bills"]["r2"] == "true" and first["btc_touch"]["r2"] == "false"
 
 
 def test_committed_reading_ids_are_unique_and_outcomes_refer_to_readings():

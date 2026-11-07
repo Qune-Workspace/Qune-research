@@ -1,0 +1,3 @@
+method,in_force_utc,sha256,r2,source
+btc_touch,2026-11-05T12:23:00Z,f2958511c60df775528bfa8a7e883184cde5e40ee1f060d4664a94938436de21,false,"5b5121c: calibrate.py first run (BUILD_LOG 2026-11-05 12:15Z); in force from that commit's time; line written 2026-11-07T06:21:30Z from git log and the file's hash, retrospectively, when this history was created"
+fomc_bills,2026-11-05T18:29:17Z,ab2c60ebd811f750599dab1f76af3d3f14c0e8c21d830be0a9869c1ab2f2da86,true,"bec16ab: fomc_calibrate.py first run 18:22:46Z (BUILD_LOG 2026-11-05 18:15Z); in force from that commit's time; line written 2026-11-07T06:21:30Z from git log and the file's hash, retrospectively, when this history was created"

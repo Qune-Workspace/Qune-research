@@ -21,18 +21,29 @@ beside the rule (2026-11-07 00:15Z; tests/test_rule_tags.py holds the two equal)
 A reading made on a `--dry-run` quote has no hash and is refused: re-quote
 without `--dry-run` first.  The `gate` column records the call gate's refusals
 for the same numbers (or `open`), so the record also shows why each reading was
-not a call.
+not a call.  It is computed under the method's calibration as on record when the
+row is admitted (2026-11-07 06:15Z, predictions/POST_MORTEMS.md "A gate column
+judged against today's calibration"): `data/calibration_history.csv` holds one
+dated line per calibration that has been in force, the row is judged under the
+line in force at its `recorded_utc` from then on, and a reading is refused while
+the committed calibration file is not its method's latest line.  After a re-run
+of calibrate.py or fomc_calibrate.py, `record-calibration` puts the new file on
+record before any reading is admitted under it.
 
 Usage (from this folder):
     python readings.py add --market-id 6507380 --quote 2026-11-06T06:16:38Z --method btc_touch \\
         --method-p 0.876 --range-lo 0.876 --range-hi 0.886 --climatology-p 0.690 \\
         --proposition "Bitcoin dips to 75,000 in November" --source "PM_VIEW.md 2026-11-06" [--dry-run]
+    python readings.py record-calibration --method btc_touch --source "<commit or BUILD_LOG entry of the re-run>"
 Exit 0 when the row was admitted (or would be, --dry-run); 1 when the gate refused it.
+record-calibration: exit 0 when the line was appended; 1 when the file is already
+the method's latest line or carries no R2.
 """
 
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import sys
 from collections.abc import Iterable
@@ -56,6 +67,36 @@ def calibration_r2(method: str, here: Path = HERE) -> bool | None:
     return L.method_gate(method, cal)
 
 
+def calibration_sha256(method: str, here: Path = HERE) -> str | None:
+    """SHA-256 of the method's committed calibration file as it stands; None when it is missing."""
+    if method not in L.METHOD_CALIBRATION:
+        return None
+    path = here / L.METHOD_CALIBRATION[method][0]
+    return hashlib.sha256(path.read_bytes()).hexdigest() if path.exists() else None
+
+
+def record_calibration(method: str, source: str, here: Path, now: datetime) -> int:
+    """Append the method's committed calibration file to data/calibration_history.csv
+    (time, SHA-256, R2), the step after a re-run of its calibration and before any
+    reading is admitted under it."""
+    history_path = here / L.CALIBRATION_HISTORY
+    sha = calibration_sha256(method, here)
+    r2 = calibration_r2(method, here)
+    if sha is None or r2 is None:
+        print(f"REFUSED: {method}: no calibration file or no R2 in it ({L.METHOD_CALIBRATION[method][0]})")
+        return 1
+    stamp = now.strftime("%Y-%m-%dT%H:%M:%SZ")
+    latest = L.calibration_in_force(read_csv(history_path), method, "9999")
+    if latest is not None and latest.get("sha256") == sha:
+        print(f"REFUSED: {method}: {sha[:12]}… is already its latest line (in force from {latest.get('in_force_utc')})")
+        return 1
+    append_row(history_path, L.CALIBRATION_HISTORY_COLUMNS,
+               {"method": method, "in_force_utc": stamp, "sha256": sha, "r2": "true" if r2 else "false",
+                "source": source})
+    print(f"RECORDED {method}: SHA-256 {sha} R2={r2} in force from {stamp}")
+    return 0
+
+
 def find_quote(entries: list[dict[str, Any]], market_id: str, fetched_utc: str) -> dict[str, Any] | None:
     hits = [e for e in entries if e.get("market_id") == market_id and e.get("fetched_utc") == fetched_utc]
     return hits[0] if len(hits) == 1 else None
@@ -65,23 +106,27 @@ reading_id = L.reading_id  # the id rule lives with the gate that refuses a dupl
 
 
 def build_row(quote: dict[str, Any] | None, market_id: str, method: str, method_p: float, range_lo: float,
-              range_hi: float, climatology_p: float | None, proposition: str, source: str, r2: bool | None,
+              range_hi: float, climatology_p: float | None, proposition: str, source: str,
+              calibration: dict[str, Any] | None, calibration_sha256: str | None,
               now: datetime, existing_ids: Iterable[str] = ()) -> tuple[dict[str, Any], list[str]]:
-    """The readings.csv row and the gate's refusals (empty when admitted)."""
+    """The readings.csv row and the gate's refusals (empty when admitted).  `calibration`
+    is the method's calibration_history line in force at `now`; `calibration_sha256` the
+    committed calibration file's hash as read; the gate column is computed under the line."""
     q = quote or {}
     made_on = str(q.get("fetched_utc", ""))[:10]
     due_on = str(q.get("end_date", ""))[:10]
     market_mid = L.as_float(q.get("market_mid"))
+    gate_col = L.gate_column(method, method_p, range_lo, range_hi, market_mid, L.history_r2(calibration))
     v = L.reading_violations(method, method_p, range_lo, range_hi, market_mid, climatology_p, quote, made_on, due_on,
-                             market_id=market_id, existing_ids=existing_ids)
-    gate_tags = [] if market_mid is None else L.method_violations(method, method_p, range_lo, range_hi, market_mid, r2)
+                             market_id=market_id, existing_ids=existing_ids, gate_col=gate_col,
+                             calibration=calibration, calibration_sha256=calibration_sha256)
     row: dict[str, Any] = {
         "id": reading_id(made_on, method, market_id), "made_on": made_on,
         "recorded_utc": now.strftime("%Y-%m-%dT%H:%M:%SZ"), "venue": VENUE, "market_id": market_id,
         "condition_id": q.get("condition_id"), "yes_token_id": q.get("yes_token_id"), "proposition": proposition,
         "method": method, "method_p": f"{method_p:.3f}", "range_lo": f"{range_lo:.3f}", "range_hi": f"{range_hi:.3f}",
         "market_mid": q.get("market_mid"), "climatology_p": None if climatology_p is None else f"{climatology_p:.3f}",
-        "due_on": due_on, "gate": ";".join(sorted(L.gate_tags(" ".join(gate_tags)))) or "open",
+        "due_on": due_on, "gate": gate_col,
         "quote_fetched_utc": q.get("fetched_utc"), "quote_sha256": q.get("gamma_sha256"), "source": source,
     }
     return row, v
@@ -90,9 +135,12 @@ def build_row(quote: dict[str, Any] | None, market_id: str, method: str, method_
 def add(args: argparse.Namespace, manifest: Path, readings: Path, now: datetime) -> int:
     entries = json.loads(manifest.read_text(encoding="utf-8")) if manifest.exists() else []
     quote = find_quote(entries, args.market_id, args.quote)
-    r2 = calibration_r2(args.method, manifest.parent.parent)
+    here = manifest.parent.parent
+    in_force = L.calibration_in_force(read_csv(here / L.CALIBRATION_HISTORY), args.method,
+                                      now.strftime("%Y-%m-%dT%H:%M:%SZ"))
     row, v = build_row(quote, args.market_id, args.method, args.method_p, args.range_lo, args.range_hi,
-                       args.climatology_p, args.proposition, args.source, r2, now,
+                       args.climatology_p, args.proposition, args.source, in_force,
+                       calibration_sha256(args.method, here), now,
                        existing_ids=[r["id"] for r in read_csv(readings)])
     if quote is None:
         # the mid comes from the quote, so with no quote there is no mid to judge; the gate's own
@@ -127,7 +175,12 @@ def main(argv: list[str] | None = None) -> int:
     a.add_argument("--dry-run", action="store_true")
     a.add_argument("--manifest", type=Path, default=None)
     a.add_argument("--readings", type=Path, default=None)
+    c = sub.add_parser("record-calibration", help="put the committed calibration file of a method on record")
+    c.add_argument("--method", required=True, choices=L.READING_METHODS)
+    c.add_argument("--source", required=True, help="the commit or BUILD_LOG entry of the calibration run")
     args = ap.parse_args(argv)
+    if args.cmd == "record-calibration":
+        return record_calibration(args.method, args.source, HERE, datetime.now(UTC))
     manifest = args.manifest if args.manifest is not None else HERE / "data" / "manifest.json"
     readings = args.readings if args.readings is not None else HERE / "readings.csv"
     return add(args, manifest, readings, datetime.now(UTC))

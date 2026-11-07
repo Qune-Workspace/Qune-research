@@ -31,13 +31,20 @@ HERE = Path(__file__).resolve().parent.parent
 
 
 def calibration_gates() -> dict[str, bool | None]:
-    """R2 per method from the committed calibration files, as the ledger test reads them."""
+    """R2 per method from the committed calibration files as they stand."""
     out: dict[str, bool | None] = {}
     for method, (rel, _key) in L.METHOD_CALIBRATION.items():
         path = HERE / rel
         cal = json.loads(path.read_text(encoding="utf-8")) if path.exists() else None
         out[method] = L.method_gate(method, cal)
     return out
+
+
+def r2_in_force(method: str | None, at_utc: str) -> bool | None:
+    """R2 of the method's calibration as on record (data/calibration_history.csv) at `at_utc`: a call
+    is judged under the calibration in force when its quote was fetched, never under a later re-run
+    (2026-11-07 06:15Z, predictions/POST_MORTEMS.md "A gate column judged against today's calibration")."""
+    return L.history_r2(L.calibration_in_force(read(L.CALIBRATION_HISTORY), method or "", at_utc))
 
 
 def read(name: str) -> list[dict]:
@@ -80,12 +87,13 @@ def test_the_market_was_quoted_before_the_desk_wrote():
 
 
 def test_every_call_departs_from_the_market_with_a_reason_that_names_it_and_passes_its_method_gate():
-    gates = calibration_gates()
+    quotes = manifest_by_book_hash()
     for call in read("ledger.csv"):
         method, method_p, lo, hi = L.ledger_method_fields(call)
+        fetched = str(quotes.get(call["quote_sha256"], {}).get("fetched_utc", ""))
         v = L.call_violations(float(call["desk_p"]), float(call["market_mid"]), call["basis"],
                               call.get("settles_on", ""), call.get("proposition", ""),
-                              method, method_p, lo, hi, gates.get(method or ""))
+                              method, method_p, lo, hi, r2_in_force(method, fetched))
         assert v == [], f"{call['id']}: {'; '.join(v)}"
 
 
@@ -95,8 +103,11 @@ def test_the_committed_calibration_files_carry_the_gate_the_ledger_reads():
     assert set(gates) == {"fomc_bills", "btc_touch"}
     for method, r2 in gates.items():
         assert isinstance(r2, bool), f"{method}: calibration missing or without its R2 key"
-    # as written on 2026-11-05: the bills pass, the touch formula does not
-    assert gates["fomc_bills"] is True and gates["btc_touch"] is False
+    # the pin "as written on 2026-11-05: the bills pass, the touch formula does not" moved on 2026-11-07 to the
+    # first lines of data/calibration_history.csv (tests/test_readings.py), so a correct re-run that flips R2
+    # needs no edit here; what stays is that each file as committed is its method's latest line
+    for method, r2 in gates.items():
+        assert r2_in_force(method, "9999") is r2, f"{method}: the committed calibration is not on record"
 
 
 def test_the_market_rules_were_fetched_with_the_quote():

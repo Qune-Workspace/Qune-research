@@ -161,7 +161,52 @@ READING_TAGS = (
     "made-on-quote-day",        # the reading is made on the day of its quote
     "due-on-scheduled-end",     # due_on is the quote's scheduled end date
     "one-per-day",              # one reading per method, market and view day
+    "calibration-on-record",    # the method's calibration in force at recorded_utc is a line of data/calibration_history.csv
+    "gate-column",              # the gate column is the call gate's tags under that calibration, not today's
 )
+
+# The calibration history (2026-11-07 06:15Z, predictions/POST_MORTEMS.md "A gate
+# column judged against today's calibration").  A reading row's `gate` column is
+# the call gate's refusals at admission, and one of them, `calibrated`, depends on
+# R2 of the method's calibration file, which a re-run of calibrate.py or
+# fomc_calibrate.py overwrites.  Until this date the committed-file test judged
+# every row against the file as it stood that day, so a correct re-run that
+# flipped R2 would have failed the test on rows that were right when written,
+# leaving an edit to an append-only file or a weakened test as the only ways back
+# to green; no rule said which calibration a row is judged under, and the row did
+# not record it.  Now every calibration that has been in force is one append-only
+# line of data/calibration_history.csv (method, the time it went on record, the
+# file's SHA-256, its R2), a row is judged under the line in force at its own
+# `recorded_utc`, and a reading is admitted only when the committed file is the
+# latest line for its method.
+CALIBRATION_HISTORY = "data/calibration_history.csv"
+CALIBRATION_HISTORY_COLUMNS = ("method", "in_force_utc", "sha256", "r2", "source")
+
+
+def calibration_in_force(history: Iterable[dict[str, Any]], method: str, at_utc: str) -> dict[str, Any] | None:
+    """The calibration_history line for `method` in force at `at_utc` (both ISO
+    `YYYY-MM-DDTHH:MM:SSZ`): the last line for the method, in file order, whose
+    `in_force_utc` is at or before `at_utc`.  None when no line was yet on record."""
+    hit: dict[str, Any] | None = None
+    for h in history:
+        if h.get("method") == method and str(h.get("in_force_utc", "")) <= at_utc:
+            hit = h
+    return hit
+
+
+def history_r2(line: dict[str, Any] | None) -> bool | None:
+    """R2 of a calibration_history line (`true`/`false`); None for no line or any other value."""
+    v = None if line is None else str(line.get("r2", "")).strip().lower()
+    return {"true": True, "false": False}.get(v or "")
+
+
+def gate_column(method: str, method_p: float | None, range_lo: float | None, range_hi: float | None,
+                market_mid: float | None, r2: bool | None) -> str:
+    """The readings.csv `gate` column: the call gate's refusal tags for the numbers, sorted, or `open`."""
+    if market_mid is None:
+        return ""
+    tags = gate_tags(" ".join(method_violations(method, method_p, range_lo, range_hi, market_mid, r2)))
+    return ";".join(sorted(tags)) or "open"
 READING_TAG_RE = re.compile(r"\[reading:([a-z-]+)\]")
 
 
@@ -185,7 +230,9 @@ def reading_id(made_on: str, method: str, market_id: str) -> str:
 def reading_violations(method: str, method_p: float | None, range_lo: float | None, range_hi: float | None,
                        market_mid: float | None, climatology_p: float | None, quote: dict[str, Any] | None,
                        made_on: str, due_on: str, market_id: str = "",
-                       existing_ids: Iterable[str] = ()) -> list[str]:
+                       existing_ids: Iterable[str] = (), gate_col: str | None = None,
+                       calibration: dict[str, Any] | None = None,
+                       calibration_sha256: str | None = None) -> list[str]:
     """What stops a reading row from being admitted to readings.csv; empty when it may be.
     Each reason carries its `[reading:<tag>]` (READING_TAGS; the same tag sits beside the
     rule in README.md rule 5).
@@ -199,8 +246,28 @@ def reading_violations(method: str, method_p: float | None, range_lo: float | No
     5. the climatological probability, when given, is a probability in [0, 1];
     6. `due_on` is the quote's scheduled end date (the day the row becomes due);
     7. one reading per method, market and view day: when `market_id` is given, the
-       row's id is not among `existing_ids` (the ids already on the record)."""
+       row's id is not among `existing_ids` (the ids already on the record);
+    8. (2026-11-07 06:15Z) when the row's `gate` column is given (`gate_col`): `calibration`, the
+       method's line of data/calibration_history.csv in force at the row's
+       recorded_utc (calibration_in_force), exists, and at admission
+       (`calibration_sha256`, the SHA-256 of the committed calibration file as
+       read) it is that file; and the `gate` column is the call gate's tags under
+       that line's R2, so a later re-run of the calibration leaves the row right."""
     out: list[str] = []
+    if gate_col is not None:
+        if calibration is None:
+            out.append(reading_gate("calibration-on-record", f"no line for {method} in {CALIBRATION_HISTORY} in force "
+                                    "when the row was recorded: append the calibration's dated line first "
+                                    "(readings.py record-calibration)"))
+        elif calibration_sha256 is not None and calibration_sha256 != calibration.get("sha256"):
+            out.append(reading_gate("calibration-on-record", f"the committed calibration of {method} "
+                                    f"(SHA-256 {calibration_sha256[:12]}…) is not its latest line in "
+                                    f"{CALIBRATION_HISTORY}: a re-run is put on record "
+                                    "(readings.py record-calibration) before a reading is admitted under it"))
+        want = gate_column(method, method_p, range_lo, range_hi, market_mid, history_r2(calibration))
+        if want and gate_col != want:
+            out.append(reading_gate("gate-column", f"gate column {gate_col!r} is not the call gate's {want!r} under the "
+                                    "calibration in force when the row was recorded"))
     if method not in READING_METHODS:
         out.append(reading_gate("from-a-method",
                                 f"method must be one of {', '.join(READING_METHODS)}: a reading comes from a method"))

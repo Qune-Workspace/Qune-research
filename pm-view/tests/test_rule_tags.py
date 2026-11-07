@@ -124,10 +124,16 @@ def test_gate_refuses_an_unknown_tag():
 
 # --- the readings gate (README rule 5), 2026-11-07 ----------------------------
 
+CALIBRATION_LINE = {"method": "btc_touch", "in_force_utc": "2026-11-05T12:23:00Z", "sha256": "f2" * 32, "r2": "false",
+                    "source": "s"}
+
+
 def emitted_reading(**kw) -> set[str]:
     row = dict(method="btc_touch", method_p=0.876, range_lo=0.876, range_hi=0.886, market_mid=0.925,
                climatology_p=0.690, quote=QUOTE, made_on="2026-11-06", due_on="2026-12-01",
-               market_id="6507380", existing_ids=("R-2026-11-03-fomc_bills-3215008",))
+               market_id="6507380", existing_ids=("R-2026-11-03-fomc_bills-3215008",),
+               gate_col="calibrated;method-departure;touch-below", calibration=CALIBRATION_LINE,
+               calibration_sha256="f2" * 32)
     row.update(kw)
     return L.reading_tags(" ".join(L.reading_violations(**row)))
 
@@ -144,6 +150,8 @@ READING_BREAKERS: dict[str, dict] = {
     "made-on-quote-day": dict(made_on="2026-11-07"),
     "due-on-scheduled-end": dict(due_on="2026-12-09"),
     "one-per-day": dict(existing_ids=("R-2026-11-06-btc_touch-6507380",)),
+    "calibration-on-record": dict(calibration=None),
+    "gate-column": dict(gate_col="method-departure;touch-below"),
 }
 
 

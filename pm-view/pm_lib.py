@@ -90,6 +90,7 @@ GATE_TAGS = (
     "touch-below",         # a touch reading at or below the market is never a call
     "method-departure",    # the method reading departs from the mid by at least MIN_DEPARTURE
     "desk-side",           # the desk's number sits on the reading's side of the market
+    "made-on-quote-day",   # a call's made_on is the date of the quote it rests on (quote_day)
 )
 GATE_TAG_RE = re.compile(r"\[gate:([a-z-]+)\]")
 
@@ -104,6 +105,28 @@ def gate(tag: str, reason: str) -> str:
 def gate_tags(text: str) -> set[str]:
     """The gate tags written in a text (a README, a source file, a list of refusals joined)."""
     return set(GATE_TAG_RE.findall(text))
+
+
+def quote_day(fetched_utc: object) -> str:
+    """The UTC date `YYYY-MM-DD` of a quote's `fetched_utc` (`YYYY-MM-DDTHH:MM:SSZ`), the day a call or a
+    reading resting on it is made; empty for no time.  Both gates compare dates through this one function,
+    never a timestamp with a date as strings (2026-11-07 12:15Z, predictions/POST_MORTEMS.md "A timestamp
+    compared with a date": `"2026-11-06T06:16:38Z" <= "2026-11-06"` is False)."""
+    return str(fetched_utc or "")[:10]
+
+
+def quote_timing_violations(made_on: str, fetched_utc: object) -> list[str]:
+    """The call gate's rule on when a call is made: on its quote's day.  The row carries that quote's mid
+    and the departure is measured against it, so a mid from an earlier day is stale and a quote from a
+    later day was read after the call was made."""
+    day = quote_day(fetched_utc)
+    if day == made_on:
+        return []
+    if not day:
+        return [gate("made-on-quote-day", f"made_on {made_on}: the call's quote has no fetch time on record")]
+    why = "the quote was read after the call was made" if day > made_on else "the quote's mid is stale"
+    return [gate("made-on-quote-day", f"made_on {made_on} is not the quote's day {day}: {why}; "
+                                      "a call is made on the day of its quote")]
 
 
 OUTCOME_COLUMNS = (
@@ -295,9 +318,9 @@ def reading_violations(method: str, method_p: float | None, range_lo: float | No
         out.append(reading_gate("eligible-at-quote", f"the market was not eligible at the quote "
                                 f"({quote.get('eligibility')}): a reading on a market the record excludes is not "
                                 "scored against its settlement"))
-    fetched = str(quote.get("fetched_utc", ""))
-    if fetched[:10] != made_on:
-        out.append(reading_gate("made-on-quote-day", f"made_on {made_on} is not the quote's date {fetched[:10]}: "
+    day = quote_day(quote.get("fetched_utc"))
+    if day != made_on:
+        out.append(reading_gate("made-on-quote-day", f"made_on {made_on} is not the quote's date {day}: "
                                 "a reading is made on the day of its quote"))
     end = str(quote.get("end_date", ""))
     if end[:10] != due_on:
@@ -518,7 +541,8 @@ def method_violations(method: str, method_p: float | None, range_lo: float | Non
 def call_violations(desk_p: float, market_mid: float, basis: str, settles_on: str = "",
                     proposition: str = "", method: str | None = None, method_p: float | None = None,
                     range_lo: float | None = None, range_hi: float | None = None,
-                    r2: bool | None = None) -> list[str]:
+                    r2: bool | None = None, made_on: str | None = None,
+                    quote_fetched_utc: str | None = None) -> list[str]:
     """What stops a draft call from being logged; empty when it may be.
 
     `settles_on` (added 2026-11-04 after the first view described two touch
@@ -528,7 +552,12 @@ def call_violations(desk_p: float, market_mid: float, basis: str, settles_on: st
     and not a copy of the proposition or of the title.
 
     `method` and the three numbers beside it (added 2026-11-06) carry the
-    method gate: see method_violations.  A call with no method is refused."""
+    method gate: see method_violations.  A call with no method is refused.
+
+    `made_on` and `quote_fetched_utc` (added 2026-11-07 12:15Z) carry the
+    timing rule, quote_timing_violations: when `made_on` is given (a ledger
+    row), it must be the quote's day.  The printers and the grid tests judge a
+    candidate's numbers with no row yet and leave both out."""
     out: list[str] = []
     if not (0.0 < desk_p < 1.0):
         out.append(gate("probability", "desk_p is not a probability"))
@@ -546,6 +575,8 @@ def call_violations(desk_p: float, market_mid: float, basis: str, settles_on: st
         out.append(gate("method-named", f"method must be stated: one of {', '.join(METHODS)}"))
     else:
         out.extend(method_violations(method, method_p, range_lo, range_hi, market_mid, r2, desk_p))
+    if made_on is not None:
+        out.extend(quote_timing_violations(made_on, quote_fetched_utc))
     return out
 
 

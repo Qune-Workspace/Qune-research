@@ -60,7 +60,8 @@ def bold_rules_carry_a_tag(text: str, tags_in: Callable[[str], set[str]]) -> Non
 
 def emitted(**kw) -> set[str]:
     row = dict(desk_p=0.90, market_mid=0.45, basis=BASIS, settles_on=SETTLES, proposition="x",
-               method="fomc_bills", method_p=0.99, range_lo=0.60, range_hi=1.00, r2=True)
+               method="fomc_bills", method_p=0.99, range_lo=0.60, range_hi=1.00, r2=True,
+               made_on="2026-11-06", quote_fetched_utc=QUOTE["fetched_utc"])
     row.update(kw)
     return L.gate_tags(" ".join(L.call_violations(**row)))
 
@@ -79,6 +80,7 @@ BREAKERS: dict[str, dict] = {
     "touch-below": dict(method="btc_touch", method_p=0.40, range_lo=0.30, range_hi=0.40, market_mid=0.60, desk_p=0.30),
     "method-departure": dict(method_p=0.52, range_lo=0.50, range_hi=0.54, market_mid=0.45, desk_p=0.60),
     "desk-side": dict(desk_p=0.30),
+    "made-on-quote-day": dict(made_on="2026-11-07"),
 }
 
 

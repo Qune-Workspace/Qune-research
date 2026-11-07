@@ -74,6 +74,39 @@ def test_a_call_needs_a_departure_and_a_basis_that_names_the_market():
     assert v == ["[gate:method-named] method must be stated: one of fomc_bills, btc_touch, stated"]
 
 
+FETCHED = "2026-11-06T06:16:37Z"  # the 6 November quote of the December hike market (data/manifest.json)
+
+
+def test_a_call_is_made_on_its_quotes_day_compared_as_dates():
+    # 2026-11-07 12:15Z (predictions/POST_MORTEMS.md "A timestamp compared with a date"): the ledger test
+    # compared fetched_utc with made_on as strings; these are the three cases it got wrong or right by luck
+    assert not (FETCHED <= "2026-11-06") and FETCHED <= "2026-11-07"  # the old comparison, inverted on both
+    assert L.quote_day(FETCHED) == "2026-11-06" and L.quote_day(None) == ""
+    assert L.quote_timing_violations("2026-11-06", FETCHED) == []  # same day: the call stands
+    nxt = L.quote_timing_violations("2026-11-07", FETCHED)  # next day from the same quote: a stale mid
+    assert nxt == ["[gate:made-on-quote-day] made_on 2026-11-07 is not the quote's day 2026-11-06: "
+                   "the quote's mid is stale; a call is made on the day of its quote"]
+    prev = L.quote_timing_violations("2026-11-05", FETCHED)  # previous day: quoted after the call was made
+    assert prev == ["[gate:made-on-quote-day] made_on 2026-11-05 is not the quote's day 2026-11-06: "
+                    "the quote was read after the call was made; a call is made on the day of its quote"]
+    assert L.gate_tags(" ".join(L.quote_timing_violations("2026-11-06", ""))) == {"made-on-quote-day"}
+
+
+def test_the_call_gate_applies_the_timing_rule_only_to_a_row_and_the_reading_gate_shares_the_day():
+    args = (0.60, 0.735, "the market prices 0.735; the bill curve says 0.57", SETTLES)
+    # the printers and the grid tests judge numbers with no row: no made_on, no timing rule
+    assert L.call_violations(*args, method="stated") == []
+    assert L.call_violations(*args, method="stated", made_on="2026-11-06", quote_fetched_utc=FETCHED) == []
+    v = L.call_violations(*args, method="stated", made_on="2026-11-07", quote_fetched_utc=FETCHED)
+    assert L.gate_tags(" ".join(v)) == {"made-on-quote-day"}
+    # one function names the quote's day for both gates
+    quote = {"fetched_utc": FETCHED, "market_mid": 0.665, "eligibility": "eligible", "end_date": "2026-12-10T00:00:00Z"}
+    reading = dict(method="fomc_bills", method_p=0.90, range_lo=0.80, range_hi=1.0, market_mid=0.665,
+                   climatology_p=None, quote=quote, due_on="2026-12-10")
+    assert L.reading_violations(made_on="2026-11-06", **reading) == []
+    assert L.reading_tags(" ".join(L.reading_violations(made_on="2026-11-07", **reading))) == {"made-on-quote-day"}
+
+
 def test_method_gate_reads_r2_from_the_methods_own_calibration_and_nothing_else():
     bills = {"rules": {"R1_primary": "net", "R2_basis_for_a_call": True}}
     touch = {"rules": {"R1_primary_window": 30, "R2_method_is_a_basis_for_a_call": False}}

@@ -3,8 +3,12 @@ every call from the first:
 
 1. The desk's probability is a two-decimal probability in (0, 1).
 2. The market mid was read before the desk wrote: the row's quote hash is in
-   data/manifest.json with the same mid, and the quote was fetched on or before
-   the call's `made_on`.
+   data/manifest.json with the same mid, and the call was made on the quote's
+   day (pm_lib.quote_timing_violations, `[gate:made-on-quote-day]`; 2026-11-07
+   12:15Z, predictions/POST_MORTEMS.md "A timestamp compared with a date":
+   until then this test compared the quote's `fetched_utc` with `made_on` as
+   strings, which refused a call made on its quote's day and passed one
+   written the next day from a stale quote).
 3. A call departs from the market by at least MIN_DEPARTURE, and its basis names
    the market's number and what it is missing (the word 'market' appears).
 4. Ids are unique; the ledger's columns are the ones pm_lib declares.
@@ -82,7 +86,8 @@ def test_the_market_was_quoted_before_the_desk_wrote():
         assert q is not None, f"{call['id']}: quote_sha256 not in data/manifest.json; run fetch.py quote first"
         assert q["market_id"] == call["market_id"] and q["yes_token_id"] == call["yes_token_id"]
         assert float(q["market_mid"]) == float(call["market_mid"]), f"{call['id']}: market_mid differs from the quote"
-        assert q["fetched_utc"] <= call["made_on"], f"{call['id']}: quoted after the call was made"
+        v = L.quote_timing_violations(call["made_on"], q["fetched_utc"])
+        assert v == [], f"{call['id']}: {'; '.join(v)}"
         assert q["eligibility"] == "eligible", f"{call['id']}: the market was not eligible ({q['eligibility']})"
 
 
@@ -93,7 +98,8 @@ def test_every_call_departs_from_the_market_with_a_reason_that_names_it_and_pass
         fetched = str(quotes.get(call["quote_sha256"], {}).get("fetched_utc", ""))
         v = L.call_violations(float(call["desk_p"]), float(call["market_mid"]), call["basis"],
                               call.get("settles_on", ""), call.get("proposition", ""),
-                              method, method_p, lo, hi, r2_in_force(method, fetched))
+                              method, method_p, lo, hi, r2_in_force(method, fetched),
+                              made_on=call["made_on"], quote_fetched_utc=fetched)
         assert v == [], f"{call['id']}: {'; '.join(v)}"
 
 

@@ -253,6 +253,7 @@ def test_committed_readings_columns_are_the_declared_ones():
 def test_every_committed_reading_passes_the_gate_on_a_written_eligible_quote_of_its_day():
     entries = json.loads((HERE / "data" / "manifest.json").read_text(encoding="utf-8"))
     by_hash = {e["gamma_sha256"]: e for e in entries if e.get("gamma_sha256")}
+    earlier: list[str] = []  # the ids above this row: the gate's one-per-day rule on the committed order
     for r in read("readings.csv"):
         q = by_hash.get(r["quote_sha256"])
         assert q is not None, f"{r['id']}: quote_sha256 is not a written quote's gamma_sha256"
@@ -260,8 +261,11 @@ def test_every_committed_reading_passes_the_gate_on_a_written_eligible_quote_of_
         assert q["condition_id"] == r["condition_id"] and q["fetched_utc"] == r["quote_fetched_utc"]
         clim = L.as_float(r["climatology_p"]) if r["climatology_p"] else None
         v = L.reading_violations(r["method"], float(r["method_p"]), float(r["range_lo"]), float(r["range_hi"]),
-                                 float(r["market_mid"]), clim, q, r["made_on"], r["due_on"])
+                                 float(r["market_mid"]), clim, q, r["made_on"], r["due_on"],
+                                 market_id=r["market_id"], existing_ids=earlier)
         assert v == [], f"{r['id']}: {'; '.join(v)}"
+        assert r["id"] == L.reading_id(r["made_on"], r["method"], r["market_id"]), f"{r['id']}: id off its rule"
+        earlier.append(r["id"])
         assert r["recorded_utc"][:10] >= r["made_on"], f"{r['id']}: recorded before it was made"
         assert r["source"].strip(), f"{r['id']}: source is empty"
 

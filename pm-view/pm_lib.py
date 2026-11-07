@@ -31,6 +31,7 @@ from __future__ import annotations
 import json
 import math
 import re
+from collections.abc import Iterable
 from datetime import datetime
 from typing import Any
 
@@ -137,11 +138,57 @@ READING_OUTCOME_COLUMNS = (
 )
 READING_METHODS = tuple(m for m in METHODS if m in METHOD_CALIBRATION)  # a reading comes from a method, never `stated`
 
+# The readings gate's rule tags (2026-11-07 00:15Z, the second run of the mechanical
+# search of 2026-11-06 12:15Z, extended to the second action this folder admits: a
+# row to readings.csv).  Same shape as GATE_TAGS, a separate namespace so a rule
+# about a reading and a rule about a call cannot be confused: every refusal
+# reading_violations gives carries `[reading:<tag>]` from this tuple, README.md
+# rule 5 carries the same tag beside the sentence that states the rule, and
+# tests/test_rule_tags.py holds the prose, the declaration and the emitted set
+# equal.  What the extension found on the day it was written: three checks the
+# gate made that rule 5 never stated (the mid a probability, the climatology a
+# probability, due_on the scheduled end) and one rule the prose stated whose
+# check sat in readings.py, not in the gate (one reading per method, market and
+# day); the sentences were added and the check moved here.
+READING_TAGS = (
+    "from-a-method",            # a reading comes from a method with a calibration file, never `stated`
+    "range-brackets",           # the reading and its range are probabilities in [0, 1] with lo <= p <= hi
+    "mid-probability",          # the market mid is a probability inside (0, 1)
+    "climatology-probability",  # the climatological probability, when given, is in [0, 1]
+    "written-quote",            # the quote is a written manifest entry (a --dry-run quote leaves none)
+    "mid-from-quote",           # the mid equals the written quote's, copied not retyped
+    "eligible-at-quote",        # the market was eligible at the quote (open, before any settlement)
+    "made-on-quote-day",        # the reading is made on the day of its quote
+    "due-on-scheduled-end",     # due_on is the quote's scheduled end date
+    "one-per-day",              # one reading per method, market and view day
+)
+READING_TAG_RE = re.compile(r"\[reading:([a-z-]+)\]")
+
+
+def reading_gate(tag: str, reason: str) -> str:
+    """A refusal of the readings gate with its rule tag in front, `[reading:<tag>] <reason>`."""
+    if tag not in READING_TAGS:
+        raise ValueError(f"unknown reading tag {tag!r}; add it to READING_TAGS and to README.md rule 5")
+    return f"[reading:{tag}] {reason}"
+
+
+def reading_tags(text: str) -> set[str]:
+    """The reading tags written in a text (a README, a source file, a list of refusals joined)."""
+    return set(READING_TAG_RE.findall(text))
+
+
+def reading_id(made_on: str, method: str, market_id: str) -> str:
+    """The readings.csv id: one per method, market and view day."""
+    return f"R-{made_on}-{method}-{market_id}"
+
 
 def reading_violations(method: str, method_p: float | None, range_lo: float | None, range_hi: float | None,
                        market_mid: float | None, climatology_p: float | None, quote: dict[str, Any] | None,
-                       made_on: str, due_on: str) -> list[str]:
+                       made_on: str, due_on: str, market_id: str = "",
+                       existing_ids: Iterable[str] = ()) -> list[str]:
     """What stops a reading row from being admitted to readings.csv; empty when it may be.
+    Each reason carries its `[reading:<tag>]` (READING_TAGS; the same tag sits beside the
+    rule in README.md rule 5).
 
     1. the method is one with a calibration file (READING_METHODS; `stated` has no reading);
     2. the reading and its range are probabilities in [0, 1] with lo <= p <= hi;
@@ -150,34 +197,45 @@ def reading_violations(method: str, method_p: float | None, range_lo: float | No
        with the market eligible at the fetch (so the reading was made while the
        market was open, before any settlement);
     5. the climatological probability, when given, is a probability in [0, 1];
-    6. `due_on` is the quote's scheduled end date (the day the row becomes due)."""
+    6. `due_on` is the quote's scheduled end date (the day the row becomes due);
+    7. one reading per method, market and view day: when `market_id` is given, the
+       row's id is not among `existing_ids` (the ids already on the record)."""
     out: list[str] = []
     if method not in READING_METHODS:
-        out.append(f"method must be one of {', '.join(READING_METHODS)}: a reading comes from a method")
+        out.append(reading_gate("from-a-method",
+                                f"method must be one of {', '.join(READING_METHODS)}: a reading comes from a method"))
     if method_p is None or range_lo is None or range_hi is None:
-        out.append("method_p, range_lo and range_hi are required")
+        out.append(reading_gate("range-brackets", "method_p, range_lo and range_hi are required"))
     elif not (0.0 <= range_lo <= method_p <= range_hi <= 1.0):
-        out.append(f"the range [{range_lo:.3f}, {range_hi:.3f}] must bracket the reading {method_p:.3f} inside [0, 1]")
+        out.append(reading_gate("range-brackets", f"the range [{range_lo:.3f}, {range_hi:.3f}] must bracket "
+                                f"the reading {method_p:.3f} inside [0, 1]"))
     if market_mid is None or not (0.0 < market_mid < 1.0):
-        out.append("market_mid is not a probability inside (0, 1)")
+        out.append(reading_gate("mid-probability", "market_mid is not a probability inside (0, 1)"))
     if climatology_p is not None and not (0.0 <= climatology_p <= 1.0):
-        out.append("climatology_p is not a probability")
+        out.append(reading_gate("climatology-probability", "climatology_p is not a probability"))
+    if market_id and reading_id(made_on, method, market_id) in set(existing_ids):
+        out.append(reading_gate("one-per-day", f"{reading_id(made_on, method, market_id)} is already on the record "
+                                "(one reading per method, market and day)"))
     if quote is None:
-        out.append("no written quote: the row's quote_sha256 is not a gamma_sha256 in data/manifest.json "
-                   "(a --dry-run quote leaves no record; re-quote without it)")
+        out.append(reading_gate("written-quote", "no written quote: the row's quote_sha256 is not a gamma_sha256 in "
+                                "data/manifest.json (a --dry-run quote leaves no record; re-quote without it)"))
         return out
     qmid = as_float(quote.get("market_mid"))
     if market_mid is not None and (qmid is None or abs(qmid - market_mid) > 1e-9):
-        out.append(f"market_mid {market_mid} differs from the quote's {qmid}: copy the mid from the quote")
+        out.append(reading_gate("mid-from-quote",
+                                f"market_mid {market_mid} differs from the quote's {qmid}: copy the mid from the quote"))
     if quote.get("eligibility") != "eligible":
-        out.append(f"the market was not eligible at the quote ({quote.get('eligibility')}): a reading on a market "
-                   "the record excludes is not scored against its settlement")
+        out.append(reading_gate("eligible-at-quote", f"the market was not eligible at the quote "
+                                f"({quote.get('eligibility')}): a reading on a market the record excludes is not "
+                                "scored against its settlement"))
     fetched = str(quote.get("fetched_utc", ""))
     if fetched[:10] != made_on:
-        out.append(f"made_on {made_on} is not the quote's date {fetched[:10]}: a reading is made on the day of its quote")
+        out.append(reading_gate("made-on-quote-day", f"made_on {made_on} is not the quote's date {fetched[:10]}: "
+                                "a reading is made on the day of its quote"))
     end = str(quote.get("end_date", ""))
     if end[:10] != due_on:
-        out.append(f"due_on {due_on} is not the quote's scheduled end {end[:10]}")
+        out.append(reading_gate("due-on-scheduled-end",
+                                f"due_on {due_on} is not the quote's scheduled end {end[:10]}"))
     return out
 
 

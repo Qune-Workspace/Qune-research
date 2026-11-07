@@ -15,10 +15,13 @@ id, YES token, mid, scheduled end and quote hash come from `data/manifest.json`
 by market id and fetch time; the method's four numbers come from the printer's
 candidate line (barrier.py or fomc_calibrate.py --live).  `pm_lib.reading_violations`
 is the gate, applied here where the row is admitted and again by
-tests/test_readings.py on the committed file.  A reading made on a `--dry-run`
-quote has no hash and is refused: re-quote without `--dry-run` first.  The
-`gate` column records the call gate's refusals for the same numbers (or `open`),
-so the record also shows why each reading was not a call.
+tests/test_readings.py on the committed file; every refusal it gives carries a
+`[reading:<tag>]` from `pm_lib.READING_TAGS`, the same tag README.md rule 5 puts
+beside the rule (2026-11-07 00:15Z; tests/test_rule_tags.py holds the two equal).
+A reading made on a `--dry-run` quote has no hash and is refused: re-quote
+without `--dry-run` first.  The `gate` column records the call gate's refusals
+for the same numbers (or `open`), so the record also shows why each reading was
+not a call.
 
 Usage (from this folder):
     python readings.py add --market-id 6507380 --quote 2026-11-06T06:16:38Z --method btc_touch \\
@@ -32,6 +35,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+from collections.abc import Iterable
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -57,19 +61,19 @@ def find_quote(entries: list[dict[str, Any]], market_id: str, fetched_utc: str) 
     return hits[0] if len(hits) == 1 else None
 
 
-def reading_id(made_on: str, method: str, market_id: str) -> str:
-    return f"R-{made_on}-{method}-{market_id}"
+reading_id = L.reading_id  # the id rule lives with the gate that refuses a duplicate (2026-11-07)
 
 
 def build_row(quote: dict[str, Any] | None, market_id: str, method: str, method_p: float, range_lo: float,
               range_hi: float, climatology_p: float | None, proposition: str, source: str, r2: bool | None,
-              now: datetime) -> tuple[dict[str, Any], list[str]]:
+              now: datetime, existing_ids: Iterable[str] = ()) -> tuple[dict[str, Any], list[str]]:
     """The readings.csv row and the gate's refusals (empty when admitted)."""
     q = quote or {}
     made_on = str(q.get("fetched_utc", ""))[:10]
     due_on = str(q.get("end_date", ""))[:10]
     market_mid = L.as_float(q.get("market_mid"))
-    v = L.reading_violations(method, method_p, range_lo, range_hi, market_mid, climatology_p, quote, made_on, due_on)
+    v = L.reading_violations(method, method_p, range_lo, range_hi, market_mid, climatology_p, quote, made_on, due_on,
+                             market_id=market_id, existing_ids=existing_ids)
     gate_tags = [] if market_mid is None else L.method_violations(method, method_p, range_lo, range_hi, market_mid, r2)
     row: dict[str, Any] = {
         "id": reading_id(made_on, method, market_id), "made_on": made_on,
@@ -88,16 +92,16 @@ def add(args: argparse.Namespace, manifest: Path, readings: Path, now: datetime)
     quote = find_quote(entries, args.market_id, args.quote)
     r2 = calibration_r2(args.method, manifest.parent.parent)
     row, v = build_row(quote, args.market_id, args.method, args.method_p, args.range_lo, args.range_hi,
-                       args.climatology_p, args.proposition, args.source, r2, now)
+                       args.climatology_p, args.proposition, args.source, r2, now,
+                       existing_ids=[r["id"] for r in read_csv(readings)])
     if quote is None:
-        v = [f"no manifest entry for market {args.market_id} fetched at {args.quote} in {manifest.name}; "
-             "a --dry-run quote writes none: re-quote without --dry-run"] + [
-                 x for x in v if "no written quote" not in x and "market_mid" not in x]
+        # the mid comes from the quote, so with no quote there is no mid to judge; the gate's own
+        # refusal keeps its tag, and the tool adds what it looked for
+        v = [x for x in v if "[reading:mid-probability]" not in x]
+        v.append(f"(no manifest entry for market {args.market_id} fetched at {args.quote} in {manifest.name}; "
+                 "a --dry-run quote writes none: re-quote without --dry-run)")
     if v:
         print(f"REFUSED {row['id']}: " + "; ".join(v))
-        return 1
-    if any(r["id"] == row["id"] for r in read_csv(readings)):
-        print(f"REFUSED {row['id']}: already on the record (one reading per method, market and day)")
         return 1
     print(f"{'DRY RUN ' if args.dry_run else ''}ADMITTED {row['id']}: method_p={row['method_p']} "
           f"range=[{row['range_lo']}, {row['range_hi']}] market_mid={row['market_mid']} "

@@ -24,6 +24,12 @@ every call from the first:
    (pm_lib.method_violations).  Until this rule the committed ledger was held
    to the departure and `settles_on` only, while the R2 gate and the range rule
    lived in two printers that never wrote a call.
+7. (2026-11-07 18:15Z, predictions/POST_MORTEMS.md "A gate that only a test
+   applied") A call enters the ledger only through `ledger.py add`, which
+   applies pm_lib.ledger_row_violations at admission; this file applies the
+   same function to every committed row, and rules 1, 2, 3 and 5 above are
+   checks of that function (one call per market and day among them), not
+   assertions of this file's own.
 """
 import csv
 import json
@@ -59,48 +65,20 @@ def read(name: str) -> list[dict]:
         return list(csv.DictReader(fh))
 
 
-def manifest_by_book_hash() -> dict[str, dict]:
-    path = HERE / "data" / "manifest.json"
-    if not path.exists():
-        return {}
-    return {e["book_sha256"]: e for e in json.loads(path.read_text(encoding="utf-8")) if e.get("book_sha256")}
-
-
 def test_ledger_columns_are_the_declared_ones():
     with (HERE / "ledger.csv").open(newline="", encoding="utf-8") as fh:
         header = next(csv.reader(fh))
     assert tuple(header) == L.LEDGER_COLUMNS
 
 
-def test_desk_p_is_a_two_decimal_probability():
-    for call in read("ledger.csv"):
-        p = float(call["desk_p"])
-        assert 0.0 < p < 1.0, f"{call['id']}: desk_p {call['desk_p']} is not a probability"
-        assert call["desk_p"] == f"{p:.2f}", f"{call['id']}: write desk_p with two decimals"
-
-
-def test_the_market_was_quoted_before_the_desk_wrote():
-    quotes = manifest_by_book_hash()
-    for call in read("ledger.csv"):
-        q = quotes.get(call["quote_sha256"])
-        assert q is not None, f"{call['id']}: quote_sha256 not in data/manifest.json; run fetch.py quote first"
-        assert q["market_id"] == call["market_id"] and q["yes_token_id"] == call["yes_token_id"]
-        assert float(q["market_mid"]) == float(call["market_mid"]), f"{call['id']}: market_mid differs from the quote"
-        v = L.quote_timing_violations(call["made_on"], q["fetched_utc"])
-        assert v == [], f"{call['id']}: {'; '.join(v)}"
-        assert q["eligibility"] == "eligible", f"{call['id']}: the market was not eligible ({q['eligibility']})"
-
-
-def test_every_call_departs_from_the_market_with_a_reason_that_names_it_and_passes_its_method_gate():
-    quotes = manifest_by_book_hash()
-    for call in read("ledger.csv"):
-        method, method_p, lo, hi = L.ledger_method_fields(call)
-        fetched = str(quotes.get(call["quote_sha256"], {}).get("fetched_utc", ""))
-        v = L.call_violations(float(call["desk_p"]), float(call["market_mid"]), call["basis"],
-                              call.get("settles_on", ""), call.get("proposition", ""),
-                              method, method_p, lo, hi, r2_in_force(method, fetched),
-                              made_on=call["made_on"], quote_fetched_utc=fetched)
-        assert v == [], f"{call['id']}: {'; '.join(v)}"
+def test_every_committed_call_passes_the_admission_gate():
+    # (2026-11-07 18:15Z, predictions/POST_MORTEMS.md "A gate that only a test applied") the one copy of
+    # rules 1, 2, 3 and 5 above, pm_lib.ledger_row_violations, which ledger.py add applies at admission;
+    # until then this file held the two-decimal desk number, the quote, the mid, the eligibility and the
+    # rules' hash in its own assertions, outside the gate and its tags
+    manifest = json.loads((HERE / "data" / "manifest.json").read_text(encoding="utf-8"))
+    v = L.ledger_file_violations(read("ledger.csv"), manifest, read(L.CALIBRATION_HISTORY))
+    assert v == [], "; ".join(v)
 
 
 def test_the_committed_calibration_files_carry_the_gate_the_ledger_reads():
@@ -114,14 +92,6 @@ def test_the_committed_calibration_files_carry_the_gate_the_ledger_reads():
     # needs no edit here; what stays is that each file as committed is its method's latest line
     for method, r2 in gates.items():
         assert r2_in_force(method, "9999") is r2, f"{method}: the committed calibration is not on record"
-
-
-def test_the_market_rules_were_fetched_with_the_quote():
-    quotes = manifest_by_book_hash()
-    for call in read("ledger.csv"):
-        q = quotes.get(call["quote_sha256"])
-        assert q is not None, f"{call['id']}: quote_sha256 not in data/manifest.json"
-        assert q.get("description_sha256"), f"{call['id']}: the quote did not record the market's rules (re-quote)"
 
 
 def test_ids_are_unique_and_outcomes_refer_to_calls():

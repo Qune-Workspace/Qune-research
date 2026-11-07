@@ -91,6 +91,12 @@ GATE_TAGS = (
     "method-departure",    # the method reading departs from the mid by at least MIN_DEPARTURE
     "desk-side",           # the desk's number sits on the reading's side of the market
     "made-on-quote-day",   # a call's made_on is the date of the quote it rests on (quote_day)
+    # 2026-11-07 18:15Z: the row's own checks, applied at admission by ledger.py add (ledger_row_violations)
+    "written-quote",       # the row's quote_sha256 is the book hash of a written manifest entry for its market and ids
+    "mid-from-quote",      # the row's market_mid equals the written quote's, copied not retyped
+    "eligible-at-quote",   # the market was eligible at the quote
+    "rules-on-record",     # the quote recorded the hash of the market's own resolution text
+    "one-per-day",         # one call per market and day
 )
 GATE_TAG_RE = re.compile(r"\[gate:([a-z-]+)\]")
 
@@ -587,6 +593,89 @@ def ledger_method_fields(call: dict[str, Any]) -> tuple[str | None, float | None
         return as_float(v) if isinstance(v, str) and v.strip() else None
     m = call.get("method", "")
     return (m.strip() if isinstance(m, str) and m.strip() else None, num("method_p"), num("range_lo"), num("range_hi"))
+
+
+# --- Admission of a call (2026-11-07 18:15Z, predictions/POST_MORTEMS.md "A gate
+# that only a test applied") ------------------------------------------------------
+#
+# Until this date no tool wrote a call: a desk operator logging one would have
+# hand-typed a CSV row, and call_violations ran only in tests/test_ledger_discipline.py
+# on the committed file, after the row was written, while the row's own checks
+# (the quote written, the mid copied, the market eligible, the rules fetched, the
+# two-decimal desk number) lived in that test alone, outside the gate and its tags.
+# ledger_row_violations is the one copy of everything a ledger row is held to;
+# ledger.py add applies it where the row is admitted, the committed-file test
+# applies it again row by row.
+
+def call_id(made_on: str, method: str, market_id: str) -> str:
+    """The ledger.csv id of a call, in the style of reading_id."""
+    return f"C-{made_on}-{method}-{market_id}"
+
+
+def ledger_row_violations(call: dict[str, Any], quote: dict[str, Any] | None,
+                          history: Iterable[dict[str, Any]], earlier: Iterable[dict[str, Any]] = ()) -> list[str]:
+    """What stops a ledger row from being admitted; empty when it may be.  `call` is the
+    row as written (strings, or the values ledger.py is about to write); `quote` the
+    data/manifest.json entry it rests on (None: no written quote); `history` the lines of
+    data/calibration_history.csv, R2 taken from the method's line in force at the quote's
+    fetch (calibration_in_force); `earlier` the rows already on the ledger before this one.
+
+    The row's own checks come first: desk_p a two-decimal probability, the quote written
+    for the row's market and ids with its book hash in the row, the mid copied from it,
+    the market eligible at it, its rules' hash on record, one call per market and day;
+    then call_violations with the quote's day and fetch time."""
+    out: list[str] = []
+    if any(e.get("market_id") == call.get("market_id") and e.get("made_on") == call.get("made_on") for e in earlier):
+        out.append(gate("one-per-day", f"a call on market {call.get('market_id')} made on {call.get('made_on')} is "
+                                       "already on the ledger (one call per market and day)"))
+    raw_p = str(call.get("desk_p", "")).strip()
+    desk_p = as_float(raw_p)
+    if desk_p is None or raw_p != f"{desk_p:.2f}":
+        out.append(gate("probability", f"desk_p {raw_p!r} is not written as a two-decimal probability"))
+        return out
+    if quote is None:
+        out.append(gate("written-quote", "no written quote: a --dry-run quote leaves no entry in "
+                                         "data/manifest.json; re-quote without --dry-run (the rest of the gate is "
+                                         "measured against the quote's mid and is not run)"))
+        return out
+    book = quote.get("book_sha256")
+    if not book or book != call.get("quote_sha256"):
+        out.append(gate("written-quote", "quote_sha256 is not the book hash of the written quote "
+                                         f"({'none: no book was read' if not book else str(book)[:12] + '…'})"))
+    for k in ("market_id", "condition_id", "yes_token_id"):
+        if str(quote.get(k, "")) != str(call.get(k, "")):
+            out.append(gate("written-quote", f"{k} differs from the written quote's: copy it from the quote"))
+    if quote.get("eligibility") != "eligible":
+        out.append(gate("eligible-at-quote", f"the market was not eligible at the quote ({quote.get('eligibility')})"))
+    if not quote.get("description_sha256"):
+        out.append(gate("rules-on-record", "the quote did not record the hash of the market's resolution text: "
+                                           "re-quote, read the rules, then write the call"))
+    mid_row, mid_q = as_float(call.get("market_mid")), as_float(quote.get("market_mid"))
+    if mid_row is None or mid_q is None or abs(mid_row - mid_q) > 1e-9:
+        out.append(gate("mid-from-quote", f"market_mid {call.get('market_mid')} is not the quote's {mid_q}: "
+                                          "copy the mid from the quote"))
+        return out
+    fetched = str(quote.get("fetched_utc", ""))
+    method, method_p, lo, hi = ledger_method_fields({k: ("" if v is None else str(v)) for k, v in call.items()})
+    r2 = history_r2(calibration_in_force(history, method or "", fetched))
+    out.extend(call_violations(desk_p, mid_row, str(call.get("basis", "")), str(call.get("settles_on", "")),
+                               str(call.get("proposition", "")), method, method_p, lo, hi, r2,
+                               made_on=str(call.get("made_on", "")), quote_fetched_utc=fetched))
+    return out
+
+
+def ledger_file_violations(rows: list[dict[str, Any]], manifest: Iterable[dict[str, Any]],
+                           history: Iterable[dict[str, Any]]) -> list[str]:
+    """ledger_row_violations over a whole ledger, row by row in file order (each row judged
+    against the rows above it), each refusal prefixed with the row's id; the quote is found
+    by the row's book hash."""
+    quotes = {e["book_sha256"]: e for e in manifest if e.get("book_sha256")}
+    hist = list(history)
+    out: list[str] = []
+    for i, call in enumerate(rows):
+        for v in ledger_row_violations(call, quotes.get(str(call.get("quote_sha256", ""))), hist, rows[:i]):
+            out.append(f"{call.get('id')}: {v}")
+    return out
 
 
 def rules_excerpt(row: dict[str, Any], chars: int = 400) -> str:

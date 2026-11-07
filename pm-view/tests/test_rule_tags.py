@@ -84,6 +84,32 @@ BREAKERS: dict[str, dict] = {
 }
 
 
+# (2026-11-07 18:15Z) the row's own checks, applied at admission by ledger.py add: driven through
+# pm_lib.ledger_row_violations on a clean row and its written quote
+CALL_QUOTE = dict(QUOTE, market_id="3215008", book_sha256="cd" * 32, description_sha256="de" * 32,
+                  market_mid=0.45, end_date="2026-12-09T23:59:00Z")
+CALL_HISTORY = ({"method": "fomc_bills", "in_force_utc": "2026-11-05T18:29:17Z", "sha256": "ab" * 32, "r2": "true",
+                 "source": "s"},)
+
+
+def emitted_row(quote: dict | None = CALL_QUOTE, earlier: tuple = (), **kw) -> set[str]:
+    row = dict(id="C-2026-11-06-fomc_bills-3215008", made_on="2026-11-06", market_id="3215008",
+               condition_id=QUOTE["condition_id"], yes_token_id=QUOTE["yes_token_id"], proposition="x",
+               settles_on=SETTLES, market_mid="0.45", desk_p="0.90", method="fomc_bills", method_p="0.990",
+               range_lo="0.600", range_hi="1.000", basis=BASIS, quote_sha256="cd" * 32)
+    row.update(kw)
+    return L.gate_tags(" ".join(L.ledger_row_violations(row, quote, CALL_HISTORY, earlier)))
+
+
+ROW_BREAKERS: dict[str, dict] = {
+    "written-quote": dict(quote=None),
+    "mid-from-quote": dict(market_mid="0.46"),
+    "eligible-at-quote": dict(quote=dict(CALL_QUOTE, eligibility="spread above 0.10")),
+    "rules-on-record": dict(quote=dict(CALL_QUOTE, description_sha256=None)),
+    "one-per-day": dict(earlier=({"market_id": "3215008", "made_on": "2026-11-06"},)),
+}
+
+
 def test_the_prose_the_declaration_and_the_source_name_the_same_rules():
     prose = L.gate_tags(README)
     declared = set(L.GATE_TAGS)
@@ -102,8 +128,15 @@ def test_every_tag_is_reachable_and_each_breaker_trips_its_own_rule():
         tags = emitted(**kw)
         assert tag in tags, f"{tag}: the row built to break it did not trip it (got {sorted(tags)})"
         seen |= tags
+    assert emitted_row() == set(), "the clean ledger row must pass the whole admission gate"
+    assert emitted_row(desk_p="0.9") == {"probability"}, "a desk number not written with two decimals"
+    for tag, kw in ROW_BREAKERS.items():
+        tags = emitted_row(**kw)
+        assert tag in tags, f"{tag}: the ledger row built to break it did not trip it (got {sorted(tags)})"
+        seen |= tags
     assert seen == set(L.GATE_TAGS), f"never emitted: {sorted(set(L.GATE_TAGS) - seen)}"
-    assert set(BREAKERS) == set(L.GATE_TAGS), "one breaker per declared tag"
+    assert set(BREAKERS) | set(ROW_BREAKERS) == set(L.GATE_TAGS), "one breaker per declared tag"
+    assert not set(BREAKERS) & set(ROW_BREAKERS), "one breaker per declared tag"
 
 
 def test_every_bold_rule_in_rule_2_carries_a_tag():

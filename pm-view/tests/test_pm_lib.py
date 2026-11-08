@@ -262,3 +262,48 @@ def test_realised_vol_from_closes():
         L.realised_vol([100.0, 101.0])
     with pytest.raises(ValueError):
         L.realised_vol([100.0, 0.0, 101.0])
+
+
+# --- record_calibration_line: the one writer of data/calibration_history.csv (2026-11-08 00:15Z) ---
+
+def _history_lines(path):
+    import csv
+    with path.open(encoding="utf-8", newline="") as fh:
+        return list(csv.DictReader(fh))
+
+
+def test_record_calibration_line_records_then_leaves_an_unchanged_file_and_refuses_a_file_with_no_r2(tmp_path):
+    import hashlib
+    import json
+    hist, cal = tmp_path / "calibration_history.csv", tmp_path / "calibration.json"
+    t1, t2 = datetime(2026, 11, 8, 0, 20, tzinfo=UTC), datetime(2026, 11, 8, 0, 30, tzinfo=UTC)
+    # refused: no file, a file that is not json, a file with no R2; nothing written
+    assert L.record_calibration_line(hist, "btc_touch", cal, t1, "s") == ("refused", None)
+    cal.write_text("not json")
+    assert L.record_calibration_line(hist, "btc_touch", cal, t1, "s") == ("refused", None)
+    cal.write_text(json.dumps({"rules": {"R1_primary_window": 30}}))
+    assert L.record_calibration_line(hist, "btc_touch", cal, t1, "s") == ("refused", None)
+    assert L.record_calibration_line(hist, "fomc_bills", cal, t1, "s") == ("refused", None)  # another method's key
+    assert not hist.exists()
+    # recorded: hash of the bytes as written, R2 read through method_gate, the header on a new file
+    cal.write_text(json.dumps({"rules": {"R2_method_is_a_basis_for_a_call": False}}))
+    status, line = L.record_calibration_line(hist, "btc_touch", cal, t1, "calibrate.py: test")
+    assert status == "recorded" and line is not None
+    assert line["sha256"] == hashlib.sha256(cal.read_bytes()).hexdigest() and line["r2"] == "false"
+    assert line["in_force_utc"] == "2026-11-08T00:20:00Z" and line["source"] == "calibrate.py: test"
+    assert _history_lines(hist) == [line] and b"\r" not in hist.read_bytes()
+    # unchanged: the same file again appends nothing and returns the latest line
+    before = hist.read_bytes()
+    assert L.record_calibration_line(hist, "btc_touch", cal, t2, "again") == ("unchanged", line)
+    assert hist.read_bytes() == before
+    # another method's line does not make this method's file unchanged; a new file is a new line
+    fomc = tmp_path / "fomc_calibration.json"
+    fomc.write_text(json.dumps({"rules": {"R2_basis_for_a_call": True}}))
+    assert L.record_calibration_line(hist, "fomc_bills", fomc, t2, "f")[0] == "recorded"
+    cal.write_text(json.dumps({"rules": {"R2_method_is_a_basis_for_a_call": True}}))
+    status, line2 = L.record_calibration_line(hist, "btc_touch", cal, t2, "re-run")
+    assert status == "recorded" and line2 is not None and line2["r2"] == "true"
+    lines = _history_lines(hist)
+    assert [h["method"] for h in lines] == ["btc_touch", "fomc_bills", "btc_touch"]
+    assert L.calibration_in_force(lines, "btc_touch", "9999") == line2
+    assert L.history_r2(L.calibration_in_force(lines, "btc_touch", "2026-11-08T00:25:00Z")) is False

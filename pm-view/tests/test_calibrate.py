@@ -108,3 +108,39 @@ def test_run_writes_aggregates_without_any_level(tmp_path):
     for v in (v for v in json.loads(text)["pooled"].values() if isinstance(v, float)):
         assert v <= 1.0
     assert s["rules"]["R1_primary_window"] in (30, 90)
+
+
+def test_a_run_with_out_records_the_written_file_once_and_a_second_identical_run_appends_nothing(tmp_path, capsys):
+    # 2026-11-08 00:15Z: the script that writes the calibration file puts it on record in the history beside it,
+    # hash and R2 read back from the file as written; a re-run on the same data is byte-identical: UNCHANGED
+    import csv
+    import hashlib
+    from datetime import UTC, datetime
+    obs = flat_series(date(2023, 1, 1), date(2024, 12, 31))
+    src = tmp_path / "CBBTCUSD.csv"
+    src.write_text("observation_date,CBBTCUSD\n" + "".join(f"{d.isoformat()},{v:.2f}\n" for d, v in obs), encoding="utf-8")
+    out = tmp_path / "data" / "calibration.json"
+    hist = out.parent / "calibration_history.csv"
+    assert C.run(src, out, now=datetime(2026, 11, 8, 0, 20, tzinfo=UTC)) == 0
+    printed = capsys.readouterr().out
+    with hist.open(encoding="utf-8", newline="") as fh:
+        lines = list(csv.DictReader(fh))
+    assert len(lines) == 1 and lines[0]["method"] == "btc_touch" and lines[0]["in_force_utc"] == "2026-11-08T00:20:00Z"
+    assert lines[0]["sha256"] == hashlib.sha256(out.read_bytes()).hexdigest()
+    assert L.history_r2(lines[0]) is L.method_gate("btc_touch", json.loads(out.read_text(encoding="utf-8")))
+    src_sha = hashlib.sha256(src.read_bytes()).hexdigest()
+    assert lines[0]["source"].startswith(f"calibrate.py: CBBTCUSD.csv sha256 {src_sha[:12]}; {len(obs)} observations, "
+                                         f"last {obs[-1][0].isoformat()}; R1 ")
+    assert f"RECORDED btc_touch: SHA-256 {lines[0]['sha256']} R2={lines[0]['r2']}" in printed
+    before = hist.read_bytes()
+    assert C.run(src, out, now=datetime(2026, 11, 8, 0, 30, tzinfo=UTC)) == 0
+    assert hist.read_bytes() == before
+    assert f"UNCHANGED btc_touch: SHA-256 {lines[0]['sha256']}" in capsys.readouterr().out
+
+
+def test_a_run_without_out_writes_no_file_and_no_line(tmp_path):
+    obs = flat_series(date(2023, 1, 1), date(2024, 12, 31))
+    src = tmp_path / "CBBTCUSD.csv"
+    src.write_text("observation_date,CBBTCUSD\n" + "".join(f"{d.isoformat()},{v:.2f}\n" for d, v in obs), encoding="utf-8")
+    assert C.run(src, None) == 0
+    assert sorted(p.name for p in tmp_path.iterdir()) == ["CBBTCUSD.csv"]

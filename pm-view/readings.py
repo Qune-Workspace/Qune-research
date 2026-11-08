@@ -26,15 +26,18 @@ row is admitted (2026-11-07 06:15Z, predictions/POST_MORTEMS.md "A gate column
 judged against today's calibration"): `data/calibration_history.csv` holds one
 dated line per calibration that has been in force, the row is judged under the
 line in force at its `recorded_utc` from then on, and a reading is refused while
-the committed calibration file is not its method's latest line.  After a re-run
-of calibrate.py or fomc_calibrate.py, `record-calibration` puts the new file on
-record before any reading is admitted under it.
+the committed calibration file is not its method's latest line.  Since
+2026-11-08 00:15Z (predictions/POST_MORTEMS.md "A calibration that went into
+force before it was on record") calibrate.py and fomc_calibrate.py record that
+line themselves when they write the file (pm_lib.record_calibration_line, the
+one writer); `record-calibration` is the repair path for a file written by any
+other route (a hand edit, a copy, an older script), and its line's source says so.
 
 Usage (from this folder):
     python readings.py add --market-id 6507380 --quote 2026-11-06T06:16:38Z --method btc_touch \\
         --method-p 0.876 --range-lo 0.876 --range-hi 0.886 --climatology-p 0.690 \\
         --proposition "Bitcoin dips to 75,000 in November" --source "PM_VIEW.md 2026-11-06" [--dry-run]
-    python readings.py record-calibration --method btc_touch --source "<commit or BUILD_LOG entry of the re-run>"
+    python readings.py record-calibration --method btc_touch --source "<how the file was written>"   # repair only
 Exit 0 when the row was admitted (or would be, --dry-run); 1 when the gate refused it.
 record-calibration: exit 0 when the line was appended; 1 when the file is already
 the method's latest line or carries no R2.
@@ -76,24 +79,21 @@ def calibration_sha256(method: str, here: Path = HERE) -> str | None:
 
 
 def record_calibration(method: str, source: str, here: Path, now: datetime) -> int:
-    """Append the method's committed calibration file to data/calibration_history.csv
-    (time, SHA-256, R2), the step after a re-run of its calibration and before any
-    reading is admitted under it."""
-    history_path = here / L.CALIBRATION_HISTORY
-    sha = calibration_sha256(method, here)
-    r2 = calibration_r2(method, here)
-    if sha is None or r2 is None:
-        print(f"REFUSED: {method}: no calibration file or no R2 in it ({L.METHOD_CALIBRATION[method][0]})")
+    """The repair path (2026-11-08): put the method's committed calibration file on
+    record in data/calibration_history.csv when it was written by a route that did
+    not record it itself (calibrate.py and fomc_calibrate.py do), through the same
+    pm_lib.record_calibration_line, with the line's source saying it is a repair."""
+    rel = L.METHOD_CALIBRATION[method][0]
+    status, line = L.record_calibration_line(here / L.CALIBRATION_HISTORY, method, here / rel, now,
+                                             f"readings.py record-calibration (repair: {rel} was written by a "
+                                             f"route that did not record it): {source}")
+    if status == "refused" or line is None:
+        print(f"REFUSED: {method}: no calibration file or no R2 in it ({rel})")
         return 1
-    stamp = now.strftime("%Y-%m-%dT%H:%M:%SZ")
-    latest = L.calibration_in_force(read_csv(history_path), method, "9999")
-    if latest is not None and latest.get("sha256") == sha:
-        print(f"REFUSED: {method}: {sha[:12]}… is already its latest line (in force from {latest.get('in_force_utc')})")
+    if status == "unchanged":
+        print(f"REFUSED: {method}: {line['sha256'][:12]}… is already its latest line (in force from {line.get('in_force_utc')})")
         return 1
-    append_row(history_path, L.CALIBRATION_HISTORY_COLUMNS,
-               {"method": method, "in_force_utc": stamp, "sha256": sha, "r2": "true" if r2 else "false",
-                "source": source})
-    print(f"RECORDED {method}: SHA-256 {sha} R2={r2} in force from {stamp}")
+    print(f"RECORDED {method}: SHA-256 {line['sha256']} R2={L.history_r2(line)} in force from {line['in_force_utc']}")
     return 0
 
 
@@ -175,9 +175,9 @@ def main(argv: list[str] | None = None) -> int:
     a.add_argument("--dry-run", action="store_true")
     a.add_argument("--manifest", type=Path, default=None)
     a.add_argument("--readings", type=Path, default=None)
-    c = sub.add_parser("record-calibration", help="put the committed calibration file of a method on record")
+    c = sub.add_parser("record-calibration", help="repair: put on record a calibration file written by a route that did not record it")
     c.add_argument("--method", required=True, choices=L.READING_METHODS)
-    c.add_argument("--source", required=True, help="the commit or BUILD_LOG entry of the calibration run")
+    c.add_argument("--source", required=True, help="how the file was written (a hand edit, a copy, the commit)")
     args = ap.parse_args(argv)
     if args.cmd == "record-calibration":
         return record_calibration(args.method, args.source, HERE, datetime.now(UTC))

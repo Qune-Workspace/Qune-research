@@ -114,7 +114,7 @@ def test_brier_rules_and_bootstrap_on_known_differences():
     assert s3["rules"]["R1_primary"] == "raw" and s3["rules"]["R2_basis_for_a_call"] is False
 
 
-def test_end_to_end_on_a_synthetic_history_writes_aggregates_only(tmp_path):
+def synthetic_history(tmp_path):
     """A decade of synthetic prints: the bill carries half a step before every
     hike and nothing otherwise; the target steps up at each hiking meeting."""
     meetings = F.meeting_dates()
@@ -135,6 +135,11 @@ def test_end_to_end_on_a_synthetic_history_writes_aggregates_only(tmp_path):
     for k, s in series.items():
         lines = [f"observation_date,{k}"] + [f"{d.date()},{v:.2f}" for d, v in s.items()]
         (raw_dir / f"fred_{k}.csv").write_text("\n".join(lines) + "\n", encoding="utf-8")
+    return meetings, raw_dir, series
+
+
+def test_end_to_end_on_a_synthetic_history_writes_aggregates_only(tmp_path):
+    meetings, raw_dir, series = synthetic_history(tmp_path)
     out = tmp_path / "cal.json"
     rc = F.run(raw_dir, tmp_path / "manifest.json", out, fetch=False)
     assert rc == 0
@@ -154,6 +159,41 @@ def test_end_to_end_on_a_synthetic_history_writes_aggregates_only(tmp_path):
     assert lines[0].startswith("FOMC 2026-12-09: prints as of 2026-11-04") and any("p_hike" in ln for ln in lines)
     assert any("calibration:" in ln for ln in lines)
     assert sorted(p.name for p in tmp_path.iterdir()) == before
+
+
+def test_a_run_records_the_written_file_once_and_a_second_identical_run_appends_nothing(tmp_path, capsys):
+    # 2026-11-08 00:15Z: fomc_calibrate.py writes the committed file by default, so it puts the file on record in
+    # the history beside it, hash and R2 read back from the file as written, the inputs' hashes in the source
+    import csv
+    import hashlib
+    from datetime import UTC, datetime
+
+    import pm_lib as L
+    _, raw_dir, _ = synthetic_history(tmp_path)
+    out = tmp_path / "data" / "fomc_calibration.json"
+    hist = out.parent / "calibration_history.csv"
+    assert F.run(raw_dir, tmp_path / "manifest.json", out, fetch=False, now=datetime(2026, 11, 8, 0, 20, tzinfo=UTC)) == 0
+    printed = capsys.readouterr().out
+    with hist.open(encoding="utf-8", newline="") as fh:
+        lines = list(csv.DictReader(fh))
+    assert len(lines) == 1 and lines[0]["method"] == "fomc_bills" and lines[0]["in_force_utc"] == "2026-11-08T00:20:00Z"
+    assert lines[0]["sha256"] == hashlib.sha256(out.read_bytes()).hexdigest()
+    s = json.loads(out.read_text(encoding="utf-8"))
+    assert L.history_r2(lines[0]) is L.method_gate("fomc_bills", s)
+    for k in F.SERIES:
+        sha = hashlib.sha256((raw_dir / f"fred_{k}.csv").read_bytes()).hexdigest()
+        assert f"fred_{k}.csv {sha[:12]}" in lines[0]["source"]
+    assert f"{s['sample']['scored_meetings']} scored meetings, last {s['sample']['last_meeting']}" in lines[0]["source"]
+    assert lines[0]["source"].startswith("fomc_calibrate.py: ") and "(manifest" not in lines[0]["source"]
+    assert f"RECORDED fomc_bills: SHA-256 {lines[0]['sha256']} R2={lines[0]['r2']}" in printed
+    before = hist.read_bytes()
+    assert F.run(raw_dir, tmp_path / "manifest.json", out, fetch=False, now=datetime(2026, 11, 8, 0, 30, tzinfo=UTC)) == 0
+    assert hist.read_bytes() == before
+    assert f"UNCHANGED fomc_bills: SHA-256 {lines[0]['sha256']}" in capsys.readouterr().out
+    # --no-write (out None) writes neither a file nor a line anywhere
+    files = sorted(str(p) for p in tmp_path.rglob("*"))
+    assert F.run(raw_dir, tmp_path / "manifest.json", None, fetch=False) == 0
+    assert sorted(str(p) for p in tmp_path.rglob("*")) == files and hist.read_bytes() == before
 
 
 def test_live_verdict_order_gate_range_then_threshold():

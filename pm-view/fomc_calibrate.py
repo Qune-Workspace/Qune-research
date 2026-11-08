@@ -87,11 +87,12 @@ MIN_SCORED (24) scored meetings).
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import random
 import sys
 from collections.abc import Iterable
-from datetime import date, timedelta
+from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -101,6 +102,8 @@ HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
+
+import pm_lib as L  # noqa: E402
 
 from qune_research import data as qdata  # noqa: E402
 
@@ -493,7 +496,40 @@ def load_dir(raw_dir: Path) -> Series:
     return {k: qdata.load_fred(k, raw_dir) for k in SERIES}
 
 
-def run(raw_dir: Path, manifest: Path, out: Path | None, fetch: bool) -> int:
+METHOD = "fomc_bills"
+
+
+def record(out: Path, raw_dir: Path, manifest: dict[str, Any] | None, now: datetime) -> int:
+    """Put the file just written on record in the calibration history beside it
+    (2026-11-08 00:15Z, predictions/POST_MORTEMS.md "A calibration that went into
+    force before it was on record"): the hash and R2 read back from the file as
+    written, the source built from the four input files as read (their SHA-256,
+    computed; a manifest hash that disagrees is named beside it) and the file's
+    sample and rules, never typed.  Prints RECORDED, or UNCHANGED when the file is
+    already the method's latest line."""
+    parts = []
+    for k in SERIES:
+        path = qdata.fred_path(k, raw_dir)
+        sha = hashlib.sha256(path.read_bytes()).hexdigest()
+        listed = ((manifest or {}).get(path.name) or {}).get("sha256")
+        parts.append(f"{path.name} {sha[:12]}" + (f" (manifest {listed[:12]})" if listed and listed != sha else ""))
+    written = json.loads(out.read_text(encoding="utf-8"))
+    rules, sample = written.get("rules") or {}, written.get("sample") or {}
+    err = rules.get("R3_observed_minus_predicted")
+    source = (f"fomc_calibrate.py: {', '.join(parts)}; {sample.get('scored_meetings')} scored meetings, "
+              f"last {sample.get('last_meeting')}; R1 {rules.get('R1_primary')}, R2 {str(L.method_gate(METHOD, written)).lower()}, "
+              f"R3 {rules.get('R3_live_bin_sign')} {'n/a' if err is None else f'{err:+.4f}'}")
+    history = out.parent / Path(L.CALIBRATION_HISTORY).name
+    status, line = L.record_calibration_line(history, METHOD, out, now, source)
+    if status == "refused" or line is None:
+        print(f"REFUSED {METHOD}: {out} carries no R2; not on record")
+        return 1
+    word = "RECORDED" if status == "recorded" else "UNCHANGED"
+    print(f"{word} {METHOD}: SHA-256 {line['sha256']} R2={line['r2']} in force from {line['in_force_utc']} ({history})")
+    return 0
+
+
+def run(raw_dir: Path, manifest: Path, out: Path | None, fetch: bool, now: datetime | None = None) -> int:
     if fetch:
         for k in SERIES:
             qdata.fetch_fred(k, raw_dir, manifest)
@@ -512,6 +548,7 @@ def run(raw_dir: Path, manifest: Path, out: Path | None, fetch: bool) -> int:
         out.parent.mkdir(parents=True, exist_ok=True)
         out.write_text(json.dumps(summary, indent=2, sort_keys=True, default=str) + "\n", encoding="utf-8")
         print(f"written {out}")
+        return record(out, raw_dir, man, now or datetime.now(UTC))
     return 0
 
 

@@ -23,16 +23,22 @@ the future, a two-sided book with spread at most SPREAD_CAP, mid inside
 [0.01, 0.99] and cumulative volume of at least VOLUME_FLOOR USDC.
 
 Nothing here reads a file or the network; fetch.py and score.py do that and
-pass the rows in.  The functions are tested on dicts built in memory.
+pass the rows in.  The functions are tested on dicts built in memory.  One
+exception, by design (2026-11-08): `record_calibration_line` reads a written
+calibration file and appends its line to data/calibration_history.csv, so the
+calibration scripts and readings.py record-calibration share one writer.
 """
 
 from __future__ import annotations
 
+import csv
+import hashlib
 import json
 import math
 import re
 from collections.abc import Iterable
 from datetime import datetime
+from pathlib import Path
 from typing import Any
 
 MIN_DEPARTURE = 0.10  # |desk p - market mid| below this: no call
@@ -229,6 +235,52 @@ def history_r2(line: dict[str, Any] | None) -> bool | None:
     return {"true": True, "false": False}.get(v or "")
 
 
+# Who writes the line (2026-11-08 00:15Z, predictions/POST_MORTEMS.md "A calibration
+# that went into force before it was on record"): until this date calibrate.py and
+# fomc_calibrate.py overwrote the committed calibration file and the line that puts
+# it in force was appended by hand afterwards (readings.py record-calibration, a
+# typed source, the time someone remembered), so between the two the printers read
+# R2 from the file and the admission tools from the history.  Now the script that
+# writes the file calls this function on the file it has just written; the readings
+# tool calls it as the repair path for a file written by any other route.
+def record_calibration_line(history_path: Path, method: str, calibration_path: Path, now: datetime,
+                            source: str) -> tuple[str, dict[str, Any] | None]:
+    """Put the written calibration file of `method` on record in `history_path`.
+    The hash and R2 are read from the file's bytes as written (`method_gate`, the
+    function the gates use), never from a caller's summary.  Returns ('recorded',
+    the appended line); ('unchanged', the method's latest line) when the file's
+    SHA-256 is already that line, appending nothing; ('refused', None) when the
+    file is missing or carries no R2, appending nothing."""
+    if method not in METHOD_CALIBRATION or not calibration_path.exists():
+        return "refused", None
+    body = calibration_path.read_bytes()
+    try:
+        cal = json.loads(body.decode("utf-8"))
+    except ValueError:
+        return "refused", None
+    r2 = method_gate(method, cal)
+    if r2 is None:
+        return "refused", None
+    sha = hashlib.sha256(body).hexdigest()
+    history: list[dict[str, Any]] = []
+    if history_path.exists():
+        with history_path.open(encoding="utf-8", newline="") as fh:
+            history = list(csv.DictReader(fh))
+    latest = calibration_in_force(history, method, "9999")
+    if latest is not None and latest.get("sha256") == sha:
+        return "unchanged", latest
+    line = {"method": method, "in_force_utc": now.strftime("%Y-%m-%dT%H:%M:%SZ"), "sha256": sha,
+            "r2": "true" if r2 else "false", "source": source}
+    new = not history_path.exists()
+    history_path.parent.mkdir(parents=True, exist_ok=True)
+    with history_path.open("a", encoding="utf-8", newline="") as fh:
+        w = csv.DictWriter(fh, fieldnames=list(CALIBRATION_HISTORY_COLUMNS), lineterminator="\n")  # as committed
+        if new:
+            w.writeheader()
+        w.writerow(line)
+    return "recorded", line
+
+
 def gate_column(method: str, method_p: float | None, range_lo: float | None, range_hi: float | None,
                 market_mid: float | None, r2: bool | None) -> str:
     """The readings.csv `gate` column: the call gate's refusal tags for the numbers, sorted, or `open`."""
@@ -286,13 +338,14 @@ def reading_violations(method: str, method_p: float | None, range_lo: float | No
     if gate_col is not None:
         if calibration is None:
             out.append(reading_gate("calibration-on-record", f"no line for {method} in {CALIBRATION_HISTORY} in force "
-                                    "when the row was recorded: append the calibration's dated line first "
-                                    "(readings.py record-calibration)"))
+                                    "when the row was recorded: the calibration script records its line when it "
+                                    "writes the file; readings.py record-calibration is the repair path"))
         elif calibration_sha256 is not None and calibration_sha256 != calibration.get("sha256"):
             out.append(reading_gate("calibration-on-record", f"the committed calibration of {method} "
                                     f"(SHA-256 {calibration_sha256[:12]}…) is not its latest line in "
-                                    f"{CALIBRATION_HISTORY}: a re-run is put on record "
-                                    "(readings.py record-calibration) before a reading is admitted under it"))
+                                    f"{CALIBRATION_HISTORY}: the file was written by a route that did not record it; "
+                                    "put it on record (readings.py record-calibration) before a reading is "
+                                    "admitted under it"))
         want = gate_column(method, method_p, range_lo, range_hi, market_mid, history_r2(calibration))
         if want and gate_col != want:
             out.append(reading_gate("gate-column", f"gate column {gate_col!r} is not the call gate's {want!r} under the "

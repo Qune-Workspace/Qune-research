@@ -60,21 +60,31 @@ PRE-SPECIFIED 2026-11-05 12:2x UTC, committed before the first run on the series
 Usage (from this folder):
     python calibrate.py --from-file data/raw/fred/<stamp>/CBBTCUSD.csv [--out data/calibration.json]
 Exit 0 when the report was written, 1 when the series is too short.
+
+With --out the run also puts the file it wrote on record (2026-11-08 00:15Z,
+predictions/POST_MORTEMS.md "A calibration that went into force before it was
+on record"): one line of calibration_history.csv beside the file (for the
+default, data/calibration_history.csv), its hash and R2 read back from the file
+as written, its source built from what the run read (the input's name and
+SHA-256, observations, last observation, R1/R2/R3), never typed; it prints
+RECORDED, or UNCHANGED when the file is already the method's latest line.
 """
 
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import math
 import random
 import sys
 from collections.abc import Iterable
-from datetime import date, datetime
+from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import Any
 
 import barrier as B
+import pm_lib as L
 from pm_lib import realised_vol, touch_probability
 
 HERE = Path(__file__).resolve().parent
@@ -298,8 +308,32 @@ def report(s: dict[str, Any]) -> list[str]:
     return out
 
 
-def run(from_file: Path, out: Path | None) -> int:
-    obs = B.parse_fred_csv(from_file.read_text(encoding="utf-8"))
+METHOD = "btc_touch"
+
+
+def record(out: Path, input_name: str, input_sha256: str, now: datetime) -> int:
+    """Put the file just written on record in the calibration history beside it,
+    with a source built from the file as written and the input the run read."""
+    written = json.loads(out.read_text(encoding="utf-8"))
+    rules = written.get("rules") or {}
+    r3 = rules.get("R3_mid_bins")
+    r3_text = "n/a" if not r3 else f"{r3['observed_minus_predicted']:+.4f} on {r3['n']} rows"
+    source = (f"calibrate.py: {input_name} sha256 {input_sha256[:12]}; {written.get('observations')} observations, "
+              f"last {written.get('last_obs')}; R1 {rules.get('R1_primary_window')}, "
+              f"R2 {str(L.method_gate(METHOD, written)).lower()}, R3 {r3_text}")
+    history = out.parent / Path(L.CALIBRATION_HISTORY).name
+    status, line = L.record_calibration_line(history, METHOD, out, now, source)
+    if status == "refused" or line is None:
+        print(f"  REFUSED {METHOD}: {out} carries no R2; not on record")
+        return 1
+    word = "RECORDED" if status == "recorded" else "UNCHANGED"
+    print(f"  {word} {METHOD}: SHA-256 {line['sha256']} R2={line['r2']} in force from {line['in_force_utc']} ({history})")
+    return 0
+
+
+def run(from_file: Path, out: Path | None, now: datetime | None = None) -> int:
+    raw = from_file.read_bytes()
+    obs = B.parse_fred_csv(raw.decode("utf-8"))
     rows = add_baseline(rows_for(obs))
     if not rows:
         print(f"{B.SERIES}: FAILED the series is too short for a scored month")
@@ -315,6 +349,7 @@ def run(from_file: Path, out: Path | None) -> int:
         out.parent.mkdir(parents=True, exist_ok=True)
         out.write_text(json.dumps(s, indent=2, sort_keys=True) + "\n", encoding="utf-8")
         print(f"  written: {out}")
+        return record(out, from_file.name, hashlib.sha256(raw).hexdigest(), now or datetime.now(UTC))
     return 0
 
 

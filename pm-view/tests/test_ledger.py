@@ -5,6 +5,7 @@ in a tmp folder.  Each refusal is checked by its tag on stderr, with the ledger'
 bytes unchanged; the admitted row is held to the committed-file test's gate,
 pm_lib.ledger_file_violations.  Nothing touches the network or the real files."""
 import csv
+import hashlib
 import io
 import json
 from pathlib import Path
@@ -14,10 +15,21 @@ import pm_lib as L
 import pytest
 from score import read_csv
 
+# the committed calibration files of the tmp folder (2026-11-08 06:15Z: ledger.py add holds the
+# committed file to its method's latest line, so the fixture's lines carry the files' own hashes)
+CAL = {"btc_touch": json.dumps({"rules": {"R2_method_is_a_basis_for_a_call": False}}).encode(),
+       "fomc_bills": json.dumps({"rules": {"R2_basis_for_a_call": True}}).encode()}
+CAL_FALSE = json.dumps({"rules": {"R2_basis_for_a_call": False}}).encode()
+
+
+def sha(b: bytes) -> str:
+    return hashlib.sha256(b).hexdigest()
+
+
 HISTORY = (
     "method,in_force_utc,sha256,r2,source\n"
-    f"btc_touch,2026-11-05T12:23:00Z,{'f2' * 32},false,test\n"
-    f"fomc_bills,2026-11-05T18:29:17Z,{'ab' * 32},true,test\n"
+    f"btc_touch,2026-11-05T12:23:00Z,{sha(CAL['btc_touch'])},false,test\n"
+    f"fomc_bills,2026-11-05T18:29:17Z,{sha(CAL['fomc_bills'])},true,test\n"
 )
 QUOTE = {"fetched_utc": "2026-11-06T06:16:37Z", "market_id": "3215008", "condition_id": "0x8a41",
          "yes_token_id": "1116", "gamma_sha256": "ab" * 32, "book_sha256": "cd" * 32, "description_sha256": "de" * 32,
@@ -36,6 +48,8 @@ def folder(tmp_path: Path) -> Path:
     (tmp_path / "data").mkdir()
     (tmp_path / "data" / "manifest.json").write_text(json.dumps([QUOTE, OLD, SETTLED, TOUCH]))
     (tmp_path / L.CALIBRATION_HISTORY).write_text(HISTORY)
+    for method, body in CAL.items():
+        (tmp_path / L.METHOD_CALIBRATION[method][0]).write_bytes(body)
     (tmp_path / "ledger.csv").write_text(",".join(L.LEDGER_COLUMNS) + "\n")
     return tmp_path
 
@@ -142,6 +156,43 @@ def test_r2_is_the_line_in_force_at_the_quote_not_the_latest():
     later = dict(QUOTE, fetched_utc="2026-11-06T13:00:00Z")
     row_later = G.build_row(later, "3215008", "0.90", "fomc_bills", 0.99, 0.60, 1.00, "x", SETTLES, BASIS)
     assert L.gate_tags(" ".join(L.ledger_row_violations(row_later, later, hist))) == {"calibrated"}
+
+
+# 2026-11-08 06:15Z, predictions/POST_MORTEMS.md "A call admitted under a calibration already superseded":
+# before this date both calls below were admitted (rc 0, observed on a scratch worktree of 19a20ce)
+
+def test_a_call_is_refused_when_a_calibration_went_into_force_after_its_quote(folder, capsys):
+    # the bills re-run at 07:00Z the same day flips R2 to false and is on record; the 06:16Z quote's line said true
+    (folder / L.METHOD_CALIBRATION["fomc_bills"][0]).write_bytes(CAL_FALSE)
+    with (folder / L.CALIBRATION_HISTORY).open("a") as f:
+        f.write(f"fomc_bills,2026-11-06T07:00:00Z,{sha(CAL_FALSE)},false,re-run\n")
+    before = (folder / "ledger.csv").read_bytes()
+    assert run(folder) == 1
+    err = capsys.readouterr().err
+    assert L.gate_tags(err) == {"calibration-since-quote"}, err
+    assert "2026-11-06T07:00:00Z" in err and (folder / "ledger.csv").read_bytes() == before
+    # the committed-file judgement, with no admission time, is unchanged: the line at the quote
+    row = G.build_row(QUOTE, "3215008", "0.90", "fomc_bills", 0.99, 0.60, 1.00, "x", SETTLES, BASIS)
+    assert L.ledger_row_violations(row, QUOTE, read_csv(folder / L.CALIBRATION_HISTORY)) == []
+
+
+def test_a_call_is_refused_while_the_committed_calibration_is_not_on_record(folder, capsys):
+    # the committed file was rewritten by a route that did not record it: the printer reads R2 false from it
+    (folder / L.METHOD_CALIBRATION["fomc_bills"][0]).write_bytes(CAL_FALSE)
+    before = (folder / "ledger.csv").read_bytes()
+    assert run(folder) == 1
+    err = capsys.readouterr().err
+    assert L.gate_tags(err) == {"calibration-on-record"}, err
+    assert (folder / "ledger.csv").read_bytes() == before
+    (folder / L.METHOD_CALIBRATION["fomc_bills"][0]).unlink()
+    assert run(folder) == 1
+    assert "[gate:calibration-on-record]" in capsys.readouterr().err
+
+
+def test_a_stated_call_needs_no_calibration_file(folder):
+    for method in CAL:
+        (folder / L.METHOD_CALIBRATION[method][0]).unlink()
+    assert run(folder, method="stated", method_p=None, range_lo=None, range_hi=None) == 0
 
 
 def read_csv_text(text: str) -> list[dict]:

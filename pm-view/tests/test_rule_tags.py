@@ -92,14 +92,21 @@ CALL_HISTORY = ({"method": "fomc_bills", "in_force_utc": "2026-11-05T18:29:17Z",
                  "source": "s"},)
 
 
-def emitted_row(quote: dict | None = CALL_QUOTE, earlier: tuple = (), **kw) -> set[str]:
+def emitted_row(quote: dict | None = CALL_QUOTE, earlier: tuple = (), history: tuple = CALL_HISTORY,
+                admitted_utc: str | None = None, calibration_sha256: str | None = None, **kw) -> set[str]:
     row = dict(id="C-2026-11-06-fomc_bills-3215008", made_on="2026-11-06", market_id="3215008",
                condition_id=QUOTE["condition_id"], yes_token_id=QUOTE["yes_token_id"], proposition="x",
                settles_on=SETTLES, market_mid="0.45", desk_p="0.90", method="fomc_bills", method_p="0.990",
                range_lo="0.600", range_hi="1.000", basis=BASIS, quote_sha256="cd" * 32)
     row.update(kw)
-    return L.gate_tags(" ".join(L.ledger_row_violations(row, quote, CALL_HISTORY, earlier)))
+    return L.gate_tags(" ".join(L.ledger_row_violations(row, quote, history, earlier, admitted_utc,
+                                                        calibration_sha256)))
 
+
+# (2026-11-08 06:15Z) the admission-only checks on the calibration a call is judged under
+ADMITTED = "2026-11-06T08:00:00Z"
+LATER_LINE = {"method": "fomc_bills", "in_force_utc": "2026-11-06T07:00:00Z", "sha256": "99" * 32, "r2": "false",
+              "source": "s"}
 
 ROW_BREAKERS: dict[str, dict] = {
     "written-quote": dict(quote=None),
@@ -107,6 +114,9 @@ ROW_BREAKERS: dict[str, dict] = {
     "eligible-at-quote": dict(quote=dict(CALL_QUOTE, eligibility="spread above 0.10")),
     "rules-on-record": dict(quote=dict(CALL_QUOTE, description_sha256=None)),
     "one-per-day": dict(earlier=({"market_id": "3215008", "made_on": "2026-11-06"},)),
+    "calibration-on-record": dict(admitted_utc=ADMITTED, calibration_sha256="99" * 32),
+    "calibration-since-quote": dict(admitted_utc=ADMITTED, calibration_sha256="99" * 32,
+                                    history=CALL_HISTORY + (LATER_LINE,)),
 }
 
 
@@ -129,6 +139,8 @@ def test_every_tag_is_reachable_and_each_breaker_trips_its_own_rule():
         assert tag in tags, f"{tag}: the row built to break it did not trip it (got {sorted(tags)})"
         seen |= tags
     assert emitted_row() == set(), "the clean ledger row must pass the whole admission gate"
+    assert emitted_row(admitted_utc=ADMITTED, calibration_sha256="ab" * 32) == set(), \
+        "the clean ledger row under its committed, recorded calibration must pass at admission"
     assert emitted_row(desk_p="0.9") == {"probability"}, "a desk number not written with two decimals"
     for tag, kw in ROW_BREAKERS.items():
         tags = emitted_row(**kw)

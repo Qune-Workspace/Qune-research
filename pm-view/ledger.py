@@ -20,7 +20,12 @@ committed-file test: the row's own checks (a two-decimal desk number, the quote
 written with its book hash in the row, the mid copied, the market eligible, the
 rules' hash on record, one call per market and day) and then call_violations,
 with R2 taken from the method's line of data/calibration_history.csv in force at
-the quote's fetch, the judgement the committed-file test makes.  Every refusal
+the quote's fetch, the judgement the committed-file test makes.  At admission
+only (2026-11-08 06:15Z, predictions/POST_MORTEMS.md "A call admitted under a
+calibration already superseded"), the tool also holds the method's committed
+calibration file to its latest line of the history, and that line to the one in
+force at the quote: a calibration recorded after the quote refuses the call
+until it is re-quoted and re-read under it.  Every refusal
 carries a `[gate:<tag>]` from `pm_lib.GATE_TAGS`, the tag README.md rule 2 puts
 beside the rule.  A call made on a `--dry-run` quote has no manifest entry and is
 refused: re-quote without `--dry-run` first.  A refusal writes nothing.
@@ -39,11 +44,12 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
 import pm_lib as L
-from readings import find_quote
+from readings import calibration_sha256, find_quote
 from score import append_row, read_csv
 
 HERE = Path(__file__).resolve().parent
@@ -70,13 +76,15 @@ def build_row(quote: dict[str, Any] | None, market_id: str, desk_p: str, method:
     }
 
 
-def add(args: argparse.Namespace, manifest: Path, ledger: Path) -> int:
+def add(args: argparse.Namespace, manifest: Path, ledger: Path, now: datetime) -> int:
     entries = json.loads(manifest.read_text(encoding="utf-8")) if manifest.exists() else []
     quote = find_quote(entries, args.market_id, args.quote)
-    history = read_csv(manifest.parent.parent / L.CALIBRATION_HISTORY)
+    here = manifest.parent.parent
+    history = read_csv(here / L.CALIBRATION_HISTORY)
     row = build_row(quote, args.market_id, args.desk_p, args.method, args.method_p, args.range_lo, args.range_hi,
                     args.proposition, args.settles_on, args.basis)
-    v = L.ledger_row_violations(row, quote, history, read_csv(ledger))
+    v = L.ledger_row_violations(row, quote, history, read_csv(ledger), admitted_utc=now.strftime("%Y-%m-%dT%H:%M:%SZ"),
+                                calibration_sha256=calibration_sha256(args.method, here))
     if quote is None:
         v.append(f"(no manifest entry for market {args.market_id} fetched at {args.quote} in {manifest.name})")
     if v:
@@ -110,7 +118,7 @@ def main(argv: list[str] | None = None) -> int:
     args = ap.parse_args(argv)
     manifest = args.manifest if args.manifest is not None else HERE / "data" / "manifest.json"
     ledger = args.ledger if args.ledger is not None else HERE / "ledger.csv"
-    return add(args, manifest, ledger)
+    return add(args, manifest, ledger, datetime.now(UTC))
 
 
 if __name__ == "__main__":

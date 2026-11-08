@@ -103,6 +103,9 @@ GATE_TAGS = (
     "eligible-at-quote",   # the market was eligible at the quote
     "rules-on-record",     # the quote recorded the hash of the market's own resolution text
     "one-per-day",         # one call per market and day
+    # 2026-11-08 06:15Z: the calibration a call is admitted under, applied at admission only (admitted_utc given)
+    "calibration-on-record",    # the committed calibration file is its method's latest line of the history
+    "calibration-since-quote",  # no calibration of the method went into force between the quote and the call
 )
 GATE_TAG_RE = re.compile(r"\[gate:([a-z-]+)\]")
 
@@ -666,7 +669,8 @@ def call_id(made_on: str, method: str, market_id: str) -> str:
 
 
 def ledger_row_violations(call: dict[str, Any], quote: dict[str, Any] | None,
-                          history: Iterable[dict[str, Any]], earlier: Iterable[dict[str, Any]] = ()) -> list[str]:
+                          history: Iterable[dict[str, Any]], earlier: Iterable[dict[str, Any]] = (),
+                          admitted_utc: str | None = None, calibration_sha256: str | None = None) -> list[str]:
     """What stops a ledger row from being admitted; empty when it may be.  `call` is the
     row as written (strings, or the values ledger.py is about to write); `quote` the
     data/manifest.json entry it rests on (None: no written quote); `history` the lines of
@@ -676,7 +680,16 @@ def ledger_row_violations(call: dict[str, Any], quote: dict[str, Any] | None,
     The row's own checks come first: desk_p a two-decimal probability, the quote written
     for the row's market and ids with its book hash in the row, the mid copied from it,
     the market eligible at it, its rules' hash on record, one call per market and day;
-    then call_violations with the quote's day and fetch time."""
+    then call_violations with the quote's day and fetch time.
+
+    At admission (2026-11-08 06:15Z, predictions/POST_MORTEMS.md "A call admitted under a
+    calibration already superseded"), when `admitted_utc` is given, for a method with a
+    calibration: `calibration_sha256`, the SHA-256 of the method's committed calibration file
+    as read (None: no file), is the method's line in force at `admitted_utc`, and that line is
+    the one in force at the quote's fetch, so the call is judged under the calibration the
+    organisation holds when it writes the call and the readings record, judged at
+    `recorded_utc`, cannot disagree with it.  The committed ledger carries no admission time,
+    so the committed-file test leaves both out and judges under the line at the quote."""
     out: list[str] = []
     if any(e.get("market_id") == call.get("market_id") and e.get("made_on") == call.get("made_on") for e in earlier):
         out.append(gate("one-per-day", f"a call on market {call.get('market_id')} made on {call.get('made_on')} is "
@@ -710,7 +723,21 @@ def ledger_row_violations(call: dict[str, Any], quote: dict[str, Any] | None,
         return out
     fetched = str(quote.get("fetched_utc", ""))
     method, method_p, lo, hi = ledger_method_fields({k: ("" if v is None else str(v)) for k, v in call.items()})
-    r2 = history_r2(calibration_in_force(history, method or "", fetched))
+    hist = list(history)
+    at_quote = calibration_in_force(hist, method or "", fetched)
+    if admitted_utc is not None and method in METHOD_CALIBRATION:
+        latest = calibration_in_force(hist, method, admitted_utc)
+        if calibration_sha256 is None or latest is None or calibration_sha256 != latest.get("sha256"):
+            shown = "missing" if calibration_sha256 is None else f"SHA-256 {calibration_sha256[:12]}…"
+            out.append(gate("calibration-on-record", f"the committed calibration of {method} ({shown}) is not its "
+                                                     f"latest line in {CALIBRATION_HISTORY} at {admitted_utc}: the "
+                                                     "printer read R2 from a file the ledger does not judge under; "
+                                                     "put it on record (readings.py record-calibration) first"))
+        elif latest is not at_quote:
+            out.append(gate("calibration-since-quote", f"a calibration of {method} went into force at "
+                                                       f"{latest.get('in_force_utc')}, after the quote at {fetched} "
+                                                       f"(R2 {latest.get('r2')}): re-quote and re-read under it"))
+    r2 = history_r2(at_quote)
     out.extend(call_violations(desk_p, mid_row, str(call.get("basis", "")), str(call.get("settles_on", "")),
                                str(call.get("proposition", "")), method, method_p, lo, hi, r2,
                                made_on=str(call.get("made_on", "")), quote_fetched_utc=fetched))

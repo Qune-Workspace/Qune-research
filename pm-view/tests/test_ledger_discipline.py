@@ -30,6 +30,12 @@ every call from the first:
    same function to every committed row, and rules 1, 2, 3 and 5 above are
    checks of that function (one call per market and day among them), not
    assertions of this file's own.
+8. (2026-11-08 12:15Z, predictions/POST_MORTEMS.md "Five columns the gate never
+   read") Every column the tool copies from the quote or sets itself is held
+   by the gate: `due_on` the quote's scheduled end, `market_spread` and
+   `volume_usdc` the quote's, the id and venue by their rules.  Until then a
+   mechanical search found five of eleven such columns admitted at any value by
+   this file's gate; tests/test_ledger.py keeps the search.
 """
 import csv
 import json

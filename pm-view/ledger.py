@@ -53,7 +53,7 @@ from readings import calibration_sha256, find_quote
 from score import append_row, read_csv
 
 HERE = Path(__file__).resolve().parent
-VENUE = "polymarket"
+VENUE = L.VENUE  # the gate holds the row's venue to the same constant (2026-11-08 12:15Z)
 
 
 def num(v: float | None) -> str | None:

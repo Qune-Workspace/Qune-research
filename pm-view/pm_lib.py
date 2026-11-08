@@ -52,6 +52,7 @@ LEDGER_COLUMNS = (
     "method", "method_p", "range_lo", "range_hi",  # added 2026-11-06: the method gate on the committed row
     "basis", "quote_sha256",
 )
+VENUE = "polymarket"  # the one venue a row may name (tools/pm_data_terms.md); one constant for both tools (2026-11-08)
 MIN_SETTLES_ON_CHARS = 20  # the resolution rule restated: source and measure, not the title
 
 # The methods a call may rest on, and where each one's calibration gate (rule R2:
@@ -106,6 +107,11 @@ GATE_TAGS = (
     # 2026-11-08 06:15Z: the calibration a call is admitted under, applied at admission only (admitted_utc given)
     "calibration-on-record",    # the committed calibration file is its method's latest line of the history
     "calibration-since-quote",  # no calibration of the method went into force between the quote and the call
+    # 2026-11-08 12:15Z (predictions/POST_MORTEMS.md "Five columns the gate never read"): the rest of what the
+    # tool copies from the quote or sets itself, held by the gate so the committed-file test holds them too
+    "due-on-scheduled-end",     # due_on is the quote's scheduled end date (the day score.py treats the call as due)
+    "book-from-quote",          # market_spread and volume_usdc are the written quote's, copied not retyped
+    "id-rule",                  # the id is call_id(made_on, method, market_id) and the venue is VENUE
 )
 GATE_TAG_RE = re.compile(r"\[gate:([a-z-]+)\]")
 
@@ -689,7 +695,16 @@ def ledger_row_violations(call: dict[str, Any], quote: dict[str, Any] | None,
     the one in force at the quote's fetch, so the call is judged under the calibration the
     organisation holds when it writes the call and the readings record, judged at
     `recorded_utc`, cannot disagree with it.  The committed ledger carries no admission time,
-    so the committed-file test leaves both out and judges under the line at the quote."""
+    so the committed-file test leaves both out and judges under the line at the quote.
+
+    Every column the tool copies from the quote or sets itself is held to its source
+    (2026-11-08 12:15Z, predictions/POST_MORTEMS.md "Five columns the gate never read"): until
+    then a mechanical search over the eleven such columns found six held and five admitted at
+    any value (`id`, `venue`, `due_on`, `market_spread`, `volume_usdc`), so a hand-typed row with
+    a `due_on` a year late passed the committed-file test and would have kept a settled call off
+    score.py, which reads nothing but `due_on` to decide when a call is due.  Now `due_on` is the
+    quote's scheduled end, the spread and volume are the quote's, the id is call_id of the row's
+    own columns and the venue is VENUE; tests/test_ledger.py runs the search on every column."""
     out: list[str] = []
     if any(e.get("market_id") == call.get("market_id") and e.get("made_on") == call.get("made_on") for e in earlier):
         out.append(gate("one-per-day", f"a call on market {call.get('market_id')} made on {call.get('made_on')} is "
@@ -716,6 +731,20 @@ def ledger_row_violations(call: dict[str, Any], quote: dict[str, Any] | None,
     if not quote.get("description_sha256"):
         out.append(gate("rules-on-record", "the quote did not record the hash of the market's resolution text: "
                                            "re-quote, read the rules, then write the call"))
+    end = str(quote.get("end_date", ""))[:10]
+    if str(call.get("due_on", "")) != end:
+        out.append(gate("due-on-scheduled-end", f"due_on {call.get('due_on')} is not the quote's scheduled end "
+                                                f"{end or 'unknown'}: score.py treats the call as due on this date"))
+    for k in ("market_spread", "volume_usdc"):
+        v_row, v_q = as_float(call.get(k)), as_float(quote.get(k))
+        if v_row is None or v_q is None or abs(v_row - v_q) > 1e-9:
+            out.append(gate("book-from-quote", f"{k} {call.get(k)} is not the written quote's {quote.get(k)}: "
+                                               "copy it from the quote"))
+    want_id = call_id(str(call.get("made_on", "")), str(call.get("method", "")).strip(), str(call.get("market_id", "")))
+    if str(call.get("id", "")) != want_id:
+        out.append(gate("id-rule", f"id {call.get('id')} is not {want_id} (C-<made_on>-<method>-<market_id>)"))
+    if str(call.get("venue", "")) != VENUE:
+        out.append(gate("id-rule", f"venue {call.get('venue')!r} is not {VENUE!r}, the one venue the view quotes"))
     mid_row, mid_q = as_float(call.get("market_mid")), as_float(quote.get("market_mid"))
     if mid_row is None or mid_q is None or abs(mid_row - mid_q) > 1e-9:
         out.append(gate("mid-from-quote", f"market_mid {call.get('market_mid')} is not the quote's {mid_q}: "

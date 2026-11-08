@@ -87,16 +87,17 @@ BREAKERS: dict[str, dict] = {
 # (2026-11-07 18:15Z) the row's own checks, applied at admission by ledger.py add: driven through
 # pm_lib.ledger_row_violations on a clean row and its written quote
 CALL_QUOTE = dict(QUOTE, market_id="3215008", book_sha256="cd" * 32, description_sha256="de" * 32,
-                  market_mid=0.45, end_date="2026-12-09T23:59:00Z")
+                  market_mid=0.45, market_spread=0.01, volume_usdc=250000.0, end_date="2026-12-09T23:59:00Z")
 CALL_HISTORY = ({"method": "fomc_bills", "in_force_utc": "2026-11-05T18:29:17Z", "sha256": "ab" * 32, "r2": "true",
                  "source": "s"},)
 
 
 def emitted_row(quote: dict | None = CALL_QUOTE, earlier: tuple = (), history: tuple = CALL_HISTORY,
                 admitted_utc: str | None = None, calibration_sha256: str | None = None, **kw) -> set[str]:
-    row = dict(id="C-2026-11-06-fomc_bills-3215008", made_on="2026-11-06", market_id="3215008",
+    row = dict(id="C-2026-11-06-fomc_bills-3215008", made_on="2026-11-06", venue="polymarket", market_id="3215008",
                condition_id=QUOTE["condition_id"], yes_token_id=QUOTE["yes_token_id"], proposition="x",
-               settles_on=SETTLES, market_mid="0.45", desk_p="0.90", method="fomc_bills", method_p="0.990",
+               settles_on=SETTLES, due_on="2026-12-09", market_mid="0.45", market_spread="0.01",
+               volume_usdc="250000.0", desk_p="0.90", method="fomc_bills", method_p="0.990",
                range_lo="0.600", range_hi="1.000", basis=BASIS, quote_sha256="cd" * 32)
     row.update(kw)
     return L.gate_tags(" ".join(L.ledger_row_violations(row, quote, history, earlier, admitted_utc,
@@ -117,6 +118,10 @@ ROW_BREAKERS: dict[str, dict] = {
     "calibration-on-record": dict(admitted_utc=ADMITTED, calibration_sha256="99" * 32),
     "calibration-since-quote": dict(admitted_utc=ADMITTED, calibration_sha256="99" * 32,
                                     history=CALL_HISTORY + (LATER_LINE,)),
+    # 2026-11-08 12:15Z, "Five columns the gate never read": the columns the search found unheld
+    "due-on-scheduled-end": dict(due_on="2027-12-09"),
+    "book-from-quote": dict(volume_usdc="9999999.0"),
+    "id-rule": dict(venue="kalshi"),
 }
 
 

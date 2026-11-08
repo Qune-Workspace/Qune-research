@@ -58,7 +58,7 @@ import pm_lib as L
 from score import append_row, read_csv
 
 HERE = Path(__file__).resolve().parent
-VENUE = "polymarket"
+VENUE = L.VENUE
 
 
 def calibration_r2(method: str, here: Path = HERE) -> bool | None:

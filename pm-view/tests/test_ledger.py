@@ -148,6 +148,32 @@ def test_the_row_gate_refuses_a_retyped_mid_and_foreign_ids():
                                                                                QUOTE, hist)))
 
 
+# 2026-11-08 12:15Z, predictions/POST_MORTEMS.md "Five columns the gate never read": the mechanical search that
+# found them, kept.  Every column of a ledger row comes either from the desk's arguments (FROM_ARGS, held by
+# call_violations' own rules) or from the written quote and the tool itself; each of the latter, altered on a
+# clean row, must be refused by the gate, or a hand-typed row could carry it at any value past the committed-file
+# test.  A new column must be classified here before the test passes.
+FROM_ARGS = {"proposition", "settles_on", "desk_p", "method", "method_p", "range_lo", "range_hi", "basis"}
+ALTERED = {"id": "C-2026-11-06-stated-3215008", "made_on": "2026-11-07", "venue": "kalshi", "market_id": "3215007",
+           "condition_id": "0xdead", "yes_token_id": "999", "due_on": "2027-12-09", "market_mid": "0.46",
+           "market_spread": "0.09", "volume_usdc": "9999999.0", "quote_sha256": "ee" * 32}
+
+
+def test_every_column_the_tool_copies_or_sets_is_held_by_the_gate():
+    assert FROM_ARGS | set(ALTERED) == set(L.LEDGER_COLUMNS) and not FROM_ARGS & set(ALTERED), \
+        "classify every ledger column: from the desk's arguments, or copied from the quote / set by the tool"
+    row = G.build_row(QUOTE, "3215008", "0.90", "fomc_bills", 0.99, 0.60, 1.00, "x", SETTLES, BASIS)
+    hist = read_csv_text(HISTORY)
+    assert L.ledger_row_violations(row, QUOTE, hist) == []
+    unheld = [col for col, bad in ALTERED.items() if not L.ledger_row_violations(dict(row, **{col: bad}), QUOTE, hist)]
+    assert unheld == [], f"columns a hand-typed row could carry at any value: {unheld}"
+    # the three the search found on 2026-11-08, each refused by its own tag and, through the file gate, by row id
+    for col, bad, tag in (("due_on", "2027-12-09", "due-on-scheduled-end"), ("market_spread", "0.09", "book-from-quote"),
+                          ("volume_usdc", "1.0", "book-from-quote"), ("id", "C-x", "id-rule"), ("venue", "", "id-rule")):
+        v = L.ledger_file_violations([dict(row, **{col: bad})], [QUOTE], hist)
+        assert len(v) == 1 and v[0].startswith(f"{row['id'] if col != 'id' else bad}: [gate:{tag}]"), (col, v)
+
+
 def test_r2_is_the_line_in_force_at_the_quote_not_the_latest():
     # a later line flipping the bills' R2 to false does not refuse a call on a quote fetched before it
     hist = read_csv_text(HISTORY + f"fomc_bills,2026-11-06T12:00:00Z,{'99' * 32},false,test\n")

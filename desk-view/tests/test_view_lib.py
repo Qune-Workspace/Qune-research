@@ -87,7 +87,7 @@ def test_change_table_uses_last_valid_before_each_lookback():
 # --- predictions/score.py ------------------------------------------------------------------
 
 def row(**kw) -> pd.Series:
-    base = {"id": "T", "made_on": "2026-10-23", "series": "X", "statement": "s", "test": "between_on_due",
+    base = {"id": "T", "made_on": "2026-10-23", "series": "DGS10", "statement": "s", "test": "between_on_due",
             "threshold_low": "4.6", "threshold_high": "5.3", "due_on": "2026-12-31", "confidence": "0.65", "basis": "b"}
     base.update(kw)
     return pd.Series(base)

@@ -27,6 +27,17 @@ Test kinds (the ``test`` column):
     above_on_due             value on due date >  threshold_low
     within_every_day_until_due   every valid observation from made_on (exclusive)
                              to due_on (inclusive) lies in [threshold_low, threshold_high]
+
+* A row's shape is held against its test kind before anything is scored (added
+  2026-11-09, predictions/POST_MORTEMS.md "A band with one side scored as a result"):
+  a two-sided test carries both thresholds with low < high, a one-sided test carries
+  no threshold_high, the series is one the baseline can price (``SCORABLE_SERIES``,
+  held equal to ``baseline.SERIES_SPEC`` by a test), statement and basis are not
+  empty, and the confidence is a probability in (0, 1) written with two decimals.
+  ``validate_ledger`` refuses the row naming its id and column; ``evaluate`` refuses
+  a band it cannot read instead of scoring it.  Before this date an empty
+  threshold_high on ``between_on_due`` scored a silent miss (``low <= v <= nan`` is
+  False) and on ``within_every_day_until_due`` a silent hit (nothing exceeds nan).
 """
 from __future__ import annotations
 
@@ -52,6 +63,11 @@ LEDGER_COLUMNS = ["id", "made_on", "series", "statement", "test", "threshold_low
                   "due_on", "confidence", "basis"]
 OUTCOME_COLUMNS = ["id", "scored_on", "observed_on", "observed_value", "result", "note", "raw_sha256"]
 TESTS = {"eq_on_due", "between_on_due", "below_on_due", "above_on_due", "within_every_day_until_due"}
+TWO_SIDED = {"between_on_due", "within_every_day_until_due"}   # need threshold_low < threshold_high
+ONE_SIDED = TESTS - TWO_SIDED                                   # threshold_high must be empty
+# Series a call may name: those the baseline can price (baseline.SERIES_SPEC; a test holds the
+# two sets equal, baseline.py imports this module so the set cannot be read from there).
+SCORABLE_SERIES = frozenset({"DGS10", "DGS2", "DGS30", "T10Y2Y", "T10YIE", "DFEDTARU", "SBCORR63"})
 
 
 class NotYetPublished(ValueError):
@@ -64,23 +80,79 @@ def read_ledger(path: Path = LEDGER) -> pd.DataFrame:
     return ledger
 
 
+def _day(text: str, call_id: str, col: str) -> pd.Timestamp:
+    try:
+        stamp = pd.Timestamp(pd.to_datetime(text, format="%Y-%m-%d"))
+    except (ValueError, TypeError) as exc:
+        raise ValueError(f"{call_id}: {col} {text!r} is not a date YYYY-MM-DD") from exc
+    if pd.isna(stamp):  # pandas parses '' to NaT without raising
+        raise ValueError(f"{call_id}: {col} {text!r} is not a date YYYY-MM-DD")
+    return stamp
+
+
+def _number(text: str, call_id: str, col: str) -> float:
+    try:
+        return float(text)
+    except (ValueError, TypeError) as exc:
+        raise ValueError(f"{call_id}: {col} {text!r} is not a number") from exc
+
+
+def row_shape_violations(row: dict) -> list[str]:
+    """Every rule one ledger row must meet on its own, each sentence naming the column.
+    The reader (``validate_ledger``) and the committed-file test apply the same list."""
+    call_id = str(row.get("id", "")) or "<no id>"
+    out: list[str] = []
+    if not str(row.get("id", "")).strip():
+        out.append(f"{call_id}: id is empty")
+    for col in ("statement", "basis"):
+        if not str(row.get(col, "")).strip():
+            out.append(f"{call_id}: {col} is empty")
+    if row.get("series") not in SCORABLE_SERIES:
+        out.append(f"{call_id}: series {row.get('series')!r} is not one the baseline can price "
+                   f"({', '.join(sorted(SCORABLE_SERIES))})")
+    kind = row.get("test")
+    if kind not in TESTS:
+        out.append(f"{call_id}: test {kind!r} is not a known kind ({', '.join(sorted(TESTS))})")
+    try:
+        made, due = _day(row.get("made_on", ""), call_id, "made_on"), _day(row.get("due_on", ""), call_id, "due_on")
+        if due <= made:
+            out.append(f"{call_id}: due_on {row['due_on']} is not after made_on {row['made_on']}")
+    except ValueError as exc:
+        out.append(str(exc))
+    try:
+        low = _number(row.get("threshold_low", ""), call_id, "threshold_low")
+        high_text = str(row.get("threshold_high", "")).strip()
+        if kind in TWO_SIDED:
+            if high_text == "":
+                out.append(f"{call_id}: threshold_high is empty on the two-sided test {kind}")
+            elif not low < _number(high_text, call_id, "threshold_high"):
+                out.append(f"{call_id}: threshold_low {low} is not below threshold_high {high_text}")
+        elif kind in ONE_SIDED and high_text != "":
+            out.append(f"{call_id}: threshold_high {high_text!r} is set on the one-sided test {kind}; leave it empty")
+    except ValueError as exc:
+        out.append(str(exc))
+    conf = str(row.get("confidence", ""))
+    try:
+        p = _number(conf, call_id, "confidence")
+        if not 0.0 < p < 1.0:
+            out.append(f"{call_id}: confidence {conf} is not a probability in (0, 1)")
+        elif conf != f"{p:.2f}":
+            out.append(f"{call_id}: confidence {conf} is not written with two decimals")
+    except ValueError as exc:
+        out.append(str(exc))
+    return out
+
+
 def validate_ledger(ledger: pd.DataFrame) -> None:
     missing = [c for c in LEDGER_COLUMNS if c not in ledger.columns]
     if missing:
         raise ValueError(f"ledger lacks columns {missing}")
-    if ledger["id"].duplicated().any():
-        raise ValueError("ledger ids must be unique")
-    bad = ledger[~ledger["test"].isin(TESTS)]
-    if not bad.empty:
-        raise ValueError(f"unknown test kinds: {sorted(bad['test'])}")
-    made = pd.to_datetime(ledger["made_on"], format="%Y-%m-%d")
-    due = pd.to_datetime(ledger["due_on"], format="%Y-%m-%d")
-    if (due <= made).any():
-        raise ValueError("every due_on must be after made_on")
-    for col in ("threshold_low", "confidence"):
-        pd.to_numeric(ledger[col], errors="raise")
-    high = ledger.loc[ledger["threshold_high"] != "", "threshold_high"]
-    pd.to_numeric(high, errors="raise")
+    dupes = sorted(set(ledger.loc[ledger["id"].duplicated(), "id"]))
+    if dupes:
+        raise ValueError(f"ledger ids must be unique; repeated id {dupes}")
+    problems = [p for _, row in ledger.iterrows() for p in row_shape_violations(row.to_dict())]
+    if problems:
+        raise ValueError("ledger rows refused: " + "; ".join(problems))
 
 
 def evaluate(row: pd.Series, series: pd.Series) -> dict:
@@ -89,7 +161,19 @@ def evaluate(row: pd.Series, series: pd.Series) -> dict:
     due = pd.Timestamp(row["due_on"])
     made = pd.Timestamp(row["made_on"])
     low = float(row["threshold_low"])
-    high = float(row["threshold_high"]) if row["threshold_high"] != "" else float("nan")
+    kind = row["test"]
+    if kind not in TESTS:
+        raise ValueError(f"{row['id']}: unknown test {kind}")
+    if kind in TWO_SIDED:
+        if str(row["threshold_high"]).strip() == "":
+            raise ValueError(f"{row['id']}: {kind} needs threshold_high; an empty band is not scored")
+        high = float(row["threshold_high"])
+        if not low < high:
+            raise ValueError(f"{row['id']}: threshold_low {low} is not below threshold_high {high}; not scored")
+    else:
+        if str(row["threshold_high"]).strip() != "":
+            raise ValueError(f"{row['id']}: {kind} takes no threshold_high ({row['threshold_high']!r}); not scored")
+        high = float("nan")
     if series.empty or series.index.max() < due:
         last = "no rows" if series.empty else f"last row {series.index.max().date()}"
         raise NotYetPublished(f"{row['id']}: series does not reach the due date {due.date()} yet ({last})")
@@ -117,10 +201,8 @@ def evaluate(row: pd.Series, series: pd.Series) -> dict:
         hit = low <= value <= high
     elif kind == "below_on_due":
         hit = value < low
-    elif kind == "above_on_due":
+    else:  # above_on_due; the kind was held to TESTS above
         hit = value > low
-    else:
-        raise ValueError(f"unknown test {kind}")
     note = "value on the due date" if date == due else f"last observation before the due date ({date.date()})"
     return {"observed_on": str(date.date()), "observed_value": value, "result": "hit" if hit else "miss", "note": note}
 

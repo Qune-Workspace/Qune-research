@@ -12,7 +12,9 @@ Rules checked:
    baseline probability, the basis names the baseline and what the market is missing
    (the word 'baseline' must appear in the basis).
 3. Confidence is a probability in (0, 1), written with two decimals, so that it can be
-   Brier-scored.
+   Brier-scored.  Since 2026-11-09 this is one sentence of ``score.row_shape_violations``,
+   the gate that holds every column of a row against its test kind (test_ledger_shape.py);
+   the test below applies that gate to the committed file instead of a copy of the rule.
 """
 import csv
 import sys
@@ -23,6 +25,8 @@ import pytest
 HERE = Path(__file__).resolve().parent
 PRED = HERE.parent.parent / "predictions"
 sys.path.insert(0, str(PRED))
+
+import score  # noqa: E402
 
 RULES_FROM = "2026-10-30"
 DEPARTURE = 0.20
@@ -64,11 +68,9 @@ def test_a_departure_from_the_baseline_names_the_baseline_in_the_basis():
                 f"{call['id']}: confidence is {gap:.2f} from the baseline; the basis must say what the market is missing")
 
 
-def test_confidence_is_a_two_decimal_probability():
+def test_every_committed_row_meets_the_shape_gate_confidence_included():
     for call in read("ledger.csv"):
-        p = float(call["confidence"])
-        assert 0.0 < p < 1.0, f"{call['id']}: confidence {call['confidence']} is not a probability"
-        assert call["confidence"] == f"{p:.2f}", f"{call['id']}: write the confidence with two decimals"
+        assert score.row_shape_violations(call) == [], call["id"]
 
 
 def test_exempt_calls_are_exactly_the_five_of_2026_10_23():

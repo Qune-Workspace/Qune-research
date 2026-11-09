@@ -207,7 +207,11 @@ READING_TAGS = (
     "one-per-day",              # one reading per method, market and view day
     "calibration-on-record",    # the method's calibration in force at recorded_utc is a line of data/calibration_history.csv
     "gate-column",              # the gate column is the call gate's tags under that calibration, not today's
+    # 2026-11-09 00:15Z, predictions/POST_MORTEMS.md "A readings gate that never saw the row": the row's own columns
+    "id-rule",                  # the id is R-<made_on>-<method>-<market_id> and the venue is VENUE
+    "recorded-after-quote",     # recorded_utc is a UTC stamp YYYY-MM-DDTHH:MM:SSZ not before the quote's fetch
 )
+RECORDED_UTC_FORMAT = "%Y-%m-%dT%H:%M:%SZ"  # the one format of recorded_utc and in_force_utc, compared as text
 
 # The calibration history (2026-11-07 06:15Z, predictions/POST_MORTEMS.md "A gate
 # column judged against today's calibration").  A reading row's `gate` column is
@@ -394,6 +398,83 @@ def reading_violations(method: str, method_p: float | None, range_lo: float | No
     if end[:10] != due_on:
         out.append(reading_gate("due-on-scheduled-end",
                                 f"due_on {due_on} is not the quote's scheduled end {end[:10]}"))
+    return out
+
+
+def reading_row_violations(row: dict[str, Any], quote: dict[str, Any] | None, history: Iterable[dict[str, Any]],
+                           existing_ids: Iterable[str] = (), calibration_sha256: str | None = None) -> list[str]:
+    """What stops a readings.csv row, as written, from being admitted; empty when it may be.
+    `row` is the row (strings, or the values readings.py is about to write); `quote` the
+    data/manifest.json entry its `quote_sha256` names (None: no written quote); `history`
+    the lines of data/calibration_history.csv; `existing_ids` the ids already on the record;
+    `calibration_sha256` the committed calibration file's hash as read, at admission only.
+
+    The row's own columns first (2026-11-09 00:15Z, predictions/POST_MORTEMS.md "A readings
+    gate that never saw the row"): until this date reading_violations judged the row's numbers
+    and never saw the row, so of the twelve columns readings.py add copies from the quote or
+    sets itself the gate held five, tests/test_readings.py held five more in assertions of its
+    own (never at admission, no tag) and nothing held `venue` or `recorded_utc`, the stamp that
+    names the calibration a row is judged under.  Now: the quote's record hash, market,
+    condition and YES token ids and fetch time are the written quote's (`written-quote`); the
+    id is reading_id of the row's own columns and the venue is VENUE (`id-rule`);
+    `recorded_utc` is a UTC stamp in RECORDED_UTC_FORMAT not before the quote's fetch
+    (`recorded-after-quote`), because calibration_in_force compares it with `in_force_utc` as
+    text, which is right only while both carry one format.  Then reading_violations on the
+    numbers, under the calibration line in force at the row's `recorded_utc`."""
+    out: list[str] = []
+    method, made_on, market_id = str(row.get("method", "")), str(row.get("made_on", "")), str(row.get("market_id", ""))
+    want_id = reading_id(made_on, method, market_id)
+    if str(row.get("id", "")) != want_id:
+        out.append(reading_gate("id-rule", f"id {row.get('id')} is not {want_id} (R-<made_on>-<method>-<market_id>)"))
+    if str(row.get("venue", "")) != VENUE:
+        out.append(reading_gate("id-rule", f"venue {row.get('venue')!r} is not {VENUE!r}, the one venue the view quotes"))
+    recorded = str(row.get("recorded_utc", ""))
+    try:
+        datetime.strptime(recorded, RECORDED_UTC_FORMAT)
+        stamp_ok = True
+    except ValueError:
+        stamp_ok = False
+        out.append(reading_gate("recorded-after-quote", f"recorded_utc {recorded!r} is not a UTC stamp "
+                                "YYYY-MM-DDTHH:MM:SSZ: the row is judged under the calibration in force at this time, "
+                                "compared as text with data/calibration_history.csv"))
+    if quote is not None:
+        if str(quote.get("gamma_sha256", "")) != str(row.get("quote_sha256", "")):
+            out.append(reading_gate("written-quote", "quote_sha256 is not the record hash (gamma_sha256) of the written "
+                                    "quote: copy it from the quote"))
+        for k in ("market_id", "condition_id", "yes_token_id"):
+            if str(quote.get(k, "")) != str(row.get(k, "")):
+                out.append(reading_gate("written-quote", f"{k} differs from the written quote's: copy it from the quote"))
+        fetched = str(quote.get("fetched_utc", ""))
+        if str(row.get("quote_fetched_utc", "")) != fetched:
+            out.append(reading_gate("written-quote", f"quote_fetched_utc {row.get('quote_fetched_utc')} is not the "
+                                    f"written quote's fetch time {fetched}: copy it from the quote"))
+        if stamp_ok and recorded < fetched:
+            out.append(reading_gate("recorded-after-quote", f"recorded_utc {recorded} is before the quote's fetch at "
+                                    f"{fetched}: a reading is recorded after its quote"))
+    clim_raw = row.get("climatology_p")
+    climatology_p = None if clim_raw in (None, "") else as_float(clim_raw)
+    calibration = calibration_in_force(history, method, recorded) if stamp_ok else None
+    out.extend(reading_violations(method, as_float(row.get("method_p")), as_float(row.get("range_lo")),
+                                  as_float(row.get("range_hi")), as_float(row.get("market_mid")), climatology_p, quote,
+                                  made_on, str(row.get("due_on", "")), market_id=market_id, existing_ids=existing_ids,
+                                  gate_col=str(row.get("gate", "")), calibration=calibration,
+                                  calibration_sha256=calibration_sha256))
+    return out
+
+
+def reading_file_violations(rows: list[dict[str, Any]], manifest: Iterable[dict[str, Any]],
+                            history: Iterable[dict[str, Any]]) -> list[str]:
+    """reading_row_violations over a whole readings record, row by row in file order (each row
+    judged with the ids above it), each refusal prefixed with the row's id; the quote is found
+    by the row's record hash (gamma_sha256)."""
+    quotes = {e["gamma_sha256"]: e for e in manifest if e.get("gamma_sha256")}
+    hist = list(history)
+    ids: list[str] = []
+    out: list[str] = []
+    for r in rows:
+        for v in reading_row_violations(r, quotes.get(str(r.get("quote_sha256", ""))), hist, ids):
+            out.append(f"{r.get('id')}: {v}")
+        ids.append(str(r.get("id", "")))
     return out
 
 

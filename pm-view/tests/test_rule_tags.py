@@ -20,7 +20,9 @@ added in prose without naming its check fails here, on the day it is written.
 Extended 2026-11-07 00:15Z to the folder's second admitted action, a row to
 readings.csv: `[reading:<tag>]` tags in README.md rule 5, `pm_lib.READING_TAGS`
 and the tags `pm_lib.reading_violations` emits, held equal the same way; a
-`gate:` tag belongs in rule 2 only and a `reading:` tag in rule 5 only.
+`gate:` tag belongs in rule 2 only and a `reading:` tag in rule 5 only.  Since
+2026-11-09 00:15Z the row gate `pm_lib.reading_row_violations` (the row as
+written, every column held to its source) is driven the same way as the ledger's.
 """
 import re
 from collections.abc import Callable
@@ -207,6 +209,29 @@ READING_BREAKERS: dict[str, dict] = {
 }
 
 
+# (2026-11-09 00:15Z, "A readings gate that never saw the row") the row's own checks, applied at admission by
+# readings.py add and on the committed file by tests/test_readings.py: driven through pm_lib.reading_row_violations
+READING_HISTORY = (CALIBRATION_LINE,)
+
+
+def emitted_reading_row(quote: dict | None = QUOTE, existing_ids: tuple = (), history: tuple = READING_HISTORY,
+                        calibration_sha256: str | None = None, **kw) -> set[str]:
+    row = dict(id="R-2026-11-06-btc_touch-6507380", made_on="2026-11-06", recorded_utc="2026-11-06T18:30:00Z",
+               venue="polymarket", market_id="6507380", condition_id=QUOTE["condition_id"],
+               yes_token_id=QUOTE["yes_token_id"], proposition="p", method="btc_touch", method_p="0.876",
+               range_lo="0.876", range_hi="0.886", market_mid="0.925", climatology_p="0.690", due_on="2026-12-01",
+               gate="calibrated;method-departure;touch-below", quote_fetched_utc=QUOTE["fetched_utc"],
+               quote_sha256=QUOTE["gamma_sha256"], source="s")
+    row.update(kw)
+    return L.reading_tags(" ".join(L.reading_row_violations(row, quote, history, existing_ids, calibration_sha256)))
+
+
+READING_ROW_BREAKERS: dict[str, dict] = {
+    "id-rule": dict(venue="kalshi"),
+    "recorded-after-quote": dict(recorded_utc="2026-11-06T00:00:00Z"),
+}
+
+
 def test_rule_5_prose_the_declaration_and_the_source_name_the_same_reading_rules():
     prose = L.reading_tags(README)
     declared = set(L.READING_TAGS)
@@ -225,8 +250,20 @@ def test_every_reading_tag_is_reachable_and_each_breaker_trips_its_own_rule():
         tags = emitted_reading(**kw)
         assert tag in tags, f"{tag}: the row built to break it did not trip it (got {sorted(tags)})"
         seen |= tags
+    assert emitted_reading_row() == set(), "the clean reading row must pass the whole row gate"
+    assert emitted_reading_row(calibration_sha256="f2" * 32) == set(), \
+        "the clean reading row under its committed, recorded calibration must pass at admission"
+    for tag, kw in READING_ROW_BREAKERS.items():
+        tags = emitted_reading_row(**kw)
+        assert tag in tags, f"{tag}: the reading row built to break it did not trip it (got {sorted(tags)})"
+        seen |= tags
+    # the row gate's own written-quote checks (ids, hash, fetch time copied from the quote), 2026-11-09
+    for kw in (dict(condition_id="0xdead"), dict(quote_sha256="ee" * 32), dict(quote_fetched_utc="2026-11-06T06:16:39Z")):
+        assert emitted_reading_row(**kw) == {"written-quote"}, kw
+    assert emitted_reading_row(recorded_utc="2026-11-06 18:30:00") >= {"recorded-after-quote"}, "a stamp in another format"
     assert seen == set(L.READING_TAGS), f"never emitted: {sorted(set(L.READING_TAGS) - seen)}"
-    assert set(READING_BREAKERS) == set(L.READING_TAGS), "one breaker per declared reading tag"
+    assert set(READING_BREAKERS) | set(READING_ROW_BREAKERS) == set(L.READING_TAGS), "one breaker per declared reading tag"
+    assert not set(READING_BREAKERS) & set(READING_ROW_BREAKERS), "one breaker per declared reading tag"
 
 
 def test_every_bold_rule_in_rule_5_carries_a_reading_tag():

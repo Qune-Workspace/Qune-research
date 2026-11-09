@@ -13,11 +13,14 @@ figures in SKILL.md as information, never as a call or a position.
 The row is built from the manifest entry, not retyped: the market's condition
 id, YES token, mid, scheduled end and quote hash come from `data/manifest.json`
 by market id and fetch time; the method's four numbers come from the printer's
-candidate line (barrier.py or fomc_calibrate.py --live).  `pm_lib.reading_violations`
-is the gate, applied here where the row is admitted and again by
-tests/test_readings.py on the committed file; every refusal it gives carries a
-`[reading:<tag>]` from `pm_lib.READING_TAGS`, the same tag README.md rule 5 puts
-beside the rule (2026-11-07 00:15Z; tests/test_rule_tags.py holds the two equal).
+candidate line (barrier.py or fomc_calibrate.py --live).  `pm_lib.reading_row_violations`
+is the gate on the row as written (every column the tool fills held to its source,
+then `pm_lib.reading_violations` on the numbers; 2026-11-09 00:15Z,
+predictions/POST_MORTEMS.md "A readings gate that never saw the row"), applied here
+where the row is admitted and again by tests/test_readings.py on the committed file;
+every refusal it gives carries a `[reading:<tag>]` from `pm_lib.READING_TAGS`, the
+same tag README.md rule 5 puts beside the rule (2026-11-07 00:15Z;
+tests/test_rule_tags.py holds the two equal).
 A reading made on a `--dry-run` quote has no hash and is refused: re-quote
 without `--dry-run` first.  The `gate` column records the call gate's refusals
 for the same numbers (or `open`), so the record also shows why each reading was
@@ -107,28 +110,31 @@ reading_id = L.reading_id  # the id rule lives with the gate that refuses a dupl
 
 def build_row(quote: dict[str, Any] | None, market_id: str, method: str, method_p: float, range_lo: float,
               range_hi: float, climatology_p: float | None, proposition: str, source: str,
-              calibration: dict[str, Any] | None, calibration_sha256: str | None,
+              history: Iterable[dict[str, Any]], calibration_sha256: str | None,
               now: datetime, existing_ids: Iterable[str] = ()) -> tuple[dict[str, Any], list[str]]:
-    """The readings.csv row and the gate's refusals (empty when admitted).  `calibration`
-    is the method's calibration_history line in force at `now`; `calibration_sha256` the
-    committed calibration file's hash as read; the gate column is computed under the line."""
+    """The readings.csv row and the gate's refusals (empty when admitted).  `history` is
+    data/calibration_history.csv as read; the gate column is computed under the method's line
+    in force at `now`; `calibration_sha256` the committed calibration file's hash as read.
+    The row is judged as written, every column, by pm_lib.reading_row_violations, the same
+    function tests/test_readings.py applies to the committed file (2026-11-09 00:15Z)."""
     q = quote or {}
+    hist = list(history)
+    recorded = now.strftime(L.RECORDED_UTC_FORMAT)
     made_on = str(q.get("fetched_utc", ""))[:10]
     due_on = str(q.get("end_date", ""))[:10]
     market_mid = L.as_float(q.get("market_mid"))
+    calibration = L.calibration_in_force(hist, method, recorded)
     gate_col = L.gate_column(method, method_p, range_lo, range_hi, market_mid, L.history_r2(calibration))
-    v = L.reading_violations(method, method_p, range_lo, range_hi, market_mid, climatology_p, quote, made_on, due_on,
-                             market_id=market_id, existing_ids=existing_ids, gate_col=gate_col,
-                             calibration=calibration, calibration_sha256=calibration_sha256)
     row: dict[str, Any] = {
         "id": reading_id(made_on, method, market_id), "made_on": made_on,
-        "recorded_utc": now.strftime("%Y-%m-%dT%H:%M:%SZ"), "venue": VENUE, "market_id": market_id,
+        "recorded_utc": recorded, "venue": VENUE, "market_id": market_id,
         "condition_id": q.get("condition_id"), "yes_token_id": q.get("yes_token_id"), "proposition": proposition,
         "method": method, "method_p": f"{method_p:.3f}", "range_lo": f"{range_lo:.3f}", "range_hi": f"{range_hi:.3f}",
         "market_mid": q.get("market_mid"), "climatology_p": None if climatology_p is None else f"{climatology_p:.3f}",
         "due_on": due_on, "gate": gate_col,
         "quote_fetched_utc": q.get("fetched_utc"), "quote_sha256": q.get("gamma_sha256"), "source": source,
     }
+    v = L.reading_row_violations(row, quote, hist, existing_ids, calibration_sha256)
     return row, v
 
 
@@ -136,10 +142,8 @@ def add(args: argparse.Namespace, manifest: Path, readings: Path, now: datetime)
     entries = json.loads(manifest.read_text(encoding="utf-8")) if manifest.exists() else []
     quote = find_quote(entries, args.market_id, args.quote)
     here = manifest.parent.parent
-    in_force = L.calibration_in_force(read_csv(here / L.CALIBRATION_HISTORY), args.method,
-                                      now.strftime("%Y-%m-%dT%H:%M:%SZ"))
     row, v = build_row(quote, args.market_id, args.method, args.method_p, args.range_lo, args.range_hi,
-                       args.climatology_p, args.proposition, args.source, in_force,
+                       args.climatology_p, args.proposition, args.source, read_csv(here / L.CALIBRATION_HISTORY),
                        calibration_sha256(args.method, here), now,
                        existing_ids=[r["id"] for r in read_csv(readings)])
     if quote is None:

@@ -306,26 +306,55 @@ def test_committed_readings_columns_are_the_declared_ones():
 
 
 def test_every_committed_reading_passes_the_gate_on_a_written_eligible_quote_of_its_day():
+    # 2026-11-09 00:15Z (predictions/POST_MORTEMS.md "A readings gate that never saw the row"): the one copy of
+    # the row gate, pm_lib.reading_row_violations, judges every committed row as written (ids, venue, hash,
+    # fetch time and recorded_utc held to the quote; the gate column under the calibration in force when the
+    # row was recorded, never today's; the ids above each row for one-per-day), in place of this test's own
+    # assertions, which held five columns outside the gate and its tags and nothing at admission.
     entries = json.loads((HERE / "data" / "manifest.json").read_text(encoding="utf-8"))
-    by_hash = {e["gamma_sha256"]: e for e in entries if e.get("gamma_sha256")}
-    earlier: list[str] = []  # the ids above this row: the gate's one-per-day rule on the committed order
-    hist = read(L.CALIBRATION_HISTORY)
-    for r in read("readings.csv"):
-        q = by_hash.get(r["quote_sha256"])
-        assert q is not None, f"{r['id']}: quote_sha256 is not a written quote's gamma_sha256"
-        assert q["market_id"] == r["market_id"] and q["yes_token_id"] == r["yes_token_id"]
-        assert q["condition_id"] == r["condition_id"] and q["fetched_utc"] == r["quote_fetched_utc"]
-        clim = L.as_float(r["climatology_p"]) if r["climatology_p"] else None
-        # the gate column under the calibration in force when the row was recorded, never today's (2026-11-07)
-        v = L.reading_violations(r["method"], float(r["method_p"]), float(r["range_lo"]), float(r["range_hi"]),
-                                 float(r["market_mid"]), clim, q, r["made_on"], r["due_on"],
-                                 market_id=r["market_id"], existing_ids=earlier, gate_col=r["gate"],
-                                 calibration=L.calibration_in_force(hist, r["method"], r["recorded_utc"]))
-        assert v == [], f"{r['id']}: {'; '.join(v)}"
-        assert r["id"] == L.reading_id(r["made_on"], r["method"], r["market_id"]), f"{r['id']}: id off its rule"
-        earlier.append(r["id"])
-        assert r["recorded_utc"][:10] >= r["made_on"], f"{r['id']}: recorded before it was made"
-        assert r["source"].strip(), f"{r['id']}: source is empty"
+    rows = read("readings.csv")
+    v = L.reading_file_violations(rows, entries, read(L.CALIBRATION_HISTORY))
+    assert v == [], "\n".join(v)
+    for r in rows:
+        assert r["source"].strip(), f"{r['id']}: source is empty"  # free text from the desk: not a column the tool fills
+
+
+# 2026-11-09 00:15Z, predictions/POST_MORTEMS.md "A readings gate that never saw the row": the mechanical search
+# of tests/test_ledger.py (8 November) run on the readings record, kept.  Every column of a reading row comes
+# either from the desk's arguments (FROM_ARGS, held by reading_violations' own rules where one exists) or from
+# the written quote and the tool itself; each of the latter, altered on a clean row, must be refused by the
+# row gate, or a hand-typed row could carry it at any value past the committed-file test.  On 39e6fa7 the
+# gate held five of the twelve, this file's own assertions five more (no tag, never at admission), and
+# nothing held `venue` or `recorded_utc`.  A new column must be classified here before the test passes.
+FROM_ARGS = {"proposition", "method", "method_p", "range_lo", "range_hi", "climatology_p", "source"}
+ALTERED = {"id": "R-2026-11-06-fomc_bills-6507380", "made_on": "2026-11-07", "venue": "kalshi", "market_id": "6507381",
+           "condition_id": "0xdead", "yes_token_id": "999", "market_mid": "0.900", "due_on": "2026-12-09", "gate": "open",
+           "quote_fetched_utc": "2026-11-06T06:16:39Z", "quote_sha256": "ee" * 32, "recorded_utc": "2026-11-06T00:00:00Z"}
+
+
+def test_every_column_the_tool_copies_or_sets_is_held_by_the_row_gate(tmp_path):
+    assert FROM_ARGS | set(ALTERED) == set(L.READING_COLUMNS) and not FROM_ARGS & set(ALTERED), \
+        "classify every reading column: from the desk's arguments, or copied from the quote / set by the tool"
+    write_manifest(tmp_path, [QUOTE])
+    hist = history(tmp_path)
+    row, v = R.build_row(QUOTE, "6507380", "btc_touch", 0.876, 0.876, 0.886, 0.690, "p", "s", hist,
+                         R.calibration_sha256("btc_touch", tmp_path), NOW)
+    assert v == [] and tuple(row) == L.READING_COLUMNS
+    row = {k: ("" if x is None else str(x)) for k, x in row.items()}
+    assert L.reading_file_violations([row], [QUOTE], hist) == []
+    unheld = [col for col, bad in ALTERED.items() if not L.reading_file_violations([dict(row, **{col: bad})], [QUOTE], hist)]
+    assert unheld == [], f"columns a hand-typed row could carry at any value: {unheld}"
+    # the columns the search found on 2026-11-09, each refused by its own tag through the file gate
+    for col, bad, tag in (("venue", "kalshi", "id-rule"), ("id", "R-x", "id-rule"),
+                          ("recorded_utc", "2026-11-06T00:00:00Z", "recorded-after-quote"),
+                          ("recorded_utc", "2026-11-06 18:30:00", "recorded-after-quote"),
+                          ("condition_id", "0xdead", "written-quote"), ("yes_token_id", "999", "written-quote"),
+                          ("quote_fetched_utc", "2026-11-06T06:16:39Z", "written-quote")):
+        v = L.reading_file_violations([dict(row, **{col: bad})], [QUOTE], hist)
+        assert v and v[0].startswith(f"{row['id'] if col != 'id' else bad}: [reading:{tag}]"), (col, v)
+    # a stamp in another format is refused on its format alone, and also loses its calibration line (judged as text)
+    tags = L.reading_tags(" ".join(L.reading_file_violations([dict(row, recorded_utc="2026-11-06 18:30:00")], [QUOTE], hist)))
+    assert "recorded-after-quote" in tags
 
 
 def test_committed_calibration_history_is_dated_append_only_and_ends_at_the_committed_files():

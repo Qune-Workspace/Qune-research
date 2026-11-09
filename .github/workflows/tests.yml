@@ -103,6 +103,12 @@ jobs:
       # real paper-log and passes for the wrong reason.
       - name: bound defaults
         run: python tools/check_bound_defaults.py
+      # A UTC stamp is parsed in pm_lib.UTC_STAMP_FORMAT before it is ordered or
+      # sliced, never compared as text (tools/check_stamp_compares.py;
+      # predictions/POST_MORTEMS.md, 2026-11-09): text order is time order only
+      # while both sides happen to carry one format.
+      - name: stamp comparisons
+        run: python tools/check_stamp_compares.py
       # No prediction-market venue is fetched or has a raw response committed
       # unless the committed verdict on its terms allows it
       # (tools/check_data_terms.py; tools/pm_data_terms.md, 2026-11-01).

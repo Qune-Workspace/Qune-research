@@ -124,6 +124,8 @@ ROW_BREAKERS: dict[str, dict] = {
     "due-on-scheduled-end": dict(due_on="2027-12-09"),
     "book-from-quote": dict(volume_usdc="9999999.0"),
     "id-rule": dict(venue="kalshi"),
+    # 2026-11-09 12:15Z, "A calibration put after the quote by a space": a quote stamped with a space for the T
+    "utc-stamp": dict(quote=dict(CALL_QUOTE, fetched_utc="2026-11-06 06:16:38 UTC")),
 }
 
 
@@ -229,6 +231,8 @@ def emitted_reading_row(quote: dict | None = QUOTE, existing_ids: tuple = (), hi
 READING_ROW_BREAKERS: dict[str, dict] = {
     "id-rule": dict(venue="kalshi"),
     "recorded-after-quote": dict(recorded_utc="2026-11-06T00:00:00Z"),
+    # 2026-11-09 12:15Z, "A calibration put after the quote by a space": the quote's own stamp in another format
+    "utc-stamp": dict(quote=dict(QUOTE, fetched_utc="2026-11-06 06:16:38 UTC"), quote_fetched_utc="2026-11-06 06:16:38 UTC"),
 }
 
 

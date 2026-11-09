@@ -100,6 +100,7 @@ lint:
 	$(PYTHON) tools/check_question_gate.py
 	$(PYTHON) tools/check_due.py
 	$(PYTHON) tools/check_bound_defaults.py
+	$(PYTHON) tools/check_stamp_compares.py
 	$(PYTHON) tools/check_data_terms.py
 	bash tools/detach.sh --self-test
 	bash tools/scan.sh --self-test

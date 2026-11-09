@@ -97,7 +97,8 @@ def test_the_committed_calibration_files_carry_the_gate_the_ledger_reads():
     # first lines of data/calibration_history.csv (tests/test_readings.py), so a correct re-run that flips R2
     # needs no edit here; what stays is that each file as committed is its method's latest line
     for method, r2 in gates.items():
-        assert r2_in_force(method, "9999") is r2, f"{method}: the committed calibration is not on record"
+        latest = L.latest_calibration(read(L.CALIBRATION_HISTORY), method)
+        assert L.history_r2(latest) is r2, f"{method}: the committed calibration is not on record"
 
 
 def test_ids_are_unique_and_outcomes_refer_to_calls():

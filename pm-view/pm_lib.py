@@ -112,6 +112,9 @@ GATE_TAGS = (
     "due-on-scheduled-end",     # due_on is the quote's scheduled end date (the day score.py treats the call as due)
     "book-from-quote",          # market_spread and volume_usdc are the written quote's, copied not retyped
     "id-rule",                  # the id is call_id(made_on, method, market_id) and the venue is VENUE
+    # 2026-11-09 12:15Z (predictions/POST_MORTEMS.md "A calibration put after the quote by a space"): every
+    # stamp the gate reads is parsed in UTC_STAMP_FORMAT before it is compared; another format refuses the row
+    "utc-stamp",                # the quote's fetched_utc, the admission time and the history's in_force_utc parse
 )
 GATE_TAG_RE = re.compile(r"\[gate:([a-z-]+)\]")
 
@@ -130,21 +133,45 @@ def gate_tags(text: str) -> set[str]:
 
 def quote_day(fetched_utc: object) -> str:
     """The UTC date `YYYY-MM-DD` of a quote's `fetched_utc` (`YYYY-MM-DDTHH:MM:SSZ`), the day a call or a
-    reading resting on it is made; empty for no time.  Both gates compare dates through this one function,
-    never a timestamp with a date as strings (2026-11-07 12:15Z, predictions/POST_MORTEMS.md "A timestamp
-    compared with a date": `"2026-11-06T06:16:38Z" <= "2026-11-06"` is False)."""
-    return str(fetched_utc or "")[:10]
+    reading resting on it is made; empty for no time or for a stamp in another format (stamp_violation
+    names it).  Both gates compare dates through this one function, never a timestamp with a date as
+    strings (2026-11-07 12:15Z, predictions/POST_MORTEMS.md "A timestamp compared with a date":
+    `"2026-11-06T06:16:38Z" <= "2026-11-06"` is False).  Since 2026-11-09 12:15Z the stamp is parsed, not
+    sliced: `"06/11/2026 06:20Z"[:10]` was `06/11/2026`, a day that is never `made_on`, refused with the
+    reason "the quote's mid is stale"."""
+    text = str(fetched_utc or "")
+    if not text:
+        return ""
+    try:
+        return parse_utc_stamp(text).date().isoformat()
+    except ValueError:
+        return ""
+
+
+def stamp_violation(fetched_utc: object) -> str | None:
+    """Why a quote's `fetched_utc` cannot be judged against, or None when it is a UTC stamp in
+    UTC_STAMP_FORMAT: no time, or text in another format.  One sentence both gates print."""
+    text = str(fetched_utc or "")
+    if not text:
+        return "the quote has no fetch time on record"
+    try:
+        parse_utc_stamp(text)
+    except ValueError:
+        return (f"the quote's fetched_utc {text!r} is not a UTC stamp YYYY-MM-DDTHH:MM:SSZ: fix data/manifest.json, "
+                "nothing is compared as text")
+    return None
 
 
 def quote_timing_violations(made_on: str, fetched_utc: object) -> list[str]:
     """The call gate's rule on when a call is made: on its quote's day.  The row carries that quote's mid
     and the departure is measured against it, so a mid from an earlier day is stale and a quote from a
     later day was read after the call was made."""
+    bad = stamp_violation(fetched_utc)
+    if bad:
+        return [gate("made-on-quote-day", f"made_on {made_on}: {bad}")]
     day = quote_day(fetched_utc)
     if day == made_on:
         return []
-    if not day:
-        return [gate("made-on-quote-day", f"made_on {made_on}: the call's quote has no fetch time on record")]
     why = "the quote was read after the call was made" if day > made_on else "the quote's mid is stale"
     return [gate("made-on-quote-day", f"made_on {made_on} is not the quote's day {day}: {why}; "
                                       "a call is made on the day of its quote")]
@@ -210,9 +237,12 @@ READING_TAGS = (
     # 2026-11-09 00:15Z, predictions/POST_MORTEMS.md "A readings gate that never saw the row": the row's own columns
     "id-rule",                  # the id is R-<made_on>-<method>-<market_id> and the venue is VENUE
     "recorded-after-quote",     # recorded_utc is a UTC stamp YYYY-MM-DDTHH:MM:SSZ not before the quote's fetch
+    # 2026-11-09 12:15Z (predictions/POST_MORTEMS.md "A calibration put after the quote by a space"): every
+    # stamp the gate reads is parsed in UTC_STAMP_FORMAT before it is compared; another format refuses the row
+    "utc-stamp",                # the quote's fetched_utc and the history's in_force_utc parse
 )
 UTC_STAMP_FORMAT = "%Y-%m-%dT%H:%M:%SZ"  # the one format of every UTC stamp this folder writes: fetched_utc, recorded_utc, in_force_utc
-RECORDED_UTC_FORMAT = UTC_STAMP_FORMAT  # the readings gate's name for it (2026-11-09 00:15Z), compared as text
+RECORDED_UTC_FORMAT = UTC_STAMP_FORMAT  # the readings gate's name for it (2026-11-09 00:15Z); parsed, never compared as text (12:15Z)
 
 
 def parse_utc_stamp(stamp: object, what: str = "stamp") -> datetime:
@@ -290,12 +320,32 @@ CALIBRATION_HISTORY_COLUMNS = ("method", "in_force_utc", "sha256", "r2", "source
 
 
 def calibration_in_force(history: Iterable[dict[str, Any]], method: str, at_utc: str) -> dict[str, Any] | None:
-    """The calibration_history line for `method` in force at `at_utc` (both ISO
-    `YYYY-MM-DDTHH:MM:SSZ`): the last line for the method, in file order, whose
-    `in_force_utc` is at or before `at_utc`.  None when no line was yet on record."""
+    """The calibration_history line for `method` in force at `at_utc`: the last line for the
+    method, in file order, whose `in_force_utc` is at or before `at_utc`.  None when no line was
+    yet on record.  Both stamps are parsed with parse_utc_stamp (UTC_STAMP_FORMAT); `at_utc` or a
+    line of the method in another format raises ValueError naming it (2026-11-09 12:15Z,
+    predictions/POST_MORTEMS.md "A calibration put after the quote by a space": until then the two
+    were compared as text, and a quote stamped `2026-11-06 06:20:45 UTC` sorted before a line that
+    went into force at `2026-11-06T05:00:00Z`, so the ledger gate judged a call under the superseded
+    line and lost its `calibrated` refusal)."""
+    at = parse_utc_stamp(at_utc, "the time the row is judged at")
     hit: dict[str, Any] | None = None
     for h in history:
-        if h.get("method") == method and str(h.get("in_force_utc", "")) <= at_utc:
+        if h.get("method") != method:
+            continue
+        if parse_utc_stamp(h.get("in_force_utc"), f"{CALIBRATION_HISTORY} in_force_utc of {method}") <= at:
+            hit = h
+    return hit
+
+
+def latest_calibration(history: Iterable[dict[str, Any]], method: str) -> dict[str, Any] | None:
+    """The last calibration_history line for `method` in file order (the file is append-only and
+    dated in order, which tests/test_readings.py holds), or None.  The question "is this file the
+    method's latest line" reads no stamp; until 2026-11-09 12:15Z it was asked as
+    calibration_in_force(…, "9999"), a sentinel that worked only because stamps were text."""
+    hit: dict[str, Any] | None = None
+    for h in history:
+        if h.get("method") == method:
             hit = h
     return hit
 
@@ -337,10 +387,10 @@ def record_calibration_line(history_path: Path, method: str, calibration_path: P
     if history_path.exists():
         with history_path.open(encoding="utf-8", newline="") as fh:
             history = list(csv.DictReader(fh))
-    latest = calibration_in_force(history, method, "9999")
+    latest = latest_calibration(history, method)
     if latest is not None and latest.get("sha256") == sha:
         return "unchanged", latest
-    line = {"method": method, "in_force_utc": now.strftime("%Y-%m-%dT%H:%M:%SZ"), "sha256": sha,
+    line = {"method": method, "in_force_utc": now.strftime(UTC_STAMP_FORMAT), "sha256": sha,
             "r2": "true" if r2 else "false", "source": source}
     new = not history_path.exists()
     history_path.parent.mkdir(parents=True, exist_ok=True)
@@ -448,10 +498,12 @@ def reading_violations(method: str, method_p: float | None, range_lo: float | No
         out.append(reading_gate("eligible-at-quote", f"the market was not eligible at the quote "
                                 f"({quote.get('eligibility')}): a reading on a market the record excludes is not "
                                 "scored against its settlement"))
-    day = quote_day(quote.get("fetched_utc"))
-    if day != made_on:
-        out.append(reading_gate("made-on-quote-day", f"made_on {made_on} is not the quote's date {day}: "
-                                "a reading is made on the day of its quote"))
+    bad_stamp = stamp_violation(quote.get("fetched_utc"))
+    if bad_stamp:
+        out.append(reading_gate("made-on-quote-day", f"made_on {made_on}: {bad_stamp}"))
+    elif quote_day(quote.get("fetched_utc")) != made_on:
+        out.append(reading_gate("made-on-quote-day", f"made_on {made_on} is not the quote's date "
+                                f"{quote_day(quote.get('fetched_utc'))}: a reading is made on the day of its quote"))
     end = str(quote.get("end_date", ""))
     if end[:10] != due_on:
         out.append(reading_gate("due-on-scheduled-end",
@@ -487,14 +539,13 @@ def reading_row_violations(row: dict[str, Any], quote: dict[str, Any] | None, hi
     if str(row.get("venue", "")) != VENUE:
         out.append(reading_gate("id-rule", f"venue {row.get('venue')!r} is not {VENUE!r}, the one venue the view quotes"))
     recorded = str(row.get("recorded_utc", ""))
+    recorded_at: datetime | None
     try:
-        datetime.strptime(recorded, RECORDED_UTC_FORMAT)
-        stamp_ok = True
+        recorded_at = parse_utc_stamp(recorded, "recorded_utc")
     except ValueError:
-        stamp_ok = False
+        recorded_at = None
         out.append(reading_gate("recorded-after-quote", f"recorded_utc {recorded!r} is not a UTC stamp "
-                                "YYYY-MM-DDTHH:MM:SSZ: the row is judged under the calibration in force at this time, "
-                                "compared as text with data/calibration_history.csv"))
+                                "YYYY-MM-DDTHH:MM:SSZ: the row is judged under the calibration in force at this time"))
     if quote is not None:
         if str(quote.get("gamma_sha256", "")) != str(row.get("quote_sha256", "")):
             out.append(reading_gate("written-quote", "quote_sha256 is not the record hash (gamma_sha256) of the written "
@@ -506,12 +557,22 @@ def reading_row_violations(row: dict[str, Any], quote: dict[str, Any] | None, hi
         if str(row.get("quote_fetched_utc", "")) != fetched:
             out.append(reading_gate("written-quote", f"quote_fetched_utc {row.get('quote_fetched_utc')} is not the "
                                     f"written quote's fetch time {fetched}: copy it from the quote"))
-        if stamp_ok and recorded < fetched:
+        # 2026-11-09 12:15Z: both stamps parsed before they are ordered; until then `recorded < fetched` as text,
+        # and a quote stamped with a space for the T let a reading recorded before its quote pass
+        bad_stamp = stamp_violation(fetched)
+        if bad_stamp:
+            out.append(reading_gate("utc-stamp", f"{bad_stamp}; the row cannot be judged against this quote"))
+            return out
+        if recorded_at is not None and recorded_at < parse_utc_stamp(fetched):
             out.append(reading_gate("recorded-after-quote", f"recorded_utc {recorded} is before the quote's fetch at "
                                     f"{fetched}: a reading is recorded after its quote"))
     clim_raw = row.get("climatology_p")
     climatology_p = None if clim_raw in (None, "") else as_float(clim_raw)
-    calibration = calibration_in_force(history, method, recorded) if stamp_ok else None
+    try:
+        calibration = calibration_in_force(history, method, recorded) if recorded_at is not None else None
+    except ValueError as e:  # a history line of this method in another format
+        out.append(reading_gate("utc-stamp", f"{e}: fix the line, nothing is compared as text"))
+        return out
     out.extend(reading_violations(method, as_float(row.get("method_p")), as_float(row.get("range_lo")),
                                   as_float(row.get("range_hi")), as_float(row.get("market_mid")), climatology_p, quote,
                                   made_on, str(row.get("due_on", "")), market_id=market_id, existing_ids=existing_ids,
@@ -892,9 +953,23 @@ def ledger_row_violations(call: dict[str, Any], quote: dict[str, Any] | None,
     fetched = str(quote.get("fetched_utc", ""))
     method, method_p, lo, hi = ledger_method_fields({k: ("" if v is None else str(v)) for k, v in call.items()})
     hist = list(history)
-    at_quote = calibration_in_force(hist, method or "", fetched)
+    # 2026-11-09 12:15Z (predictions/POST_MORTEMS.md "A calibration put after the quote by a space"): every stamp
+    # on this path is parsed before anything is compared; a stamp in another format refuses the row here, so the
+    # calibration checks below never run on text order
+    bad_stamp = stamp_violation(fetched)
+    if bad_stamp:
+        out.append(gate("utc-stamp", f"{bad_stamp}; the row cannot be judged against this quote"))
+        return out
+    try:
+        if admitted_utc is not None:
+            parse_utc_stamp(admitted_utc, "the admission time")
+        at_quote = calibration_in_force(hist, method or "", fetched)
+        latest = (calibration_in_force(hist, method, admitted_utc)
+                  if admitted_utc is not None and method in METHOD_CALIBRATION else None)
+    except ValueError as e:
+        out.append(gate("utc-stamp", f"{e}: fix the stamp, nothing is compared as text"))
+        return out
     if admitted_utc is not None and method in METHOD_CALIBRATION:
-        latest = calibration_in_force(hist, method, admitted_utc)
         if calibration_sha256 is None or latest is None or calibration_sha256 != latest.get("sha256"):
             shown = "missing" if calibration_sha256 is None else f"SHA-256 {calibration_sha256[:12]}…"
             out.append(gate("calibration-on-record", f"the committed calibration of {method} ({shown}) is not its "

@@ -120,7 +120,7 @@ def build_row(quote: dict[str, Any] | None, market_id: str, method: str, method_
     q = quote or {}
     hist = list(history)
     recorded = now.strftime(L.RECORDED_UTC_FORMAT)
-    made_on = str(q.get("fetched_utc", ""))[:10]
+    made_on = L.quote_day(q.get("fetched_utc"))  # parsed, never sliced (2026-11-09 12:15Z)
     due_on = str(q.get("end_date", ""))[:10]
     market_mid = L.as_float(q.get("market_mid"))
     calibration = L.calibration_in_force(hist, method, recorded)

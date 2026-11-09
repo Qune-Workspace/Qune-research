@@ -83,7 +83,7 @@ def add(args: argparse.Namespace, manifest: Path, ledger: Path, now: datetime) -
     history = read_csv(here / L.CALIBRATION_HISTORY)
     row = build_row(quote, args.market_id, args.desk_p, args.method, args.method_p, args.range_lo, args.range_hi,
                     args.proposition, args.settles_on, args.basis)
-    v = L.ledger_row_violations(row, quote, history, read_csv(ledger), admitted_utc=now.strftime("%Y-%m-%dT%H:%M:%SZ"),
+    v = L.ledger_row_violations(row, quote, history, read_csv(ledger), admitted_utc=now.strftime(L.UTC_STAMP_FORMAT),
                                 calibration_sha256=calibration_sha256(args.method, here))
     if quote is None:
         v.append(f"(no manifest entry for market {args.market_id} fetched at {args.quote} in {manifest.name})")

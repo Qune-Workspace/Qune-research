@@ -305,5 +305,50 @@ def test_record_calibration_line_records_then_leaves_an_unchanged_file_and_refus
     assert status == "recorded" and line2 is not None and line2["r2"] == "true"
     lines = _history_lines(hist)
     assert [h["method"] for h in lines] == ["btc_touch", "fomc_bills", "btc_touch"]
-    assert L.calibration_in_force(lines, "btc_touch", "9999") == line2
+    assert L.latest_calibration(lines, "btc_touch") == line2
     assert L.history_r2(L.calibration_in_force(lines, "btc_touch", "2026-11-08T00:25:00Z")) is False
+
+
+# 2026-11-09 12:15Z, predictions/POST_MORTEMS.md "A calibration put after the quote by a space": the gates
+# compared UTC stamps as text.  These rows reproduce the scratch cases of that run on the fixed tree.
+SPACE_STAMP = "2026-11-06 06:20:45 UTC"  # the instant of 2026-11-06T06:20:45Z, written with a space for the T
+EARLY_LINE = {"method": "btc_touch", "in_force_utc": "2026-11-05T12:23:00Z", "sha256": "f2" * 32, "r2": "true",
+              "source": "s"}
+SAME_DAY_LINE = {"method": "btc_touch", "in_force_utc": "2026-11-06T05:00:00Z", "sha256": "99" * 32, "r2": "false",
+                 "source": "s"}
+
+
+def test_calibration_in_force_parses_both_stamps_and_refuses_another_format():
+    hist = [EARLY_LINE, SAME_DAY_LINE]
+    # the same instant, in the folder's format: the 05:00Z line of the same day is in force
+    assert L.calibration_in_force(hist, "btc_touch", "2026-11-06T06:20:45Z") is SAME_DAY_LINE
+    assert L.calibration_in_force(hist, "btc_touch", "2026-11-06T04:59:59Z") is EARLY_LINE
+    assert L.calibration_in_force(hist, "btc_touch", "2026-11-05T12:22:59Z") is None
+    # until 2026-11-09 12:15Z the space-stamped instant sorted before the 05:00Z line as text and EARLY_LINE came back
+    with pytest.raises(ValueError, match="the time the row is judged at .* is not a UTC stamp"):
+        L.calibration_in_force(hist, "btc_touch", SPACE_STAMP)
+    with pytest.raises(ValueError, match="9999"):
+        L.calibration_in_force(hist, "btc_touch", "9999")
+    bad_line = dict(SAME_DAY_LINE, in_force_utc="2026-11-06 05:00:00")
+    with pytest.raises(ValueError, match="calibration_history.csv in_force_utc of btc_touch"):
+        L.calibration_in_force([EARLY_LINE, bad_line], "btc_touch", "2026-11-06T06:20:45Z")
+    # another method's line in another format is not read for this method
+    assert L.calibration_in_force([EARLY_LINE, dict(bad_line, method="fomc_bills")], "btc_touch",
+                                  "2026-11-06T06:20:45Z") is EARLY_LINE
+    assert L.latest_calibration([EARLY_LINE, bad_line], "btc_touch") is bad_line  # reads no stamp
+    assert L.latest_calibration([EARLY_LINE], "fomc_bills") is None
+
+
+def test_quote_day_parses_and_the_timing_rule_names_a_bad_stamp():
+    assert L.quote_day("2026-11-06T06:20:45Z") == "2026-11-06"
+    assert L.quote_day("") == "" and L.quote_day(None) == ""
+    assert L.quote_day("06/11/2026 06:20Z") == ""  # was "06/11/2026" by the slice
+    assert L.stamp_violation("2026-11-06T06:20:45Z") is None
+    assert L.quote_timing_violations("2026-11-06", "2026-11-06T06:20:45Z") == []
+    [v] = L.quote_timing_violations("2026-11-06", "06/11/2026 06:20Z")
+    assert "[gate:made-on-quote-day]" in v and "is not a UTC stamp" in v and "fix data/manifest.json" in v
+    assert "stale" not in v  # the reason the slice gave
+    [v] = L.quote_timing_violations("2026-11-06", "")
+    assert "no fetch time on record" in v
+    [v] = L.quote_timing_violations("2026-11-06", "2026-11-07T06:20:45Z")
+    assert "read after the call was made" in v

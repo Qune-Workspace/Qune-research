@@ -66,7 +66,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "pm-view"))
-from pm_lib import earliest_scoring_day, quote_fetched_for_call  # noqa: E402
+from pm_lib import earliest_scoring_day, parse_utc_stamp, quote_fetched_for_call  # noqa: E402
 
 from qune_research.nyse import nyse_trading_days  # noqa: E402
 
@@ -254,12 +254,23 @@ def pm_view_weekly_items(root: Path, at: datetime) -> list[Item]:
         return [Item("PM view", "info", "no pm-view folder")]
     manifest = folder / "data" / "manifest.json"
     fetched: set[date] = set()
+    bad_stamps: list[str] = []
     if manifest.exists():
         try:
-            for entry in json.loads(manifest.read_text(encoding="utf-8")):
-                fetched.add(date.fromisoformat(str(entry.get("fetched_utc", ""))[:10]))
+            entries = json.loads(manifest.read_text(encoding="utf-8"))
         except (ValueError, TypeError, AttributeError):
-            pass
+            entries = []
+        for entry in entries if isinstance(entries, list) else []:
+            # parsed in the folder's one format, never sliced (2026-11-09 12:15Z); a stamp in another
+            # format is a DUE line naming it, not a quote silently missing from the week
+            try:
+                fetched.add(parse_utc_stamp((entry or {}).get("fetched_utc"), "fetched_utc").date())
+            except (ValueError, AttributeError):
+                bad_stamps.append(repr((entry or {}).get("fetched_utc") if isinstance(entry, dict) else entry))
+    if bad_stamps:
+        items.append(Item("PM view quote stamps", "DUE", f"{len(bad_stamps)} manifest fetched_utc stamp(s) not "
+                          f"YYYY-MM-DDTHH:MM:SSZ ({', '.join(bad_stamps[:3])}): fix the stamp; nothing is compared as "
+                          "text"))
     for friday in fridays_through(at, FIRST_PM_VIEW):
         due = datetime.combine(friday, DESK_VIEW_DUE_UTC, tzinfo=UTC)
         deadline = datetime.combine(friday + timedelta(days=DESK_VIEW_GRACE_DAYS), time(23, 59), tzinfo=UTC)

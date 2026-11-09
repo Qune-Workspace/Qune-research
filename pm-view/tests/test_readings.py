@@ -373,7 +373,7 @@ def test_committed_calibration_history_is_dated_append_only_and_ends_at_the_comm
         assert h["in_force_utc"] >= last.get(h["method"], ""), f"{h['method']}: a line dated before the one above it"
         last[h["method"]] = h["in_force_utc"]
     for method in L.METHOD_CALIBRATION:
-        latest = L.calibration_in_force(hist, method, "9999")
+        latest = L.latest_calibration(hist, method)
         assert latest is not None, f"{method}: no calibration on record"
         assert latest["sha256"] == R.calibration_sha256(method, HERE), (
             f"{method}: the committed calibration file is not its latest line; run readings.py record-calibration")

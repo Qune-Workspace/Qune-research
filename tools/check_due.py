@@ -58,12 +58,16 @@ import csv
 import json
 import sys
 import tempfile
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, date, datetime, time, timedelta
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
+sys.path.insert(0, str(ROOT / "pm-view"))
+from pm_lib import earliest_scoring_day, quote_fetched_for_call  # noqa: E402
+
 from qune_research.nyse import nyse_trading_days  # noqa: E402
 
 FIRST_MONTH = (2026, 10)
@@ -315,81 +319,76 @@ def prediction_items(root: Path, at: datetime) -> list[Item]:
     return items
 
 
-def pm_view_items(root: Path, at: datetime) -> list[Item]:
-    """The prediction-market view's calls (pm-view/ledger.csv, added 2026-11-03): a call is due
-    the day after its market's scheduled end; scored when pm-view/outcomes.csv holds its id
-    (settled or excluded); an unresolved market past the grace period is reported, not filled."""
-    ledger = root / "pm-view" / "ledger.csv"
-    outcomes = root / "pm-view" / "outcomes.csv"
-    if not ledger.exists():
-        return [Item("PM view calls", "info", "no ledger")]
+def _pm_manifest_entries(root: Path) -> list[dict]:
+    manifest = root / "pm-view" / "data" / "manifest.json"
+    if not manifest.exists():
+        return []
+    try:
+        entries = json.loads(manifest.read_text(encoding="utf-8"))
+    except ValueError:
+        return []
+    return entries if isinstance(entries, list) else []
+
+
+def _pm_record_items(record: Path, outcomes: Path, entries: list[dict], at: datetime, label: str,
+                     after_of: Callable[[dict[str, str]], object]) -> list[Item]:
+    """The due lines of one pm-view record (the ledger's calls or the readings), both under one rule
+    (pm_lib.earliest_scoring_day, 2026-11-09 06:15Z): a row is due the day after its market's scheduled
+    end, or the day after an earlier written quote of the market carrying its settlement; `after_of`
+    gives the row's own quote time (a reading carries it; a call's is found by its book hash).  A stamp
+    in another format is a DUE line of its own, never a text comparison; a row the rule cannot read
+    (no due_on) is a DUE line too, because a row that cannot be judged due is work, not silence."""
     scored: set[str] = set()
     if outcomes.exists():
         with outcomes.open(encoding="utf-8", newline="") as fh:
             scored = {row["id"] for row in csv.DictReader(fh) if row.get("id")}
     items: list[Item] = []
     pending = 0
-    with ledger.open(encoding="utf-8", newline="") as fh:
+    with record.open(encoding="utf-8", newline="") as fh:
         for row in csv.DictReader(fh):
             try:
-                due_on = date.fromisoformat(row["due_on"]) + timedelta(days=1)
-            except (KeyError, ValueError):
+                day = earliest_scoring_day(row["due_on"], row.get("market_id", ""), after_of(row), entries)
+            except (KeyError, ValueError) as exc:
+                items.append(Item(f"PM {label} {row.get('id')} scored", "DUE",
+                                  f"the row cannot be judged due: {exc}; fix it before the next scoring run"))
                 continue
+            due_on = day + timedelta(days=1)
             if due_on > at.date():
                 pending += 1
                 continue
             due = datetime.combine(due_on, time(0, 0), tzinfo=UTC)
             deadline = datetime.combine(due_on + timedelta(days=PREDICTION_GRACE_DAYS), time(23, 59), tzinfo=UTC)
-            evidence = "pm-view/outcomes.csv row" if row["id"] in scored else None
+            evidence = f"pm-view/{outcomes.name} row" if row["id"] in scored else None
             status, detail = classify(at, due, deadline, evidence, None, None)
-            items.append(Item(f"PM call {row['id']} scored", status, detail))
-    items.append(Item("PM calls not yet due", "info", f"{pending}"))
+            items.append(Item(f"PM {label} {row['id']} scored", status, detail))
+    items.append(Item(f"PM {label}s not yet due", "info", f"{pending}"))
     return items
+
+
+def pm_view_items(root: Path, at: datetime) -> list[Item]:
+    """The prediction-market view's calls (pm-view/ledger.csv, added 2026-11-03): a call is due
+    the day after its market's scheduled end, or (2026-11-09 06:15Z, the rule a reading already had)
+    the day after a later written quote of the market carries a settlement; scored when
+    pm-view/outcomes.csv holds its id (settled or excluded); an unresolved market past the grace
+    period is reported, not filled."""
+    ledger = root / "pm-view" / "ledger.csv"
+    if not ledger.exists():
+        return [Item("PM view calls", "info", "no ledger")]
+    entries = _pm_manifest_entries(root)
+    return _pm_record_items(ledger, root / "pm-view" / "outcomes.csv", entries, at, "call",
+                            lambda row: quote_fetched_for_call(row, entries))
 
 
 def pm_readings_items(root: Path, at: datetime) -> list[Item]:
     """The prediction-market view's readings record (pm-view/readings.csv, added 2026-11-06 18:15Z):
-    a reading is due the day after its market's scheduled end, or at once when a later written
+    a reading is due the day after its market's scheduled end, or the day after a later written
     quote of the market carries a settlement; scored when pm-view/readings_outcomes.csv holds its
     id.  Information rows, never calls; an unresolved market past the grace period is reported."""
     readings = root / "pm-view" / "readings.csv"
-    outcomes = root / "pm-view" / "readings_outcomes.csv"
-    manifest = root / "pm-view" / "data" / "manifest.json"
     if not readings.exists():
         return [Item("PM readings", "info", "no readings record")]
-    scored: set[str] = set()
-    if outcomes.exists():
-        with outcomes.open(encoding="utf-8", newline="") as fh:
-            scored = {row["id"] for row in csv.DictReader(fh) if row.get("id")}
-    entries: list[dict] = []
-    if manifest.exists():
-        try:
-            entries = json.loads(manifest.read_text(encoding="utf-8"))
-        except ValueError:
-            entries = []
-    items: list[Item] = []
-    pending = 0
-    with readings.open(encoding="utf-8", newline="") as fh:
-        for row in csv.DictReader(fh):
-            try:
-                due_on = date.fromisoformat(row["due_on"]) + timedelta(days=1)
-            except (KeyError, ValueError):
-                continue
-            settled = [e for e in entries if e.get("market_id") == row.get("market_id") and e.get("settlement")
-                       and str(e.get("fetched_utc", "")) > str(row.get("quote_fetched_utc", ""))]
-            if settled:
-                early = min(str(e["fetched_utc"])[:10] for e in settled)
-                due_on = min(due_on, date.fromisoformat(early) + timedelta(days=1))
-            if due_on > at.date():
-                pending += 1
-                continue
-            due = datetime.combine(due_on, time(0, 0), tzinfo=UTC)
-            deadline = datetime.combine(due_on + timedelta(days=PREDICTION_GRACE_DAYS), time(23, 59), tzinfo=UTC)
-            evidence = "pm-view/readings_outcomes.csv row" if row["id"] in scored else None
-            status, detail = classify(at, due, deadline, evidence, None, None)
-            items.append(Item(f"PM reading {row['id']} scored", status, detail))
-    items.append(Item("PM readings not yet due", "info", f"{pending}"))
-    return items
+    return _pm_record_items(readings, root / "pm-view" / "readings_outcomes.csv", _pm_manifest_entries(root), at,
+                            "reading", lambda row: row.get("quote_fetched_utc", ""))
 
 
 def release_items(root: Path) -> list[Item]:
@@ -545,11 +544,16 @@ def _fixture(root: Path) -> None:
     (root / "predictions" / "outcomes.csv").write_text("id,scored_on\n", encoding="utf-8")
     (root / "pm-view" / "data").mkdir(parents=True)
     (root / "pm-view" / "data" / "manifest.json").write_text(
-        json.dumps([{"market_id": "1", "fetched_utc": "2026-11-03T18:23:14Z"},
+        json.dumps([{"market_id": "1", "fetched_utc": "2026-11-03T18:23:14Z", "book_sha256": "b1"},
+                    {"market_id": "9", "fetched_utc": "2026-11-03T18:23:14Z", "book_sha256": "b9"},
                     {"market_id": "9", "fetched_utc": "2026-11-05T06:00:00Z", "settlement": "record says closed=True"}]),
         encoding="utf-8")
     (root / "pm-view" / "readings.csv").write_text(
         "id,market_id,due_on,quote_fetched_utc\nR-A,9,2026-12-01,2026-11-03T18:23:14Z\nR-B,1,2026-12-09,2026-11-03T18:23:14Z\n",
+        encoding="utf-8")
+    # the ledger (2026-11-09 06:15Z): a call on the settled market 9, resting on the 3 Nov quote by its book hash
+    (root / "pm-view" / "ledger.csv").write_text(
+        "id,market_id,due_on,quote_sha256\nC-2026-11-03-stated-9,9,2026-12-01,b9\nC-2026-11-03-stated-1,1,2026-12-09,b1\n",
         encoding="utf-8")
     (root / "research" / "013-f" / "paper-log").mkdir(parents=True)
     (root / "research" / "013-f" / "paper-log" / "snapshots.csv").write_text(
@@ -585,6 +589,21 @@ def selftest() -> int:
         r_items, _ = run(root, datetime(2026, 11, 6, 18, 0, tzinfo=UTC))
         assert status_of(r_items, "PM reading R-A scored") == "DUE"   # settled early per the 5 Nov written quote
         assert not [i for i in r_items if i.label.startswith("PM reading R-B")]  # due 10 Dec, not listed yet
+        # the ledger under the same rule (2026-11-09 06:15Z): the call on market 9 is due on 6 Nov with the
+        # reading, not on 2 Dec; the call on market 1 waits for its scheduled end; on 30 Oct both wait
+        assert [i for i in items if i.label == "PM calls not yet due"][0].detail == "2"
+        assert status_of(r_items, "PM call C-2026-11-03-stated-9 scored") == "DUE"
+        assert not [i for i in r_items if i.label.startswith("PM call C-2026-11-03-stated-1")]
+        assert [i for i in r_items if i.label == "PM calls not yet due"][0].detail == "1"
+        # a manifest stamp in another format is a DUE line of its own, never compared as text
+        manifest_path = root / "pm-view" / "data" / "manifest.json"
+        good = manifest_path.read_text(encoding="utf-8")
+        manifest_path.write_text(good.replace("2026-11-05T06:00:00Z", "05/11/2026 06:00Z"), encoding="utf-8")
+        bad_items, bad_rc = run(root, datetime(2026, 11, 6, 18, 0, tzinfo=UTC))
+        for prefix in ("PM call C-2026-11-03-stated-9 scored", "PM reading R-A scored"):
+            assert status_of(bad_items, prefix) == "DUE"
+            assert "is not a UTC stamp YYYY-MM-DDTHH:MM:SSZ" in [i for i in bad_items if i.label == prefix][0].detail
+        manifest_path.write_text(good, encoding="utf-8")
 
         items, rc = run(root, datetime(2026, 11, 2, 22, 0, tzinfo=UTC))
         assert status_of(items, "Study 004 record 2026-10") == "ok"

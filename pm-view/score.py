@@ -1,7 +1,14 @@
 """Score the prediction-market view's due calls on the venue's own settlement,
 once each, by Study 013's pre-registered outcome rule, and write SKILL.md.
 
-A call is due once its `due_on` (the market's scheduled end date) has passed.
+A call is due once its `due_on` (the market's scheduled end date) has passed,
+or earlier when a later written quote of the same market in `data/manifest.json`
+carries a `settlement` (pm_lib.earliest_scoring_day, the one rule for a call and
+a reading, read by this script and by tools/check_due.py; until 2026-11-09 06:15Z
+a call had the first half only, predictions/POST_MORTEMS.md "A call with no path
+to being due before its scheduled end").  Stamps on that path are parsed in the
+one format `YYYY-MM-DDTHH:MM:SSZ`, never compared as text; a manifest stamp in
+another format refuses the row (`NOT SCORED ... fix the stamp`, exit 1).
 For each due, unscored call the scorer reads the Gamma market record and the
 CLOB market record (`/markets/<conditionId>`, which carries each token's
 `winner` flag) and applies research/013-polymarket-calibration-forward
@@ -51,7 +58,15 @@ from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import Any
 
-from pm_lib import OUTCOME_COLUMNS, READING_OUTCOME_COLUMNS, brier, reading_summary, skill_summary
+from pm_lib import (
+    OUTCOME_COLUMNS,
+    READING_OUTCOME_COLUMNS,
+    brier,
+    earliest_scoring_day,
+    quote_fetched_for_call,
+    reading_summary,
+    skill_summary,
+)
 
 HERE = Path(__file__).resolve().parent
 STUDY_013 = HERE.parent / "research" / "013-polymarket-calibration-forward"
@@ -124,13 +139,29 @@ def score_call(call: dict[str, str], status: dict | None, outcome: dict | None, 
     return row
 
 
-def run(ledger: Path, outcomes: Path, gamma: Fetcher, clob: Fetcher, today: date, dry_run: bool) -> int:
+def call_due(call: dict[str, str], today: date, manifest_entries: list[dict[str, Any]]) -> bool:
+    """Due once due_on has passed, or when a written quote of the market made after the call's own quote
+    (found by its book hash) carries a settlement: the rule a reading has had since 2026-11-06, given to
+    a call on 2026-11-09 06:15Z (predictions/POST_MORTEMS.md "A call with no path to being due before
+    its scheduled end").  ValueError for a stamp in another format: the caller refuses, never compares."""
+    after = quote_fetched_for_call(call, manifest_entries)
+    return earliest_scoring_day(call["due_on"], call["market_id"], after, manifest_entries) <= today
+
+
+def run(ledger: Path, outcomes: Path, gamma: Fetcher, clob: Fetcher, today: date, dry_run: bool,
+        manifest_entries: list[dict[str, Any]] | None = None) -> int:
+    entries = manifest_entries or []
     scored = {r["id"] for r in read_csv(outcomes)}
     rc = 0
     for call in read_csv(ledger):
         if call["id"] in scored:
             continue
-        if date.fromisoformat(call["due_on"]) > today:
+        try:
+            if not call_due(call, today, entries):
+                continue
+        except ValueError as exc:
+            rc = 1
+            print(f"NOT SCORED {call['id']}: {exc}; fix the stamp, nothing is compared as text")
             continue
         status, outcome, gsha, csha = fetch_records(call, gamma, clob)
         row = score_call(call, status, outcome, gsha, csha, today)
@@ -148,11 +179,11 @@ def run(ledger: Path, outcomes: Path, gamma: Fetcher, clob: Fetcher, today: date
 
 
 def reading_due(reading: dict[str, str], today: date, manifest_entries: list[dict[str, Any]]) -> bool:
-    """Due once due_on has passed, or when a written quote of the market made after the reading carries a settlement."""
-    if date.fromisoformat(reading["due_on"]) <= today:
-        return True
-    return any(e.get("market_id") == reading["market_id"] and e.get("settlement")
-               and str(e.get("fetched_utc", "")) > str(reading["quote_fetched_utc"]) for e in manifest_entries)
+    """Due once due_on has passed, or when a written quote of the market made after the reading's quote carries
+    a settlement (pm_lib.earliest_scoring_day, the one rule for a call and a reading; stamps parsed, never
+    compared as text).  ValueError for a stamp in another format: the caller refuses the row."""
+    return earliest_scoring_day(reading["due_on"], reading["market_id"], reading["quote_fetched_utc"],
+                                manifest_entries) <= today
 
 
 def score_reading(reading: dict[str, str], status: dict | None, outcome: dict | None, gsha: str, csha: str,
@@ -183,7 +214,14 @@ def run_readings(readings: Path, outcomes: Path, manifest: Path, gamma: Fetcher,
     rc = 0
     checked = 0
     for reading in read_csv(readings):
-        if reading["id"] in scored or not reading_due(reading, today, entries):
+        if reading["id"] in scored:
+            continue
+        try:
+            if not reading_due(reading, today, entries):
+                continue
+        except ValueError as exc:
+            rc = 1
+            print(f"READING NOT SCORED {reading['id']}: {exc}; fix the stamp, nothing is compared as text")
             continue
         checked += 1
         status, outcome, gsha, csha = fetch_records(reading, gamma, clob)
@@ -204,7 +242,9 @@ def run_readings(readings: Path, outcomes: Path, manifest: Path, gamma: Fetcher,
     return rc
 
 
-def write_summary(ledger: Path, outcomes: Path, skill: Path, today: date) -> None:
+def write_summary(ledger: Path, outcomes: Path, skill: Path, today: date,
+                  manifest_entries: list[dict[str, Any]] | None = None) -> None:
+    entries = manifest_entries or []
     calls = read_csv(ledger)
     done = {r["id"]: r for r in read_csv(outcomes)}
     s = skill_summary(list(done.values()))
@@ -222,7 +262,10 @@ def write_summary(ledger: Path, outcomes: Path, skill: Path, today: date) -> Non
     for c in calls:
         o = done.get(c["id"])
         if o is None:
-            res = "not yet due" if date.fromisoformat(c["due_on"]) > today else "due, not resolved"
+            try:
+                res = "due, not resolved" if call_due(c, today, entries) else "not yet due"
+            except ValueError as exc:
+                res = f"not judged: {exc}"
         elif o["y"] == "":
             res = f"excluded: {o['kind']}"
         else:
@@ -292,14 +335,15 @@ def main(argv: list[str] | None = None) -> int:
     ledger = a.ledger if a.ledger is not None else HERE / "ledger.csv"
     outcomes = a.outcomes if a.outcomes is not None else HERE / "outcomes.csv"
     skill = a.skill if a.skill is not None else HERE / "SKILL.md"
+    manifest = a.manifest if a.manifest is not None else HERE / "data" / "manifest.json"
+    entries: list[dict[str, Any]] = json.loads(manifest.read_text(encoding="utf-8")) if manifest.exists() else []
     if a.summary:
-        write_summary(ledger, outcomes, skill, today)
+        write_summary(ledger, outcomes, skill, today, entries)
         print(f"wrote {skill.name}")
         return 0
-    rc = run(ledger, outcomes, http_get, http_get, today, a.dry_run)
+    rc = run(ledger, outcomes, http_get, http_get, today, a.dry_run, entries)
     readings = a.readings if a.readings is not None else HERE / "readings.csv"
     r_out = a.readings_outcomes if a.readings_outcomes is not None else HERE / "readings_outcomes.csv"
-    manifest = a.manifest if a.manifest is not None else HERE / "data" / "manifest.json"
     return max(rc, run_readings(readings, r_out, manifest, http_get, http_get, today, a.dry_run))
 
 

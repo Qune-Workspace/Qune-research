@@ -37,7 +37,7 @@ import json
 import math
 import re
 from collections.abc import Iterable
-from datetime import datetime
+from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import Any
 
@@ -211,7 +211,65 @@ READING_TAGS = (
     "id-rule",                  # the id is R-<made_on>-<method>-<market_id> and the venue is VENUE
     "recorded-after-quote",     # recorded_utc is a UTC stamp YYYY-MM-DDTHH:MM:SSZ not before the quote's fetch
 )
-RECORDED_UTC_FORMAT = "%Y-%m-%dT%H:%M:%SZ"  # the one format of recorded_utc and in_force_utc, compared as text
+UTC_STAMP_FORMAT = "%Y-%m-%dT%H:%M:%SZ"  # the one format of every UTC stamp this folder writes: fetched_utc, recorded_utc, in_force_utc
+RECORDED_UTC_FORMAT = UTC_STAMP_FORMAT  # the readings gate's name for it (2026-11-09 00:15Z), compared as text
+
+
+def parse_utc_stamp(stamp: object, what: str = "stamp") -> datetime:
+    """The time of a UTC stamp in UTC_STAMP_FORMAT; ValueError naming `what` for any other text.
+
+    2026-11-09 06:15Z, predictions/POST_MORTEMS.md "A call with no path to being due before its
+    scheduled end": the path that makes a reading due on a later settlement quote compared the
+    manifest's `fetched_utc` with the row's `quote_fetched_utc` as text, and nothing held the
+    manifest's format, so a settlement quote stamped `06/11/2026 06:20Z` compared as earlier than
+    every row's quote and was ignored.  Stamps on that path are parsed here, never compared as
+    text; another format is a defect to fix, not a comparison to make."""
+    text = str(stamp or "")
+    try:
+        return datetime.strptime(text, UTC_STAMP_FORMAT).replace(tzinfo=UTC)
+    except ValueError:
+        raise ValueError(f"{what} {text!r} is not a UTC stamp YYYY-MM-DDTHH:MM:SSZ") from None
+
+
+def settlement_quote_day(market_id: str, after_utc: object, entries: Iterable[dict[str, Any]]) -> date | None:
+    """The UTC date of the earliest written quote of `market_id` in data/manifest.json that carries a
+    `settlement` and was fetched after `after_utc` (the row's own quote; None or empty: any settlement
+    quote of the market counts), or None when there is none.  Every stamp read is parsed with
+    parse_utc_stamp; a manifest stamp in another format raises ValueError."""
+    after = parse_utc_stamp(after_utc, "the row's quote_fetched_utc") if after_utc else None
+    days: list[date] = []
+    for e in entries:
+        if str(e.get("market_id", "")) != str(market_id) or not e.get("settlement"):
+            continue
+        fetched = parse_utc_stamp(e.get("fetched_utc"), f"data/manifest.json fetched_utc of market {market_id}")
+        if after is None or fetched > after:
+            days.append(fetched.date())
+    return min(days) if days else None
+
+
+def earliest_scoring_day(due_on: str, market_id: str, after_utc: object, entries: Iterable[dict[str, Any]]) -> date:
+    """The first UTC day a row of either record (a call on the ledger, a reading on the readings record)
+    may be scored: its `due_on`, the market's scheduled end, or the day of an earlier written quote of
+    the market carrying its settlement (a market can resolve before its scheduled end, as the 80,000 touch
+    market did on 4 November).  One rule for both records: score.py and tools/check_due.py read it from
+    here.  Until 2026-11-09 06:15Z a call had the first half only (predictions/POST_MORTEMS.md "A call
+    with no path to being due before its scheduled end")."""
+    day = date.fromisoformat(str(due_on))
+    settled = settlement_quote_day(market_id, after_utc, entries)
+    return min(day, settled) if settled is not None else day
+
+
+def quote_fetched_for_call(call: dict[str, Any], entries: Iterable[dict[str, Any]]) -> str | None:
+    """The fetch time of the written quote a ledger row rests on, found by its book hash (`quote_sha256`,
+    the ledger's `written-quote` rule); None when no written quote carries that hash, in which case any
+    settlement quote of the market counts towards the row's scoring day."""
+    sha = str(call.get("quote_sha256", ""))
+    if not sha:
+        return None
+    for e in entries:
+        if e.get("book_sha256") == sha:
+            return str(e.get("fetched_utc", ""))
+    return None
 
 # The calibration history (2026-11-07 06:15Z, predictions/POST_MORTEMS.md "A gate
 # column judged against today's calibration").  A reading row's `gate` column is

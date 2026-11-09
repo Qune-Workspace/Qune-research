@@ -39,6 +39,7 @@ from pathlib import Path
 from typing import Any
 
 from pm_lib import (
+    UTC_STAMP_FORMAT,
     as_float,
     best_of_book,
     decode_list,
@@ -70,7 +71,7 @@ def sha256(b: bytes) -> str:
 
 def quote_one(market_id: str, gamma: Fetcher, book: Fetcher, at: datetime) -> dict[str, Any]:
     """One market's quote: raw bodies, hashes and the computed numbers; `error` set when a fetch failed."""
-    out: dict[str, Any] = {"market_id": market_id, "fetched_utc": at.strftime("%Y-%m-%dT%H:%M:%SZ")}
+    out: dict[str, Any] = {"market_id": market_id, "fetched_utc": at.strftime(UTC_STAMP_FORMAT)}
     try:
         gbody = gamma(GAMMA_MARKET + market_id)
     except (urllib.error.URLError, OSError, ValueError) as e:

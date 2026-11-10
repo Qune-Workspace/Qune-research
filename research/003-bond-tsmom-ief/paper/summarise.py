@@ -52,7 +52,7 @@ from src import backtest
 from src.alpaca_bars import load_bars, total_return_index
 from src.config import CASH_LEG, COST_CASES, DURATION_LEG, PAPER_LOG_DIR, RESULTS_DIR
 
-from paper.decide import DECISIONS_DIR, PAPER_RAW_DIR
+from paper.decide import DECISIONS_DIR, PAPER_RAW_DIR, load_records
 
 EXECUTIONS_DIR = PAPER_LOG_DIR / "executions"
 SUMMARY_PATH = PAPER_LOG_DIR / "summary.csv"
@@ -75,8 +75,9 @@ def frozen_b3_weight(path: Path = INSAMPLE_SUMMARY) -> float:
 
 
 def read_decisions(directory: Path = DECISIONS_DIR) -> list[dict]:
-    directory = Path(directory)
-    return [json.loads(p.read_text()) for p in sorted(directory.glob("*.json"))] if directory.is_dir() else []
+    """The decision records, each through the writer's own gate (`paper.decide.load_records`,
+    2026-11-10: before that date any JSON file in the folder was a record here)."""
+    return load_records(Path(directory))
 
 
 def read_executions(directory: Path = EXECUTIONS_DIR) -> dict[str, dict]:
@@ -189,7 +190,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     parser.add_argument("--dry-run", action="store_true", help="print the rows, write nothing")
     args = parser.parse_args(argv)
-    decisions = read_decisions()
+    decisions = read_decisions(DECISIONS_DIR)
     if len([d for d in decisions if d.get("status") == "ok"]) < 2:
         print(f"{len(decisions)} decision record(s) on disk: no holding period has ended; nothing written")
         return 0

@@ -51,7 +51,9 @@ Verdict: **not cleared today**, re-evaluate against nine conditions (`RISK_CLEAR
 ## Running the decision (from the study folder)
 
 ```
-python -m paper.decide --signal-date 2026-10-30 --holding BIL --fetch
+python -m paper.decide --signal-date 2026-11-30 --fetch
 ```
 
 Credentials come only from the environment variables `src/alpaca_bars.py` reads; nothing is read from a file in this repository. `--dry-run` prints the record without writing it.
+
+**The holding before the record is read, not typed (2026-11-10).** Until that day the command took `--holding BIL` from the operator and nothing compared it with the records already written: `--holding IEF` after a record whose target was BIL produced a record with a false switch, and `write_record` wrote it (observed in a temporary folder, research/POST_MORTEMS.md "A holding passed by hand"). Now `paper.decide.holding_in_force` walks `paper-log/decisions/` from the pre-registered starting position (BIL, above): each record's `holding_before` must be the state in force before it, an ok record's `target` is the state after it and a `signal unavailable` record carries the holding. `--holding` is optional and, when given, is held against that chain; a disagreement is a refusal before any fetch. Every record is read only through `record_violations` (status, strategy, dates, holding, target against `mom`, `switch`, index levels against `mom`, run stamp after the close, no orders, no equity marks), by the reader, by the writer before it writes, and by `paper/summarise.py`; a folder with a file the writer would not write, two files for one month, or a record dated before an existing one is refused by name and nothing is written. The search that found this is kept as parametrised tests against the committed record in `tests/test_paper_decide.py`.

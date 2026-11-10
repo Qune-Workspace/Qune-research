@@ -6,6 +6,7 @@ episode's committed starting weights when the study's raw files are present."""
 from __future__ import annotations
 
 import json
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -280,3 +281,60 @@ def test_dry_run_without_inputs_refuses_and_writes_nothing(tmp_path, monkeypatch
     assert fw.main(["decide", "--signal-month", "2026-10", "--dry-run"]) == 1
     assert "refused: an input is not in paper-log/raw/" in capsys.readouterr().out
     assert list(tmp_path.iterdir()) == []
+
+
+# --- The alter-each-column search of 2026-11-10, kept (research/POST_MORTEMS.md "A starting state no reader held") ---
+# Before the fix every alteration below became the next record's starting state or a silent fall-back to the
+# frozen start; the committed record passes its own gate and each altered copy is refused by name.
+COMMITTED_RECORD = Path(__file__).resolve().parents[1] / "paper-log" / "decisions" / "2026-10-30.json"
+_DEL = object()
+COMMON_ALTERATIONS = [
+    (("status",), "OK"), (("status",), "ok "), (("status",), "done"), (("status",), _DEL),
+    (("signal_date",), "2026-10-3"), (("signal_date",), "2026-11-30"), (("signal_date",), _DEL),
+    (("execution_date",), "2026-10-01"), (("execution_date",), None), (("run_at_utc",), "soon"),
+    (("study",), "999-other-study"), (("paper_order",), True), (("orders",), [{"symbol": "IEF", "qty": 1}]),
+]
+STUDY_ALTERATIONS = [
+    (("weights_after", "T1"), 1.5), (("weights_after", "T1"), -0.1), (("weights_after", "T1"), "0.3857"),
+    (("weights_after", "T1"), float("nan")), (("weights_after", "T2"), _DEL), (("weights_after", "T9"), 0.5),
+    (("weights_after",), None), (("weights_before", "T1"), 2.0), (("signal_month",), "2026-11"), (("signal_month",), _DEL),
+]
+
+
+def _altered(record: dict, path: tuple, value):
+    record = json.loads(json.dumps(record))
+    node = record
+    for key in path[:-1]:
+        node = node[key]
+    if value is _DEL:
+        del node[path[-1]]
+    else:
+        node[path[-1]] = value
+    return record
+
+
+def test_committed_record_passes_its_own_gate():
+    record = json.loads(COMMITTED_RECORD.read_text(encoding="utf-8"))
+    assert fw.record_violations(record, COMMITTED_RECORD) == []
+
+
+@pytest.mark.parametrize("path,value", COMMON_ALTERATIONS + STUDY_ALTERATIONS)
+def test_an_altered_column_of_the_committed_record_is_refused_by_name(path, value, tmp_path):
+    record = _altered(json.loads(COMMITTED_RECORD.read_text(encoding="utf-8")), path, value)
+    (tmp_path / "2026-10-30.json").write_text(json.dumps(record, indent=2, sort_keys=True, allow_nan=True) + "\n",
+                                              encoding="utf-8")
+    with pytest.raises(ValueError) as refused:
+        fw.load_records(tmp_path)
+    assert any(str(part) in str(refused.value) for part in path), str(refused.value)
+
+
+def test_two_records_for_one_month_are_refused(tmp_path):
+    record = json.loads(COMMITTED_RECORD.read_text(encoding="utf-8"))
+    (tmp_path / "2026-10-30.json").write_text(json.dumps(record), encoding="utf-8")
+    (tmp_path / "2026-10-29.json").write_text(json.dumps(dict(record, signal_date="2026-10-29")), encoding="utf-8")
+    with pytest.raises(ValueError, match="two records"):
+        fw.load_records(tmp_path)
+    (tmp_path / "2026-10-29.json").unlink()
+    (tmp_path / "2026-10-30 (1).json").write_text(json.dumps(record), encoding="utf-8")
+    with pytest.raises(ValueError):
+        fw.load_records(tmp_path)

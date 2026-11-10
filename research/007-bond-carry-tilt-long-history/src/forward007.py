@@ -75,14 +75,15 @@ from .forward import (
     _first_bar_on_or_after,
     _utc,
     close_utc,
+    common_record_violations,
     execution_for,
     file_hashes,
-    load_records,
     log_wait,
     refusal,
     utc_now,
-    write_record,
 )
+from .forward import load_records as _load_records
+from .forward import write_record as _write_record
 from .fred import fetch_series, load_series, sha256_of
 
 assert FIRST_SIGNAL_MONTH == "2026-10"  # §11.1: the note (6cbfa6c) was committed on 2026-10-25, before 2026-10-30
@@ -223,10 +224,62 @@ def inputs_at(fred: dict[str, pd.Series], t: pd.Timestamp) -> dict:
 
 # --- Decision record ----------------------------------------------------------------------------------
 
+def record_violations(record, path: Path) -> list[str]:
+    """Sentences naming what in one committed decision record is not as this
+    module's ``decision_record`` writes it: the shape shared with Study 006
+    (``forward.common_record_violations``) plus this study's weights: before
+    and after name the same trials, each a weight in [0, 1] or null (the trial
+    holds its position), and an unavailable record holds every weight.  Added
+    2026-11-10 after a search showed no reader held any column (research/
+    POST_MORTEMS.md)."""
+    out = common_record_violations(record, path, STUDY)
+    if not isinstance(record, dict):
+        return out
+    name = Path(path).name
+    before, after = record.get("weights_before"), record.get("weights_after")
+    for field, weights in (("weights_before", before), ("weights_after", after)):
+        if not isinstance(weights, dict) or not weights:
+            out.append(f"{name}: {field} is not a non-empty mapping of trials to weights")
+            continue
+        for trial, w in weights.items():
+            if w is None:
+                continue
+            if isinstance(w, bool) or not isinstance(w, (int, float)) or not np.isfinite(w) or not 0.0 <= w <= 1.0:
+                out.append(f"{name}: {field}.{trial} {w!r} is not a weight in [0, 1] or null")
+    if isinstance(before, dict) and isinstance(after, dict) and sorted(before) != sorted(after):
+        out.append(f"{name}: weights_after names other trials than weights_before")
+    if record.get("status") == "signal unavailable" and after != before:
+        out.append(f"{name}: an unavailable record's weights_after differ from its weights_before")
+    return out
+
+
+def load_records(directory: Path = DECISIONS_DIR) -> list[dict]:
+    """Study 006's reader under this study's gate (2026-11-10)."""
+    return _load_records(directory, record_violations)
+
+
+def write_record(record: dict, directory: Path = DECISIONS_DIR) -> Path:
+    """Study 006's writer under this study's gate (2026-11-10)."""
+    return _write_record(record, directory, record_violations)
+
+
+def _same_weights(a: dict, b: dict) -> bool:
+    return sorted(a) == sorted(b) and all(
+        (a[k] is None and b[k] is None) or (a[k] is not None and b[k] is not None and abs(a[k] - b[k]) <= 1e-12)
+        for k in a)
+
+
 def weights_before(records: list[dict], start: dict) -> dict:
-    """The targets in force before the next record (None = holding, drifting)."""
+    """The targets in force before the next record (None = holding, drifting):
+    the last record's ``weights_after``, with each record's ``weights_before``
+    held equal to the state in force before it (the frozen start for the
+    first), so an edited link in the chain is refused, never carried
+    (2026-11-10)."""
     held = dict(start)
     for record in records:
+        if not _same_weights(record["weights_before"], held):
+            raise ValueError(f"the record for {record['signal_month']} says weights_before {record['weights_before']} "
+                             f"but the state in force before it was {held}; fix the record, never the reader")
         held = dict(record["weights_after"])
     return held
 

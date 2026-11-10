@@ -4,6 +4,7 @@ look-ahead, the gates, the carried weight of a missing bar, the shadow line
 and the books against the frozen engine, the append rules, the terminal
 position as the first holding."""
 import json
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -42,8 +43,11 @@ def world():
     return _world()
 
 
+ZERO = {name: {a: 0.0 for a in UNIVERSE} for name in forward.STRATEGY_IDS}  # a holding every run has (2026-11-10)
+
+
 def _record(world, signal_date, holding_before=None):
-    return forward.decision_record(world["closes"], signal_date, UNIVERSE, K, holding_before or {},
+    return forward.decision_record(world["closes"], signal_date, UNIVERSE, K, holding_before or ZERO,
                                    run_at_utc="2013-01-01T00:00:00Z", trading_days=world["days"])
 
 
@@ -260,8 +264,12 @@ def test_previous_targets_from_the_terminal_position_then_records(world, tmp_pat
     expected = run.weights_from(run.trial_signal(table, "T1"), table["vol"])[last]
     assert targets["T1"] == pytest.approx({a: expected.get(a, 0.0) for a in UNIVERSE}, abs=1e-12)
     assert targets["B4"] == pytest.approx({a: K * w for a, w in targets["B3"].items()}, abs=1e-12)
-    first = dict(_record(world, world["sched"]["signal_date"].iloc[3]), signal_date="2026-10-30")
-    second = dict(_record(world, world["sched"]["signal_date"].iloc[4]), signal_date="2026-11-30")
+    # the chain as a run writes it (2026-11-10): each record starts from the state in force before it and is
+    # executed after its signal date; a fixture the reader's gate would refuse is not a fixture
+    first = dict(_record(world, world["sched"]["signal_date"].iloc[3], holding_before=targets),
+                 signal_date="2026-10-30", execution_date="2026-11-02")
+    second = dict(_record(world, world["sched"]["signal_date"].iloc[4], holding_before=first["targets"]),
+                  signal_date="2026-11-30", execution_date="2026-12-01")
     forward.write_record(first, tmp_path / "decisions")
     forward.write_record(second, tmp_path / "decisions")
     later, source = forward.previous_targets(UNIVERSE, K, tmp_path / "decisions", frozen_path, before="2026-12-31")
@@ -344,3 +352,66 @@ def test_decide_writes_into_the_patched_folder_never_the_real_one(tmp_path, monk
 def test_cli_refuses_before_the_first_forward_date(capsys):
     assert forward.main(["decide", "--signal-date", "2026-09-30", "--dry-run"]) == 1
     assert "before the first forward signal date" in capsys.readouterr().out
+
+
+# --- The alter-each-column search of 2026-11-10, kept (research/POST_MORTEMS.md "A starting state no reader held") ---
+# Before the fix every alteration below became the next record's starting state or a silent fall-back to the
+# frozen start; the committed record passes its own gate and each altered copy is refused by name.
+COMMITTED_RECORD = Path(__file__).resolve().parents[1] / "paper-log" / "decisions" / "2026-10-30.json"
+_DEL = object()
+COMMON_ALTERATIONS = [
+    (("status",), "OK"), (("status",), "ok "), (("status",), "done"), (("status",), _DEL),
+    (("signal_date",), "2026-10-3"), (("signal_date",), "2026-11-30"), (("signal_date",), _DEL),
+    (("execution_date",), "2026-10-01"), (("execution_date",), None), (("run_at_utc",), "soon"),
+    (("study",), "999-other-study"), (("paper_order",), True), (("orders",), [{"symbol": "IEF", "qty": 1}]),
+]
+def _load_committed(directory):
+    committed = json.loads(COMMITTED_RECORD.read_text(encoding="utf-8"))
+    return forward.load_records(directory, universe=committed["universe"], k=committed["k_exposure_ratio_frozen"])
+
+
+STUDY_ALTERATIONS = [
+    (("targets", "T1", "IEF"), 1.5), (("targets", "T1", "IEF"), -0.2), (("targets", "T1", "GLD"), "0.1"),
+    (("targets", "T1", "GLD"), float("nan")), (("targets", "T1", "GLD"), _DEL), (("targets", "T1", "XYZ"), 0.1),
+    (("targets", "B4"), _DEL), (("targets",), None), (("universe",), ["EEM"]),
+    (("holding_before", "T1", "IEF"), 2.0), (("k_exposure_ratio_frozen",), 0.5), (("carried",), ["GLD"]),
+]
+
+
+def _altered(record: dict, path: tuple, value):
+    record = json.loads(json.dumps(record))
+    node = record
+    for key in path[:-1]:
+        node = node[key]
+    if value is _DEL:
+        del node[path[-1]]
+    else:
+        node[path[-1]] = value
+    return record
+
+
+def test_committed_record_passes_its_own_gate():
+    record = json.loads(COMMITTED_RECORD.read_text(encoding="utf-8"))
+    assert forward.record_violations(record, COMMITTED_RECORD) == []
+
+
+@pytest.mark.parametrize("path,value", COMMON_ALTERATIONS + STUDY_ALTERATIONS)
+def test_an_altered_column_of_the_committed_record_is_refused_by_name(path, value, tmp_path):
+    record = _altered(json.loads(COMMITTED_RECORD.read_text(encoding="utf-8")), path, value)
+    (tmp_path / "2026-10-30.json").write_text(json.dumps(record, indent=2, sort_keys=True, allow_nan=True) + "\n",
+                                              encoding="utf-8")
+    with pytest.raises(ValueError) as refused:
+        _load_committed(tmp_path)
+    assert any(str(part) in str(refused.value) for part in path), str(refused.value)
+
+
+def test_two_records_for_one_month_are_refused(tmp_path):
+    record = json.loads(COMMITTED_RECORD.read_text(encoding="utf-8"))
+    (tmp_path / "2026-10-30.json").write_text(json.dumps(record), encoding="utf-8")
+    (tmp_path / "2026-10-29.json").write_text(json.dumps(dict(record, signal_date="2026-10-29")), encoding="utf-8")
+    with pytest.raises(ValueError, match="two records"):
+        _load_committed(tmp_path)
+    (tmp_path / "2026-10-29.json").unlink()
+    (tmp_path / "2026-10-30 (1).json").write_text(json.dumps(record), encoding="utf-8")
+    with pytest.raises(ValueError):
+        _load_committed(tmp_path)

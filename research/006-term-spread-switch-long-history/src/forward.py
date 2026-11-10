@@ -171,12 +171,157 @@ def execution_for(t: pd.Timestamp, now_utc) -> tuple[pd.Timestamp | None, int, p
 
 # --- Decision record ---------------------------------------------------------------------------
 
-def load_records(directory: Path = DECISIONS_DIR) -> list[dict]:
+STATUSES = ("ok", "signal unavailable")  # the closed set decision_record writes; nothing else is a record
+STUDY = "006-term-spread-switch-long-history"
+
+
+def _ymd(text) -> object:
+    """A strict YYYY-MM-DD date, else None."""
+    try:
+        return datetime.strptime(text, "%Y-%m-%d").date()
+    except (TypeError, ValueError):
+        return None
+
+
+def common_record_violations(record, path: Path, study: str) -> list[str]:
+    """Sentences naming what in one committed decision record is not as this
+    module's ``decision_record`` writes it: the shape every forward record of
+    Studies 006-008 shares.  Empty means the record may be read.  Added
+    2026-11-10 after a search showed no reader held any column (research/
+    POST_MORTEMS.md): a holding spelled ``ief``, a status of ``OK``, a weight
+    of 1.5 or a second file for the same month all became the next record's
+    starting state."""
+    name = Path(path).name
+    if not isinstance(record, dict):
+        return [f"{name}: the file does not hold a record (a JSON object)"]
+    out: list[str] = []
+    status = record.get("status")
+    if status not in STATUSES:
+        out.append(f"{name}: status {status!r} is not one of {list(STATUSES)}")
+    if record.get("study") != study:
+        out.append(f"{name}: study {record.get('study')!r} is not {study}")
+    month = record.get("signal_month")
+    try:
+        datetime.strptime(month, "%Y-%m")
+    except (TypeError, ValueError):
+        out.append(f"{name}: signal_month {month!r} is not YYYY-MM")
+        month = None
+    signal = record.get("signal_date")
+    signal_day = _ymd(signal)
+    if signal is None:
+        if status == "ok":
+            out.append(f"{name}: an ok record has no signal_date")
+        elif month and Path(path).stem != f"{month}-unavailable":
+            out.append(f"{name}: a record without a signal date is named <signal_month>-unavailable.json")
+    elif signal_day is None:
+        out.append(f"{name}: signal_date {signal!r} is not YYYY-MM-DD")
+    else:
+        if month and signal[:7] != month:
+            out.append(f"{name}: signal_date {signal} is not in signal_month {month}")
+        if Path(path).stem != signal:
+            out.append(f"{name}: the file is not named after its signal_date {signal}")
+    execution = record.get("execution_date")
+    if status == "ok":
+        execution_day = _ymd(execution)
+        if execution_day is None:
+            out.append(f"{name}: an ok record's execution_date {execution!r} is not YYYY-MM-DD")
+        elif signal_day is not None and execution_day < signal_day:
+            out.append(f"{name}: execution_date {execution} is before signal_date {signal}")
+    elif execution is not None:
+        out.append(f"{name}: a record with status {status!r} carries an execution_date")
+    try:
+        datetime.strptime(record.get("run_at_utc"), "%Y-%m-%dT%H:%M:%SZ")
+    except (TypeError, ValueError):
+        out.append(f"{name}: run_at_utc {record.get('run_at_utc')!r} is not a UTC stamp YYYY-MM-DDTHH:MM:SSZ")
+    if record.get("paper_order") is not False or record.get("orders") != []:
+        out.append(f"{name}: paper_order is not false or orders is not empty; none is placed (section 11)")
+    return out
+
+
+def _legs_violations(name: str, field: str, held) -> list[str]:
+    if not isinstance(held, dict) or sorted(held) != sorted(TRIALS):
+        return [f"{name}: {field} does not name exactly the trials {list(TRIALS)}"]
+    return [f"{name}: {field}.{trial} is {leg!r}, neither {DURATION_LEG} nor {CASH_LEG}"
+            for trial, leg in held.items() if leg not in (DURATION_LEG, CASH_LEG)]
+
+
+def record_violations(record, path: Path) -> list[str]:
+    """The common shape plus this study's: holdings before and after name
+    exactly the trials and a leg each; an ok record's ``holding_after`` is the
+    target its own ``targets`` entry names (the holding before it when the
+    target is null), each target follows the sign of its value by the study's
+    rule, and ``switch`` says whether the holding changed; an unavailable
+    record holds every position."""
+    out = common_record_violations(record, path, STUDY)
+    if not isinstance(record, dict):
+        return out
+    name = Path(path).name
+    before, after = record.get("holding_before"), record.get("holding_after")
+    out += _legs_violations(name, "holding_before", before)
+    out += _legs_violations(name, "holding_after", after)
+    if out:
+        return out
+    status, targets, switch = record.get("status"), record.get("targets"), record.get("switch")
+    if status == "signal unavailable":
+        if after != before:
+            out.append(f"{name}: an unavailable record's holding_after differs from its holding_before")
+        if targets is not None:
+            out.append(f"{name}: an unavailable record carries targets")
+        return out
+    if not isinstance(targets, dict) or sorted(targets) != sorted(TRIALS):
+        return out + [f"{name}: targets does not name exactly the trials {list(TRIALS)}"]
+    for trial in TRIALS:
+        entry = targets[trial]
+        target = entry.get("target") if isinstance(entry, dict) else "(not an entry)"
+        value = entry.get("value") if isinstance(entry, dict) else None
+        if target not in (None, DURATION_LEG, CASH_LEG):
+            out.append(f"{name}: targets.{trial}.target is {target!r}, neither {DURATION_LEG}, {CASH_LEG} nor null")
+            continue
+        if target is not None:
+            try:
+                implied = str(target_from_value(pd.Series([float(value)])).iloc[0])
+            except (TypeError, ValueError):
+                implied = None
+            if value is None or not np.isfinite(float(value)) or implied != target:
+                out.append(f"{name}: targets.{trial} value {value!r} does not imply {target} by the study's rule")
+        if after[trial] != (target or before[trial]):
+            out.append(f"{name}: holding_after.{trial} {after[trial]} is not the target its own entry names "
+                       f"({target or before[trial]})")
+    if not isinstance(switch, dict) or sorted(switch) != sorted(TRIALS) or any(
+            switch[trial] is not (after[trial] != before[trial]) for trial in TRIALS):
+        out.append(f"{name}: switch does not say, trial by trial, whether holding_after differs from holding_before")
+    return out
+
+
+def load_records(directory: Path = DECISIONS_DIR, violations=None) -> list[dict]:
+    """Every record in the folder, by signal month, each held against the
+    shape its writer gives it (``violations``, this study's gate by default)
+    and the folder held to one record per month and per file name; refuses
+    the whole folder by name otherwise, so nothing downstream reads a record
+    no writer wrote (2026-11-10)."""
     directory = Path(directory)
     if not directory.exists():
         return []
-    return sorted((json.loads(p.read_text(encoding="utf-8")) for p in directory.glob("*.json")),
-                  key=lambda r: r["signal_month"])
+    check = violations or record_violations
+    records: list[tuple[str, dict]] = []
+    problems: list[str] = []
+    for path in sorted(directory.glob("*.json")):
+        try:
+            record = json.loads(path.read_text(encoding="utf-8"))
+        except ValueError as bad:
+            problems.append(f"{path.name}: not JSON ({bad})")
+            continue
+        found = check(record, path)
+        problems += found
+        if not found:
+            records.append((path.stem, record))
+    months = [r["signal_month"] for _, r in records]
+    problems += [f"two records for {m}: never rewritten, never doubled (section 11.2)" for m in sorted(set(months))
+                 if months.count(m) > 1]
+    if problems:
+        raise ValueError(f"{directory}: a decision record is not as its writer writes it; fix the record, never the "
+                         "reader: " + "; ".join(problems))
+    return [r for _, r in sorted(records, key=lambda item: item[1]["signal_month"])]
 
 
 def freeze_starting_holdings(fred_frozen: dict[str, pd.Series], path: Path = FROZEN_START,
@@ -243,8 +388,15 @@ def starting_holdings(path: Path = FROZEN_START) -> dict:
 
 
 def holdings_before(records: list[dict], start: dict) -> dict:
+    """The holdings in force before the next record: the last record's
+    ``holding_after``, with each record's ``holding_before`` held equal to the
+    state in force before it (the frozen start for the first), so an edited
+    link in the chain is refused rather than carried (2026-11-10)."""
     held = dict(start)
     for record in records:
+        if record["holding_before"] != held:
+            raise ValueError(f"the record for {record['signal_month']} says holding_before {record['holding_before']} "
+                             f"but the state in force before it was {held}; fix the record, never the reader")
         held = dict(record["holding_after"])
     return held
 
@@ -253,7 +405,7 @@ def decision_record(fred: dict[str, pd.Series], month: str, held: dict, earlier_
                     input_sha256: dict | None = None) -> dict | None:
     """The record for ``month``, or None when the run must wait (nothing is
     written).  ``earlier_ok`` = number of earlier records with status ok."""
-    base = {"study": "006-term-spread-switch-long-history", "label": LABEL, "signal_month": month,
+    base = {"study": STUDY, "label": LABEL, "signal_month": month,
             "run_at_utc": now_utc, "holding_before": dict(held), "input_sha256": dict(input_sha256 or {}),
             "paper_order": False, "orders": []}
     state, t, why = signal_status(fred, month)
@@ -299,12 +451,18 @@ def _shown(path: Path) -> Path:
         return path
 
 
-def write_record(record: dict, directory: Path = DECISIONS_DIR) -> Path:
+def write_record(record: dict, directory: Path = DECISIONS_DIR, violations=None) -> Path:
+    """One file per month, never rewritten; the record is held to its own
+    writer's shape before it is written (``violations``, this study's gate by
+    default), as every reader holds it afterwards (2026-11-10)."""
     directory = Path(directory)
     directory.mkdir(parents=True, exist_ok=True)
     name = record["signal_date"] or f"{record['signal_month']}-unavailable"
     path = directory / f"{name}.json"
-    if path.exists() or any(r["signal_month"] == record["signal_month"] for r in load_records(directory)):
+    found = (violations or record_violations)(record, path)
+    if found:
+        raise ValueError("the record to be written is not as its writer writes it: " + "; ".join(found))
+    if path.exists() or any(r["signal_month"] == record["signal_month"] for r in load_records(directory, violations)):
         raise FileExistsError(f"a record for {record['signal_month']} exists: never rewritten (section 11.2)")
     path.write_text(json.dumps(record, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     return path

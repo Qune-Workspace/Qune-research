@@ -3,6 +3,7 @@ through the frozen engine, interim and scoring.  Constructed data only."""
 from __future__ import annotations
 
 import json
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -297,3 +298,61 @@ def test_wait_line_is_logged_only_without_dry_run(tmp_path, monkeypatch, capsys)
     waits = pd.read_csv(tmp_path / "WAITS_CSV")
     assert len(waits) == 1 and waits["signal_month"].iloc[0] == "2026-10"
     assert not (tmp_path / "DECISIONS_DIR").exists()
+
+
+# --- The alter-each-column search of 2026-11-10, kept (research/POST_MORTEMS.md "A starting state no reader held") ---
+# Before the fix every alteration below became the next record's starting state or a silent fall-back to the
+# frozen start; the committed record passes its own gate and each altered copy is refused by name.
+COMMITTED_RECORD = Path(__file__).resolve().parents[1] / "paper-log" / "decisions" / "2026-10-30.json"
+_DEL = object()
+COMMON_ALTERATIONS = [
+    (("status",), "OK"), (("status",), "ok "), (("status",), "done"), (("status",), _DEL),
+    (("signal_date",), "2026-10-3"), (("signal_date",), "2026-11-30"), (("signal_date",), _DEL),
+    (("execution_date",), "2026-10-01"), (("execution_date",), None), (("run_at_utc",), "soon"),
+    (("study",), "999-other-study"), (("paper_order",), True), (("orders",), [{"symbol": "IEF", "qty": 1}]),
+]
+STUDY_ALTERATIONS = [
+    (("holding_after", "T1"), "ief"), (("holding_after", "T1"), "SPY"), (("holding_after", "T1"), None),
+    (("holding_after", "T3"), _DEL), (("holding_after", "T4"), "IEF"), (("holding_after", "T1"), "BIL"),
+    (("switch", "T1"), True), (("holding_before", "T1"), "spy"), (("targets", "T1", "value"), -0.5),
+    (("signal_month",), "2026-11"), (("signal_month",), _DEL),
+]
+
+
+def _altered(record: dict, path: tuple, value):
+    record = json.loads(json.dumps(record))
+    node = record
+    for key in path[:-1]:
+        node = node[key]
+    if value is _DEL:
+        del node[path[-1]]
+    else:
+        node[path[-1]] = value
+    return record
+
+
+def test_committed_record_passes_its_own_gate():
+    record = json.loads(COMMITTED_RECORD.read_text(encoding="utf-8"))
+    assert forward.record_violations(record, COMMITTED_RECORD) == []
+
+
+@pytest.mark.parametrize("path,value", COMMON_ALTERATIONS + STUDY_ALTERATIONS)
+def test_an_altered_column_of_the_committed_record_is_refused_by_name(path, value, tmp_path):
+    record = _altered(json.loads(COMMITTED_RECORD.read_text(encoding="utf-8")), path, value)
+    (tmp_path / "2026-10-30.json").write_text(json.dumps(record, indent=2, sort_keys=True, allow_nan=True) + "\n",
+                                              encoding="utf-8")
+    with pytest.raises(ValueError) as refused:
+        forward.load_records(tmp_path)
+    assert any(str(part) in str(refused.value) for part in path), str(refused.value)
+
+
+def test_two_records_for_one_month_are_refused(tmp_path):
+    record = json.loads(COMMITTED_RECORD.read_text(encoding="utf-8"))
+    (tmp_path / "2026-10-30.json").write_text(json.dumps(record), encoding="utf-8")
+    (tmp_path / "2026-10-29.json").write_text(json.dumps(dict(record, signal_date="2026-10-29")), encoding="utf-8")
+    with pytest.raises(ValueError, match="two records"):
+        forward.load_records(tmp_path)
+    (tmp_path / "2026-10-29.json").unlink()
+    (tmp_path / "2026-10-30 (1).json").write_text(json.dumps(record), encoding="utf-8")
+    with pytest.raises(ValueError):
+        forward.load_records(tmp_path)

@@ -43,6 +43,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import math
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -216,19 +217,154 @@ def decision_record(closes: dict[str, pd.Series], signal_date, universe: list[st
                      "The weights take effect at the execution date's close and are marked by the shadow line."}
 
 
-def load_records(decisions_dir: Path = FORWARD_DECISIONS_DIR, before=None) -> list[dict]:
+
+def _ymd(text):
+    """A strict YYYY-MM-DD date, else None."""
+    try:
+        return datetime.strptime(text, "%Y-%m-%d").date()
+    except (TypeError, ValueError):
+        return None
+
+
+def _common_record_violations(record, path: Path, study: str, ok: bool, unavailable: bool) -> list[str]:
+    """The shape every forward record shares: a status its writer writes, this
+    study's name, a signal date the file is named after, an execution date on
+    or after it for an ok record and none otherwise, a UTC run stamp, no paper
+    order.  Added 2026-11-10 after a search showed no reader held any column
+    (research/POST_MORTEMS.md)."""
+    name = Path(path).name
+    out: list[str] = []
+    if not ok and not unavailable:
+        out.append(f"{name}: status {record.get('status')!r} is not one its writer writes")
+    if record.get("study") != study:
+        out.append(f"{name}: study {record.get('study')!r} is not {study}")
+    signal = record.get("signal_date")
+    signal_day = _ymd(signal)
+    if signal_day is None:
+        out.append(f"{name}: signal_date {signal!r} is not YYYY-MM-DD")
+    elif Path(path).stem != signal:
+        out.append(f"{name}: the file is not named after its signal_date {signal}")
+    execution = record.get("execution_date")
+    if ok:
+        execution_day = _ymd(execution)
+        if execution_day is None:
+            out.append(f"{name}: an ok record's execution_date {execution!r} is not YYYY-MM-DD")
+        elif signal_day is not None and execution_day < signal_day:
+            out.append(f"{name}: execution_date {execution} is before signal_date {signal}")
+    elif execution is not None:
+        out.append(f"{name}: a record with status {record.get('status')!r} carries an execution_date")
+    try:
+        datetime.strptime(record.get("run_at_utc"), "%Y-%m-%dT%H:%M:%SZ")
+    except (TypeError, ValueError):
+        out.append(f"{name}: run_at_utc {record.get('run_at_utc')!r} is not a UTC stamp YYYY-MM-DDTHH:MM:SSZ")
+    if record.get("paper_order") is not False or record.get("orders") != []:
+        out.append(f"{name}: paper_order is not false or orders is not empty; none is placed (section 11)")
+    return out
+
+
+def _load_gated(directory: Path, violations, key: str = "signal_date") -> list[dict]:
+    """Every record in the folder under ``violations``, one per signal date and
+    file; refuses the whole folder by name otherwise (2026-11-10)."""
+    records: list[dict] = []
+    problems: list[str] = []
+    for path in sorted(Path(directory).glob("*.json")):
+        try:
+            record = json.loads(path.read_text(encoding="utf-8"))
+        except ValueError as bad:
+            problems.append(f"{path.name}: not JSON ({bad})")
+            continue
+        if not isinstance(record, dict):
+            problems.append(f"{path.name}: the file does not hold a record (a JSON object)")
+            continue
+        found = violations(record, path)
+        problems += found
+        if not found:
+            records.append(record)
+    keys = [r[key] for r in records]
+    months = [k[:7] for k in keys]
+    problems += [f"two records for {k}: never rewritten, never doubled (section 11.1)" for k in sorted(set(keys))
+                 if keys.count(k) > 1]
+    problems += [f"two records in {m}: one record per signal month (section 11.1)" for m in sorted(set(months))
+                 if months.count(m) > 1 and not any(keys.count(k) > 1 for k in keys if k[:7] == m)]
+    if problems:
+        raise ValueError(f"{directory}: a decision record is not as its writer writes it; fix the record, never the "
+                         "reader: " + "; ".join(problems))
+    return sorted(records, key=lambda r: r[key])
+
+
+STUDY = "004-xasset-trend-voltarget"
+CARRIED_PREFIX = "ok, weights carried for: "
+
+
+def _ok(record: dict) -> bool:
+    status = record.get("status")
+    return status == "ok" or (isinstance(status, str) and status.startswith(CARRIED_PREFIX))
+
+
+def _weights_violations(name: str, field: str, table, universe) -> list[str]:
+    if not isinstance(table, dict) or sorted(table) != sorted(STRATEGY_IDS):
+        return [f"{name}: {field} does not name exactly {list(STRATEGY_IDS)}"]
+    out: list[str] = []
+    for sname, weights in table.items():
+        if not isinstance(weights, dict) or (isinstance(universe, list) and sorted(weights) != sorted(universe)):
+            out.append(f"{name}: {field}.{sname} does not name exactly the universe's assets")
+            continue
+        bad = [a for a, x in weights.items()
+               if isinstance(x, bool) or not isinstance(x, (int, float)) or not math.isfinite(x) or not 0.0 <= x <= 1.0]
+        out += [f"{name}: {field}.{sname}.{a} {weights[a]!r} is not a weight in [0, 1]" for a in bad]
+        if not bad and sum(weights.values()) > 1.0 + 1e-9:
+            out.append(f"{name}: {field}.{sname} weights sum to more than 1 (section 6.2)")
+    return out
+
+
+def record_violations(record, path: Path, universe: list[str] | None = None, k: float | None = None) -> list[str]:
+    """Sentences naming what in one decision record is not as ``decision_record``
+    writes it; empty means the record may be read.  Beyond the common shape: the
+    status names the carried assets exactly, the universe and frozen k are the
+    study's, ``holding_before`` and (for an ok record) ``targets`` name every
+    strategy and every asset with a weight in [0, 1] summing to at most 1."""
+    name = Path(path).name
+    if not isinstance(record, dict):
+        return [f"{name}: the file does not hold a record (a JSON object)"]
+    ok, unavailable = _ok(record), record.get("status") == "signal unavailable"
+    out = _common_record_violations(record, path, STUDY, ok, unavailable)
+    carried = record.get("carried", [])
+    if ok and (not isinstance(carried, list) or
+               record["status"] != ("ok" if not carried else CARRIED_PREFIX + ", ".join(carried))):
+        out.append(f"{name}: status {record['status']!r} does not name the carried assets {carried!r}")
+    uni = record.get("universe")
+    if not isinstance(uni, list) or not uni or len(set(uni)) != len(uni):
+        out.append(f"{name}: universe is not a list of distinct assets")
+    elif universe is not None and sorted(uni) != sorted(universe):
+        out.append(f"{name}: universe {sorted(uni)} is not the study's {sorted(universe)}")
+    if k is not None:
+        try:
+            agree = abs(float(record.get("k_exposure_ratio_frozen")) - float(k)) <= 1e-12
+        except (TypeError, ValueError):
+            agree = False
+        if not agree:
+            out.append(f"{name}: k_exposure_ratio_frozen {record.get('k_exposure_ratio_frozen')!r} is not the frozen k {k}")
+    out += _weights_violations(name, "holding_before", record.get("holding_before"), uni)
+    if ok:
+        out += _weights_violations(name, "targets", record.get("targets"), uni)
+    elif record.get("targets") is not None:
+        out.append(f"{name}: an unavailable record carries targets")
+    return out
+
+
+def load_records(decisions_dir: Path = FORWARD_DECISIONS_DIR, before=None, universe: list[str] | None = None,
+                 k: float | None = None) -> list[dict]:
+    """Every record before ``before`` (a signal date), each held to its writer's
+    shape (``record_violations``) and the folder to one record per signal date;
+    refuses the folder by name otherwise (2026-11-10)."""
     directory = Path(decisions_dir)
     if not directory.exists():
         return []
-    records = [json.loads(p.read_text(encoding="utf-8")) for p in sorted(directory.glob("*.json"))]
+    records = _load_gated(directory, lambda r, p: record_violations(r, p, universe, k))
     if before is not None:
         limit = str(pd.Timestamp(before).date())
         records = [r for r in records if r["signal_date"] < limit]
     return records
-
-
-def _ok(record: dict) -> bool:
-    return str(record["status"]).startswith("ok")
 
 
 def _shown(path: Path) -> Path:
@@ -313,11 +449,19 @@ def previous_targets(universe: list[str], k: float, decisions_dir: Path = FORWAR
                      frozen_path: Path = FORWARD_FROZEN_START, before=None) -> tuple[dict, str]:
     """The holdings before a signal date: the targets of the latest earlier
     ok record, else the held-back window's terminal position."""
-    ok = [r for r in load_records(decisions_dir, before=before) if _ok(r)]
-    if ok:
-        last = max(ok, key=lambda r: r["signal_date"])
-        return {name: dict(last["targets"][name]) for name in STRATEGY_IDS}, f"decision record {last['signal_date']}"
-    return terminal_targets(universe, k, frozen_path)
+    held, source = terminal_targets(universe, k, frozen_path)
+    for record in load_records(decisions_dir, before=before, universe=universe, k=k):
+        # each record's holding_before is the state in force before it: an edited link is refused, never carried
+        for name in STRATEGY_IDS:
+            for a in universe:
+                if not abs(float(record["holding_before"][name][a]) - float(held[name][a])) <= 1e-12:
+                    raise ValueError(f"the record for {record['signal_date']} says holding_before.{name}.{a} = "
+                                     f"{record['holding_before'][name][a]} but the state in force before it was "
+                                     f"{held[name][a]}; fix the record, never the reader")
+        if _ok(record):
+            held = {name: dict(record["targets"][name]) for name in STRATEGY_IDS}
+            source = f"decision record {record['signal_date']}"
+    return held, source
 
 
 def write_record(record: dict, directory: Path = FORWARD_DECISIONS_DIR) -> Path:
@@ -326,6 +470,9 @@ def write_record(record: dict, directory: Path = FORWARD_DECISIONS_DIR) -> Path:
     directory = Path(directory)
     directory.mkdir(parents=True, exist_ok=True)
     path = directory / f"{record['signal_date']}.json"
+    found = record_violations(record, path)  # the writer's own record is held as every reader holds it (2026-11-10)
+    if found:
+        raise ValueError("the record to be written is not as decision_record writes it: " + "; ".join(found))
     if path.exists():
         raise FileExistsError(f"{path} exists: decision records are never overwritten (section 11.1)")
     path.write_text(json.dumps(record, indent=2, sort_keys=True) + "\n", encoding="utf-8")

@@ -185,21 +185,56 @@ def wait_after(folder: Path, month: str, due: datetime) -> str | None:
     return last
 
 
-def record_for(folder: Path, kind: str, t: date, month: str) -> Path | None:
+RECORD_STATUSES = ("ok", "signal unavailable")  # what the studies' decision_record writers write (004 adds a carried list)
+
+
+def records_for(folder: Path, kind: str, t: date, month: str) -> list[Path]:
+    """Every decision file for the month: by name for a date-keyed study, by its signal month or date otherwise."""
     decisions = folder / "decisions"
     if kind == "date":
         path = decisions / f"{t.isoformat()}.json"
-        return path if path.exists() else None
+        return [path] if path.exists() else []
     if not decisions.exists():
-        return None
+        return []
+    hits = []
     for path in sorted(decisions.glob("*.json")):
         try:
             record = json.loads(path.read_text(encoding="utf-8"))
         except (OSError, ValueError):
             continue
-        if record.get("signal_month") == month or str(record.get("signal_date", "")).startswith(month):
-            return path
-    return None
+        if isinstance(record, dict) and (record.get("signal_month") == month
+                                         or str(record.get("signal_date", "")).startswith(month)):
+            hits.append(path)
+    return hits
+
+
+def record_defects(path: Path, kind: str, t: date, month: str) -> list[str]:
+    """What in a decision file is not as its study's writer writes it (2026-11-10, after a search showed the
+    register took any file for the month as the record): the status, the signal date the file is named after,
+    the month, and no paper order. The study's own reader holds the full shape; this is the register's part."""
+    try:
+        record = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as bad:
+        return [f"not JSON ({bad})"]
+    if not isinstance(record, dict):
+        return ["the file does not hold a record (a JSON object)"]
+    out = []
+    status = record.get("status")
+    if not (status in RECORD_STATUSES or (isinstance(status, str) and status.startswith("ok, weights carried for: "))):
+        out.append(f"status {status!r} is not one its writer writes")
+    signal = record.get("signal_date")
+    if kind == "date" and signal != t.isoformat():
+        out.append(f"signal_date {signal!r} is not the file's date {t.isoformat()}")
+    if kind == "month":
+        if record.get("signal_month") != month:
+            out.append(f"signal_month {record.get('signal_month')!r} is not {month}")
+        if signal is not None and (not str(signal).startswith(month) or path.stem != str(signal)):
+            out.append(f"signal_date {signal!r} is not in {month} or the file is not named after it")
+        if signal is None and status == "ok":
+            out.append("an ok record has no signal_date")
+    if "paper_order" in record and (record["paper_order"] is not False or record.get("orders") != []):
+        out.append("the record carries a paper order or orders; none is placed")  # 004-008; 003 is the paper sleeve
+    return out
 
 
 def classify(at: datetime, due: datetime, deadline: datetime, evidence: str | None,
@@ -232,10 +267,17 @@ def month_end_items(root: Path, at: datetime) -> list[Item]:
             t = last_trading_day(y, m)
             due = datetime.combine(t, GATE_UTC, tzinfo=UTC)
             deadline = deadline_for(t)
-            record = record_for(paper_log, kind, t, month)
+            found = records_for(paper_log, kind, t, month)
+            record = found[0] if found else None
+            defects = ([f"{len(found)} files for the month ({', '.join(p.name for p in found)}): never doubled"]
+                       if len(found) > 1 else []) + (record_defects(record, kind, t, month) if record else [])
             evidence = str(record.relative_to(root)) if record else None
-            status, detail = classify(at, due, deadline, evidence,
-                                      wait_after(paper_log, month, due), logged_miss(paper_log, month))
+            if defects:  # a file for the month that its writer would not have written is not the record (2026-11-10)
+                status, detail = "DUE", (f"{evidence} is not as its writer writes it: {'; '.join(defects)}; "
+                                         "fix the record, never the window")
+            else:
+                status, detail = classify(at, due, deadline, evidence,
+                                          wait_after(paper_log, month, due), logged_miss(paper_log, month))
             items.append(Item(f"Study {sid} record {month} (signal date {t})", status, detail))
             if status == "not due":
                 break
@@ -551,10 +593,14 @@ def run(root: Path, at: datetime) -> tuple[list[Item], int]:
 
 # --- self-test over a built fixture -------------------------------------------------------------
 
+# the register's part of a record's shape (2026-11-10): the fixture is a record the writers would write
+RECORD_FIXTURE = {"signal_date": "2026-10-30", "status": "ok", "paper_order": False, "orders": []}
+
+
 def _fixture(root: Path) -> None:
     (root / "research" / "004-f" / "paper-log" / "decisions").mkdir(parents=True)
     (root / "research" / "004-f" / "paper-log" / "decisions" / "2026-10-30.json").write_text(
-        json.dumps({"signal_date": "2026-10-30"}), encoding="utf-8")
+        json.dumps(RECORD_FIXTURE), encoding="utf-8")
     (root / "research" / "006-f" / "paper-log").mkdir(parents=True)
     (root / "research" / "006-f" / "paper-log" / "waits.csv").write_text(
         "signal_month,checked_at_utc,why\n2026-10,2026-10-31T06:18:48Z,no row yet\n", encoding="utf-8")
@@ -646,6 +692,28 @@ def selftest() -> int:
             assert status_of(bad_items, prefix) == "DUE"
             assert "is not a UTC stamp YYYY-MM-DDTHH:MM:SSZ" in [i for i in bad_items if i.label == prefix][0].detail
         manifest_path.write_text(good, encoding="utf-8")
+
+        # a file for the month that its writer would not write is a DUE line, not the record (2026-11-10)
+        rec = root / "research" / "004-f" / "paper-log" / "decisions" / "2026-10-30.json"
+        for bad in ({**RECORD_FIXTURE, "status": "OK"}, {**RECORD_FIXTURE, "signal_date": "2026-11-30"},
+                    {**RECORD_FIXTURE, "orders": [{"symbol": "IEF"}]}, {"signal_date": "2026-10-30"}, []):
+            rec.write_text(json.dumps(bad), encoding="utf-8")
+            bad_items, _ = run(root, datetime(2026, 10, 30, 20, 0, tzinfo=UTC))
+            assert status_of(bad_items, "Study 004 record 2026-10") == "DUE", bad
+            assert "not as its writer writes it" in [i for i in bad_items if i.label.startswith("Study 004 record 2026-10")][0].detail
+        rec.write_text(json.dumps(RECORD_FIXTURE), encoding="utf-8")
+        month_dir = root / "research" / "006-f" / "paper-log" / "decisions"
+        month_dir.mkdir()
+        good6 = {"signal_month": "2026-10", "signal_date": "2026-10-30", "status": "ok", "paper_order": False, "orders": []}
+        (month_dir / "2026-10-30.json").write_text(json.dumps(good6), encoding="utf-8")
+        assert status_of(run(root, datetime(2026, 11, 2, 22, 0, tzinfo=UTC))[0], "Study 006 record 2026-10") == "ok"
+        (month_dir / "2026-10-29.json").write_text(json.dumps({**good6, "signal_date": "2026-10-29"}), encoding="utf-8")
+        assert status_of(run(root, datetime(2026, 11, 2, 22, 0, tzinfo=UTC))[0], "Study 006 record 2026-10") == "DUE"
+        (month_dir / "2026-10-29.json").unlink()
+        (month_dir / "2026-10-30.json").write_text(json.dumps({**good6, "signal_month": "2026-11"}), encoding="utf-8")
+        assert status_of(run(root, datetime(2026, 11, 2, 22, 0, tzinfo=UTC))[0], "Study 006 record 2026-10") == "DUE"
+        (month_dir / "2026-10-30.json").unlink()
+        month_dir.rmdir()
 
         items, rc = run(root, datetime(2026, 11, 2, 22, 0, tzinfo=UTC))
         assert status_of(items, "Study 004 record 2026-10") == "ok"
@@ -742,7 +810,8 @@ def selftest() -> int:
         # the first fixture item becomes ok once the record exists
         (root / "research" / "007-f" / "paper-log" / "decisions").mkdir()
         (root / "research" / "007-f" / "paper-log" / "decisions" / "2026-10-30.json").write_text(
-            json.dumps({"signal_month": "2026-10"}), encoding="utf-8")
+            json.dumps({"signal_month": "2026-10", "signal_date": "2026-10-30", "status": "ok", "paper_order": False,
+                        "orders": []}), encoding="utf-8")  # a record its writer would write (2026-11-10)
         items, _ = run(root, datetime(2026, 11, 5, 22, 0, tzinfo=UTC))
         assert status_of(items, "Study 007 record 2026-10") == "ok"
     print("due register self-test: pass")

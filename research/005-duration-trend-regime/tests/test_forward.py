@@ -2,6 +2,7 @@
 no look-ahead, the gates, the shadow line against the frozen engine, the
 append rules, interim figures and the single scoring.  Toy data only."""
 import json
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -29,9 +30,13 @@ def world():
     return dict(closes=closes, cpi=cpi, indices=indices, schedule=schedule, trend=trend, regimes=regimes)
 
 
+UNDEFINED = {name: None for name in forward.STRATEGY_IDS}  # a holding the gate admits (2026-11-10)
+
+
 def _record(world, month: str, holding_before=None):
     t = world["schedule"].loc[pd.Period(month, "M"), "signal_date"]
-    return forward.decision_record(world["closes"], world["cpi"], t, holding_before or {}, run_at_utc="2007-01-01T00:00:00Z")
+    return forward.decision_record(world["closes"], world["cpi"], t, holding_before or UNDEFINED,
+                                   run_at_utc="2007-01-01T00:00:00Z")
 
 
 def test_record_matches_the_engine_frames(world):
@@ -217,10 +222,14 @@ def test_previous_targets_from_episode_then_records(world, tmp_path):
     targets, source = forward.previous_targets(decisions, summary, before="2026-10-30")
     assert targets == {"B2": CASH_LEG, "T1": CASH_LEG, "T2": DURATION_LEG, "T3": CASH_LEG}
     assert source.startswith("episode terminal targets")
-    forward.write_record(dict(_record(world, "2006-06"), signal_date="2026-10-30"), decisions)
-    forward.write_record(dict(_record(world, "2006-07"), signal_date="2026-11-30"), decisions)
+    # the chain as a run writes it (2026-11-10): each record starts from the state in force before it
+    first = dict(_record(world, "2006-06", holding_before=targets), signal_date="2026-10-30", execution_date="2026-11-02")
+    second = dict(_record(world, "2006-07", holding_before=first["targets"]), signal_date="2026-11-30",
+                  execution_date="2026-12-01")
+    forward.write_record(first, decisions)
+    forward.write_record(second, decisions)
     later, source = forward.previous_targets(decisions, summary, before="2026-12-31")
-    assert source == "decision record 2026-11-30" and later == _record(world, "2006-07")["targets"]
+    assert source == "decision record 2026-11-30" and later == second["targets"]
     earlier, source = forward.previous_targets(decisions, summary, before="2026-11-30")
     assert source == "decision record 2026-10-30"
 
@@ -228,3 +237,59 @@ def test_previous_targets_from_episode_then_records(world, tmp_path):
 def test_cli_refuses_before_the_first_forward_date(capsys):
     assert forward.main(["decide", "--signal-date", "2026-09-30", "--dry-run"]) == 1
     assert "before the first forward signal date" in capsys.readouterr().out
+
+
+# --- The alter-each-column search of 2026-11-10, kept (research/POST_MORTEMS.md "A starting state no reader held") ---
+# Before the fix every alteration below became the next record's starting state or a silent fall-back to the
+# frozen start; the committed record passes its own gate and each altered copy is refused by name.
+COMMITTED_RECORD = Path(__file__).resolve().parents[1] / "paper-log" / "decisions" / "2026-10-30.json"
+_DEL = object()
+COMMON_ALTERATIONS = [
+    (("status",), "OK"), (("status",), "ok "), (("status",), "done"), (("status",), _DEL),
+    (("signal_date",), "2026-10-3"), (("signal_date",), "2026-11-30"), (("signal_date",), _DEL),
+    (("execution_date",), "2026-10-01"), (("execution_date",), None), (("run_at_utc",), "soon"),
+    (("study",), "999-other-study"), (("paper_order",), True), (("orders",), [{"symbol": "IEF", "qty": 1}]),
+]
+STUDY_ALTERATIONS = [
+    (("targets", "T1"), "ief"), (("targets", "B2"), "SPY"), (("targets", "T1"), 0.5), (("targets", "T2"), _DEL),
+    (("targets", "T4"), "IEF"), (("targets",), None), (("switch", "T1"), True), (("holding_before", "B2"), "spy"),
+]
+
+
+def _altered(record: dict, path: tuple, value):
+    record = json.loads(json.dumps(record))
+    node = record
+    for key in path[:-1]:
+        node = node[key]
+    if value is _DEL:
+        del node[path[-1]]
+    else:
+        node[path[-1]] = value
+    return record
+
+
+def test_committed_record_passes_its_own_gate():
+    record = json.loads(COMMITTED_RECORD.read_text(encoding="utf-8"))
+    assert forward.record_violations(record, COMMITTED_RECORD) == []
+
+
+@pytest.mark.parametrize("path,value", COMMON_ALTERATIONS + STUDY_ALTERATIONS)
+def test_an_altered_column_of_the_committed_record_is_refused_by_name(path, value, tmp_path):
+    record = _altered(json.loads(COMMITTED_RECORD.read_text(encoding="utf-8")), path, value)
+    (tmp_path / "2026-10-30.json").write_text(json.dumps(record, indent=2, sort_keys=True, allow_nan=True) + "\n",
+                                              encoding="utf-8")
+    with pytest.raises(ValueError) as refused:
+        forward.load_records(tmp_path)
+    assert any(str(part) in str(refused.value) for part in path), str(refused.value)
+
+
+def test_two_records_for_one_month_are_refused(tmp_path):
+    record = json.loads(COMMITTED_RECORD.read_text(encoding="utf-8"))
+    (tmp_path / "2026-10-30.json").write_text(json.dumps(record), encoding="utf-8")
+    (tmp_path / "2026-10-29.json").write_text(json.dumps(dict(record, signal_date="2026-10-29")), encoding="utf-8")
+    with pytest.raises(ValueError, match="two records"):
+        forward.load_records(tmp_path)
+    (tmp_path / "2026-10-29.json").unlink()
+    (tmp_path / "2026-10-30 (1).json").write_text(json.dumps(record), encoding="utf-8")
+    with pytest.raises(ValueError):
+        forward.load_records(tmp_path)

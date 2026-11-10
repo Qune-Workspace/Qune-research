@@ -159,8 +159,9 @@ def test_due_unscored_excludes_scored_and_future(tmp_path):
     outcomes = pd.DataFrame(columns=score.OUTCOME_COLUMNS)
     assert list(score.due_unscored(ledger, outcomes, pd.Timestamp("2026-10-30"))["id"]) == ["A"]
     score.append_outcome(tmp_path / "o.csv", {"id": "A", "scored_on": "2026-10-30", "observed_on": "2026-10-29",
-                                              "observed_value": 4.25, "result": "hit", "note": "", "raw_sha256": "x"})
-    outcomes = score.read_outcomes(tmp_path / "o.csv")
+                                              "observed_value": 4.25, "result": "hit", "note": "value on the due date",
+                                              "raw_sha256": "ab" * 32}, ledger)
+    outcomes = score.read_outcomes(ledger, tmp_path / "o.csv")
     assert score.due_unscored(ledger, outcomes, pd.Timestamp("2026-10-30")).empty
     assert list(score.due_unscored(ledger, outcomes, pd.Timestamp("2027-01-01"))["id"]) == ["B"]
 

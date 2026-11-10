@@ -38,11 +38,25 @@ Test kinds (the ``test`` column):
   a band it cannot read instead of scoring it.  Before this date an empty
   threshold_high on ``between_on_due`` scored a silent miss (``low <= v <= nan`` is
   False) and on ``within_every_day_until_due`` a silent hit (nothing exceeds nan).
+* An outcome row is held against the call it scores (added 2026-11-10,
+  predictions/POST_MORTEMS.md "A result spelled another way was a miss"): ``result`` is
+  ``hit`` or ``miss`` and nothing else, the id is one ledger id and appears once,
+  ``made_on <= observed_on <= due_on <= scored_on``, ``observed_value`` is a finite
+  number, the note is not empty and ``raw_sha256`` is one or more SHA-256 digests
+  joined by ``;``.  ``outcome_row_violations`` is the list; ``read_outcomes`` and
+  ``append_outcome`` apply it with the ledger, and ``baseline.skill_summary`` refuses a
+  result outside ``RESULTS`` instead of counting it.  Before this date any non-empty
+  result that was not the word ``hit`` was counted as a scored miss, an empty one left
+  the call "not yet due" for ever while ``due_unscored`` treated it as scored, an id not
+  in the ledger was dropped from the table while the call was scored again, and a
+  repeated id doubled the call in the Brier.
 """
 from __future__ import annotations
 
 import argparse
 import csv
+import math
+import re
 import sys
 from pathlib import Path
 
@@ -62,7 +76,9 @@ MANIFEST = HERE / "manifest.json"
 LEDGER_COLUMNS = ["id", "made_on", "series", "statement", "test", "threshold_low", "threshold_high",
                   "due_on", "confidence", "basis"]
 OUTCOME_COLUMNS = ["id", "scored_on", "observed_on", "observed_value", "result", "note", "raw_sha256"]
-TESTS = {"eq_on_due", "between_on_due", "below_on_due", "above_on_due", "within_every_day_until_due"}
+RESULTS = frozenset({"hit", "miss"})   # the only words an outcome row may carry as its result
+SHA256_HEX = re.compile(r"^[0-9a-f]{64}$")
+TESTS ={"eq_on_due", "between_on_due", "below_on_due", "above_on_due", "within_every_day_until_due"}
 TWO_SIDED = {"between_on_due", "within_every_day_until_due"}   # need threshold_low < threshold_high
 ONE_SIDED = TESTS - TWO_SIDED                                   # threshold_high must be empty
 # Series a call may name: those the baseline can price (baseline.SERIES_SPEC; a test holds the
@@ -228,10 +244,83 @@ def load_series(series_id: str, fetch) -> pd.Series:
     raise ValueError(series_id)
 
 
-def read_outcomes(path: Path = OUTCOMES) -> pd.DataFrame:
+def hash_list_violation(text: str, row_id: str, col: str) -> str | None:
+    """``raw_sha256`` is one or more lowercase SHA-256 digests joined by ``;``."""
+    parts = str(text).split(";")
+    if not parts or any(not SHA256_HEX.match(p) for p in parts):
+        return f"{row_id}: {col} {str(text)[:40]!r} is not one or more SHA-256 digests joined by ';'"
+    return None
+
+
+def ledger_rows_by_id(ledger: pd.DataFrame) -> dict[str, dict]:
+    return {str(r["id"]): r.to_dict() for _, r in ledger.iterrows()}
+
+
+def outcome_row_violations(row: dict, call: dict | None) -> list[str]:
+    """Every rule one outcome row must meet, each sentence naming the id and the column.
+    ``call`` is the ledger row it scores (None when the id is not in the ledger, which is
+    itself a violation).  The reader, the writer and the committed-file test apply this list."""
+    row_id = str(row.get("id", "")).strip() or "<no id>"
+    out: list[str] = []
+    if not str(row.get("id", "")).strip():
+        out.append(f"{row_id}: id is empty")
+    elif call is None:
+        out.append(f"{row_id}: id is not a call in the ledger")
+    elif str(row.get("id")) != str(call.get("id")):
+        out.append(f"{row_id}: id is not written as the ledger writes it ({call.get('id')!r})")
+    result = row.get("result")
+    if result not in RESULTS:
+        out.append(f"{row_id}: result {result!r} is not one of {', '.join(sorted(RESULTS))}")
+    if not str(row.get("note", "")).strip():
+        out.append(f"{row_id}: note is empty")
+    try:
+        v = _number(row.get("observed_value", ""), row_id, "observed_value")
+        if not math.isfinite(v):
+            out.append(f"{row_id}: observed_value {row.get('observed_value')!r} is not finite")
+    except ValueError as exc:
+        out.append(str(exc))
+    bad = hash_list_violation(row.get("raw_sha256", ""), row_id, "raw_sha256")
+    if bad:
+        out.append(bad)
+    try:
+        observed = _day(row.get("observed_on", ""), row_id, "observed_on")
+        scored = _day(row.get("scored_on", ""), row_id, "scored_on")
+        if scored < observed:
+            out.append(f"{row_id}: scored_on {row['scored_on']} is before observed_on {row['observed_on']}")
+        if call is not None:
+            made, due = _day(call.get("made_on", ""), row_id, "made_on"), _day(call.get("due_on", ""), row_id, "due_on")
+            if observed < made:
+                out.append(f"{row_id}: observed_on {row['observed_on']} is before the call was made ({call['made_on']})")
+            if observed > due:
+                out.append(f"{row_id}: observed_on {row['observed_on']} is after due_on {call['due_on']}")
+            if scored < due:
+                out.append(f"{row_id}: scored_on {row['scored_on']} is before due_on {call['due_on']}; a call is scored once due")
+    except ValueError as exc:
+        out.append(str(exc))
+    return out
+
+
+def validate_outcomes(outcomes: pd.DataFrame, ledger: pd.DataFrame) -> None:
+    missing = [c for c in OUTCOME_COLUMNS if c not in outcomes.columns]
+    if missing:
+        raise ValueError(f"outcomes lack columns {missing}")
+    dupes = sorted(set(outcomes.loc[outcomes["id"].duplicated(), "id"]))
+    if dupes:
+        raise ValueError(f"outcome ids must be unique; repeated id {dupes}")
+    calls = ledger_rows_by_id(ledger)
+    problems = [p for _, row in outcomes.iterrows()
+                for p in outcome_row_violations(row.to_dict(), calls.get(str(row["id"])))]
+    if problems:
+        raise ValueError("outcome rows refused: " + "; ".join(problems))
+
+
+def read_outcomes(ledger: pd.DataFrame, path: Path = OUTCOMES) -> pd.DataFrame:
+    """The scored calls, every row held against the ledger (``validate_outcomes``)."""
     if not path.exists():
         return pd.DataFrame(columns=OUTCOME_COLUMNS)
-    return pd.read_csv(path, dtype=str, keep_default_na=False)
+    outcomes = pd.read_csv(path, dtype=str, keep_default_na=False)
+    validate_outcomes(outcomes, ledger)
+    return outcomes
 
 
 def due_unscored(ledger: pd.DataFrame, outcomes: pd.DataFrame, today: pd.Timestamp) -> pd.DataFrame:
@@ -240,13 +329,21 @@ def due_unscored(ledger: pd.DataFrame, outcomes: pd.DataFrame, today: pd.Timesta
     return ledger[due & ~ledger["id"].isin(scored)]
 
 
-def append_outcome(path: Path, record: dict) -> None:
+def append_outcome(path: Path, record: dict, ledger: pd.DataFrame) -> None:
+    """Write one outcome row after holding it against its call and the rows already written."""
+    text = {c: ("" if record.get(c) is None else str(record.get(c))) for c in OUTCOME_COLUMNS}
+    existing = read_outcomes(ledger, path)
+    if text["id"] in set(existing["id"]):
+        raise ValueError(f"{text['id']} is already scored; refusing")
+    problems = outcome_row_violations(text, ledger_rows_by_id(ledger).get(text["id"]))
+    if problems:
+        raise ValueError("outcome row refused: " + "; ".join(problems))
     exists = path.exists()
     with path.open("a", newline="") as fh:
         writer = csv.DictWriter(fh, fieldnames=OUTCOME_COLUMNS)
         if not exists:
             writer.writeheader()
-        writer.writerow(record)
+        writer.writerow(text)
 
 
 def main() -> int:
@@ -256,7 +353,7 @@ def main() -> int:
     args = parser.parse_args()
     today = pd.Timestamp(args.today)
     ledger = read_ledger()
-    outcomes = read_outcomes()
+    outcomes = read_outcomes(ledger)
     todo = due_unscored(ledger, outcomes, today)
     if todo.empty:
         print("nothing due and unscored")
@@ -280,7 +377,7 @@ def main() -> int:
                   "raw_sha256": ";".join(qdata.sha256_of(qdata.fred_path(sid, RAW_DIR)) for sid in fetched)}
         print(record)
         if not args.dry_run:
-            append_outcome(OUTCOMES, record)
+            append_outcome(OUTCOMES, record, ledger)
     return 0
 
 

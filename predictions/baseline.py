@@ -55,6 +55,17 @@ baseline and what the market is missing in the basis.  ``max_policy_spread`` is 
 check a front-end reading must pass before a bill spread is called expectations.
 ``desk-view/tests/test_ledger_discipline.py`` enforces the first two rules on the
 committed files.
+
+A baseline row is held against the call it prices (added 2026-11-10, POST_MORTEMS.md
+"A result spelled another way was a miss"): the id is one ledger id and appears once;
+``method`` is the frozen method for the call's series and test (``expected_method``);
+``baseline_probability`` is in [0, 1] with four decimals; ``desk_confidence`` equals the
+ledger's confidence (a confidence changed after the baseline was written is caught here);
+``asof <= made_on`` and ``asof <= computed_on``; ``inputs`` is a JSON object carrying
+``h_business_days``; the note is not empty; ``raw_sha256`` is one or more digests.
+``baseline_row_violations`` is the list; ``read_baselines`` and ``append_baseline`` apply
+it with the ledger.  ``skill_summary`` refuses a result outside ``score.RESULTS`` and a
+probability outside [0, 1] instead of putting them in the Brier.
 """
 from __future__ import annotations
 
@@ -83,6 +94,7 @@ RAW_DIR = HERE / "raw"
 MANIFEST = HERE / "manifest.json"
 BASELINE_COLUMNS = ["id", "computed_on", "asof", "method", "baseline_probability", "desk_confidence",
                     "inputs", "note", "raw_sha256"]
+METHODS = frozenset({"bill_implied_hike", "forward_normal", "forward_normal_barrier", "persistence_base_rate"})
 
 TENOR_YEARS = {"DTB4WK": 28 / 365, "DGS3MO": 0.25, "DGS2": 2.0, "DGS10": 10.0, "DGS30": 30.0}
 SHORT_LEG = "DGS3MO"          # the y_h used in the forward formula
@@ -207,6 +219,23 @@ def truncate(series: pd.Series, asof: pd.Timestamp) -> pd.Series:
     return series.loc[:asof]
 
 
+def expected_method(series: str, test: str) -> str:
+    """The one method ``compute_baseline`` returns for a call's series and test; a test
+    holds the two in agreement.  Raises ValueError when no method covers the pair."""
+    spec = SERIES_SPEC.get(series)
+    if spec is None:
+        raise ValueError(f"no baseline method for series {series}")
+    if spec["kind"] == "policy":
+        if test != "eq_on_due":
+            raise ValueError("policy baseline covers eq_on_due only")
+        return "bill_implied_hike"
+    if spec["kind"] == "base_rate":
+        if test not in {"above_on_due", "below_on_due"}:
+            raise ValueError("base-rate baseline covers above/below on the due date only")
+        return "persistence_base_rate"
+    return "forward_normal_barrier" if test == "within_every_day_until_due" else "forward_normal"
+
+
 def compute_baseline(row: pd.Series, load, asof: pd.Timestamp) -> dict:
     """``load(series_id) -> pd.Series`` (full FRED history).  Returns the row for
     baselines.csv except ``computed_on`` and ``raw_sha256``."""
@@ -287,25 +316,110 @@ def compute_baseline(row: pd.Series, load, asof: pd.Timestamp) -> dict:
 
 # --- files ---------------------------------------------------------------------------------
 
-def read_baselines(path: Path = BASELINES) -> pd.DataFrame:
+def _probability_text(text: str, row_id: str, col: str, decimals: int, closed: bool) -> list[str]:
+    """A probability written with exactly ``decimals`` decimals; ``closed`` allows 0 and 1."""
+    try:
+        p = float(text)
+    except (TypeError, ValueError):
+        return [f"{row_id}: {col} {text!r} is not a number"]
+    lo_ok = (0.0 <= p) if closed else (0.0 < p)
+    hi_ok = (p <= 1.0) if closed else (p < 1.0)
+    if not (lo_ok and hi_ok):
+        return [f"{row_id}: {col} {text} is not a probability in {'[0, 1]' if closed else '(0, 1)'}"]
+    if str(text) != f"{p:.{decimals}f}":
+        return [f"{row_id}: {col} {text} is not written with {decimals} decimals"]
+    return []
+
+
+def baseline_row_violations(row: dict, call: dict | None) -> list[str]:
+    """Every rule one baseline row must meet, each sentence naming the id and the column.
+    ``call`` is the ledger row it prices (None when the id is not in the ledger, which is
+    itself a violation).  The reader, the writer and the committed-file test apply this list."""
+    row_id = str(row.get("id", "")).strip() or "<no id>"
+    out: list[str] = []
+    if not str(row.get("id", "")).strip():
+        out.append(f"{row_id}: id is empty")
+    elif call is None:
+        out.append(f"{row_id}: id is not a call in the ledger")
+    elif str(row.get("id")) != str(call.get("id")):
+        out.append(f"{row_id}: id is not written as the ledger writes it ({call.get('id')!r})")
+    method = row.get("method")
+    if method not in METHODS:
+        out.append(f"{row_id}: method {method!r} is not one of {', '.join(sorted(METHODS))}")
+    elif call is not None:
+        try:
+            want = expected_method(str(call.get("series")), str(call.get("test")))
+            if method != want:
+                out.append(f"{row_id}: method {method} is not the frozen method {want} for {call.get('series')} {call.get('test')}")
+        except ValueError as exc:
+            out.append(f"{row_id}: method: {exc}")
+    out += _probability_text(str(row.get("baseline_probability", "")), row_id, "baseline_probability", 4, closed=True)
+    out += _probability_text(str(row.get("desk_confidence", "")), row_id, "desk_confidence", 2, closed=False)
+    if call is not None and str(row.get("desk_confidence")) != str(call.get("confidence")):
+        out.append(f"{row_id}: desk_confidence {row.get('desk_confidence')} is not the ledger's confidence "
+                   f"{call.get('confidence')}; the call changed after its baseline was written")
+    try:
+        inputs = json.loads(str(row.get("inputs", "")))
+        if not isinstance(inputs, dict) or "h_business_days" not in inputs:
+            out.append(f"{row_id}: inputs is not a JSON object carrying h_business_days")
+    except ValueError:
+        out.append(f"{row_id}: inputs {str(row.get('inputs', ''))[:40]!r} is not JSON")
+    if not str(row.get("note", "")).strip():
+        out.append(f"{row_id}: note is empty")
+    bad = score.hash_list_violation(row.get("raw_sha256", ""), row_id, "raw_sha256")
+    if bad:
+        out.append(bad)
+    try:
+        asof = score._day(row.get("asof", ""), row_id, "asof")
+        computed = score._day(row.get("computed_on", ""), row_id, "computed_on")
+        if computed < asof:
+            out.append(f"{row_id}: computed_on {row['computed_on']} is before asof {row['asof']}")
+        if call is not None and asof > score._day(call.get("made_on", ""), row_id, "made_on"):
+            out.append(f"{row_id}: asof {row['asof']} is after the call was made ({call['made_on']}); "
+                       "a baseline reads nothing the desk could not have seen")
+    except ValueError as exc:
+        out.append(str(exc))
+    return out
+
+
+def validate_baselines(baselines: pd.DataFrame, ledger: pd.DataFrame) -> None:
+    missing = [c for c in BASELINE_COLUMNS if c not in baselines.columns]
+    if missing:
+        raise ValueError(f"baselines lack columns {missing}")
+    dupes = sorted(set(baselines.loc[baselines["id"].duplicated(), "id"]))
+    if dupes:
+        raise ValueError(f"baseline ids must be unique; repeated id {dupes}")
+    calls = score.ledger_rows_by_id(ledger)
+    problems = [p for _, row in baselines.iterrows()
+                for p in baseline_row_violations(row.to_dict(), calls.get(str(row["id"])))]
+    if problems:
+        raise ValueError("baseline rows refused: " + "; ".join(problems))
+
+
+def read_baselines(ledger: pd.DataFrame, path: Path = BASELINES) -> pd.DataFrame:
+    """The baselines on record, every row held against the ledger (``validate_baselines``)."""
     if not path.exists():
         return pd.DataFrame(columns=BASELINE_COLUMNS)
     frame = pd.read_csv(path, dtype=str, keep_default_na=False)
-    if frame["id"].duplicated().any():
-        raise ValueError("baselines ids must be unique")
+    validate_baselines(frame, ledger)
     return frame
 
 
-def append_baseline(path: Path, record: dict) -> None:
-    existing = read_baselines(path)
-    if record["id"] in set(existing["id"]):
-        raise ValueError(f"{record['id']} already has a baseline; refusing")
+def append_baseline(path: Path, record: dict, ledger: pd.DataFrame) -> None:
+    """Write one baseline row after holding it against its call and the rows already written."""
+    text = {c: ("" if record.get(c) is None else str(record.get(c))) for c in BASELINE_COLUMNS}
+    existing = read_baselines(ledger, path)
+    if text["id"] in set(existing["id"]):
+        raise ValueError(f"{text['id']} already has a baseline; refusing")
+    problems = baseline_row_violations(text, score.ledger_rows_by_id(ledger).get(text["id"]))
+    if problems:
+        raise ValueError("baseline row refused: " + "; ".join(problems))
     exists = path.exists()
     with path.open("a", newline="") as fh:
         writer = csv.DictWriter(fh, fieldnames=BASELINE_COLUMNS)
         if not exists:
             writer.writeheader()
-        writer.writerow(record)
+        writer.writerow(text)
 
 
 def format_record(call_id: str, computed_on: pd.Timestamp, asof: pd.Timestamp, desk_confidence: str,
@@ -323,9 +437,26 @@ def brier(probabilities: pd.Series, hits: pd.Series) -> float:
     return float(((probabilities - hits) ** 2).mean())
 
 
+def _ids_match_the_ledger(name: str, frame: pd.DataFrame, ledger: pd.DataFrame) -> None:
+    """A table built by merging on id drops a row whose id the ledger does not carry and
+    doubles a call whose id a record repeats; both are refused here by name."""
+    dupes = sorted(set(frame.loc[frame["id"].duplicated(), "id"]))
+    if dupes:
+        raise ValueError(f"{name}: repeated id {dupes}")
+    strays = sorted(set(frame["id"]) - set(ledger["id"]))
+    if strays:
+        raise ValueError(f"{name}: id not in the ledger {strays}")
+
+
 def skill_table(ledger: pd.DataFrame, baselines: pd.DataFrame, outcomes: pd.DataFrame) -> pd.DataFrame:
     """One row per call with a baseline: desk and baseline probabilities and, once
-    scored, the outcome.  Calls without a baseline are listed with an empty method."""
+    scored, the outcome.  Calls without a baseline are listed with an empty method.
+    Every baseline and outcome id must be a ledger id and appear once (2026-11-10)."""
+    _ids_match_the_ledger("baselines", baselines, ledger)
+    _ids_match_the_ledger("outcomes", outcomes, ledger)
+    odd = outcomes[~outcomes["result"].isin(score.RESULTS)]
+    if not odd.empty:  # after the merge an empty result and a missing row look the same ("not yet due")
+        raise ValueError("outcomes: result not hit or miss: " + ", ".join(f"{r.id} {r.result!r}" for r in odd.itertuples()))
     table = ledger[["id", "made_on", "series", "test", "due_on", "confidence"]].merge(
         baselines[["id", "asof", "method", "baseline_probability"]], on="id", how="left")
     table = table.merge(outcomes[["id", "result", "observed_value"]], on="id", how="left")
@@ -333,12 +464,23 @@ def skill_table(ledger: pd.DataFrame, baselines: pd.DataFrame, outcomes: pd.Data
 
 
 def skill_summary(table: pd.DataFrame) -> dict:
-    scored = table[(table["result"] != "") & (table["method"] != "")]
+    """Brier scores over the calls that are scored and have a baseline.  A result that
+    is not ``hit`` or ``miss``, or a probability outside [0, 1], is refused by name
+    (2026-11-10): before, any other word counted as a miss."""
+    with_row = table[table["result"] != ""]
+    odd = with_row[~with_row["result"].isin(score.RESULTS)]
+    if not odd.empty:
+        raise ValueError("outcome result not hit or miss: " + ", ".join(f"{r.id} {r.result!r}" for r in odd.itertuples()))
+    scored = with_row[with_row["method"] != ""]
     if scored.empty:
         return {"scored_with_baseline": 0}
     hits = (scored["result"] == "hit").astype(float)
     desk = pd.to_numeric(scored["confidence"])
     base = pd.to_numeric(scored["baseline_probability"])
+    for name, values in (("confidence", desk), ("baseline_probability", base)):
+        bad = scored.loc[~values.between(0.0, 1.0), "id"]
+        if not bad.empty:
+            raise ValueError(f"{name} outside [0, 1] for {list(bad)}")
     return {"scored_with_baseline": int(len(scored)), "hits": int(hits.sum()),
             "brier_desk": brier(desk, hits), "brier_baseline": brier(base, hits),
             "skill_vs_baseline": brier(base, hits) - brier(desk, hits)}
@@ -381,7 +523,7 @@ def main() -> int:
     today = pd.Timestamp(args.today) if args.today else pd.Timestamp(qdata.utc_now()[:10])
     ledger = score.read_ledger()
     if args.summary:
-        table = skill_table(ledger, read_baselines(), score.read_outcomes())
+        table = skill_table(ledger, read_baselines(ledger), score.read_outcomes(ledger))
         text = render_skill(table, skill_summary(table), today)
         print(text)
         if not args.dry_run:
@@ -394,7 +536,7 @@ def main() -> int:
     missing = set(args.ids.split(",")) - set(wanted["id"])
     if missing:
         raise SystemExit(f"not in the ledger: {sorted(missing)}")
-    existing = set(read_baselines()["id"])
+    existing = set(read_baselines(ledger)["id"])
     for _, row in wanted.iterrows():
         if row["id"] in existing:
             raise SystemExit(f"{row['id']} already has a baseline; refusing")
@@ -412,7 +554,7 @@ def main() -> int:
         record = format_record(row["id"], today, asof, row["confidence"], result, hashes)
         print(record)
         if not args.dry_run:
-            append_baseline(BASELINES, record)
+            append_baseline(BASELINES, record, ledger)
     return 0
 
 

@@ -146,17 +146,18 @@ def test_compute_baseline_policy_uses_bill_and_funds_to_asof():
 
 def test_append_refuses_duplicate_and_summary_brier(tmp_path):
     path = tmp_path / "baselines.csv"
-    rec = {c: "" for c in bl.BASELINE_COLUMNS}
-    rec.update({"id": "A", "baseline_probability": "0.5000", "method": "forward_normal", "asof": "2026-10-21"})
-    bl.append_baseline(path, rec)
-    with pytest.raises(ValueError):
-        bl.append_baseline(path, rec)
     ledger = pd.DataFrame([{"id": "A", "made_on": "2026-10-23", "series": "DGS10", "test": "between_on_due",
-                            "due_on": "2026-12-31", "confidence": "0.8"},
+                            "due_on": "2026-12-31", "confidence": "0.80"},
                            {"id": "B", "made_on": "2026-10-23", "series": "DGS2", "test": "below_on_due",
-                            "due_on": "2026-12-31", "confidence": "0.6"}])
+                            "due_on": "2026-12-31", "confidence": "0.60"}])
+    rec = {"id": "A", "computed_on": "2026-10-23", "asof": "2026-10-21", "method": "forward_normal",
+           "baseline_probability": "0.5000", "desk_confidence": "0.80", "inputs": '{"h_business_days": 49}',
+           "note": "a note", "raw_sha256": "ab" * 32}
+    bl.append_baseline(path, rec, ledger)
+    with pytest.raises(ValueError, match="already has a baseline"):
+        bl.append_baseline(path, rec, ledger)
     outcomes = pd.DataFrame([{"id": "A", "result": "hit", "observed_value": "5.0"}])
-    table = bl.skill_table(ledger, bl.read_baselines(path), outcomes)
+    table = bl.skill_table(ledger, bl.read_baselines(ledger, path), outcomes)
     assert list(table["id"]) == ["A", "B"]
     assert table.loc[1, "method"] == ""
     summary = bl.skill_summary(table)

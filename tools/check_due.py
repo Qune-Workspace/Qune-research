@@ -306,10 +306,13 @@ def prediction_items(root: Path, at: datetime) -> list[Item]:
     outcomes = root / "predictions" / "outcomes.csv"
     if not ledger.exists():
         return [Item("Predictions", "info", "no ledger")]
-    scored: set[str] = set()
+    # A row counts as a score only when its result is the word hit or miss (2026-11-10,
+    # predictions/POST_MORTEMS.md "A result spelled another way was a miss"); any other
+    # row leaves the call DUE here so that the register names it.
+    scored: dict[str, str] = {}
     if outcomes.exists():
         with outcomes.open(encoding="utf-8", newline="") as fh:
-            scored = {row["id"] for row in csv.DictReader(fh) if row.get("id")}
+            scored = {row["id"]: (row.get("result") or "") for row in csv.DictReader(fh) if row.get("id")}
     items: list[Item] = []
     pending = 0
     with ledger.open(encoding="utf-8", newline="") as fh:
@@ -323,7 +326,8 @@ def prediction_items(root: Path, at: datetime) -> list[Item]:
                 continue
             due = datetime.combine(due_on, time(23, 59), tzinfo=UTC)
             deadline = datetime.combine(due_on + timedelta(days=PREDICTION_GRACE_DAYS), time(23, 59), tzinfo=UTC)
-            evidence = "outcomes.csv row" if row["id"] in scored else None
+            result = scored.get(row["id"])
+            evidence = f"outcomes.csv row ({result})" if result in ("hit", "miss") else None
             status, detail = classify(at, due, deadline, evidence, None, None)
             items.append(Item(f"Call {row['id']} scored", status, detail))
     items.append(Item("Calls not yet due", "info", f"{pending}"))
@@ -628,6 +632,15 @@ def selftest() -> int:
         assert status_of(items, "Desk view 2026-11-06") == "not due"
         assert status_of(items, "Call V1") == "OVERDUE"
         assert rc == 1, rc
+        # an outcome row counts as a score only when its result is hit or miss (2026-11-10)
+        outcomes_path = root / "predictions" / "outcomes.csv"
+        outcomes_path.write_text("id,scored_on,result\nV1,2026-10-29,pending\n", encoding="utf-8")
+        assert status_of(run(root, datetime(2026, 11, 2, 22, 0, tzinfo=UTC))[0], "Call V1") == "OVERDUE"
+        outcomes_path.write_text("id,scored_on,result\nV1,2026-10-29,miss\n", encoding="utf-8")
+        ok_items, _ = run(root, datetime(2026, 11, 2, 22, 0, tzinfo=UTC))
+        assert status_of(ok_items, "Call V1") == "ok"
+        assert [i for i in ok_items if i.label.startswith("Call V1")][0].detail == "outcomes.csv row (miss)"
+        outcomes_path.write_text("id,scored_on\n", encoding="utf-8")
 
         items, rc = run(root, datetime(2026, 11, 5, 22, 0, tzinfo=UTC))
         assert status_of(items, "Study 006 record 2026-10") == "OVERDUE"

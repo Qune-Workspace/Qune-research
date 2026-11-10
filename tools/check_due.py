@@ -66,7 +66,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "pm-view"))
-from pm_lib import earliest_scoring_day, parse_utc_stamp, quote_fetched_for_call  # noqa: E402
+from pm_lib import OUTCOME_KINDS, Y_OF_KIND, earliest_scoring_day, parse_utc_stamp, quote_fetched_for_call  # noqa: E402
 
 from qune_research.nyse import nyse_trading_days  # noqa: E402
 
@@ -352,12 +352,23 @@ def _pm_record_items(record: Path, outcomes: Path, entries: list[dict], at: date
     end, or the day after an earlier written quote of the market carrying its settlement; `after_of`
     gives the row's own quote time (a reading carries it; a call's is found by its book hash).  A stamp
     in another format is a DUE line of its own, never a text comparison; a row the rule cannot read
-    (no due_on) is a DUE line too, because a row that cannot be judged due is work, not silence."""
+    (no due_on) is a DUE line too, because a row that cannot be judged due is work, not silence.
+    A row of the scored record counts as a score only when its `kind` is one of pm_lib.OUTCOME_KINDS
+    (settled or excluded) and its `y` is that kind's (2026-11-10 06:15Z, predictions/POST_MORTEMS.md
+    "A score that nothing read back"; until then any row with an id closed its call); another row is
+    a DUE line naming it, and its call or reading stays unscored."""
     scored: set[str] = set()
+    items: list[Item] = []
     if outcomes.exists():
         with outcomes.open(encoding="utf-8", newline="") as fh:
-            scored = {row["id"] for row in csv.DictReader(fh) if row.get("id")}
-    items: list[Item] = []
+            for row in csv.DictReader(fh):
+                kind, y = str(row.get("kind") or ""), str(row.get("y") or "")
+                if kind in OUTCOME_KINDS and y == Y_OF_KIND.get(kind, ""):
+                    scored.add(row["id"])
+                else:
+                    items.append(Item(f"PM {label} record {outcomes.name} row {row.get('id')}", "DUE",
+                                      f"kind {kind!r} with y {y!r} is not a settled or excluded score; fix the record "
+                                      "(pm-view/score.py refuses it too)"))
     pending = 0
     with record.open(encoding="utf-8", newline="") as fh:
         for row in csv.DictReader(fh):
@@ -610,6 +621,22 @@ def selftest() -> int:
         assert status_of(r_items, "PM call C-2026-11-03-stated-9 scored") == "DUE"
         assert not [i for i in r_items if i.label.startswith("PM call C-2026-11-03-stated-1")]
         assert [i for i in r_items if i.label == "PM calls not yet due"][0].detail == "1"
+        # a row of the scored record counts only when its kind is settled or excluded and y is the kind's
+        # (2026-11-10 06:15Z): a kind of its own, or y under the wrong kind, is a DUE line and the call stays DUE
+        pm_outcomes = root / "pm-view" / "outcomes.csv"
+        head = "id,scored_on,kind,y,desk_p,market_mid,brier_desk,brier_market,gamma_sha256,clob_sha256\n"
+        for bad_row in ("C-2026-11-03-stated-9,2026-11-06,not resolved at the fetch,,0.60,0.735,,,a,b\n",
+                        "C-2026-11-03-stated-9,2026-11-06,first-token,0,0.60,0.735,0.3600,0.5402,a,b\n"):
+            pm_outcomes.write_text(head + bad_row, encoding="utf-8")
+            bad_items, _ = run(root, datetime(2026, 11, 6, 18, 0, tzinfo=UTC))
+            assert status_of(bad_items, "PM call C-2026-11-03-stated-9 scored") == "DUE"
+            assert status_of(bad_items, "PM call record outcomes.csv row C-2026-11-03-stated-9") == "DUE"
+        pm_outcomes.write_text(head + "C-2026-11-03-stated-9,2026-11-06,first-token,1,0.60,0.735,0.1600,0.0702,a,b\n",
+                               encoding="utf-8")
+        ok_pm, _ = run(root, datetime(2026, 11, 6, 18, 0, tzinfo=UTC))
+        assert status_of(ok_pm, "PM call C-2026-11-03-stated-9 scored") == "ok"
+        assert not [i for i in ok_pm if i.label.startswith("PM call record")]
+        pm_outcomes.unlink()
         # a manifest stamp in another format is a DUE line of its own, never compared as text
         manifest_path = root / "pm-view" / "data" / "manifest.json"
         good = manifest_path.read_text(encoding="utf-8")

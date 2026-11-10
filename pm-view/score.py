@@ -25,6 +25,16 @@ so it is closed and never retried.  A call whose market is not yet resolved
 is not written: the scorer prints `NOT SCORED ... retry on a later run`.
 An id already in `outcomes.csv` is refused.  The ledger is never written.
 
+Both scored records are held at every reader (2026-11-10 06:15Z, predictions/
+POST_MORTEMS.md "A score that nothing read back"): `pm_lib.read_scored` applies
+`pm_lib.outcome_row_violations` to every row against the ledger row or reading
+it scores (columns, id as the source writes it, kind in the closed set, y the
+kind's, probabilities the source's and in [0, 1], brier columns recomputed,
+scored_on a day not before made_on, both hashes 64 hex digits) and refuses a
+repeated id; a record that fails is named and nothing is scored or summarised
+until it is fixed (exit 1).  The writer judges its own row the same way before
+appending.  Until this date the files were read for their ids alone.
+
 The readings record (added 2026-11-06 18:15Z, `readings.csv`, written by
 readings.py) is scored the same way into `readings_outcomes.csv`: a reading is
 checked once its `due_on` has passed, or earlier when a later written quote of
@@ -59,11 +69,14 @@ from pathlib import Path
 from typing import Any
 
 from pm_lib import (
-    OUTCOME_COLUMNS,
-    READING_OUTCOME_COLUMNS,
+    OUTCOME_RECORD,
+    READING_OUTCOME_RECORD,
+    ScoredRecord,
     brier,
     earliest_scoring_day,
+    outcome_file_violations,
     quote_fetched_for_call,
+    read_scored,
     reading_summary,
     skill_summary,
 )
@@ -95,12 +108,28 @@ def read_csv(path: Path) -> list[dict[str, str]]:
 
 
 def append_row(path: Path, columns: tuple[str, ...], row: dict[str, Any]) -> None:
+    """Append one row to a CSV record, writing the header first when the file is new (readings.py and
+    ledger.py append their gated rows through this; the two scored records go through append_scored)."""
     new = not path.exists()
     with path.open("a", encoding="utf-8", newline="") as fh:
         w = csv.DictWriter(fh, fieldnames=list(columns))
         if new:
             w.writeheader()
         w.writerow({k: ("" if row.get(k) is None else row.get(k)) for k in columns})
+
+
+def append_scored(path: Path, record: ScoredRecord, row: dict[str, Any], sources: list[dict[str, str]],
+                  existing: list[dict[str, str]]) -> None:
+    """Write one row of a scored record after holding it, as text, against the rows it may score and the
+    rows already on the file (pm_lib.outcome_file_violations); ValueError names every violation and
+    nothing is written.  The writer judges its own row so that a defect in score_call or score_reading
+    cannot reach the record (2026-11-10 06:15Z)."""
+    text = {k: ("" if row.get(k) is None else str(row.get(k))) for k in record.columns}
+    problems = outcome_file_violations([*existing, text], sources, record)
+    if problems:
+        raise ValueError(f"{record.name}: the row built for {text.get('id')!r} is refused, nothing written: "
+                         + "; ".join(problems))
+    append_row(path, record.columns, text)
 
 
 def fetch_records(call: dict[str, str], gamma: Fetcher, clob: Fetcher) -> tuple[dict | None, dict | None, str, str]:
@@ -151,9 +180,15 @@ def call_due(call: dict[str, str], today: date, manifest_entries: list[dict[str,
 def run(ledger: Path, outcomes: Path, gamma: Fetcher, clob: Fetcher, today: date, dry_run: bool,
         manifest_entries: list[dict[str, Any]] | None = None) -> int:
     entries = manifest_entries or []
-    scored = {r["id"] for r in read_csv(outcomes)}
+    calls = read_csv(ledger)
+    try:
+        done = read_scored(outcomes, calls, OUTCOME_RECORD)
+    except ValueError as exc:
+        print(f"NOT SCORED: {exc}")
+        return 1
+    scored = {r["id"] for r in done}
     rc = 0
-    for call in read_csv(ledger):
+    for call in calls:
         if call["id"] in scored:
             continue
         try:
@@ -174,7 +209,8 @@ def run(ledger: Path, outcomes: Path, gamma: Fetcher, clob: Fetcher, today: date
         print(f"{'DRY RUN ' if dry_run else ''}SCORED {call['id']}: {row['kind']} y={row['y']} "
               f"brier desk={row['brier_desk']} market={row['brier_market']}")
         if not dry_run:
-            append_row(outcomes, OUTCOME_COLUMNS, row)
+            append_scored(outcomes, OUTCOME_RECORD, row, calls, done)
+            done.append({k: ("" if row.get(k) is None else str(row.get(k))) for k in OUTCOME_RECORD.columns})
     return rc
 
 
@@ -210,10 +246,16 @@ def score_reading(reading: dict[str, str], status: dict | None, outcome: dict | 
 def run_readings(readings: Path, outcomes: Path, manifest: Path, gamma: Fetcher, clob: Fetcher, today: date,
                  dry_run: bool) -> int:
     entries: list[dict[str, Any]] = json.loads(manifest.read_text(encoding="utf-8")) if manifest.exists() else []
-    scored = {r["id"] for r in read_csv(outcomes)}
+    rows = read_csv(readings)
+    try:
+        done = read_scored(outcomes, rows, READING_OUTCOME_RECORD)
+    except ValueError as exc:
+        print(f"READING NOT SCORED: {exc}")
+        return 1
+    scored = {r["id"] for r in done}
     rc = 0
     checked = 0
-    for reading in read_csv(readings):
+    for reading in rows:
         if reading["id"] in scored:
             continue
         try:
@@ -236,9 +278,10 @@ def run_readings(readings: Path, outcomes: Path, manifest: Path, gamma: Fetcher,
               f"brier method={row['brier_method']} market={row['brier_market']} "
               f"climatology={row['brier_climatology']}")
         if not dry_run:
-            append_row(outcomes, READING_OUTCOME_COLUMNS, row)
+            append_scored(outcomes, READING_OUTCOME_RECORD, row, rows, done)
+            done.append({k: ("" if row.get(k) is None else str(row.get(k))) for k in READING_OUTCOME_RECORD.columns})
     if checked == 0:
-        print(f"readings: none due (of {len(read_csv(readings))} on the record)")
+        print(f"readings: none due (of {len(rows)} on the record)")
     return rc
 
 
@@ -246,7 +289,7 @@ def write_summary(ledger: Path, outcomes: Path, skill: Path, today: date,
                   manifest_entries: list[dict[str, Any]] | None = None) -> None:
     entries = manifest_entries or []
     calls = read_csv(ledger)
-    done = {r["id"]: r for r in read_csv(outcomes)}
+    done = {r["id"]: r for r in read_scored(outcomes, calls, OUTCOME_RECORD)}  # ValueError: no summary from a record it cannot read
     s = skill_summary(list(done.values()))
     lines = [
         "# Desk calls against the market mid",
@@ -292,7 +335,7 @@ def _f(v: float | None) -> str:
 def readings_lines(readings: Path, outcomes: Path, today: date) -> list[str]:
     """The readings section of SKILL.md: per method, the scored count and the three Brier figures; information only."""
     rows = read_csv(readings)
-    done = {r["id"]: r for r in read_csv(outcomes)}
+    done = {r["id"]: r for r in read_scored(outcomes, rows, READING_OUTCOME_RECORD)}
     merged = [{**r, **done.get(r["id"], {})} for r in rows]
     s = reading_summary(merged)
     pending = sum(1 for r in rows if r["id"] not in done)
@@ -338,7 +381,11 @@ def main(argv: list[str] | None = None) -> int:
     manifest = a.manifest if a.manifest is not None else HERE / "data" / "manifest.json"
     entries: list[dict[str, Any]] = json.loads(manifest.read_text(encoding="utf-8")) if manifest.exists() else []
     if a.summary:
-        write_summary(ledger, outcomes, skill, today, entries)
+        try:
+            write_summary(ledger, outcomes, skill, today, entries)
+        except ValueError as exc:
+            print(f"NOT WRITTEN {skill.name}: {exc}")
+            return 1
         print(f"wrote {skill.name}")
         return 0
     rc = run(ledger, outcomes, http_get, http_get, today, a.dry_run, entries)

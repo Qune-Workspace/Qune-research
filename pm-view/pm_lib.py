@@ -209,6 +209,156 @@ READING_OUTCOME_COLUMNS = (
 )
 READING_METHODS = tuple(m for m in METHODS if m in METHOD_CALIBRATION)  # a reading comes from a method, never `stated`
 
+# --- The two scored records held at their readers (2026-11-10 06:15Z, predictions/
+# POST_MORTEMS.md "A score that nothing read back") ---------------------------------
+#
+# `outcomes.csv` and `readings_outcomes.csv` are written by score.py and were read
+# back by score.py (which ids are scored, the Brier summary), by tools/check_due.py
+# (is a row scored) and by two committed-file tests that held id uniqueness and
+# nothing else.  The column search of 2026-11-10 06:15Z on fc7a3a8 found no column
+# of either file held by any reader: an id with a trailing space or a stray id had
+# the call scored again into a second row and counted twice in the Brier; a kind of
+# `not resolved at the fetch` with an empty y closed the call for ever in SKILL.md and
+# the register; `y` of 2 or of 0 under `first-token` was summed into the Brier; a
+# probability of 1.5, or one that differed from the ledger's, changed the skill while
+# the table beside it showed the ledger's figure; the four brier columns were never
+# read, so a wrong figure in the file stood beside the right one in the summary; the
+# hashes took any text.  The rule of 9 and 10 November (a tool-written record is held
+# at the reader as a hand-typed one is, against the row it scores) is applied here to
+# the last two records this folder keeps.  SCORED_KINDS / EXCLUDED_KINDS are the words
+# Study 013's src/outcome.py writes (held equal by tests/test_outcome_shape.py; the
+# study is not imported here so that check_due.py can read the set without it).
+SCORED_KINDS = ("first-token", "second-token")  # y is 1 / 0
+EXCLUDED_KINDS = ("settlement not 1/0 or 0/1", "prices and winner flags disagree")  # closed, never scored: y empty
+OUTCOME_KINDS = SCORED_KINDS + EXCLUDED_KINDS  # the only words a `kind` column may carry; anything else is not written
+Y_OF_KIND = {"first-token": "1", "second-token": "0"}
+SHA256_RE = re.compile(r"[0-9a-f]{64}")
+
+
+class ScoredRecord:
+    """One of the two scored records: its file name, its columns, the record it scores (`source`,
+    the file whose row an outcome row copies its id and probabilities from), and for each
+    probability column the brier column computed from it.  `optional` probabilities may be
+    empty in the source row, and then are empty in the outcome row with their brier."""
+
+    def __init__(self, name: str, columns: tuple[str, ...], source: str, probabilities: dict[str, str],
+                 optional: frozenset[str] = frozenset()) -> None:
+        self.name, self.columns, self.source, self.probabilities, self.optional = name, columns, source, probabilities, optional
+
+
+OUTCOME_RECORD = ScoredRecord("outcomes.csv", OUTCOME_COLUMNS, "ledger.csv",
+                              {"desk_p": "brier_desk", "market_mid": "brier_market"})
+READING_OUTCOME_RECORD = ScoredRecord("readings_outcomes.csv", READING_OUTCOME_COLUMNS, "readings.csv",
+                                      {"method_p": "brier_method", "market_mid": "brier_market",
+                                       "climatology_p": "brier_climatology"}, frozenset({"climatology_p"}))
+
+
+def _probability_text(text: object) -> float | None:
+    """The probability a column's text names when it is a decimal in [0, 1]; None otherwise."""
+    try:
+        p = float(str(text))
+    except ValueError:
+        return None
+    return p if math.isfinite(p) and 0.0 <= p <= 1.0 else None
+
+
+def _day_text(text: object) -> date | None:
+    try:
+        return datetime.strptime(str(text), "%Y-%m-%d").date()
+    except ValueError:
+        return None
+
+
+def outcome_row_violations(row: dict[str, Any], source: dict[str, Any] | None, record: ScoredRecord) -> list[str]:
+    """Every rule one row of a scored record must meet, each sentence naming the id and the column.
+    `source` is the row it scores (the ledger's call or the reading, found by id; None when there is
+    none, which is itself a violation).  The reader, the writer and the committed-file test apply it:
+    the columns are exactly the record's; the id is a source id written as the source writes it; the
+    kind is one of OUTCOME_KINDS and y is the kind's (1, 0, or empty for an excluded kind); each
+    probability is the source's text, a decimal in [0, 1]; each brier column is the four-decimal
+    Brier of that probability against y for a scored kind and empty otherwise; scored_on is a
+    YYYY-MM-DD day not before the source's made_on; the two hashes are 64 lowercase hex digits."""
+    rid = str(row.get("id") or "").strip() or "<no id>"
+    out: list[str] = []
+    keys = {k for k in row if k is not None}
+    if None in row or keys != set(record.columns):
+        extra = sorted(keys - set(record.columns)) + (["(unnamed)"] if None in row else [])
+        missing = [c for c in record.columns if c not in keys]
+        out.append(f"{rid}: columns are not {record.name}'s (missing {missing}, extra {extra})")
+    if not str(row.get("id") or "").strip():
+        out.append(f"{rid}: id is empty")
+    elif source is None:
+        out.append(f"{rid}: id is not a row of {record.source}")
+    elif str(row.get("id")) != str(source.get("id")):
+        out.append(f"{rid}: id is not written as {record.source} writes it ({source.get('id')!r})")
+    kind = str(row.get("kind") or "")
+    if kind not in OUTCOME_KINDS:
+        out.append(f"{rid}: kind {kind!r} is not one of {', '.join(OUTCOME_KINDS)}")
+    y_text = str(row.get("y") or "")
+    want_y = Y_OF_KIND.get(kind, "")
+    if kind in OUTCOME_KINDS and y_text != want_y:
+        out.append(f"{rid}: y {y_text!r} is not {want_y!r}, the y of kind {kind!r}")
+    scored = kind in SCORED_KINDS and y_text == want_y
+    for p_col, b_col in record.probabilities.items():
+        p_text = str(row.get(p_col) or "")
+        src_text = str(source.get(p_col) or "") if source is not None else None
+        if src_text is not None and p_text != src_text:
+            out.append(f"{rid}: {p_col} {p_text!r} is not the {record.source} row's ({src_text!r})")
+        if p_text == "" and p_col not in record.optional:
+            out.append(f"{rid}: {p_col} is empty")
+        p = _probability_text(p_text) if p_text else None
+        if p_text and p is None:
+            out.append(f"{rid}: {p_col} {p_text!r} is not a decimal in [0, 1]")
+        b_text = str(row.get(b_col) or "")
+        if scored and p is not None:
+            want = f"{brier(p, int(want_y)):.4f}"
+            if b_text != want:
+                out.append(f"{rid}: {b_col} {b_text!r} is not the Brier of {p_col} {p_text} against y {want_y} ({want})")
+        elif b_text != "":
+            why = f"{p_col} is empty" if (scored and not p_text) else f"kind {kind!r} is not scored"
+            out.append(f"{rid}: {b_col} {b_text!r} must be empty: {why}")
+    day = _day_text(row.get("scored_on"))
+    if day is None:
+        out.append(f"{rid}: scored_on {row.get('scored_on')!r} is not a day YYYY-MM-DD")
+    elif source is not None:
+        made = _day_text(source.get("made_on"))
+        if made is None:
+            out.append(f"{rid}: made_on {source.get('made_on')!r} of the {record.source} row is not a day YYYY-MM-DD")
+        elif day < made:
+            out.append(f"{rid}: scored_on {row.get('scored_on')} is before the row was made ({source.get('made_on')})")
+    for h in ("gamma_sha256", "clob_sha256"):
+        if not SHA256_RE.fullmatch(str(row.get(h) or "")):
+            out.append(f"{rid}: {h} {row.get(h)!r} is not a SHA-256 of 64 lowercase hex digits")
+    return out
+
+
+def outcome_file_violations(rows: list[dict[str, Any]], sources: list[dict[str, Any]], record: ScoredRecord) -> list[str]:
+    """The rows of a scored record as read from the file: a repeated id, then each row against its source."""
+    by_id = {str(s.get("id")): s for s in sources}
+    seen: set[str] = set()
+    out: list[str] = []
+    for row in rows:
+        rid = str(row.get("id") or "")
+        if rid in seen:
+            out.append(f"{rid or '<no id>'}: repeated id in {record.name}")
+        seen.add(rid)
+        out.extend(outcome_row_violations(row, by_id.get(rid), record))
+    return out
+
+
+def read_scored(path: Path, sources: list[dict[str, Any]], record: ScoredRecord) -> list[dict[str, Any]]:
+    """The rows of a scored record, every one held against the row it scores; a file that does not exist
+    is an empty record.  ValueError naming the file and every violation: a row the reader cannot hold
+    is not counted as scored, not summed and not summarised, until the record is fixed."""
+    if not path.exists():
+        return []
+    with path.open(encoding="utf-8", newline="") as fh:
+        rows = list(csv.DictReader(fh))
+    problems = outcome_file_violations(rows, sources, record)
+    if problems:
+        raise ValueError(f"{record.name} refused, fix the record: " + "; ".join(problems))
+    return rows
+
 # The readings gate's rule tags (2026-11-07 00:15Z, the second run of the mechanical
 # search of 2026-11-06 12:15Z, extended to the second action this folder admits: a
 # row to readings.csv).  Same shape as GATE_TAGS, a separate namespace so a rule
@@ -609,12 +759,13 @@ def reading_summary(rows: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
         entry: dict[str, Any] = {"n": n, "brier_method": None, "brier_market": None, "brier_climatology": None,
                                  "n_climatology": 0}
         if n:
-            entry["brier_method"] = sum(brier(float(r["method_p"]), int(r["y"])) for r in scored) / n
-            entry["brier_market"] = sum(brier(float(r["market_mid"]), int(r["y"])) for r in scored) / n
+            entry["brier_method"] = sum(brier(scored_probability(r, "method_p"), scored_y(r)) for r in scored) / n
+            entry["brier_market"] = sum(brier(scored_probability(r, "market_mid"), scored_y(r)) for r in scored) / n
             clim = [r for r in scored if r.get("climatology_p") not in (None, "")]
             entry["n_climatology"] = len(clim)
             if clim:
-                entry["brier_climatology"] = sum(brier(float(r["climatology_p"]), int(r["y"])) for r in clim) / len(clim)
+                entry["brier_climatology"] = sum(brier(scored_probability(r, "climatology_p"), scored_y(r))
+                                                 for r in clim) / len(clim)
         out[method] = entry
     return out
 
@@ -1073,12 +1224,31 @@ def _phi(x: float) -> float:
     return 0.5 * math.erfc(-x / math.sqrt(2.0))
 
 
+def scored_y(row: dict[str, Any]) -> int:
+    """The outcome of a scored row, 0 or 1; ValueError naming the id and the column for any other text
+    (2026-11-10 06:15Z: until then `int(y)` summed a y of 2 into the Brier and crashed on a word)."""
+    y = str(row.get("y") or "")
+    if y not in ("0", "1"):
+        raise ValueError(f"{row.get('id')}: y {y!r} is not 0 or 1; the summary does not sum it")
+    return int(y)
+
+
+def scored_probability(row: dict[str, Any], column: str) -> float:
+    """A probability column of a scored row as a decimal in [0, 1]; ValueError naming the id and the column."""
+    p = _probability_text(row.get(column))
+    if p is None:
+        raise ValueError(f"{row.get('id')}: {column} {row.get(column)!r} is not a decimal in [0, 1]; the summary does not sum it")
+    return p
+
+
 def skill_summary(outcomes: list[dict[str, Any]]) -> dict[str, Any]:
-    """Brier for the desk and for the market mid over the scored calls (y present); skill = market minus desk."""
+    """Brier for the desk and for the market mid over the scored calls (y present); skill = market minus desk.
+    A y that is not 0 or 1, or a probability outside [0, 1], refuses by name (the reader holds the whole
+    row; this is the summary's own backstop for a frame built by hand)."""
     scored = [o for o in outcomes if o.get("y") not in (None, "")]
     n = len(scored)
     if n == 0:
         return {"n": 0, "brier_desk": None, "brier_market": None, "skill": None}
-    bd = sum(brier(float(o["desk_p"]), int(o["y"])) for o in scored) / n
-    bm = sum(brier(float(o["market_mid"]), int(o["y"])) for o in scored) / n
+    bd = sum(brier(scored_probability(o, "desk_p"), scored_y(o)) for o in scored) / n
+    bm = sum(brier(scored_probability(o, "market_mid"), scored_y(o)) for o in scored) / n
     return {"n": n, "brier_desk": bd, "brier_market": bm, "skill": bm - bd}

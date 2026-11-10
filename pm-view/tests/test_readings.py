@@ -277,9 +277,11 @@ def test_summary_carries_the_readings_table(tmp_path):
     with (tmp_path / "readings_outcomes.csv").open("w", newline="") as fh:
         w = csv.DictWriter(fh, fieldnames=list(L.READING_OUTCOME_COLUMNS))
         w.writeheader()
-        w.writerow({"id": "R-2", "scored_on": "2026-12-10", "kind": "first", "y": "1", "method_p": "0.9",
+        # a row as score.py writes it; until 2026-11-10 this fixture carried kind "first" and one-letter hashes
+        # and the summary read it, because the scored record was held by nothing at the reader
+        w.writerow({"id": "R-2", "scored_on": "2026-12-10", "kind": "first-token", "y": "1", "method_p": "0.9",
                     "market_mid": "0.6", "climatology_p": "", "brier_method": "0.0100", "brier_market": "0.1600",
-                    "brier_climatology": "", "gamma_sha256": "x", "clob_sha256": "y"})
+                    "brier_climatology": "", "gamma_sha256": "a" * 64, "clob_sha256": "b" * 64})
     skill = tmp_path / "SKILL.md"
     S.write_summary(ledger, tmp_path / "outcomes.csv", skill, date(2026, 12, 10))
     text = skill.read_text()

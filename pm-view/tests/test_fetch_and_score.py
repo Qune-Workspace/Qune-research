@@ -80,7 +80,9 @@ def ledger(path, rows):
             w.writerow(r)
 
 
-CALL = {"id": "P1-2026-11-03", "made_on": "2026-11-03T18:20Z", "venue": "polymarket", "market_id": "3215008",
+# made_on is the quote's day (the ledger gate's `[gate:made-on-quote-day]`); until 2026-11-10 this fixture carried
+# a timestamp here and no reader noticed, because the scored record was read for its ids alone
+CALL = {"id": "P1-2026-11-03", "made_on": "2026-11-03", "venue": "polymarket", "market_id": "3215008",
         "condition_id": "0xcond", "yes_token_id": "111", "proposition": "25 bp hike on 9 Dec",
         "settles_on": "the upper bound of the target range after the 9 December 2026 meeting is 25 bp higher",
         "due_on": "2026-12-09", "market_mid": "0.735", "market_spread": "0.01", "volume_usdc": "2661872",
@@ -175,9 +177,9 @@ def test_quote_of_a_settled_market_comes_from_the_record_not_a_failed_book(tmp_p
 CALL_QUOTE = {"market_id": "3215008", "fetched_utc": "2026-11-03T18:20:00Z", "book_sha256": "x"}
 SETTLED = {"market_id": "3215008", "fetched_utc": "2026-11-20T06:00:00Z",
            "settlement": "record says closed=True closedTime='2026-11-19 15:00:00+00' umaResolutionStatus='resolved'"}
-READING_COLUMNS = ["id", "market_id", "condition_id", "yes_token_id", "method", "method_p", "market_mid",
+READING_COLUMNS = ["id", "made_on", "market_id", "condition_id", "yes_token_id", "method", "method_p", "market_mid",
                    "climatology_p", "due_on", "quote_fetched_utc"]
-READING = {"id": "R-2026-11-03-fomc_bills-3215008", "market_id": "3215008", "condition_id": "0xcond",
+READING = {"id": "R-2026-11-03-fomc_bills-3215008", "made_on": "2026-11-03", "market_id": "3215008", "condition_id": "0xcond",
            "yes_token_id": "111", "method": "fomc_bills", "method_p": "0.58", "market_mid": "0.735",
            "climatology_p": "0.23", "due_on": "2026-12-09", "quote_fetched_utc": "2026-11-03T18:20:00Z"}
 

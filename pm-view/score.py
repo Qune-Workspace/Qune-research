@@ -285,8 +285,32 @@ def run_readings(readings: Path, outcomes: Path, manifest: Path, gamma: Fetcher,
     return rc
 
 
+PAGE_GENERATOR = "pm-view/score.py --summary"
+
+
 def write_summary(ledger: Path, outcomes: Path, skill: Path, today: date,
                   manifest_entries: list[dict[str, Any]] | None = None) -> None:
+    """Write SKILL.md: exactly `summary_text`, so the committed page can be held equal to a
+    regeneration at its own date (tools/check_skill_pages.py, 2026-11-11)."""
+    skill.write_text(summary_text(ledger, outcomes, today, manifest_entries), encoding="utf-8")
+
+
+def records_newest_day(ledger: Path, outcomes: Path, readings: Path, readings_outcomes: Path) -> str | None:
+    """The newest day stamped on any row the page summarises (`made_on` of a call or reading, `scored_on`
+    of a score), YYYY-MM-DD, or None when nothing is on record; the floor for the page's generated-on date."""
+    calls = read_csv(ledger)
+    rows = read_csv(readings)
+    days = [c["made_on"] for c in calls] + [r["made_on"] for r in rows]
+    days += [o["scored_on"] for o in read_scored(outcomes, calls, OUTCOME_RECORD)]
+    days += [o["scored_on"] for o in read_scored(readings_outcomes, rows, READING_OUTCOME_RECORD)]
+    days = [d[:10] for d in days if d]
+    return max(days) if days else None
+
+
+def summary_text(ledger: Path, outcomes: Path, today: date,
+                 manifest_entries: list[dict[str, Any]] | None = None) -> str:
+    """The whole of SKILL.md as written on `today` from the records beside `ledger` (readings.csv and
+    readings_outcomes.csv are read from the same folder); ValueError from a record the gates refuse."""
     entries = manifest_entries or []
     calls = read_csv(ledger)
     done = {r["id"]: r for r in read_scored(outcomes, calls, OUTCOME_RECORD)}  # ValueError: no summary from a record it cannot read
@@ -325,7 +349,7 @@ def write_summary(ledger: Path, outcomes: Path, skill: Path, today: date,
                      f"{s['brier_market']:.4f}. Skill (market minus desk): {s['skill']:+.4f}.")
     lines.append("With fewer than about thirty scored calls this figure is descriptive, not evidence.")
     lines += readings_lines(ledger.parent / "readings.csv", ledger.parent / "readings_outcomes.csv", today)
-    skill.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    return "\n".join(lines) + "\n"
 
 
 def _f(v: float | None) -> str:

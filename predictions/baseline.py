@@ -595,6 +595,39 @@ def record_summary(ledger_path: Path = score.LEDGER, baselines_path: Path = BASE
     return skill_summary(table)
 
 
+# --- SKILL.md as a regeneration (2026-11-11, 12:15Z) ----------------------------------------
+#
+# The page is written by `--summary` and, until this date, held current only by the
+# runs' habit of regenerating it with `--summary --dry-run` and comparing by eye.
+# `page_text` is the whole page from the records through their gates, the one
+# function the writer and tools/check_skill_pages.py both call, so the committed
+# page can be held equal to a regeneration at its own date; `records_newest_day`
+# is the floor for that date (a page cannot have been generated before the newest
+# row it summarises).  Paths are passed by name (tools/check_bound_defaults.py).
+
+PAGE_GENERATOR = "predictions/baseline.py --summary"
+
+
+def page_text(today: pd.Timestamp, ledger_path: Path = score.LEDGER, baselines_path: Path = BASELINES,
+              outcomes_path: Path = score.OUTCOMES) -> str:
+    """SKILL.md as `--summary` writes it on `today`, from the three records through their gates."""
+    ledger = score.read_ledger(ledger_path)
+    table = skill_table(ledger, read_baselines(ledger, baselines_path), score.read_outcomes(ledger, outcomes_path))
+    return render_skill(table, skill_summary(table), today)
+
+
+def records_newest_day(ledger_path: Path = score.LEDGER, baselines_path: Path = BASELINES,
+                       outcomes_path: Path = score.OUTCOMES) -> str | None:
+    """The newest day stamped on any row of the three records (`made_on`, `computed_on`,
+    `scored_on`), YYYY-MM-DD, or None when the ledger is empty."""
+    ledger = score.read_ledger(ledger_path)
+    days = [str(d)[:10] for d in ledger["made_on"]]
+    days += [str(d)[:10] for d in read_baselines(ledger, baselines_path)["computed_on"]]
+    days += [str(d)[:10] for d in score.read_outcomes(ledger, outcomes_path)["scored_on"]]
+    days = [d for d in days if d and d != "nan" and d != "NaT"]
+    return max(days) if days else None
+
+
 # --- entry point ---------------------------------------------------------------------------
 
 def main() -> int:
@@ -608,9 +641,8 @@ def main() -> int:
     today = pd.Timestamp(args.today) if args.today else pd.Timestamp(qdata.utc_now()[:10])
     ledger = score.read_ledger()
     if args.summary:
-        table = skill_table(ledger, read_baselines(ledger), score.read_outcomes(ledger))
-        text = render_skill(table, skill_summary(table), today)
-        print(text)
+        text = page_text(today, score.LEDGER, BASELINES, score.OUTCOMES)
+        sys.stdout.write(text)  # exactly the page, so `--dry-run` output can be diffed against SKILL.md
         if not args.dry_run:
             SKILL.write_text(text, encoding="utf-8")
         return 0

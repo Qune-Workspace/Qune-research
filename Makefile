@@ -104,6 +104,7 @@ lint:
 	$(PYTHON) tools/check_stamp_compares.py
 	$(PYTHON) tools/check_data_terms.py
 	$(PYTHON) tools/check_view_brier.py
+	$(PYTHON) tools/check_skill_pages.py
 	bash tools/detach.sh --self-test
 	bash tools/scan.sh --self-test
 

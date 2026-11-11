@@ -120,6 +120,13 @@ jobs:
       # 2026-11-11: the 6 November view printed 0.046 for 0.045).
       - name: desk view Brier line
         run: python tools/check_view_brier.py
+      # predictions/SKILL.md and pm-view/SKILL.md are each byte-equal to a
+      # regeneration from their records at the date the page names, run through
+      # the writer's own page function; the date lies between the newest record
+      # row and today (tools/check_skill_pages.py; 2026-11-11 12:15Z: until then
+      # a score written without the page, or a digit edited on it, passed every check).
+      - name: skill pages equal their regeneration
+        run: python tools/check_skill_pages.py
       # The launcher a learning run uses for any fetch longer than a minute
       # starts the command as a transient systemd user unit, in its own control
       # group, so it outlives the shell that launched it (tools/detach.sh;

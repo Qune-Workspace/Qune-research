@@ -3,6 +3,9 @@
 from __future__ import annotations
 
 import json
+import shutil
+from datetime import datetime
+from pathlib import Path
 
 import pandas as pd
 import pytest
@@ -10,21 +13,75 @@ from matplotlib import pyplot as plt
 
 from qune_research import paperlog, style
 
+ROOT = Path(__file__).resolve().parents[2]
+STATUSES = ("ok", "signal unavailable")
+
+
+def _ymd(text):
+    try:
+        return datetime.strptime(str(text), "%Y-%m-%d").date()
+    except ValueError:
+        return None
+
+
+def _gate(directory):
+    """A stand-in for a study's ``load_records``: the shape ``_write_record`` below writes, held field by field and
+    the folder to one record per signal date, refusing by name; nothing admitted on a field it did not read."""
+    directory = Path(directory)
+    if not directory.is_dir():
+        return []
+    records, problems = [], []
+    for path in sorted(directory.glob("*.json")):
+        try:
+            record = json.loads(path.read_text(encoding="utf-8"))
+        except ValueError as bad:
+            problems.append(f"{path.name}: not JSON ({bad})")
+            continue
+        if not isinstance(record, dict):
+            problems.append(f"{path.name}: the file does not hold a record (a JSON object)")
+            continue
+        found = []
+        signal = record.get("signal_date")
+        if _ymd(signal) is None:
+            found.append(f"{path.name}: signal_date {signal!r} is not YYYY-MM-DD")
+        elif path.stem != signal:
+            found.append(f"{path.name}: the file is not named after its signal_date {signal}")
+        if record.get("status") not in STATUSES:
+            found.append(f"{path.name}: status {record.get('status')!r} is not one its writer writes")
+        execution, target = record.get("execution_date"), record.get("target")
+        if record.get("status") == "ok":
+            if _ymd(execution) is None or (_ymd(signal) is not None and _ymd(execution) <= _ymd(signal)):
+                found.append(f"{path.name}: execution_date {execution!r} is not a day after the signal date")
+            if target is not None and (not isinstance(target, dict) or any(not 0.0 <= float(w) <= 1.0 for w in target.values())):
+                found.append(f"{path.name}: target {target!r} is not a mapping of weights in [0, 1]")
+        elif execution is not None or target is not None:
+            found.append(f"{path.name}: an unavailable record carries an execution date or a target")
+        problems += found
+        if not found:
+            records.append(record)
+    dates = [r["signal_date"] for r in records]
+    problems += [f"two records for {d}" for d in sorted(set(dates)) if dates.count(d) > 1]
+    if problems:
+        raise ValueError(f"{directory}: a decision record is not as its writer writes it: " + "; ".join(problems))
+    return sorted(records, key=lambda r: r["signal_date"])
+
+
 BOOK_SPEC = paperlog.LogSpec(
     study="Study 004", folder="research/004-test", kind="shadow record", label="not supported",
-    first_signal_date="2026-10-30", strategy="T1", benchmarks=("B3", "B4"),
+    first_signal_date="2026-10-30", records_reader=_gate, strategy="T1", benchmarks=("B3", "B4"),
     book_columns={"T1": "T1_book", "B3": "B3_book", "B4": "B4_book"}, book_usd=10_000.0,
     labels={"T1": "Trend T1", "B3": "Equal weight B3", "B4": "Vol-scaled B4"}, data_source="constructed",
 )
 RETURN_SPEC = paperlog.LogSpec(
     study="Study 005", folder="research/005-test", kind="shadow record", label="refuted in-sample",
-    first_signal_date="2026-10-30", strategy="T1", benchmarks=("B1", "B2"),
+    first_signal_date="2026-10-30", records_reader=_gate, strategy="T1", benchmarks=("B1", "B2"),
     return_columns={"T1": "T1", "B1": "B1", "B2": "B2"},
     labels={"T1": "Conditional T1", "B1": "Hold IEF B1", "B2": "Trend B2"}, data_source="constructed",
 )
 SLEEVE_SPEC = paperlog.LogSpec(
     study="Study 003", folder="research/003-test", kind="paper sleeve", label="not supported",
-    first_signal_date="2026-10-30", chart_note="Equity follows the monthly summary (designed, not built).",
+    first_signal_date="2026-10-30", records_reader=_gate,
+    chart_note="Equity follows the monthly summary (designed, not built).",
 )
 
 
@@ -200,7 +257,7 @@ def test_shadow_file_is_configurable_for_the_sleeve_summary(root):
     """Study 003 writes its periods to summary.csv (§11.5); the dashboard reads that file, not shadow.csv."""
     spec = paperlog.LogSpec(
         study="Study 003", folder=SLEEVE_SPEC.folder, kind="paper sleeve", label="not supported",
-        first_signal_date="2026-10-30", strategy="T1", benchmarks=("B3", "B1"),
+        first_signal_date="2026-10-30", records_reader=_gate, strategy="T1", benchmarks=("B3", "B1"),
         return_columns={"T1": "rule_return", "B3": "B3", "B1": "B1"}, shadow_file="summary.csv")
     folder = root / spec.folder / "paper-log"
     dates = pd.date_range("2026-11-01", periods=3, freq="MS")
@@ -339,3 +396,117 @@ def test_the_real_010_and_011_specs_read_the_committed_records():
     assert st10.records[0]["target"].startswith("T1: SMB +1, HML +1, ST_Rev -1, LT_Rev +1<br>T1a: SMB +1, HML +1<br>T1b: ")
     assert st11.records[0]["target"].startswith("M1: long Machn, Oil, Finan / short Steel, Cnstr, Clths<br>M1a: ")
     assert st10.last_check is not None and st11.last_check is not None
+
+
+# --- The decision records are read only through the study's gate (2026-11-11) -------------------------------
+# Before: ``read_json_dir`` took every ``decisions/*.json`` as a record.  A search on 9dc3481 over the six
+# committed records, one field altered at a time in a temporary copy, found the page admitted a status of
+# ``OK`` or ``halted``, an execution date before the signal, another study's id, a holding of ``ief``, a target
+# of ``SPY``, a weight of 1.5 or -0.1, an order, a second file for the month and a stray file with a future date
+# (which moved the public "next record due" to July 2027), and crashed naming nothing on a signal-date typo, a
+# missing signal date, a list and a non-JSON file (research/POST_MORTEMS.md "A dashboard that drew what no
+# writer wrote").  These tests keep the search: every case refuses by name and nothing is written.
+
+UNGATED_SPEC = paperlog.LogSpec(study="Study 004", folder="research/004-test", kind="shadow record",
+                                label="not supported", first_signal_date="2026-10-30")
+
+
+def test_a_spec_without_a_reader_is_refused_not_read(root):
+    _write_record(root / UNGATED_SPEC.folder / "paper-log", "2026-10-30", execution_date="2026-11-02")
+    with pytest.raises(ValueError, match="no reader through the study's gate"):
+        paperlog.status(root, UNGATED_SPEC)
+
+
+ALTERATIONS = {
+    "status OK": ("2026-10-30.json", {"signal_date": "2026-10-30", "status": "OK", "execution_date": "2026-11-02", "target": None}, "status 'OK'"),
+    "status halted": ("2026-10-30.json", {"signal_date": "2026-10-30", "status": "halted", "execution_date": "2026-11-02", "target": None}, "status 'halted'"),
+    "execution before signal": ("2026-10-30.json", {"signal_date": "2026-10-30", "status": "ok", "execution_date": "2026-10-01", "target": None}, "execution_date"),
+    "signal_date typo": ("2026-10-30.json", {"signal_date": "2026-10-3O", "status": "ok", "execution_date": "2026-11-02", "target": None}, "signal_date"),
+    "signal_date missing": ("2026-10-30.json", {"status": "ok", "execution_date": "2026-11-02", "target": None}, "signal_date"),
+    "weight 1.5": ("2026-10-30.json", {"signal_date": "2026-10-30", "status": "ok", "execution_date": "2026-11-02", "target": {"SPY": 1.5}}, "target"),
+    "unavailable with a target": ("2026-10-30.json", {"signal_date": "2026-10-30", "status": "signal unavailable", "execution_date": None, "target": {"SPY": 0.2}}, "unavailable record carries"),
+    "stray file, future date": ("record.json", {"signal_date": "2027-06-30", "status": "ok", "execution_date": "2027-07-01", "target": None}, "record.json"),
+    "a list, not a record": ("2026-11-30.json", [{"signal_date": "2026-11-30"}], "does not hold a record"),
+    "not JSON": ("2026-11-30.json", "{not json", "not JSON"),
+}
+
+
+@pytest.mark.parametrize("case", sorted(ALTERATIONS))
+def test_an_altered_record_is_refused_by_name_and_nothing_is_written(root, case):
+    name, content, word = ALTERATIONS[case]
+    folder = root / BOOK_SPEC.folder / "paper-log"
+    _write_record(folder, "2026-10-30", execution_date="2026-11-02")
+    if name != "2026-10-30.json":
+        assert paperlog.status(root, BOOK_SPEC).records, "the clean folder is admitted before the alteration"
+    (folder / "decisions" / name).write_text(content if isinstance(content, str) else json.dumps(content))
+    with pytest.raises(ValueError) as refused:
+        paperlog.status(root, BOOK_SPEC)
+    assert word in str(refused.value), (case, str(refused.value))
+    out = root / "dashboard"
+    with pytest.raises(ValueError):
+        paperlog.build(root, [BOOK_SPEC], out, "2026-11-11T00:30:00Z", commit="deadbee")
+    assert not out.exists() or not any(out.iterdir()), "a refused build writes no page"
+
+
+def test_a_second_file_for_the_month_is_refused(root):
+    folder = root / BOOK_SPEC.folder / "paper-log"
+    _write_record(folder, "2026-10-30", execution_date="2026-11-02")
+    _write_record(folder, "2026-10-30", execution_date="2026-11-02")   # same date: one file, admitted
+    assert len(paperlog.status(root, BOOK_SPEC).records) == 1
+    # the page's own check holds what its reader returns: a reader that let two records through is refused too
+    two = [{"signal_date": "2026-10-30", "status": "ok", "execution_date": "2026-11-02", "target": None}] * 2
+    spec = paperlog.LogSpec(study="Study X", folder=BOOK_SPEC.folder, kind="shadow record", label="l",
+                            first_signal_date="2026-10-30", records_reader=lambda d: two)
+    with pytest.raises(ValueError, match="two records for 2026-10-30"):
+        paperlog.status(root, spec)
+    unordered = [{"signal_date": "2026-11-30", "status": "ok", "execution_date": "2026-12-01", "target": None},
+                 {"signal_date": "2026-10-30", "status": "ok", "execution_date": "2026-11-02", "target": None}]
+    spec = paperlog.LogSpec(study="Study X", folder=BOOK_SPEC.folder, kind="shadow record", label="l",
+                            first_signal_date="2026-10-30", records_reader=lambda d: unordered)
+    with pytest.raises(ValueError, match="out of signal-date order"):
+        paperlog.status(root, spec)
+
+
+def test_record_fields_violations_hold_what_the_page_prints():
+    good = {"signal_date": "2026-10-30", "status": "ok", "execution_date": "2026-11-02", "target": {"SPY": 0.2}}
+    assert paperlog.record_fields_violations(good, "Study 004") == []
+    assert paperlog.record_fields_violations(dict(good, target="BIL", execution_date=None), "Study 004") == []
+    bad = dict(good, signal_date="30/10/2026", status=None, execution_date=20261102, target=[1])
+    found = paperlog.record_fields_violations(bad, "Study 004")
+    assert len(found) == 4 and all(f.startswith("Study 004: ") for f in found)
+
+
+REAL_STUDIES = [("research/003-bond-tsmom-ief", "paper.decide"), ("research/004-xasset-trend-voltarget", "src.forward"),
+                ("research/005-duration-trend-regime", "src.forward"),
+                ("research/006-term-spread-switch-long-history", "src.forward"),
+                ("research/007-bond-carry-tilt-long-history", "src.forward007"),
+                ("research/008-bond-value-tilt-long-history", "src.forward008")]
+
+
+@pytest.mark.parametrize(("study_dir", "module"), REAL_STUDIES)
+def test_study_reader_runs_the_study_gate_on_a_copy_of_its_committed_folder(tmp_path, study_dir, module):
+    """The real gate in its own interpreter: the committed record is admitted; a stray file in a copy of the
+    folder is refused with the gate's own sentence (the repository's folder is never written)."""
+    source = ROOT / study_dir / "paper-log" / "decisions"
+    if not source.is_dir():
+        pytest.skip(f"{study_dir} has no decisions folder on this checkout")
+    copy = tmp_path / "decisions"
+    shutil.copytree(source, copy)
+    read = paperlog.study_reader(ROOT, study_dir, module)
+    records = read(copy)
+    assert records and all(isinstance(r, dict) and "signal_date" in r for r in records)
+    assert read(tmp_path / "absent") == []
+    (copy / "record.json").write_text(json.dumps(dict(records[-1], signal_date="2027-06-30")))
+    with pytest.raises(ValueError) as refused:
+        read(copy)
+    assert "record.json" in str(refused.value) and "refused" in str(refused.value)
+
+
+def test_the_real_specs_all_carry_a_reader():
+    import importlib.util
+    spec_ = importlib.util.spec_from_file_location("make_paper_dashboard_specs", ROOT / "tools" / "make_paper_dashboard.py")
+    assert spec_ is not None and spec_.loader is not None
+    tool = importlib.util.module_from_spec(spec_)
+    spec_.loader.exec_module(tool)
+    for s in tool.SPECS:
+        assert s.monthly or s.records_reader is not None, f"{s.study} would be read ungated"

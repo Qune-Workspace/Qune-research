@@ -12,6 +12,14 @@ weight: a record that is not on disk is reported as not on disk, never
 estimated.  The output states the time it was generated and the commit it
 read, so the dashboard cannot be mistaken for an earlier state (built
 2026-10-24, before the first record of 2026-10-30).
+
+Since 2026-11-11 the decision records are read only through each study's own
+gate: ``LogSpec.records_reader`` is the study's ``load_records`` (every file
+held to the shape its writer gives it, the folder to one record per month),
+run in the study's own folder by ``study_reader``; a folder the gate refuses
+stops the build by name, and nothing is written.  Until then the page read
+``decisions/*.json`` as records whatever they held (research/POST_MORTEMS.md,
+"A dashboard that drew what no writer wrote").
 """
 
 from __future__ import annotations
@@ -19,8 +27,10 @@ from __future__ import annotations
 import hashlib
 import json
 import subprocess
+import sys
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from datetime import date
+from datetime import date, datetime
 from pathlib import Path
 
 import pandas as pd
@@ -32,7 +42,11 @@ from qune_research import nyse, style
 
 __all__ = ["LogSpec", "Status", "build", "equity", "headline", "chart", "next_signal_date", "render",
            "read_json_dir", "read_jsonl", "read_csv", "status", "sha256", "monthly_records", "next_record_month",
-           "due_text"]
+           "due_text", "study_reader", "record_fields_violations"]
+
+# The fields this page reads from a decision record after the study's gate has admitted it; held here
+# too, because a page that prints a field it never checked prints whatever the file holds (2026-11-11).
+RECORD_DATE_FORMAT = "%Y-%m-%d"
 
 
 @dataclass(frozen=True)
@@ -55,6 +69,13 @@ class LogSpec:
     whose last line is shown.  ``first_signal_date`` is then the first record
     month (YYYY-MM).  Such a record has no shadow line and no chart, because the
     study scores it once at the end (``scored_note`` says when and how).
+
+    ``records_reader`` (required for a decision-record study since 2026-11-11)
+    is the study's own reader of ``paper-log/decisions/``: it takes the folder
+    and returns the records its writer's gate admits, sorted, one per signal
+    date and month, and raises ``ValueError`` naming the file and the field
+    otherwise.  ``study_reader`` builds it from the study's ``load_records``;
+    a spec without one is refused by ``status`` rather than read ungated.
     """
 
     study: str
@@ -62,6 +83,7 @@ class LogSpec:
     kind: str
     label: str
     first_signal_date: str
+    records_reader: Callable[[Path], list[dict]] | None = None
     strategy: str = ""
     benchmarks: tuple[str, ...] = ()
     book_columns: dict[str, str] = field(default_factory=dict)
@@ -116,11 +138,99 @@ def sha256(path: Path) -> str:
 
 
 def read_json_dir(directory: Path) -> list[dict]:
-    """Every ``*.json`` in the folder, in file-name order (the files are dated)."""
+    """Every ``*.json`` in the folder, in file-name order (the files are dated).
+
+    Ungated: used for Study 003's execution records, which have no writer's
+    gate yet (none exists on disk).  Decision records go through
+    ``LogSpec.records_reader`` instead (2026-11-11)."""
     directory = Path(directory)
     if not directory.is_dir():
         return []
     return [json.loads(p.read_text(encoding="utf-8")) for p in sorted(directory.glob("*.json"))]
+
+
+_READER_SCRIPT = """\
+import json, sys
+from pathlib import Path
+sys.path[:0] = [sys.argv[1], sys.argv[2]]
+module = __import__(sys.argv[3], fromlist=["load_records"])
+print(json.dumps(module.load_records(Path(sys.argv[4]))))
+"""
+
+
+def study_reader(root: Path, study_dir: str, module: str, python: str | None = None) -> Callable[[Path], list[dict]]:
+    """The study's own ``load_records`` as a reader of a decisions folder, run
+    in a fresh interpreter from the study's folder (each study's ``src`` package
+    carries the same name, so they cannot share one process).  The gate runs
+    exactly as the study's month-end run and tests run it; the records come
+    back as JSON.  A refusal (exit 1) becomes ``ValueError`` carrying the
+    gate's own sentences, so the dashboard stops by name (2026-11-11)."""
+    root = Path(root)
+    study_path = root / study_dir
+
+    def read(directory: Path) -> list[dict]:
+        directory = Path(directory)
+        if not directory.is_dir():
+            return []
+        result = subprocess.run([python or sys.executable, "-c", _READER_SCRIPT, str(root), str(study_path), module,
+                                 str(directory)], cwd=study_path, capture_output=True, text=True)
+        if result.returncode != 0:
+            tail = [line for line in result.stderr.strip().splitlines() if line.strip()]
+            raise ValueError(f"{module}.load_records in {study_dir} refused {directory}: "
+                             + (tail[-1] if tail else f"exit {result.returncode} with no message"))
+        records = json.loads(result.stdout)
+        if not isinstance(records, list):
+            raise ValueError(f"{module}.load_records in {study_dir} returned {type(records).__name__}, not a list")
+        return records
+
+    return read
+
+
+def record_fields_violations(record: dict, study: str) -> list[str]:
+    """The fields this page prints or orders by, held after the study's gate:
+    ``signal_date`` a YYYY-MM-DD string (the page orders records and derives the
+    next due date from it), ``status`` text, ``execution_date`` null or
+    YYYY-MM-DD, ``target`` null, text or a mapping.  A study's gate holds its
+    own shape; this holds what the page itself reads (2026-11-11)."""
+    out: list[str] = []
+    signal = record.get("signal_date")
+    if not isinstance(signal, str) or _ymd(signal) is None:
+        out.append(f"{study}: a record's signal_date {signal!r} is not YYYY-MM-DD")
+    if not isinstance(record.get("status"), str):
+        out.append(f"{study}: the record for {signal!r} has status {record.get('status')!r}, not text")
+    execution = record.get("execution_date")
+    if execution is not None and (not isinstance(execution, str) or _ymd(execution) is None):
+        out.append(f"{study}: the record for {signal!r} has execution_date {execution!r}, not null or YYYY-MM-DD")
+    target = record.get("target")
+    if target is not None and not isinstance(target, str | dict):
+        out.append(f"{study}: the record for {signal!r} has target {target!r}, not null, text or a mapping")
+    return out
+
+
+def _ymd(text: object) -> date | None:
+    if not isinstance(text, str):
+        return None
+    try:
+        return datetime.strptime(text, RECORD_DATE_FORMAT).date()
+    except ValueError:
+        return None
+
+
+def gated_records(root: Path, spec: LogSpec, folder: Path) -> list[dict]:
+    """The decision records of one study through its reader, then through this page's field check;
+    refuses by name, never reads around (2026-11-11)."""
+    if spec.records_reader is None:
+        raise ValueError(f"{spec.study}: no reader through the study's gate; a dashboard spec for a decision "
+                         "record names its study's load_records (study_reader), it is never read ungated")
+    records = spec.records_reader(folder / "decisions")
+    problems = [p for r in records for p in record_fields_violations(r, spec.study)]
+    dates = [r["signal_date"] for r in records if not record_fields_violations(r, spec.study)]
+    problems += [f"{spec.study}: two records for {d}" for d in sorted(set(dates)) if dates.count(d) > 1]
+    if dates != sorted(dates):
+        problems.append(f"{spec.study}: the reader returned records out of signal-date order")
+    if problems:
+        raise ValueError("; ".join(problems))
+    return records
 
 
 def read_jsonl(path: Path) -> list[dict]:
@@ -251,7 +361,7 @@ def status(root: Path, spec: LogSpec) -> Status:
         records = monthly_records(read_csv(folder / spec.records_file), spec)
         shadow = pd.DataFrame()
     else:
-        records = read_json_dir(folder / "decisions")
+        records = gated_records(root, spec, folder)
         shadow = read_csv(folder / spec.shadow_file)
     executions = read_json_dir(folder / "executions")
     runs = read_jsonl(folder / "runs.jsonl")
@@ -364,7 +474,9 @@ def render(statuses: list[Status], generated_at_utc: str, commit: str, charts: d
     for st in statuses:
         lines += _study_section(st, charts.get(st.spec.study))
     lines += ["## How this page is made", "",
-              "`make dashboard` runs `tools/make_paper_dashboard.py`, which reads each study's `paper-log/decisions/*.json`, "
+              "`make dashboard` runs `tools/make_paper_dashboard.py`, which reads each study's `paper-log/decisions/*.json` "
+              "through that study's own reader (`load_records`, run in the study's folder: every file held to the shape its "
+              "writer gives it, one record per month; a refused folder stops the build by name and nothing is written; since 2026-11-11), "
               "`shadow.csv` (Study 003: its §11.5 `summary.csv`), `executions/*.json`, `runs.jsonl` and `stops.jsonl` as committed (Studies 010 and "
               "011: their monthly `positions.csv` or `cohorts.csv` and the last line of `releases/fetch_log.csv`), compounds the shadow "
               "lines' net returns (or reads the book values Study 004 writes) into one path per series, and draws it with "

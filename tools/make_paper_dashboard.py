@@ -12,6 +12,13 @@ writes nothing into any study folder and carries no decision weight.  A
 record that is not on disk is reported as absent, never estimated; the page
 is regenerated after each forward record and never by hand.
 
+Since 2026-11-11 each decision record is read only through its study's own
+reader (``load_records``, run in the study's folder by
+``paperlog.study_reader``): a file the study's gate refuses stops this script
+with the gate's sentence, exit 1, and nothing is written.  Before that the
+page took every ``decisions/*.json`` as a record (research/POST_MORTEMS.md,
+"A dashboard that drew what no writer wrote").
+
 Run from the repository root:  .venv/bin/python tools/make_paper_dashboard.py
 """
 
@@ -36,6 +43,7 @@ SPECS = [
         study="Study 003", folder="research/003-bond-tsmom-ief", kind="paper sleeve",
         label="not supported; paper record of a not-supported rule; orders only once Independent Risk clears the sleeve",
         first_signal_date="2026-10-30",
+        records_reader=paperlog.study_reader(ROOT, "research/003-bond-tsmom-ief", "paper.decide"),
         strategy="T1", benchmarks=("B3", "B1", "B0"), shadow_file="summary.csv",
         return_columns={"T1": "rule_return", "B3": "B3", "B1": "B1", "B0": "B0"},
         labels={"T1": "Trend rule T1", "B3": "Same-exposure mix B3", "B1": "Hold IEF B1", "B0": "Bills B0"},
@@ -45,6 +53,7 @@ SPECS = [
     paperlog.LogSpec(
         study="Study 004", folder="research/004-xasset-trend-voltarget", kind="shadow record",
         label="not supported; no paper order", first_signal_date="2026-10-30",
+        records_reader=paperlog.study_reader(ROOT, "research/004-xasset-trend-voltarget", "src.forward"),
         strategy="T1", benchmarks=("B4", "B3"),
         book_columns={"T1": "T1_book", "B4": "B4_book", "B3": "B3_book"}, book_usd=10_000.0,
         labels={"T1": "Trend T1", "B4": "Vol-scaled long-only B4", "B3": "Equal weight B3"},
@@ -53,6 +62,7 @@ SPECS = [
     paperlog.LogSpec(
         study="Study 005", folder="research/005-duration-trend-regime", kind="shadow record",
         label="refuted in-sample; no paper order", first_signal_date="2026-10-30",
+        records_reader=paperlog.study_reader(ROOT, "research/005-duration-trend-regime", "src.forward"),
         strategy="T1", benchmarks=("B2", "B1"),
         return_columns={"T1": "T1", "B2": "B2", "B1": "B1"},
         labels={"T1": "Conditional exit T1", "B2": "Trend exit B2", "B1": "Hold IEF B1"},
@@ -62,6 +72,7 @@ SPECS = [
         study="Study 006", folder="research/006-term-spread-switch-long-history", kind="shadow record",
         label="inconclusive (fragile) on 1969–2018; forward record, scored once after 60 periods; no paper order",
         first_signal_date="2026-10-30",
+        records_reader=paperlog.study_reader(ROOT, "research/006-term-spread-switch-long-history", "src.forward"),
         strategy="T1", benchmarks=("B3", "B1"),
         return_columns={"T1": "T1", "B3": "B3", "B1": "B1"},
         labels={"T1": "Term-spread switch T1", "B3": "Same-exposure mix B3", "B1": "Hold IEF B1"},
@@ -72,6 +83,7 @@ SPECS = [
         study="Study 007", folder="research/007-bond-carry-tilt-long-history", kind="shadow record",
         label="inconclusive (fragile) on 1974–2018; forward record, scored once after 60 periods; no paper order",
         first_signal_date="2026-10-30",
+        records_reader=paperlog.study_reader(ROOT, "research/007-bond-carry-tilt-long-history", "src.forward007"),
         strategy="T1", benchmarks=("B3_T1", "B1"),
         return_columns={"T1": "T1", "B3_T1": "B3_T1", "B1": "B1"},
         labels={"T1": "Carry tilt T1", "B3_T1": "Same-exposure mix B3", "B1": "Hold IEF B1"},
@@ -82,6 +94,7 @@ SPECS = [
         study="Study 008", folder="research/008-bond-value-tilt-long-history", kind="shadow record",
         label="not supported on 1974–2018; forward record, scored once after 60 periods; no paper order",
         first_signal_date="2026-10-30",
+        records_reader=paperlog.study_reader(ROOT, "research/008-bond-value-tilt-long-history", "src.forward008"),
         strategy="T1", benchmarks=("B3_T1", "B1"),
         return_columns={"T1": "T1", "B3_T1": "B3_T1", "B1": "B1"},
         labels={"T1": "Value tilt T1", "B3_T1": "Same-exposure mix B3", "B1": "Hold IEF B1"},
@@ -122,7 +135,12 @@ SPECS = [
 
 def main() -> int:
     generated = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
-    manifest = paperlog.build(ROOT, SPECS, OUT, generated)
+    try:
+        manifest = paperlog.build(ROOT, SPECS, OUT, generated)
+    except ValueError as refused:
+        print(f"NOT BUILT: a decision record is not as its study's writer writes it; fix the record, never the "
+              f"reader: {refused}", file=sys.stderr)
+        return 1
     for entry in manifest["studies"]:
         print(f"{entry['study']}: {entry['records']} record(s), {entry['shadow_lines']} shadow line(s), "
               f"{entry['executions']} execution record(s); next record due {entry['next_record_due']}")

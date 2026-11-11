@@ -13,15 +13,26 @@ judged a call under the superseded line and lost its ``calibrated`` refusal;
 the same stamp let a reading recorded before its quote pass
 ``recorded-after-quote``.
 
-This check reads the pm-view modules and tools/check_due.py.  In each
-function it marks as a *stamp* every parameter whose name ends in ``_utc``,
-every expression that reads a ``..._utc`` key or name, and every variable
-assigned from such an expression unless the assignment parses it with
-``parse_utc_stamp``; ``str(x)``, ``x or ""`` and a subscript of a stamp are
-stamps too.  It fails on any ordering comparison (``<``, ``<=``, ``>``,
-``>=``), any slice, and any ``min``/``max``/``sorted`` with a stamp operand.
-Equality (``==``, ``!=``) is allowed: a column copied from the quote is held
-equal to its source as text on purpose.
+This check reads the pm-view modules, the pm-view tests and tools/check_due.py
+(the universe is printed).  In each function it marks as a *stamp* every
+parameter whose name ends in ``_utc``, every expression that reads a
+``..._utc`` key, name or attribute, every key, name or attribute in
+``pm_lib.STAMP_KEYS`` (the stamps this folder reads under Gamma's own names:
+``end_date``, ``endDate``, ``closedTime``, ...), and every variable assigned
+from such an expression unless the assignment parses it (``parse_utc_stamp``,
+``parse_scheduled_end``, ``strptime``, ``fromisoformat``); ``str(x)``,
+``x or ""`` and a subscript of a stamp are stamps too.  It fails on any
+ordering comparison (``<``, ``<=``, ``>``, ``>=``), any slice, and any
+``min``/``max``/``sorted``/``.sort`` with a stamp operand or a ``key=`` that
+reads one.  Equality (``==``, ``!=``) is allowed: a column copied from the
+quote is held equal to its source as text on purpose.
+
+Widened 2026-11-11 18:15Z (predictions/POST_MORTEMS.md "A stamp under another
+name"): the first version tainted ``_utc`` names only and read the modules
+only, so ``str(quote.get("end_date", ""))[:10]`` stood in both gates and both
+writers, ``tests/test_readings.py`` ordered history lines as text, and a
+``sorted(rows, key=lambda r: r["fetched_utc"])`` would have passed.  Shown
+before the change on 45147b7: a module with five such lines got one hit.
 
 Usage: python tools/check_stamp_compares.py [--root PATH] [--selftest]
 Exit 1 on any text comparison.  ``--selftest`` writes a failing and a passing
@@ -36,14 +47,23 @@ import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-PARSERS = {"parse_utc_stamp", "strptime", "quote_day"}  # quote_day parses since 2026-11-09 12:15Z
+sys.path.insert(0, str(ROOT / "pm-view"))
+from pm_lib import STAMP_KEYS  # noqa: E402  the one list of the stamps read under a name not ending in _utc
+
+PARSERS = {"parse_utc_stamp", "strptime", "quote_day",  # quote_day parses since 2026-11-09 12:15Z
+           "fromisoformat", "parse_scheduled_end", "scheduled_end_day"}  # the scheduled end's parsers (2026-11-11)
 PROPAGATE = {"str", "get", "strip", "lower", "upper", "join", "format", "replace"}  # text in, the same text out
 ORDER_OPS = (ast.Lt, ast.LtE, ast.Gt, ast.GtE)
-ORDER_CALLS = {"min", "max", "sorted"}
+ORDER_CALLS = {"min", "max", "sorted", "sort"}  # `sort` is list.sort: its key= is read, the list itself is not
+
+
+def _is_stamp_name(name: str) -> bool:
+    return name.endswith("_utc") or name in STAMP_KEYS
 
 
 def _modules(root: Path) -> list[Path]:
     out = sorted(p for p in (root / "pm-view").glob("*.py") if p.name != "conftest.py")
+    out += sorted(p for p in (root / "pm-view" / "tests").glob("*.py") if p.name != "conftest.py")
     due = root / "tools" / "check_due.py"
     if due.exists():
         out.append(due)
@@ -67,9 +87,11 @@ def _reads_stamp(node: ast.AST, tainted: set[str]) -> bool:
     function (`spot_time_utc(d)` is a datetime, `earliest_scoring_day(...)` a date): a function
     that returns a stamp's text unparsed is checked where it is written, not where it is called."""
     if isinstance(node, ast.Name):
-        return node.id.endswith("_utc") or node.id in tainted
+        return _is_stamp_name(node.id) or node.id in tainted
     if isinstance(node, ast.Constant):
-        return isinstance(node.value, str) and node.value.endswith("_utc")
+        return isinstance(node.value, str) and _is_stamp_name(node.value)
+    if isinstance(node, ast.Lambda):  # key=lambda r: r["fetched_utc"]: the value is what the body reads
+        return _reads_stamp(node.body, tainted)
     if isinstance(node, ast.Call):
         name = _call_name(node)
         if name in PARSERS or name not in PROPAGATE:
@@ -78,8 +100,8 @@ def _reads_stamp(node: ast.AST, tainted: set[str]) -> bool:
         return any(_reads_stamp(a, tainted) for a in [*inner, *node.args, *[k.value for k in node.keywords]])
     if isinstance(node, ast.Subscript):
         return _reads_stamp(node.value, tainted) or _reads_stamp(node.slice, tainted)
-    if isinstance(node, ast.Attribute):
-        return _reads_stamp(node.value, tainted)
+    if isinstance(node, ast.Attribute):  # q.fetched_utc, row.end_date: the attribute's own name is a stamp's
+        return _is_stamp_name(node.attr) or _reads_stamp(node.value, tainted)
     if isinstance(node, ast.IfExp):  # the value is one branch or the other; the test is not the value
         return _reads_stamp(node.body, tainted) or _reads_stamp(node.orelse, tainted)
     if isinstance(node, (ast.GeneratorExp, ast.ListComp, ast.SetComp)):
@@ -141,11 +163,16 @@ class _Scope(ast.NodeVisitor):
 
     def visit_Call(self, node: ast.Call) -> None:  # noqa: N802
         self.generic_visit(node)
-        if _call_name(node) in ORDER_CALLS and isinstance(node.func, ast.Name):
-            for arg in node.args:
-                if _reads_stamp(arg, self.tainted):
-                    self._hit(node, f"UTC stamps ordered as text: {ast.unparse(node)}")
-                    break
+        if _call_name(node) not in ORDER_CALLS:
+            return
+        # min/max/sorted(stamps) order their positional operands; rows.sort(key=...) and sorted(rows, key=...)
+        # order by what the key reads (2026-11-11 18:15Z: a key= was a blind spot)
+        operands = list(node.args) if isinstance(node.func, ast.Name) else []
+        operands += [k.value for k in node.keywords if k.arg == "key"]
+        for arg in operands:
+            if _reads_stamp(arg, self.tainted):
+                self._hit(node, f"UTC stamps ordered as text: {ast.unparse(node)}")
+                break
 
 
 def check_file(path: Path, root: Path) -> list[str]:
@@ -185,6 +212,22 @@ def after(row, quote):
 
 def latest(entries):
     return max(e["fetched_utc"] for e in entries)
+
+# the blind spots of the first version (2026-11-11 18:15Z): a stamp under another name, a key=, an attribute
+def due_day(quote):
+    return str(quote.get("end_date", ""))[:10]
+
+def by_fetch(rows):
+    return sorted(rows, key=lambda r: r["fetched_utc"])
+
+def in_place(rows):
+    rows.sort(key=lambda r: r["recorded_utc"])
+
+def first_closed(rows):
+    return min(r["closedTime"] for r in rows)
+
+def attribute(q, other):
+    return q.fetched_utc < other
 '''
 
 PASSING = '''
@@ -230,6 +273,21 @@ def through_a_function(row):
 
 def earliest_day(recorded_utc):
     return parse_utc_stamp(recorded_utc).date().isoformat()
+
+def parse_scheduled_end(end):
+    return datetime.fromisoformat(str(end or "").replace("Z", "+00:00"))
+
+def due_day(quote):
+    return parse_scheduled_end(quote.get("end_date")).date().isoformat()   # parsed, then the day
+
+def by_time(rows):
+    return sorted(rows, key=lambda r: parse_utc_stamp(r["fetched_utc"]))  # a key= that parses
+
+def copied_end(row, quote):
+    return row.get("end_date") == quote.get("end_date")                   # equality stays allowed
+
+def by_id(rows):
+    return sorted(rows, key=lambda r: r["market_id"])                      # a key= that is not a stamp
 '''
 
 
@@ -241,9 +299,10 @@ def selftest() -> int:
         bad = check_file(root / "pm-view" / "bad.py", root)
         (root / "pm-view" / "bad.py").write_text(PASSING, encoding="utf-8")
         good = check_file(root / "pm-view" / "bad.py", root)
-    want = ("in_force_utc", "fetched_utc or", "recorded < fetched", "max(")
-    ok = len(bad) == 4 and all(any(w in h for h in bad) for w in want) and good == []
-    print(f"selftest: failing module {len(bad)} hit(s) (want 4), passing module {len(good)} (want 0): "
+    want = ("in_force_utc", "fetched_utc or", "recorded < fetched", "max(",
+            "get('end_date'", "sorted(rows, key=", "rows.sort(key=", "closedTime", "q.fetched_utc < other")
+    ok = len(bad) == 9 and all(any(w in h for h in bad) for w in want) and good == []
+    print(f"selftest: failing module {len(bad)} hit(s) (want 9), passing module {len(good)} (want 0): "
           f"{'pass' if ok else 'FAIL'}")
     if not ok:
         for h in bad + good:
@@ -261,7 +320,8 @@ def main() -> int:
     hits, n = check_tree(a.root)
     for h in hits:
         print(h)
-    print(f"stamp comparisons: {len(hits)} text comparison(s) of a UTC stamp over {n} module(s)"
+    print(f"stamp comparisons: {len(hits)} text comparison(s) of a UTC stamp over {n} module(s) "
+          f"(pm-view modules and tests, tools/check_due.py; names ending _utc and {', '.join(STAMP_KEYS)})"
           f"{'' if hits else ' (pass)'}")
     return 1 if hits else 0
 

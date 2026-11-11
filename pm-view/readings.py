@@ -121,7 +121,7 @@ def build_row(quote: dict[str, Any] | None, market_id: str, method: str, method_
     hist = list(history)
     recorded = now.strftime(L.RECORDED_UTC_FORMAT)
     made_on = L.quote_day(q.get("fetched_utc"))  # parsed, never sliced (2026-11-09 12:15Z)
-    due_on = str(q.get("end_date", ""))[:10]
+    due_on = L.scheduled_end_day(q.get("end_date"))  # the parsed end's UTC day, never a slice (2026-11-11 18:15Z)
     market_mid = L.as_float(q.get("market_mid"))
     calibration = L.calibration_in_force(hist, method, recorded)
     gate_col = L.gate_column(method, method_p, range_lo, range_hi, market_mid, L.history_r2(calibration))

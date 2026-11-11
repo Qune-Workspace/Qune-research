@@ -114,7 +114,8 @@ GATE_TAGS = (
     "id-rule",                  # the id is call_id(made_on, method, market_id) and the venue is VENUE
     # 2026-11-09 12:15Z (predictions/POST_MORTEMS.md "A calibration put after the quote by a space"): every
     # stamp the gate reads is parsed in UTC_STAMP_FORMAT before it is compared; another format refuses the row
-    "utc-stamp",                # the quote's fetched_utc, the admission time and the history's in_force_utc parse
+    "utc-stamp",                # the quote's fetched_utc, the admission time, the history's in_force_utc and, since
+                                # 2026-11-11 18:15Z, the quote's scheduled end (end_date) parse
 )
 GATE_TAG_RE = re.compile(r"\[gate:([a-z-]+)\]")
 
@@ -389,10 +390,55 @@ READING_TAGS = (
     "recorded-after-quote",     # recorded_utc is a UTC stamp YYYY-MM-DDTHH:MM:SSZ not before the quote's fetch
     # 2026-11-09 12:15Z (predictions/POST_MORTEMS.md "A calibration put after the quote by a space"): every
     # stamp the gate reads is parsed in UTC_STAMP_FORMAT before it is compared; another format refuses the row
-    "utc-stamp",                # the quote's fetched_utc and the history's in_force_utc parse
+    "utc-stamp",                # the quote's fetched_utc, the history's in_force_utc and, since 2026-11-11 18:15Z, the
+                                # quote's scheduled end (end_date) parse
 )
 UTC_STAMP_FORMAT = "%Y-%m-%dT%H:%M:%SZ"  # the one format of every UTC stamp this folder writes: fetched_utc, recorded_utc, in_force_utc
 RECORDED_UTC_FORMAT = UTC_STAMP_FORMAT  # the readings gate's name for it (2026-11-09 00:15Z); parsed, never compared as text (12:15Z)
+
+# Stamps this folder reads under a name that does not end in `_utc`: Gamma's own field names and the
+# manifest's copy of the scheduled end.  tools/check_stamp_compares.py taints these keys and attributes
+# as it taints `_utc` names, so an ordering, a slice or a min/max of their text fails the lint
+# (2026-11-11 18:15Z, predictions/POST_MORTEMS.md "A stamp under another name": `end_date` was sliced
+# to its first ten characters in both gates and both writers, and the check never saw it).
+STAMP_KEYS = ("end_date", "endDate", "closedTime", "createdAt", "startDate", "updatedAt")
+
+
+def parse_scheduled_end(end: object, what: str = "the quote's scheduled end") -> datetime:
+    """The time of a market's scheduled end as Gamma writes it (`endDate`, ISO 8601 with a zone, today
+    `YYYY-MM-DDTHH:MM:SSZ`), in UTC; ValueError naming `what` for no text, text in another format or a
+    time with no zone.  The one parser of the field: record_eligibility at the fetch, scheduled_end_day
+    for `due_on`, both gates.  Until 2026-11-11 18:15Z `due_on` was `str(end_date)[:10]` in the writers
+    and the gates alike, so a zone other than Z gave a wrong day, another shape gave a day in no format,
+    and `None` gave the word `None`, each admitted by both gates (shown on 45147b7)."""
+    text = str(end or "")
+    if not text:
+        raise ValueError(f"{what} is missing")
+    try:
+        at = datetime.fromisoformat(text.replace("Z", "+00:00"))
+    except ValueError:
+        raise ValueError(f"{what} {text!r} is not an ISO 8601 time with a zone") from None
+    if at.tzinfo is None:
+        raise ValueError(f"{what} {text!r} carries no zone")
+    return at.astimezone(UTC)
+
+
+def scheduled_end_violation(end: object) -> str | None:
+    """Why a quote's `end_date` cannot give a due day, or None when it parses: the sentence both gates print."""
+    try:
+        parse_scheduled_end(end)
+    except ValueError as e:
+        return f"{e}: fix data/manifest.json or re-quote; due_on is the parsed end's UTC day, never a slice"
+    return None
+
+
+def scheduled_end_day(end: object) -> str:
+    """The UTC day `YYYY-MM-DD` of a quote's scheduled end, the `due_on` of a call or a reading resting on
+    it; empty when the end does not parse (scheduled_end_violation names why).  Parsed, never sliced."""
+    try:
+        return parse_scheduled_end(end).date().isoformat()
+    except ValueError:
+        return ""
 
 
 def parse_utc_stamp(stamp: object, what: str = "stamp") -> datetime:
@@ -654,10 +700,12 @@ def reading_violations(method: str, method_p: float | None, range_lo: float | No
     elif quote_day(quote.get("fetched_utc")) != made_on:
         out.append(reading_gate("made-on-quote-day", f"made_on {made_on} is not the quote's date "
                                 f"{quote_day(quote.get('fetched_utc'))}: a reading is made on the day of its quote"))
-    end = str(quote.get("end_date", ""))
-    if end[:10] != due_on:
-        out.append(reading_gate("due-on-scheduled-end",
-                                f"due_on {due_on} is not the quote's scheduled end {end[:10]}"))
+    bad_end = scheduled_end_violation(quote.get("end_date"))
+    if bad_end:
+        out.append(reading_gate("utc-stamp", f"due_on {due_on}: {bad_end}"))
+    elif scheduled_end_day(quote.get("end_date")) != due_on:
+        out.append(reading_gate("due-on-scheduled-end", f"due_on {due_on} is not the quote's scheduled end "
+                                f"{scheduled_end_day(quote.get('end_date'))} (the parsed end's UTC day)"))
     return out
 
 
@@ -836,12 +884,9 @@ def record_eligibility(row: dict[str, Any], at: datetime) -> str | None:
     uma = row.get("umaResolutionStatus")
     if isinstance(uma, str) and uma.lower() in RESOLUTION_BEGUN:
         return "resolution begun"
-    end = row.get("endDate")
-    if not isinstance(end, str) or not end:
-        return "no scheduled end"
     try:
-        end_at = datetime.fromisoformat(end.replace("Z", "+00:00"))
-    except ValueError:
+        end_at = parse_scheduled_end(row.get("endDate"))  # one parser with the gates (2026-11-11 18:15Z); a
+    except ValueError:                                     # zoneless end is "no scheduled end", not a TypeError below
         return "no scheduled end"
     if at >= end_at:
         return "past the scheduled end"
@@ -1082,10 +1127,13 @@ def ledger_row_violations(call: dict[str, Any], quote: dict[str, Any] | None,
     if not quote.get("description_sha256"):
         out.append(gate("rules-on-record", "the quote did not record the hash of the market's resolution text: "
                                            "re-quote, read the rules, then write the call"))
-    end = str(quote.get("end_date", ""))[:10]
-    if str(call.get("due_on", "")) != end:
+    bad_end = scheduled_end_violation(quote.get("end_date"))
+    if bad_end:
+        out.append(gate("utc-stamp", f"due_on {call.get('due_on')}: {bad_end}"))
+    elif str(call.get("due_on", "")) != scheduled_end_day(quote.get("end_date")):
         out.append(gate("due-on-scheduled-end", f"due_on {call.get('due_on')} is not the quote's scheduled end "
-                                                f"{end or 'unknown'}: score.py treats the call as due on this date"))
+                                                f"{scheduled_end_day(quote.get('end_date'))} (the parsed end's UTC "
+                                                "day): score.py treats the call as due on this date"))
     for k in ("market_spread", "volume_usdc"):
         v_row, v_q = as_float(call.get(k)), as_float(quote.get(k))
         if v_row is None or v_q is None or abs(v_row - v_q) > 1e-9:

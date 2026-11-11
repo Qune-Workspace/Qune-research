@@ -106,7 +106,10 @@ jobs:
       # A UTC stamp is parsed in pm_lib.UTC_STAMP_FORMAT before it is ordered or
       # sliced, never compared as text (tools/check_stamp_compares.py;
       # predictions/POST_MORTEMS.md, 2026-11-09): text order is time order only
-      # while both sides happen to carry one format.
+      # while both sides happen to carry one format.  Since 2026-11-11 the check
+      # also taints the stamps read under Gamma's names (pm_lib.STAMP_KEYS:
+      # end_date, closedTime, ...), attributes and key= functions, and reads the
+      # pm-view tests as well as the modules.
       - name: stamp comparisons
         run: python tools/check_stamp_compares.py
       # No prediction-market venue is fetched or has a raw response committed

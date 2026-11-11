@@ -371,9 +371,11 @@ def test_committed_calibration_history_is_dated_append_only_and_ends_at_the_comm
     for h in hist:
         assert h["method"] in L.METHOD_CALIBRATION and h["r2"] in ("true", "false") and h["source"].strip()
         assert len(h["sha256"]) == 64 and all(c in "0123456789abcdef" for c in h["sha256"])
-        datetime.strptime(h["in_force_utc"], "%Y-%m-%dT%H:%M:%SZ")
-        assert h["in_force_utc"] >= last.get(h["method"], ""), f"{h['method']}: a line dated before the one above it"
-        last[h["method"]] = h["in_force_utc"]
+        in_force = L.parse_utc_stamp(h["in_force_utc"], f"calibration_history.csv in_force_utc of {h['method']}")
+        # parsed before it is ordered (2026-11-11 18:15Z: this line ordered the stamps as text, outside the
+        # stamp check's universe, which read the modules and not the tests)
+        assert in_force >= last.get(h["method"], in_force), f"{h['method']}: a line dated before the one above it"
+        last[h["method"]] = in_force
     for method in L.METHOD_CALIBRATION:
         latest = L.latest_calibration(hist, method)
         assert latest is not None, f"{method}: no calibration on record"

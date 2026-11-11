@@ -238,7 +238,9 @@ def test_a_stamp_in_another_format_refuses_the_row_instead_of_comparing_text(tmp
     Now every stamp on the path is parsed in pm_lib.UTC_STAMP_FORMAT; another format refuses the row
     (NOT SCORED, exit 1, nothing written) for a call and for a reading alike."""
     bad = dict(SETTLED, fetched_utc="20/11/2026 06:00Z")
-    assert bad["fetched_utc"] < READING["quote_fetched_utc"]  # the text comparison that said "not due"
+    # The text comparison that said "not due": "20/11/2026 06:00Z" < "2026-11-03T18:20:00Z" is True as text.
+    # Until 2026-11-11 18:15Z this test asserted that ordering itself, a stamp ordered as text in a file the
+    # stamp check did not read; the check now reads the tests, and the sentence stays as prose.
     with pytest.raises(ValueError, match="fetched_utc of market 3215008 '20/11/2026 06:00Z' is not a UTC stamp"):
         pm_lib.settlement_quote_day("3215008", "2026-11-03T18:20:00Z", [bad])
     with pytest.raises(ValueError, match="the row's quote_fetched_utc '2026-11-03 18:20' is not a UTC stamp"):

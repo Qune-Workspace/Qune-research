@@ -69,7 +69,7 @@ def build_row(quote: dict[str, Any] | None, market_id: str, desk_p: str, method:
     return {
         "id": L.call_id(made_on, method, market_id), "made_on": made_on, "venue": VENUE, "market_id": market_id,
         "condition_id": q.get("condition_id"), "yes_token_id": q.get("yes_token_id"), "proposition": proposition,
-        "settles_on": settles_on, "due_on": str(q.get("end_date", ""))[:10], "market_mid": q.get("market_mid"),
+        "settles_on": settles_on, "due_on": L.scheduled_end_day(q.get("end_date")), "market_mid": q.get("market_mid"),
         "market_spread": q.get("market_spread"), "volume_usdc": q.get("volume_usdc"), "desk_p": desk_p,
         "method": method, "method_p": num(method_p), "range_lo": num(range_lo), "range_hi": num(range_hi),
         "basis": basis, "quote_sha256": q.get("book_sha256"),

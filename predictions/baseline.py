@@ -73,6 +73,7 @@ import argparse
 import csv
 import json
 import math
+import re
 import sys
 from pathlib import Path
 
@@ -508,6 +509,90 @@ def render_skill(table: pd.DataFrame, summary: dict, today: pd.Timestamp) -> str
                   "With fewer than about thirty scored calls this figure is descriptive, not evidence."]
     lines.append("")
     return "\n".join(lines)
+
+
+# --- the desk view's Brier line (2026-11-11) ------------------------------------------------
+#
+# README rule "Brier every week": each desk view reports the desk's and the baseline's
+# Brier scores and the number of scored calls.  Until this date the line was typed by
+# hand from SKILL.md's four-decimal figures and nothing read it back: the 6 November
+# view printed "baseline 0.046", a round of the rounded 0.0455, where the record's
+# 0.04549689 is 0.045 at three decimals.  The clause is now rendered from the record's
+# unrounded figures and the view's line is held to it (tools/check_view_brier.py in
+# make lint and CI; desk-view/tests/test_view_brier.py on the committed page).
+
+VIEW_BRIER_LEAD = "Brier against the market-anchored baseline"
+VIEW_BRIER_DECIMALS = 3
+MINUS = "−"  # the sign the view writes
+_FIGURE = r"[−-]?\d+\.(\d+)"
+_VIEW_BRIER_CLAUSE = re.compile(
+    rf"(?P<count>\d+) scored calls?; desk (?P<desk>{_FIGURE}), baseline (?P<baseline>{_FIGURE}), skill (?P<skill>{_FIGURE})")
+_VIEW_BRIER_FIELDS = (("desk", "brier_desk"), ("baseline", "brier_baseline"), ("skill", "skill_vs_baseline"))
+
+
+def view_brier_clause(summary: dict, decimals: int = VIEW_BRIER_DECIMALS) -> str:
+    """The clause the desk view carries after the lead, rendered from the summary's
+    unrounded figures (never from SKILL.md's text: a round of a rounded figure is not
+    the record's figure).  With no scored call the clause says so."""
+    n = summary["scored_with_baseline"]
+    if n == 0:
+        return "no scored call with a baseline yet"
+
+    def fmt(x: float) -> str:
+        return f"{x:.{decimals}f}".replace("-", MINUS)
+
+    calls = "call" if n == 1 else "calls"
+    return (f"{n} scored {calls}; desk {fmt(summary['brier_desk'])}, baseline {fmt(summary['brier_baseline'])}, "
+            f"skill {fmt(summary['skill_vs_baseline'])}")
+
+
+def view_brier_violations(text: str, summary: dict) -> list[str]:
+    """Sentences naming what the view's Brier line gets wrong against the record; empty
+    when the line is the record's.  Exactly one line carries the lead; while a scored
+    call with a baseline exists it carries the clause with the record's count and each
+    figure equal to the record's figure at the decimals the line itself prints (all
+    three alike); the skill figure is the record's difference rounded, not the
+    difference of two rounded figures.  With no scored call the line carries no figure."""
+    lines = [line for line in text.splitlines() if VIEW_BRIER_LEAD in line]
+    n = summary["scored_with_baseline"]
+    if not lines:
+        if n == 0:
+            return []
+        return [f"the record has {n} scored call(s) with a baseline and the view carries no line with "
+                f"'{VIEW_BRIER_LEAD}' (README, Brier every week); the clause to carry: {view_brier_clause(summary)}"]
+    if len(lines) > 1:
+        return [f"the view carries {len(lines)} lines with '{VIEW_BRIER_LEAD}'; one is the rule"]
+    line = lines[0]
+    match = _VIEW_BRIER_CLAUSE.search(line)
+    if n == 0:
+        return [f"the view's Brier line carries figures and the record has no scored call with a baseline: {line!r}"] if match else []
+    if match is None:
+        return [f"the view's Brier line does not carry '<n> scored call(s); desk <p>, baseline <p>, skill <s>'; "
+                f"the clause to carry: {view_brier_clause(summary)}"]
+    out: list[str] = []
+    if int(match["count"]) != n:
+        out.append(f"count: the view prints {match['count']} scored call(s), the record has {n}")
+    decimals = {len(match[name].split(".")[1]) for name, _ in _VIEW_BRIER_FIELDS}
+    if len(decimals) != 1:
+        out.append(f"decimals: the three figures are printed to {sorted(decimals)} decimals; one precision for all")
+        return out
+    places = decimals.pop()
+    for name, key in _VIEW_BRIER_FIELDS:
+        printed = match[name].replace(MINUS, "-")
+        expected = f"{summary[key]:.{places}f}"
+        if printed != expected:
+            out.append(f"{name}: the view prints {match[name]}, the record's {summary[key]!r} is "
+                       f"{expected.replace('-', MINUS)} at {places} decimals")
+    return out
+
+
+def record_summary(ledger_path: Path = score.LEDGER, baselines_path: Path = BASELINES,
+                   outcomes_path: Path = score.OUTCOMES) -> dict:
+    """The skill summary read from the three records through their gates (the same
+    readers that write SKILL.md)."""
+    ledger = score.read_ledger(ledger_path)
+    table = skill_table(ledger, read_baselines(ledger, baselines_path), score.read_outcomes(ledger, outcomes_path))
+    return skill_summary(table)
 
 
 # --- entry point ---------------------------------------------------------------------------

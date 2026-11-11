@@ -7,8 +7,9 @@
 #                       figures against the study folders (tools/check_glance.py)
 #                       the paper dashboard against a regeneration (tools/check_dashboard.py)
 #                       the question gate of every study from 012 (tools/check_question_gate.py),
-#                       the due register, bound defaults, data terms, and the
-#                       self-test of the detached-fetch launcher (tools/detach.sh;
+#                       the due register, bound defaults, data terms, the desk view's
+#                       Brier line against the committed records (tools/check_view_brier.py),
+#                       and the self-test of the detached-fetch launcher (tools/detach.sh;
 #                       skipped where no user service manager is reachable) and of
 #                       the leak scan (tools/scan.sh: git-ignored files are never
 #                       read; skipped where gitleaks is not installed)
@@ -102,6 +103,7 @@ lint:
 	$(PYTHON) tools/check_bound_defaults.py
 	$(PYTHON) tools/check_stamp_compares.py
 	$(PYTHON) tools/check_data_terms.py
+	$(PYTHON) tools/check_view_brier.py
 	bash tools/detach.sh --self-test
 	bash tools/scan.sh --self-test
 

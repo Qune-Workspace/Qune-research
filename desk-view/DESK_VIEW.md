@@ -64,7 +64,9 @@ The 63-day correlation proxy (daily S&P 500 returns against the daily fall in th
 | V4 | 10-year breakeven between 2.05% and 2.65% every day to 31 December | 0.75 | 2.24% | inside, no breach so far |
 | V5 | Stock-bond proxy positive on 31 December | 0.65 | +0.14 | positive, falling |
 
-Brier against the market-anchored baseline ([`../predictions/SKILL.md`](../predictions/SKILL.md), rule 3 of the V1 post-mortem): 1 scored call; desk 0.490, baseline 0.046, skill −0.445; descriptive, not evidence, with fewer than thirty scored calls.
+Brier against the market-anchored baseline ([`../predictions/SKILL.md`](../predictions/SKILL.md), rule 3 of the V1 post-mortem): 1 scored call; desk 0.490, baseline 0.045, skill −0.445; descriptive, not evidence, with fewer than thirty scored calls.
+
+*Correction, 2026-11-11 06:2x UTC.* From 6 to 11 November the line above read "baseline 0.046": a round by hand of SKILL.md's four-decimal 0.0455, where the record's figure (`baselines.csv`, V1 at 0.2133, scored a miss) is 0.04549689, which is 0.045 at three decimals. Nothing read the line back. The three figures are now printed from the committed records by [`../tools/check_view_brier.py`](../tools/check_view_brier.py) (`--print`), held there in `make lint` and CI, and held on this page by [`tests/test_view_brier.py`](tests/test_view_brier.py). The digit is the only change to the text above ([`../predictions/POST_MORTEMS.md`](../predictions/POST_MORTEMS.md), "A Brier figure rounded twice").
 
 The ledger is not edited and the confidences stand as logged. V3's basis (hikes lift the 2-year more than the 10-year) assumed the October hike that did not come; it is back on the line this week for a different reason, a long end pricing less inflation, which is not the mechanism the call named. A call that comes right for the wrong reason scores the same and teaches less; the desk notes it now so the post-mortem on 31 December can say which it was (inferred).
 

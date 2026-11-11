@@ -114,6 +114,12 @@ jobs:
       # (tools/check_data_terms.py; tools/pm_data_terms.md, 2026-11-01).
       - name: data terms
         run: python tools/check_data_terms.py
+      # The desk view's Brier line carries the committed records' figures at the
+      # precision it prints, read through the records' gates, never retyped from
+      # SKILL.md's rounded text (tools/check_view_brier.py; predictions/POST_MORTEMS.md,
+      # 2026-11-11: the 6 November view printed 0.046 for 0.045).
+      - name: desk view Brier line
+        run: python tools/check_view_brier.py
       # The launcher a learning run uses for any fetch longer than a minute
       # starts the command as a transient systemd user unit, in its own control
       # group, so it outlives the shell that launched it (tools/detach.sh;

@@ -20,7 +20,10 @@
 # The unit name is qr-<name>; a second start under a name that is still active
 # is refused by systemd (exit 1, nothing launched), so one fetch cannot be
 # started twice by mistake. Finished units are collected and disappear; the log
-# file is the record.
+# file is the record. The unit runs with the launcher's PATH (2026-11-12): a
+# user unit otherwise starts from the service manager's environment, and a
+# check inside it that skips when a tool is "not installed" then skips on the
+# one host where the tool is installed.
 set -u
 
 usage() { sed -n '2,8p' "$0"; exit "${1:-1}"; }
@@ -45,8 +48,14 @@ do_start() {
   local unit
   unit=$(unit_name "$name")
   # The wrapper writes the dated start and end lines into the same log; the
-  # command itself runs with the launcher's working directory.
+  # command itself runs with the launcher's working directory and the
+  # launcher's PATH. A user unit starts from the service manager's own
+  # environment, not the launcher's, and that PATH has no ~/.local/bin, so the
+  # first `make lint` run through this launcher (2026-11-12 06:26Z) found no
+  # gitleaks and its scan self-test skipped with exit 0 (research/POST_MORTEMS.md,
+  # "A lint that passed by skipping", 2026-11-12).
   if systemd-run --user --quiet --collect --unit="$unit" --working-directory="$PWD" \
+      --setenv=PATH="$PATH" \
       -p StandardOutput=append:"$log" -p StandardError=append:"$log" -- \
       bash -c 'echo "detach start $(date -u +%Y-%m-%dT%H:%M:%SZ) $*"; "$@"; rc=$?; echo "detach end $(date -u +%Y-%m-%dT%H:%M:%SZ) rc=$rc"; exit $rc' \
       detach "$@"; then
@@ -127,8 +136,22 @@ self_test() {
   sleep 1
   grep -q DUPLICATE "$log" && { echo "FAIL: duplicate ran"; fails=$((fails + 1)); }
 
+  # 4. the launcher's PATH reaches the command: a stub that exists only in a
+  #    folder the launcher prepends to PATH is found inside the unit, and the
+  #    unit's PATH is the launcher's (2026-11-12; before the fix the unit saw
+  #    the service manager's PATH, without ~/.local/bin).
+  : > "$log"
+  mkdir -p "$dir/bin"
+  printf '#!/bin/sh\necho stub-ran\n' > "$dir/bin/qr-stub-$$"
+  chmod +x "$dir/bin/qr-stub-$$"
+  PATH="$dir/bin:$PATH" bash "$self" start "$name" "$log" -- sh -c "command -v qr-stub-$$ && qr-stub-$$ && echo \"unit PATH=\$PATH\"" >/dev/null \
+    || { echo "FAIL: fourth start"; fails=$((fails + 1)); }
+  bash "$self" wait "$name" 30 >/dev/null
+  grep -qx 'stub-ran' "$log" || { echo "FAIL: a command on the launcher's PATH was not found inside the unit"; fails=$((fails + 1)); }
+  grep -qxF "unit PATH=$dir/bin:$PATH" "$log" || { echo "FAIL: the unit's PATH is not the launcher's"; fails=$((fails + 1)); }
+
   if [ "$fails" -eq 0 ]; then
-    echo "detach self-test: pass (own control group, dated start and end lines, exit code kept, duplicate name refused)"
+    echo "detach self-test: pass (own control group, dated start and end lines, exit code kept, duplicate name refused, launcher's PATH carried)"
     return 0
   fi
   echo "detach self-test: $fails failure(s)"

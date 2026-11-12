@@ -79,8 +79,18 @@ run_scan() {
 
 # The self-test builds its secret at run time so that this file never holds one.
 self_test() {
+  # A skip is for a host where gitleaks is not installed (the CI runner). A
+  # gitleaks that is installed where this organisation installs it but not on
+  # the PATH the check was given is a launcher fault, not a missing tool, and
+  # skipping it would pass a lint that never ran the scan (2026-11-12 06:26Z,
+  # the first `make lint` through tools/detach.sh; research/POST_MORTEMS.md,
+  # "A lint that passed by skipping"): refused with exit 1, naming both paths.
   if ! command -v gitleaks >/dev/null 2>&1; then
-    echo "scan self-test: skipped (gitleaks not installed)"
+    if [ -x "$HOME/.local/bin/gitleaks" ]; then
+      echo "scan self-test: FAIL  gitleaks is installed at $HOME/.local/bin/gitleaks but not on PATH ($PATH); a skip here would hide an installed scanner"
+      exit 1
+    fi
+    echo "scan self-test: skipped (gitleaks not installed: not on PATH ($PATH) and not at $HOME/.local/bin/gitleaks)"
     exit 0
   fi
   local fails=0 out rc secret

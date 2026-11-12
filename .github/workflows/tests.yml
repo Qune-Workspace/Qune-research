@@ -109,7 +109,10 @@ jobs:
       # while both sides happen to carry one format.  Since 2026-11-11 the check
       # also taints the stamps read under Gamma's names (pm_lib.STAMP_KEYS:
       # end_date, closedTime, ...), attributes and key= functions, and reads the
-      # pm-view tests as well as the modules.
+      # pm-view tests as well as the modules.  Since 2026-11-12 its universe is
+      # found, not listed: every .py under the tree that names a stamp (Studies
+      # 001-011 set aside by the rule of 2026-10-31 and counted), and a stamp
+      # passed to a module's own helper that slices or orders it is a hit.
       - name: stamp comparisons
         run: python tools/check_stamp_compares.py
       # No prediction-market venue is fetched or has a raw response committed

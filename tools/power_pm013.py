@@ -78,6 +78,21 @@ every window produced two labels and every monthly rate was understated by
 half (the MDEs overstated by sqrt(2)). The rate now divides by the number of
 fetched windows read from the page manifest; the day table keeps the labels
 and says so. The 01:09Z figures were never used.
+
+Stamps parsed, never sliced (2026-11-12 00:15Z, predictions/POST_MORTEMS.md
+"A universe listed by hand"): until this date the month label was the first
+seven characters of `closedTime` and the day label the first ten of
+`endDate`, so a stamp in another zone was counted under the wrong day and
+month and a stamp in another shape under a label that was no date (shown on
+00dac67 over six altered rows: `+05:00` landed a day and a month late,
+`20260901T050000Z` gave the labels `2026090` and `20260901T0`). Every stamp
+now goes through `pm_lib.parse_venue_stamp`, the one parser of the venue's
+stamps (the fetch's eligibility, the pm-view writers and gates), and the
+label is the parsed time's UTC month or day; a stamp that does not parse is
+counted under `unreadable closedTime` / `unreadable endDate`, excluded from
+the rates, and the run exits 1 and says so. The kept records all carry
+`...+00` and `...Z`, so the committed output is unchanged by the fix
+(recounted from the kept lines on this date; see BUILD_LOG).
 """
 
 from __future__ import annotations
@@ -96,7 +111,10 @@ import urllib.request
 from collections.abc import Iterable, Iterator
 from pathlib import Path
 
-GAMMA_KEYSET = "https://gamma-api.polymarket.com/markets/keyset"
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "pm-view"))
+from pm_lib import parse_venue_stamp  # noqa: E402  the one parser of the venue's stamps
+
+GAMMA_KEYSET ="https://gamma-api.polymarket.com/markets/keyset"
 UA = "qune-research/0.1 (public research; counts only; tools/power_pm013.py)"
 PAGE = 100  # observed page cap
 KEEP = (
@@ -233,10 +251,30 @@ def read_stream(src: Path) -> Iterator[dict]:
                 yield json.loads(line)
 
 
-def month_of(ts: str | None) -> str | None:
-    if not ts or len(ts) < 7:
-        return None
-    return ts[:7]
+def _label(stamp: object, key: str, fmt: str) -> str:
+    """The parsed stamp's UTC month or day as a table label; `no <key>` for a missing stamp and
+    `unreadable <key>` for text pm_lib.parse_venue_stamp refuses.  Parsed, never sliced (2026-11-12)."""
+    if not str(stamp or ""):
+        return f"no {key}"
+    try:
+        return parse_venue_stamp(stamp, key).strftime(fmt)
+    except ValueError:
+        return f"unreadable {key}"
+
+
+def month_of(closed_time: object) -> str:
+    """The UTC month `YYYY-MM` of a market's `closedTime` (Gamma writes `YYYY-MM-DD HH:MM:SS+00`)."""
+    return _label(closed_time, "closedTime", "%Y-%m")
+
+
+def day_of(end_date: object) -> str:
+    """The UTC day `YYYY-MM-DD` of a market's scheduled `endDate` (Gamma writes `YYYY-MM-DDTHH:MM:SSZ`)."""
+    return _label(end_date, "endDate", "%Y-%m-%d")
+
+
+def is_period_label(label: str) -> bool:
+    """True for a `YYYY-MM` or `YYYY-MM-DD` label; False for `no ...` and `unreadable ...`."""
+    return label[:1].isdigit()
 
 
 def is_sports(r: dict) -> bool:
@@ -270,8 +308,8 @@ def count_table(records: Iterable[dict]) -> tuple[dict[str, dict], dict[str, dic
     n = 0
     for r in records:
         n += 1
-        mo = month_of(r.get("closedTime")) or "no closedTime"
-        day = (r.get("endDate") or "no endDate")[:10]
+        mo = month_of(r.get("closedTime"))
+        day = day_of(r.get("endDate"))
         uma = r.get("umaResolutionStatus") == "resolved"
         ob = bool(r.get("enableOrderBook"))
         vol = float(r.get("volumeNum") or 0.0)
@@ -378,15 +416,20 @@ def main() -> int:
         print(f"  {day:17} {mech}")
     print()
 
-    cur = today.strftime("%Y-%m")
-    days = sorted(d for d in by_day if d != "no endDate" and d[:7] < cur)
+    unreadable = {lab: t["markets"] for lab, t in [*by_day.items(), *by_month.items()] if lab.startswith("unreadable")}
+    if unreadable:
+        print("NOT COUNTED IN THE RATES: " + "; ".join(f"{n_:,} row(s) with {lab}" for lab, n_ in sorted(unreadable.items()))
+              + " (a stamp pm_lib.parse_venue_stamp refuses: the venue's shape has changed, fix the parser before reading the rates)")
+        print()
+    month_start = today.replace(day=1)  # a complete month ends before the first of the current one
+    days = sorted(d for d in by_day if is_period_label(d) and dt.date.fromisoformat(d) < month_start)
     man_path = (out_dir if args.fetch else Path(args.src)) / "manifest.jsonl"
     with open(man_path, encoding="utf-8") as mf:
         windows = sorted({json.loads(line)["end_date_day"] for line in mf if line.strip()})
-    windows = [w for w in windows if w[:7] < cur]
+    windows = [w for w in windows if dt.date.fromisoformat(w) < month_start]
     if len(windows) < 4:
         print("fewer than four fetched windows in complete months; no rate computed")
-        return 0
+        return 1 if unreadable else 0
     dpm = 365.25 / 12
     k = len(windows)
     rates = {
@@ -444,6 +487,10 @@ def main() -> int:
             m1 = K_PROGRAMME * se
             print(f"  bin share {share:.2f}, {weeks:2} w, clean events: n = {n_b:9,.0f}; MDE = {m1:6.2f} pp; ratio to 5.86 pp = {m1 / 5.86:5.2f}")
     print("  the return-unit form (per dollar) has a per-market sd of sqrt((1-p)/p), about 4.4 at p = 0.05, and is not computed: it cannot be the decision test")
+    if unreadable:
+        print()
+        print("exit 1: some rows carried a stamp the parser refused (listed above under NOT COUNTED IN THE RATES)")
+        return 1
     return 0
 
 

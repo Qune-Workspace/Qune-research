@@ -34,14 +34,33 @@ writers, ``tests/test_readings.py`` ordered history lines as text, and a
 ``sorted(rows, key=lambda r: r["fetched_utc"])`` would have passed.  Shown
 before the change on 45147b7: a module with five such lines got one hit.
 
+Universe found, not listed (2026-11-12 00:15Z, predictions/POST_MORTEMS.md "A
+universe listed by hand"): the version above read three places named in this
+file (pm-view, its tests, ``tools/check_due.py``), and the post-mortem that
+widened it named ``tools/power_pm013.py`` as a reader of ``endDate`` outside
+them; on 00dac67 that tool sliced ``closedTime`` for its month label and
+``endDate`` for its day label.  The universe is now every ``.py`` under the
+root whose text names a stamp (a ``_utc`` name or a key in
+``pm_lib.STAMP_KEYS``), found by reading the tree; Studies 001–011 are
+excluded by the mission rule of 2026-10-31 (old programme, frozen) and their
+count is printed.  A second blind spot found on the same tool: a stamp handed
+to a module's own helper (``month_of(r.get("closedTime"))``) whose parameter
+is not a stamp's name, where the helper slices or orders it (``ts[:7]``).  The
+check now reads each module-level function once per parameter with that
+parameter tainted, and a call that passes a stamp into a parameter the helper
+slices or orders is a hit at the call.  Not followed: a helper's *return* of a
+stamp's text unparsed, a method, a function in another module.
+
 Usage: python tools/check_stamp_compares.py [--root PATH] [--selftest]
 Exit 1 on any text comparison.  ``--selftest`` writes a failing and a passing
-module to a temporary folder and checks both verdicts.
+module to a temporary folder and checks both verdicts, and checks the found
+universe over a small tree.
 """
 from __future__ import annotations
 
 import argparse
 import ast
+import re
 import sys
 import tempfile
 from pathlib import Path
@@ -51,7 +70,11 @@ sys.path.insert(0, str(ROOT / "pm-view"))
 from pm_lib import STAMP_KEYS  # noqa: E402  the one list of the stamps read under a name not ending in _utc
 
 PARSERS = {"parse_utc_stamp", "strptime", "quote_day",  # quote_day parses since 2026-11-09 12:15Z
-           "fromisoformat", "parse_scheduled_end", "scheduled_end_day"}  # the scheduled end's parsers (2026-11-11)
+           "fromisoformat", "parse_scheduled_end", "scheduled_end_day",  # the scheduled end's parsers (2026-11-11)
+           "parse_venue_stamp"}  # the one parser of every venue stamp (2026-11-12)
+STAMP_TOKEN = re.compile(r"_utc\b|\b(" + "|".join(re.escape(k) for k in STAMP_KEYS) + r")\b")
+OLD_PROGRAMME = re.compile(r"^research/0(0[1-9]|1[01])-")  # Studies 001–011: frozen by the mission rule of 2026-10-31
+SKIP_PARTS = {".venv", ".git", "node_modules", "__pycache__", ".mypy_cache", ".ruff_cache", ".pytest_cache"}
 PROPAGATE = {"str", "get", "strip", "lower", "upper", "join", "format", "replace"}  # text in, the same text out
 ORDER_OPS = (ast.Lt, ast.LtE, ast.Gt, ast.GtE)
 ORDER_CALLS = {"min", "max", "sorted", "sort"}  # `sort` is list.sort: its key= is read, the list itself is not
@@ -61,13 +84,22 @@ def _is_stamp_name(name: str) -> bool:
     return name.endswith("_utc") or name in STAMP_KEYS
 
 
-def _modules(root: Path) -> list[Path]:
-    out = sorted(p for p in (root / "pm-view").glob("*.py") if p.name != "conftest.py")
-    out += sorted(p for p in (root / "pm-view" / "tests").glob("*.py") if p.name != "conftest.py")
-    due = root / "tools" / "check_due.py"
-    if due.exists():
-        out.append(due)
-    return out
+def _modules(root: Path) -> tuple[list[Path], int]:
+    """Every `.py` under `root` whose text names a stamp (a `_utc` name or a key in STAMP_KEYS), found by
+    reading the tree, never listed by hand; and the count of Studies 001–011 files set aside by rule.
+    Until 2026-11-12 a list of three places, which never reached tools/power_pm013.py."""
+    found: list[Path] = []
+    excluded = 0
+    for p in sorted(root.rglob("*.py")):
+        if SKIP_PARTS & set(p.parts) or p.name == "conftest.py":
+            continue
+        if not STAMP_TOKEN.search(p.read_text(encoding="utf-8", errors="replace")):
+            continue
+        if OLD_PROGRAMME.match(p.relative_to(root).as_posix()):
+            excluded += 1
+            continue
+        found.append(p)
+    return found, excluded
 
 
 def _call_name(node: ast.AST) -> str | None:
@@ -113,10 +145,27 @@ def _reads_stamp(node: ast.AST, tainted: set[str]) -> bool:
 
 
 class _Scope(ast.NodeVisitor):
-    def __init__(self, path: Path, rel: str) -> None:
+    def __init__(self, path: Path, rel: str, helpers: dict[str, dict[str, tuple[int, int]]] | None = None) -> None:
         self.path, self.rel = path, rel
         self.hits: list[str] = []
         self.tainted: set[str] = set()
+        # module-level function -> {parameter: (position, line)} for the parameters the function slices or
+        # orders as text when they hold a stamp (2026-11-12: `month_of(ts)` with `ts[:7]` was a blind spot)
+        self.helpers = helpers or {}
+
+    def _helper_hits(self, node: ast.Call) -> None:
+        if not isinstance(node.func, ast.Name) or node.func.id not in self.helpers:
+            return
+        params = self.helpers[node.func.id]
+        by_pos = {pos: (name, line) for name, (pos, line) in params.items()}
+        passed = [(by_pos.get(i), a) for i, a in enumerate(node.args)]
+        passed += [((k.arg, params[k.arg][1]) if k.arg in params else None, k.value) for k in node.keywords]
+        for target, arg in passed:
+            if target is not None and _reads_stamp(arg, self.tainted):
+                name, line = target
+                self._hit(node, f"a UTC stamp passed to {node.func.id}(), which slices or orders its parameter "
+                                f"{name!r} as text (line {line}): {ast.unparse(node)}")
+                break
 
     def _hit(self, node: ast.AST, what: str) -> None:
         self.hits.append(f"{self.rel}:{node.lineno}: {what}")
@@ -163,6 +212,7 @@ class _Scope(ast.NodeVisitor):
 
     def visit_Call(self, node: ast.Call) -> None:  # noqa: N802
         self.generic_visit(node)
+        self._helper_hits(node)
         if _call_name(node) not in ORDER_CALLS:
             return
         # min/max/sorted(stamps) order their positional operands; rows.sort(key=...) and sorted(rows, key=...)
@@ -175,23 +225,46 @@ class _Scope(ast.NodeVisitor):
                 break
 
 
+def _slicing_params(tree: ast.Module, path: Path, rel: str) -> dict[str, dict[str, tuple[int, int]]]:
+    """For each module-level function, the parameters it slices or orders as text when they hold a stamp:
+    {function: {parameter: (position, line of the first such use)}}.  Found by visiting the body once per
+    parameter with that one parameter tainted.  A parameter named as a stamp (`_utc`, a STAMP_KEYS name) is
+    left out: it is judged where the function is written, as before."""
+    out: dict[str, dict[str, tuple[int, int]]] = {}
+    for node in tree.body:
+        if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            continue
+        params = [a.arg for a in node.args.args + node.args.kwonlyargs]
+        for pos, name in enumerate(params):
+            if _is_stamp_name(name):
+                continue
+            trial = _Scope(path, rel)
+            trial.tainted = {name}
+            for stmt in node.body:
+                trial.visit(stmt)
+            if trial.hits:
+                line = int(trial.hits[0].split(":")[1])
+                out.setdefault(node.name, {})[name] = (pos, line)
+    return out
+
+
 def check_file(path: Path, root: Path) -> list[str]:
     try:
         rel = str(path.relative_to(root))
     except ValueError:
         rel = str(path)
     tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
-    scope = _Scope(path, rel)
+    scope = _Scope(path, rel, _slicing_params(tree, path, rel))
     scope.visit(tree)
     return scope.hits
 
 
-def check_tree(root: Path) -> tuple[list[str], int]:
+def check_tree(root: Path) -> tuple[list[str], int, int]:
     hits: list[str] = []
-    files = _modules(root)
+    files, excluded = _modules(root)
     for p in files:
         hits.extend(check_file(p, root))
-    return hits, len(files)
+    return hits, len(files), excluded
 
 
 FAILING = '''
@@ -228,6 +301,13 @@ def first_closed(rows):
 
 def attribute(q, other):
     return q.fetched_utc < other
+
+# the blind spot of the second version (2026-11-12 00:15Z): a stamp handed to a helper that slices its parameter
+def month_of(ts):
+    return ts[:7]
+
+def label(r):
+    return month_of(r.get("closedTime"))
 '''
 
 PASSING = '''
@@ -288,6 +368,18 @@ def copied_end(row, quote):
 
 def by_id(rows):
     return sorted(rows, key=lambda r: r["market_id"])                      # a key= that is not a stamp
+
+def month_parsed(ts):
+    return parse_scheduled_end(ts).strftime("%Y-%m")                        # a helper that parses its parameter
+
+def label(r):
+    return month_parsed(r.get("closedTime"))                                # a stamp passed to it is fine
+
+def head(s):
+    return s[:7]                                                            # a helper that slices its parameter
+
+def unrelated_head(r):
+    return head(r["market_id"])                                             # ... given something that is no stamp
 '''
 
 
@@ -299,11 +391,23 @@ def selftest() -> int:
         bad = check_file(root / "pm-view" / "bad.py", root)
         (root / "pm-view" / "bad.py").write_text(PASSING, encoding="utf-8")
         good = check_file(root / "pm-view" / "bad.py", root)
+        # the universe is found by reading the tree: a tools module naming a stamp is in, a module naming
+        # none is out, a Study 001–011 module is set aside by rule and counted (2026-11-12)
+        (root / "tools").mkdir()
+        (root / "tools" / "other.py").write_text("def d(r):\n    return r['closedTime'][:10]\n", encoding="utf-8")
+        (root / "tools" / "plain.py").write_text("def d(r):\n    return r['market_id'][:10]\n", encoding="utf-8")
+        (root / "research" / "003-old" / "src").mkdir(parents=True)
+        (root / "research" / "003-old" / "src" / "a.py").write_text("def d(r):\n    return r['endDate'][:10]\n",
+                                                                    encoding="utf-8")
+        found, excluded = _modules(root)
+        universe = sorted(p.relative_to(root).as_posix() for p in found)
+        universe_ok = universe == ["pm-view/bad.py", "tools/other.py"] and excluded == 1
     want = ("in_force_utc", "fetched_utc or", "recorded < fetched", "max(",
-            "get('end_date'", "sorted(rows, key=", "rows.sort(key=", "closedTime", "q.fetched_utc < other")
-    ok = len(bad) == 9 and all(any(w in h for h in bad) for w in want) and good == []
-    print(f"selftest: failing module {len(bad)} hit(s) (want 9), passing module {len(good)} (want 0): "
-          f"{'pass' if ok else 'FAIL'}")
+            "get('end_date'", "sorted(rows, key=", "rows.sort(key=", "closedTime", "q.fetched_utc < other",
+            "passed to month_of(), which slices or orders its parameter 'ts' as text")
+    ok = len(bad) == 10 and all(any(w in h for h in bad) for w in want) and good == [] and universe_ok
+    print(f"selftest: failing module {len(bad)} hit(s) (want 10), passing module {len(good)} (want 0), "
+          f"universe found {universe} with {excluded} set aside (want 2 and 1): {'pass' if ok else 'FAIL'}")
     if not ok:
         for h in bad + good:
             print("  " + h)
@@ -317,12 +421,13 @@ def main() -> int:
     a = ap.parse_args()
     if a.selftest:
         return selftest()
-    hits, n = check_tree(a.root)
+    hits, n, excluded = check_tree(a.root)
     for h in hits:
         print(h)
     print(f"stamp comparisons: {len(hits)} text comparison(s) of a UTC stamp over {n} module(s) "
-          f"(pm-view modules and tests, tools/check_due.py; names ending _utc and {', '.join(STAMP_KEYS)})"
-          f"{'' if hits else ' (pass)'}")
+          f"(every .py under the tree naming a stamp, found not listed; {excluded} Study 001–011 file(s) set aside "
+          f"by the rule of 2026-10-31; names ending _utc and {', '.join(STAMP_KEYS)}; a stamp passed to a helper "
+          f"that slices or orders it counts){'' if hits else ' (pass)'}")
     return 1 if hits else 0
 
 

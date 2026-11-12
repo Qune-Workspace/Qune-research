@@ -404,14 +404,16 @@ RECORDED_UTC_FORMAT = UTC_STAMP_FORMAT  # the readings gate's name for it (2026-
 STAMP_KEYS = ("end_date", "endDate", "closedTime", "createdAt", "startDate", "updatedAt")
 
 
-def parse_scheduled_end(end: object, what: str = "the quote's scheduled end") -> datetime:
-    """The time of a market's scheduled end as Gamma writes it (`endDate`, ISO 8601 with a zone, today
-    `YYYY-MM-DDTHH:MM:SSZ`), in UTC; ValueError naming `what` for no text, text in another format or a
-    time with no zone.  The one parser of the field: record_eligibility at the fetch, scheduled_end_day
-    for `due_on`, both gates.  Until 2026-11-11 18:15Z `due_on` was `str(end_date)[:10]` in the writers
-    and the gates alike, so a zone other than Z gave a wrong day, another shape gave a day in no format,
-    and `None` gave the word `None`, each admitted by both gates (shown on 45147b7)."""
-    text = str(end or "")
+def parse_venue_stamp(stamp: object, what: str = "the venue's stamp") -> datetime:
+    """The time of any stamp Gamma writes under one of STAMP_KEYS, in UTC: `endDate` as
+    `YYYY-MM-DDTHH:MM:SSZ`, `closedTime` as `YYYY-MM-DD HH:MM:SS+00`, `createdAt` with fractional seconds
+    (shapes observed in the kept records of 2026-11-02); any ISO 8601 time with a zone.  ValueError
+    naming `what` for no text, text in another format or a time with no zone.  The one parser of every
+    venue stamp (2026-11-12 00:15Z, predictions/POST_MORTEMS.md "A universe listed by hand": until then
+    tools/power_pm013.py took the month of `closedTime` and the day of `endDate` from the text's first
+    characters, so a stamp in another zone fell under the wrong day and month and a stamp in another
+    shape under a label that was no date, each counted)."""
+    text = str(stamp or "")
     if not text:
         raise ValueError(f"{what} is missing")
     try:
@@ -421,6 +423,17 @@ def parse_scheduled_end(end: object, what: str = "the quote's scheduled end") ->
     if at.tzinfo is None:
         raise ValueError(f"{what} {text!r} carries no zone")
     return at.astimezone(UTC)
+
+
+def parse_scheduled_end(end: object, what: str = "the quote's scheduled end") -> datetime:
+    """The time of a market's scheduled end as Gamma writes it (`endDate`, ISO 8601 with a zone, today
+    `YYYY-MM-DDTHH:MM:SSZ`), in UTC; ValueError naming `what` for no text, text in another format or a
+    time with no zone.  The one parser of the field: record_eligibility at the fetch, scheduled_end_day
+    for `due_on`, both gates.  Until 2026-11-11 18:15Z `due_on` was `str(end_date)[:10]` in the writers
+    and the gates alike, so a zone other than Z gave a wrong day, another shape gave a day in no format,
+    and `None` gave the word `None`, each admitted by both gates (shown on 45147b7).  Since 2026-11-12
+    the parsing is parse_venue_stamp's, shared with every other stamp the venue writes."""
+    return parse_venue_stamp(end, what)
 
 
 def scheduled_end_violation(end: object) -> str | None:

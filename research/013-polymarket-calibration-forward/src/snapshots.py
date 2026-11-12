@@ -30,8 +30,10 @@ def parse_time(s: object) -> dt.datetime | None:
     if not isinstance(s, str) or not s:
         return None
     t = s.strip()
-    if t.endswith("Z") or t.endswith("z"):
-        t = t[:-1] + "+00:00"
+    # a trailing Z or z is the UTC designator; written as a replace, not a slice, since 2026-11-12 (§16: the
+    # repository's stamp check reads this folder now, and a stamp is never sliced as text); equivalent on
+    # every ISO 8601 text, where Z occurs only as the zone (tests/test_parse_time.py)
+    t = t.replace("Z", "+00:00").replace("z", "+00:00")
     try:
         d = dt.datetime.fromisoformat(t)
     except ValueError:

@@ -49,6 +49,39 @@ def test_the_page_date_lies_between_the_newest_record_row_and_today():
     assert csp.page_violations(text, S.PAGE_GENERATOR, regenerate, newest, today) == []
 
 
+def _main_paths(tmp_path: Path, skill: Path) -> list[str]:
+    return ["--today", "2026-11-06", "--ledger", str(LEDGER), "--outcomes", str(OUTCOMES), "--skill", str(skill),
+            "--manifest", str(PM_VIEW / "data" / "manifest.json")]
+
+
+def test_summary_dry_run_prints_exactly_the_page_and_writes_nothing(tmp_path, capsys):
+    # 2026-11-12 06:15Z (predictions/POST_MORTEMS.md "A dry run that wrote the page"): `--summary --dry-run`
+    # wrote SKILL.md dated that day, because main read the flag on its scoring branch only; a page so
+    # written is a true regeneration, so the page check admits it. The tool must not write it.
+    skill = tmp_path / "SKILL.md"
+    assert S.main(["--summary", "--dry-run", *_main_paths(tmp_path, skill)]) == 0
+    assert capsys.readouterr().out == regenerate("2026-11-06") == PAGE.read_text(encoding="utf-8")
+    assert sorted(p.name for p in tmp_path.iterdir()) == []
+
+
+def test_summary_without_dry_run_writes_the_page_and_says_so(tmp_path, capsys):
+    skill = tmp_path / "SKILL.md"
+    assert S.main(["--summary", *_main_paths(tmp_path, skill)]) == 0
+    assert capsys.readouterr().out == "wrote SKILL.md\n"
+    assert skill.read_text(encoding="utf-8") == regenerate("2026-11-06")
+
+
+def test_scoring_dry_run_writes_nothing_either(tmp_path):
+    # the other path of main, with a reading on record and nothing due, no manifest and so no fetch
+    rd = tmp_path / "readings.csv"
+    rd.write_text(READINGS.read_text(encoding="utf-8"), encoding="utf-8")
+    before = {p.name: p.read_bytes() for p in tmp_path.iterdir()}
+    assert S.main(["--dry-run", "--today", "2026-11-01", "--ledger", str(LEDGER), "--outcomes", str(tmp_path / "o.csv"),
+                   "--readings", str(rd), "--readings-outcomes", str(tmp_path / "ro.csv"),
+                   "--manifest", str(tmp_path / "none.json")]) == 0
+    assert {p.name: p.read_bytes() for p in tmp_path.iterdir()} == before
+
+
 def test_write_summary_writes_exactly_summary_text(tmp_path):
     out = tmp_path / "SKILL.md"
     S.write_summary(LEDGER, OUTCOMES, out, date(2026, 11, 6), entries())

@@ -50,8 +50,10 @@ fewer than about thirty scored calls the figure is descriptive.
 
 Usage (from this folder):
     python score.py [--today YYYY-MM-DD] [--dry-run]
-    python score.py --summary
+    python score.py --summary [--dry-run]     # --dry-run: print exactly the page, write nothing
 Exit 0; 1 on a fetch failure (nothing written for that call).
+`--dry-run` is honoured on both paths of main (2026-11-12 06:15Z: until then `--summary` read
+only its own flag and wrote the page dated that day; tests/test_skill_page.py holds both paths).
 """
 
 from __future__ import annotations
@@ -406,6 +408,11 @@ def main(argv: list[str] | None = None) -> int:
     entries: list[dict[str, Any]] = json.loads(manifest.read_text(encoding="utf-8")) if manifest.exists() else []
     if a.summary:
         try:
+            if a.dry_run:
+                # exactly the page, nothing written, so the output can be diffed against SKILL.md
+                # (2026-11-12 06:15Z: until then this branch ignored --dry-run and wrote the page)
+                sys.stdout.write(summary_text(ledger, outcomes, today, entries))
+                return 0
             write_summary(ledger, outcomes, skill, today, entries)
         except ValueError as exc:
             print(f"NOT WRITTEN {skill.name}: {exc}")

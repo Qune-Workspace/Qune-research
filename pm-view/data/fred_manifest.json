@@ -22,5 +22,17 @@
     "series": "CBBTCUSD",
     "sha256": "a000c454acaa9548f9e2be2526a29ceeada9a63b3e6afc2e3e50514e2dca4f65",
     "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=CBBTCUSD"
+  },
+  {
+    "bytes": 84636,
+    "citation": "Coinbase, Coinbase Bitcoin [CBBTCUSD], retrieved from FRED, Federal Reserve Bank of St. Louis",
+    "fetched_utc": "2026-11-13T06:24:29Z",
+    "first_obs": "2014-12-01",
+    "kept": "raw download git-ignored; no value committed (verdict derived)",
+    "last_obs": "2026-11-12",
+    "rows": 4330,
+    "series": "CBBTCUSD",
+    "sha256": "29eea5824122198caa80332af612a8e86a6ea9cd4a6d5007f60bf09b24566291",
+    "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=CBBTCUSD"
   }
 ]

@@ -1,85 +1,85 @@
 {
-  "made_at_utc": "2026-11-06T06:17:51+00:00",
-  "repository_commit_at_run": "3ec1e912228702b2f4008c29175d9d989119cf3b",
-  "asof": "2026-11-06",
+  "made_at_utc": "2026-11-13T06:17:39+00:00",
+  "repository_commit_at_run": "2ecaddc563f87855c613887210ad8ea332d1598b",
+  "asof": "2026-11-13",
   "inputs_sha256": {
-    "desk-view/data/raw/fred_BAMLH0A0HYM2.csv": "067579a8676155b1f12d56317f1e1727bc1a34f71be3102908713a9abda824bd",
-    "desk-view/data/raw/fred_DFEDTARL.csv": "5b3020b0c173680cb44647f82dc54c494d1754eef9d504e2575d2f5f9b3f1bfc",
-    "desk-view/data/raw/fred_DFEDTARU.csv": "a2ef714ae4433162fe3748bd66b174245bfa8d095148d2ae18b457fb78780bec",
-    "desk-view/data/raw/fred_DFII10.csv": "7e5a6907587d495723ce48f23525208409ddb0e950c553dba5baaf0092be5ee4",
-    "desk-view/data/raw/fred_DGS10.csv": "dfe93a300a047efd3249d0dfa185955665c8640e433950409499fbe95c514167",
-    "desk-view/data/raw/fred_DGS2.csv": "718b5070063d06e5189d8f68d18afbce57fe6fa7661abbd53ef8b52eff1be02b",
-    "desk-view/data/raw/fred_DGS30.csv": "39f6d82c6b67fad3e5086074c4f3163feefffa6b4d5a26b0f05f726e282b9a82",
-    "desk-view/data/raw/fred_DGS3MO.csv": "488f612215354356411de73118868f7123ec588f133e5388d58fc0143edc9241",
-    "desk-view/data/raw/fred_EFFR.csv": "21b2c8f6bdf48c9164e7aacac070b5a252ab1895011219a516b94edfdab4826d",
-    "desk-view/data/raw/fred_SP500.csv": "32993507016fbeddee4dea9742c867958754c42d883f13a39ba856ed01a35eda",
-    "desk-view/data/raw/fred_T10YIE.csv": "5b669e4b20edd027e94c36ae0654151d08afd22d7eed13f5d6f5ec9093942233",
-    "desk-view/data/raw/fred_T5YIFR.csv": "d17866a8c6ac1a68c60a2914cad11df10877d5024ea9b58f7074f1081ab71286",
-    "desk-view/data/raw/fred_THREEFYTP10.csv": "2c8720a33b0e6302a313c1ee003b5cf2329e1fd1d16db63c3c3f192dacf139ab",
-    "desk-view/data/raw/fred_VIXCLS.csv": "47e44c17d8a4a21ee090aeadc164db367898bfc7c072c8dd08f86ac502a97ef2",
-    "desk-view/data/numbers_2026-11-06.json": "a49568c1e4dd0a47c8544abdf54fdfd353d26552f5633e45ae4fc6880d3ea877"
+    "desk-view/data/raw/fred_BAMLH0A0HYM2.csv": "adc585d6d127ba8110b353e6ff72790d54dfe192190fd57df765ff2bb09c5f1e",
+    "desk-view/data/raw/fred_DFEDTARL.csv": "93930dd97add3aa79e9c84ff7510e0cc55f10ea4e1bf018ae31348289ae0fb47",
+    "desk-view/data/raw/fred_DFEDTARU.csv": "5306d0dd5e4f157d513770c530ceb0a79f13a229f96b5a86982edd0979f993b0",
+    "desk-view/data/raw/fred_DFII10.csv": "54475cd46c1b99355709a08deb65191a2dd4c82049da77a3802cc6dff0023243",
+    "desk-view/data/raw/fred_DGS10.csv": "58b7691336499c4e1f5674f62cec4d403fe5173428b090d238adfc433799cc13",
+    "desk-view/data/raw/fred_DGS2.csv": "eafe17c1258cc5a95b236fd7eddeb5f2b69178f039a5d6e97984b4eef0e61ddf",
+    "desk-view/data/raw/fred_DGS30.csv": "fdba08e6f666d3d86cd5d7dbe3b465561e7291c8e484916f36ef2053cc443db0",
+    "desk-view/data/raw/fred_DGS3MO.csv": "076881c93c56de711ebcb119882c87004b3a1a6bc30341b62aedc36dac8876b9",
+    "desk-view/data/raw/fred_EFFR.csv": "dd1da2c7859989f13761101866a17547c6cef6a13e67a69ee8bd17985fe91eb7",
+    "desk-view/data/raw/fred_SP500.csv": "79e79544bff5ee5f1d8096db7f79f184eb9e3a8738ddaa8810e44771ebbae800",
+    "desk-view/data/raw/fred_T10YIE.csv": "625568fd298058b38bfd0aed50e709f2c941f81bd730868e8e02edac2b82ebee",
+    "desk-view/data/raw/fred_T5YIFR.csv": "47f67bafeb24517256c8e5bc7f256123de9c1a3323e2d3a0cecf9022646347b4",
+    "desk-view/data/raw/fred_THREEFYTP10.csv": "561d5474fb8d35f8410143b475fefd25e2bf1150efee31988a04110d51f34110",
+    "desk-view/data/raw/fred_VIXCLS.csv": "c7c111ba59acbab48f6c215d1912b1826ccf2d9da51762a72d8246dbb9d0f413",
+    "desk-view/data/numbers_2026-11-13.json": "b421ca29bcbeafa8150d099e9d3755994065c08402b59d5a983a6a92c0fe2dc2"
   },
   "style": "qune_research/style.py (chart standard of 2026-10-23); SVG and 2x PNG per chart",
   "title_wording": "chosen by view_lib.curve_finding, front_end_finding, decomposition_finding, correlation_finding from the numbers below; never typed",
   "charts": {
     "curve": {
-      "finding": "Every tenor yields more than a year ago, by 28 to 101 bp, most at the 2y; the front end no longer inverts",
+      "finding": "Every tenor yields more than a year ago, by 34 to 115 bp, most at the 2y; the front end no longer inverts",
       "one_year_change_bp_by_tenor": {
-        "3m": 27.99999999999998,
-        "2y": 101.00000000000003,
-        "10y": 79.0,
-        "30y": 58.999999999999986
+        "3m": 33.999999999999986,
+        "2y": 115.00000000000003,
+        "10y": 87.00000000000001,
+        "30y": 64.99999999999994
       },
       "front_inverted_a_year_ago": true,
       "front_inverted_now": false,
       "dates": {
-        "now": "2026-11-04",
-        "3m": "2026-08-06",
-        "1y": "2025-11-06"
+        "now": "2026-11-10",
+        "3m": "2026-08-13",
+        "1y": "2025-11-13"
       },
       "yields_now_pct": {
-        "3m": 4.21,
-        "2y": 4.58,
-        "10y": 4.9,
-        "30y": 5.28
+        "3m": 4.3,
+        "2y": 4.73,
+        "10y": 4.98,
+        "30y": 5.35
       }
     },
     "policy_vs_front_end": {
-      "finding": "The front end prices a higher policy rate: the 3-month bill sits +33 bp and the 2-year note +70 bp from the effective funds rate",
-      "bill_3m_minus_effr_bp": 33.00000000000001,
-      "note_2y_minus_effr_bp": 70.00000000000001,
-      "on": "2026-11-04"
+      "finding": "The front end prices a higher policy rate: the 3-month bill sits +42 bp and the 2-year note +85 bp from the effective funds rate",
+      "bill_3m_minus_effr_bp": 41.99999999999999,
+      "note_2y_minus_effr_bp": 85.00000000000006,
+      "on": "2026-11-10"
     },
     "decomposition_10y": {
-      "finding": "Of the 10-year's 79 bp rise over the year, +81 bp is real yield and only \u22122 bp breakeven inflation; the term premium accounts for +41 bp of it",
+      "finding": "Of the 10-year's 87 bp rise over the year, +95 bp is real yield and only \u22128 bp breakeven inflation; the term premium accounts for +38 bp of it",
       "one_year_change_bp": {
-        "DGS10": 79.0,
-        "DFII10": 81.0,
-        "T10YIE": -2.0000000000000018,
-        "THREEFYTP10": 41.38
+        "DGS10": 87.00000000000001,
+        "DFII10": 94.99999999999997,
+        "T10YIE": -7.999999999999963,
+        "THREEFYTP10": 38.1
       },
       "accent_series": "DFII10",
       "change_from": {
-        "DGS10": "2025-11-06",
-        "DFII10": "2025-11-06",
-        "T10YIE": "2025-11-06",
-        "THREEFYTP10": "2025-11-06"
+        "DGS10": "2025-11-13",
+        "DFII10": "2025-11-13",
+        "T10YIE": "2025-11-13",
+        "THREEFYTP10": "2025-11-13"
       },
       "change_to": {
-        "DGS10": "2026-11-04",
-        "DFII10": "2026-11-04",
-        "T10YIE": "2026-11-04",
-        "THREEFYTP10": "2026-10-30"
+        "DGS10": "2026-11-10",
+        "DFII10": "2026-11-10",
+        "T10YIE": "2026-11-10",
+        "THREEFYTP10": "2026-11-06"
       },
-      "breakeven_pct_on_nominal_date": 2.26
+      "breakeven_pct_on_nominal_date": 2.2
     },
     "stock_bond_corr": {
-      "finding": "Stocks and bonds have moved together on 62% of days since 2022, against 8% in 2017\u20132021; the proxy is still positive at +0.14",
-      "now": 0.14475597018079955,
-      "on": "2026-11-04",
-      "share_of_days_positive_since_2022": 0.6180613090306545,
-      "share_of_days_positive_before_2022": 0.08088235294117647,
-      "before_period_first_day": "2017-02-09",
+      "finding": "Stocks and bonds have moved together on 62% of days since 2022, against 8% in 2017\u20132021; the proxy is negative today at \u22120.00",
+      "now": -0.003051637533540675,
+      "on": "2026-11-10",
+      "share_of_days_positive_since_2022": 0.6168455821635013,
+      "share_of_days_positive_before_2022": 0.08114754098360656,
+      "before_period_first_day": "2017-02-15",
       "before_period_last_year": 2021
     }
   }

@@ -1,0 +1,2 @@
+id,scored_on,kind,y,method_p,market_mid,climatology_p,brier_method,brier_market,brier_climatology,gamma_sha256,clob_sha256
+R-2026-11-06-btc_touch-6507380,2026-11-13,first-token,1,0.876,0.925,0.690,0.0154,0.0056,0.0961,743cb49c43df821d8d3506e26ebfb616f0401ac499b0692588fd101864e02106,599bd56bac92b4bbb1fa3ba95f699cedd1bc4ffeeb1e772dbb5c99418d7c0110

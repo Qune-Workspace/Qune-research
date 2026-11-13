@@ -1,0 +1,15 @@
+series,observed_on,value,what
+DGS3MO,2026-11-10,4.3,"3-month Treasury bill, constant maturity, percent"
+DGS2,2026-11-10,4.73,"2-year Treasury, constant maturity, percent"
+DGS10,2026-11-10,4.98,"10-year Treasury, constant maturity, percent"
+DGS30,2026-11-10,5.35,"30-year Treasury, constant maturity, percent"
+DFII10,2026-11-10,2.78,"10-year TIPS real yield, constant maturity, percent"
+T10YIE,2026-11-12,2.24,"10-year breakeven inflation rate, percent"
+T5YIFR,2026-11-12,2.17,"5-year, 5-year forward inflation expectation rate, percent"
+EFFR,2026-11-10,3.88,"Effective federal funds rate, percent"
+DFEDTARU,2026-11-12,4.0,"Federal funds target range, upper limit, percent"
+DFEDTARL,2026-11-12,3.75,"Federal funds target range, lower limit, percent"
+THREEFYTP10,2026-11-06,0.8738,"10-year term premium, Kim-Wright three-factor model, percent"
+BAMLH0A0HYM2,2026-11-11,,"ICE BofA US High Yield option-adjusted spread, percent"
+SP500,2026-11-11,,S&P 500 index level (FRED carries the last ten years)
+VIXCLS,2026-11-11,17.49,"CBOE VIX, close"

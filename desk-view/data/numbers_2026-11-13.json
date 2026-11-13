@@ -1,0 +1,324 @@
+{
+  "asof": "2026-11-13",
+  "curve": [
+    {
+      "tenor": "3m",
+      "yield_pct": 4.3,
+      "observed_on": "2026-11-10"
+    },
+    {
+      "tenor": "2y",
+      "yield_pct": 4.73,
+      "observed_on": "2026-11-10"
+    },
+    {
+      "tenor": "10y",
+      "yield_pct": 4.98,
+      "observed_on": "2026-11-10"
+    },
+    {
+      "tenor": "30y",
+      "yield_pct": 5.35,
+      "observed_on": "2026-11-10"
+    }
+  ],
+  "changes_bp": {
+    "DGS3MO": [
+      {
+        "lookback": "now",
+        "observed_on": "2026-11-10",
+        "value_pct": 4.3,
+        "change_bp": 0.0
+      },
+      {
+        "lookback": "1m",
+        "observed_on": "2026-10-13",
+        "value_pct": 4.26,
+        "change_bp": 4.0000000000000036
+      },
+      {
+        "lookback": "3m",
+        "observed_on": "2026-08-13",
+        "value_pct": 3.87,
+        "change_bp": 42.99999999999997
+      },
+      {
+        "lookback": "1y",
+        "observed_on": "2025-11-13",
+        "value_pct": 3.96,
+        "change_bp": 33.999999999999986
+      }
+    ],
+    "DGS2": [
+      {
+        "lookback": "now",
+        "observed_on": "2026-11-10",
+        "value_pct": 4.73,
+        "change_bp": 0.0
+      },
+      {
+        "lookback": "1m",
+        "observed_on": "2026-10-13",
+        "value_pct": 4.79,
+        "change_bp": -5.999999999999961
+      },
+      {
+        "lookback": "3m",
+        "observed_on": "2026-08-13",
+        "value_pct": 4.15,
+        "change_bp": 58.00000000000001
+      },
+      {
+        "lookback": "1y",
+        "observed_on": "2025-11-13",
+        "value_pct": 3.58,
+        "change_bp": 115.00000000000003
+      }
+    ],
+    "DGS10": [
+      {
+        "lookback": "now",
+        "observed_on": "2026-11-10",
+        "value_pct": 4.98,
+        "change_bp": 0.0
+      },
+      {
+        "lookback": "1m",
+        "observed_on": "2026-10-13",
+        "value_pct": 5.21,
+        "change_bp": -22.999999999999954
+      },
+      {
+        "lookback": "3m",
+        "observed_on": "2026-08-13",
+        "value_pct": 4.63,
+        "change_bp": 35.00000000000006
+      },
+      {
+        "lookback": "1y",
+        "observed_on": "2025-11-13",
+        "value_pct": 4.11,
+        "change_bp": 87.00000000000001
+      }
+    ],
+    "DGS30": [
+      {
+        "lookback": "now",
+        "observed_on": "2026-11-10",
+        "value_pct": 5.35,
+        "change_bp": 0.0
+      },
+      {
+        "lookback": "1m",
+        "observed_on": "2026-10-13",
+        "value_pct": 5.56,
+        "change_bp": -20.999999999999996
+      },
+      {
+        "lookback": "3m",
+        "observed_on": "2026-08-13",
+        "value_pct": 5.21,
+        "change_bp": 13.999999999999968
+      },
+      {
+        "lookback": "1y",
+        "observed_on": "2025-11-13",
+        "value_pct": 4.7,
+        "change_bp": 64.99999999999994
+      }
+    ],
+    "DFII10": [
+      {
+        "lookback": "now",
+        "observed_on": "2026-11-10",
+        "value_pct": 2.78,
+        "change_bp": 0.0
+      },
+      {
+        "lookback": "1m",
+        "observed_on": "2026-10-13",
+        "value_pct": 2.88,
+        "change_bp": -10.000000000000009
+      },
+      {
+        "lookback": "3m",
+        "observed_on": "2026-08-13",
+        "value_pct": 2.39,
+        "change_bp": 38.99999999999997
+      },
+      {
+        "lookback": "1y",
+        "observed_on": "2025-11-13",
+        "value_pct": 1.83,
+        "change_bp": 94.99999999999997
+      }
+    ],
+    "T10YIE": [
+      {
+        "lookback": "now",
+        "observed_on": "2026-11-12",
+        "value_pct": 2.24,
+        "change_bp": 0.0
+      },
+      {
+        "lookback": "1m",
+        "observed_on": "2026-10-13",
+        "value_pct": 2.33,
+        "change_bp": -8.999999999999986
+      },
+      {
+        "lookback": "3m",
+        "observed_on": "2026-08-13",
+        "value_pct": 2.24,
+        "change_bp": 0.0
+      },
+      {
+        "lookback": "1y",
+        "observed_on": "2025-11-13",
+        "value_pct": 2.28,
+        "change_bp": -3.999999999999959
+      }
+    ],
+    "T5YIFR": [
+      {
+        "lookback": "now",
+        "observed_on": "2026-11-12",
+        "value_pct": 2.17,
+        "change_bp": 0.0
+      },
+      {
+        "lookback": "1m",
+        "observed_on": "2026-10-13",
+        "value_pct": 2.33,
+        "change_bp": -16.000000000000014
+      },
+      {
+        "lookback": "3m",
+        "observed_on": "2026-08-13",
+        "value_pct": 2.27,
+        "change_bp": -10.000000000000009
+      },
+      {
+        "lookback": "1y",
+        "observed_on": "2025-11-13",
+        "value_pct": 2.19,
+        "change_bp": -2.0000000000000018
+      }
+    ],
+    "THREEFYTP10": [
+      {
+        "lookback": "now",
+        "observed_on": "2026-11-06",
+        "value_pct": 0.8738,
+        "change_bp": 0.0
+      },
+      {
+        "lookback": "1m",
+        "observed_on": "2026-10-13",
+        "value_pct": 1.0589,
+        "change_bp": -18.509999999999994
+      },
+      {
+        "lookback": "3m",
+        "observed_on": "2026-08-13",
+        "value_pct": 0.8233,
+        "change_bp": 5.049999999999999
+      },
+      {
+        "lookback": "1y",
+        "observed_on": "2025-11-13",
+        "value_pct": 0.4928,
+        "change_bp": 38.1
+      }
+    ],
+    "VIXCLS": [
+      {
+        "lookback": "now",
+        "observed_on": "2026-11-11",
+        "value_pct": 17.49,
+        "change_bp": 0.0
+      },
+      {
+        "lookback": "1m",
+        "observed_on": "2026-10-13",
+        "value_pct": 15.27,
+        "change_bp": 221.9999999999999
+      },
+      {
+        "lookback": "3m",
+        "observed_on": "2026-08-13",
+        "value_pct": 14.63,
+        "change_bp": 285.9999999999998
+      },
+      {
+        "lookback": "1y",
+        "observed_on": "2025-11-13",
+        "value_pct": 20.0,
+        "change_bp": -251.00000000000017
+      }
+    ]
+  },
+  "decomposition_10y": {
+    "nominal_pct": 4.98,
+    "real_pct": 2.78,
+    "breakeven_pct": 2.2,
+    "term_premium_pct": 0.8738,
+    "identity_gap_pct": 4.440892098500626e-16,
+    "expected_short_rate_pct": 4.1062,
+    "dates_used": {
+      "nominal": "2026-11-10",
+      "real": "2026-11-10",
+      "breakeven": "2026-11-10",
+      "term_premium": "2026-11-06"
+    }
+  },
+  "market_implied_path": {
+    "effr_pct": 3.88,
+    "effr_on": "2026-11-10",
+    "bill_3m_pct": 4.3,
+    "bill_3m_on": "2026-11-10",
+    "note_2y_pct": 4.73,
+    "note_2y_on": "2026-11-10",
+    "bill_3m_minus_effr_bp": 41.99999999999999,
+    "note_2y_minus_effr_bp": 85.00000000000006
+  },
+  "target_range": {
+    "upper_pct": 4.0,
+    "lower_pct": 3.75
+  },
+  "slope_2s10s_bp": {
+    "now": 25.0,
+    "on": "2026-11-10"
+  },
+  "slope_3m10y_bp": {
+    "now": 68.00000000000006,
+    "on": "2026-11-10"
+  },
+  "stock_bond_corr_63d": {
+    "now": -0.003051637533540675,
+    "on": "2026-11-10",
+    "share_of_days_positive_since_2022": 0.6168455821635013,
+    "share_of_days_positive_2016_2021": 0.08114754098360656
+  },
+  "dgs10_high_since_2007": {
+    "value_pct": 5.31,
+    "on": "2026-10-05"
+  },
+  "term_premium_percentile_since_1990": 0.5634308076964888,
+  "series": {
+    "DGS3MO": "3-month Treasury bill, constant maturity, percent",
+    "DGS2": "2-year Treasury, constant maturity, percent",
+    "DGS10": "10-year Treasury, constant maturity, percent",
+    "DGS30": "30-year Treasury, constant maturity, percent",
+    "DFII10": "10-year TIPS real yield, constant maturity, percent",
+    "T10YIE": "10-year breakeven inflation rate, percent",
+    "T5YIFR": "5-year, 5-year forward inflation expectation rate, percent",
+    "EFFR": "Effective federal funds rate, percent",
+    "DFEDTARU": "Federal funds target range, upper limit, percent",
+    "DFEDTARL": "Federal funds target range, lower limit, percent",
+    "THREEFYTP10": "10-year term premium, Kim-Wright three-factor model, percent",
+    "BAMLH0A0HYM2": "ICE BofA US High Yield option-adjusted spread, percent",
+    "SP500": "S&P 500 index level (FRED carries the last ten years)",
+    "VIXCLS": "CBOE VIX, close"
+  }
+}

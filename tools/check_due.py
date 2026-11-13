@@ -78,6 +78,7 @@ DEADLINE_CLOSE_UTC = time(21, 0)
 MAX_NYSE_DAYS_SLIP = 3
 FIRST_DESK_VIEW = date(2026, 10, 30)
 FIRST_PM_VIEW = date(2026, 11, 6)  # the weekly prediction-market view, with the rates view (2026-11-04)
+FIRST_COVERAGE_VIEW = date(2026, 11, 20)  # pm-view README rule 6 (2026-11-13 12:15Z): every open leg read or declined
 DESK_VIEW_DUE_UTC = time(6, 0)
 DESK_VIEW_GRACE_DAYS = 2
 PREDICTION_GRACE_DAYS = 3
@@ -459,6 +460,71 @@ def pm_readings_items(root: Path, at: datetime) -> list[Item]:
                             "reading", lambda row: row.get("quote_fetched_utc", ""))
 
 
+def pm_coverage_items(root: Path, at: datetime) -> list[Item]:
+    """Coverage of the events the PM view follows (pm-view/events.csv, event_coverage.py, README rule 6
+    `[coverage:every-open-leg]`, added 2026-11-13 12:15Z after ten of the eleven settled legs of the November
+    Bitcoin event had no reading to score). For each followed event, from its newest kept listing:
+    a DUE line when a settled leg with no reading is not yet on coverage_misses.csv (record it); for
+    each weekly view from FIRST_COVERAGE_VIEW that has been written (a quote on the Friday or its
+    grace days), a DUE line when no listing was fetched on the view's day and a DUE line naming the
+    legs open at the view's first quote with neither a reading nor a not_read row; an info line
+    with the standing counts as of `at`. The listing's raw body is git-ignored: where it is not on
+    this machine the line says so and holds nothing."""
+    import event_coverage as EC
+    folder = root / "pm-view"
+    events = folder / "events.csv"
+    if not events.exists():
+        return [Item("PM coverage", "info", "no events register")]
+    items: list[Item] = []
+    readings = EC.read_csv(folder / "readings.csv")
+    not_read = EC.read_csv(folder / "not_read.csv")
+    recorded = {r.get("market_id") for r in EC.read_csv(folder / "coverage_misses.csv")}
+    times = EC.view_times(_pm_manifest_entries(root))
+    events_manifest = folder / "data" / "events_manifest.json"
+    for ev in EC.read_csv(events):
+        slug = ev["event_slug"]
+        entry = EC.latest_listing(events_manifest, slug)
+        if entry is None:
+            items.append(Item(f"PM coverage {slug}", "info", "no listing kept (event_coverage.py fetch)"))
+            continue
+        legs = EC.load_legs(entry, folder)
+        if legs is None:
+            items.append(Item(f"PM coverage {slug}", "info",
+                              f"listing {entry['fetched_utc']} kept; raw body not on this machine, nothing held"))
+            continue
+        fetched_days = EC.listing_days(events_manifest, slug)
+        now_statuses = EC.coverage(legs, readings, not_read, at, slug)
+        unrecorded = [s for s in now_statuses if s.status == "settled-unread" and s.leg.market_id not in recorded]
+        if unrecorded:
+            items.append(Item(f"PM coverage {slug} misses", "DUE",
+                              f"{len(unrecorded)} settled leg(s) with no reading not yet on coverage_misses.csv "
+                              f"({', '.join(s.leg.market_id for s in unrecorded[:5])}): run event_coverage.py record"))
+        for friday in fridays_through(at, FIRST_COVERAGE_VIEW):
+            days = [friday + timedelta(days=k) for k in range(DESK_VIEW_GRACE_DAYS + 1)]
+            view_day = next((d for d in days if d in times), None)
+            if view_day is None:
+                continue  # the view itself is the weekly item's business
+            if not any(d in fetched_days for d in days):
+                items.append(Item(f"PM coverage {slug} {friday}", "DUE",
+                                  f"view written {view_day}, no listing fetched on the view day: run "
+                                  f"event_coverage.py fetch {slug} with the view"))
+                continue
+            statuses = EC.coverage(legs, readings, not_read, times[view_day], slug)
+            unread = [s for s in statuses if s.status == "open-unread"]
+            if unread:
+                items.append(Item(f"PM coverage {slug} {friday}", "DUE",
+                                  f"{len(unread)} leg(s) open at the view's first quote {times[view_day]:%H:%M}Z with "
+                                  f"neither a reading nor a not_read row ({', '.join(s.leg.market_id for s in unread[:6])}"
+                                  f"{', …' if len(unread) > 6 else ''}): readings.py add or event_coverage.py decline"))
+            else:
+                items.append(Item(f"PM coverage {slug} {friday}", "ok",
+                                  f"every leg open at {times[view_day]:%H:%M}Z read or declined"))
+        counts = EC.summary(now_statuses)
+        items.append(Item(f"PM coverage {slug}", "info", f"listing {entry['fetched_utc']}, {len(legs)} legs: "
+                          + ", ".join(f"{k} {v}" for k, v in counts.items())))
+    return items
+
+
 def release_items(root: Path) -> list[Item]:
     items: list[Item] = []
     for sid in RELEASE_STUDIES:
@@ -584,6 +650,7 @@ def study013_items(root: Path, at: datetime) -> list[Item]:
 def run(root: Path, at: datetime) -> tuple[list[Item], int]:
     items = (month_end_items(root, at) + desk_view_items(root, at) + prediction_items(root, at)
              + pm_view_weekly_items(root, at) + pm_view_items(root, at) + pm_readings_items(root, at)
+             + pm_coverage_items(root, at)
              + release_items(root)
              + snapshot_items(root, at)
              + study013_items(root, at))

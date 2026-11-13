@@ -1,0 +1,24 @@
+[
+  {
+    "bytes": 104169,
+    "event_id": "1292829",
+    "event_slug": "what-price-will-bitcoin-hit-in-november-2026",
+    "fetched_utc": "2026-11-13T12:30:16Z",
+    "legs": 29,
+    "legs_settled": 11,
+    "raw": "data/raw/events/2026-11-13T123016Z/event_what-price-will-bitcoin-hit-in-november-2026.json",
+    "sha256": "46e99f0defb27fdf4011ce59f4bb8bbf505258c4d12564591d5e793af9502e10",
+    "source": "Polymarket Gamma /events?slug=<slug>"
+  },
+  {
+    "bytes": 28234,
+    "event_id": "770450",
+    "event_slug": "fed-decision-in-december-20260729232808632",
+    "fetched_utc": "2026-11-13T12:30:18Z",
+    "legs": 5,
+    "legs_settled": 0,
+    "raw": "data/raw/events/2026-11-13T123018Z/event_fed-decision-in-december-20260729232808632.json",
+    "sha256": "846f5bfa9ce51c5223bf9199048a0c4be7a8a081386f2434e64438699db0a09a",
+    "source": "Polymarket Gamma /events?slug=<slug>"
+  }
+]

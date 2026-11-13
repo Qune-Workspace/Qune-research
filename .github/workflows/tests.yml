@@ -133,11 +133,22 @@ jobs:
       # a score written without the page, or a digit edited on it, passed every check).
       - name: skill pages equal their regeneration
         run: python tools/check_skill_pages.py
+      # The runner behind `make lint` (tools/lint.sh) stops at the first failing
+      # check naming it and ends with "lint: N checks run, K skipped (names)"; a
+      # check that printed a `self-test: skipped (` line fails the lint unless
+      # LINT_ALLOW_SKIP names it (research/POST_MORTEMS.md, 2026-11-12: a lint
+      # whose leak-scan self-test had skipped was cited as passed). This job
+      # runs the checks one by one, so the two skips below are documented here
+      # rather than named in LINT_ALLOW_SKIP; the runner's own self-test runs
+      # with stub checks and needs neither tool.
+      - name: lint runner counts its skips
+        run: bash tools/lint.sh --self-test
       # The launcher a learning run uses for any fetch longer than a minute
       # starts the command as a transient systemd user unit, in its own control
       # group, so it outlives the shell that launched it (tools/detach.sh;
       # research/POST_MORTEMS.md, 2026-11-04). Skipped with a line where no user
-      # service manager is reachable, as on this runner.
+      # service manager is reachable, as on this runner (`make lint` here would
+      # need LINT_ALLOW_SKIP="detach scan").
       - name: detached-fetch launcher
         run: bash tools/detach.sh --self-test
       # The leak scan that runs before every commit and push reads only the

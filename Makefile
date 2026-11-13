@@ -2,17 +2,22 @@
 #
 #   make venv           create .venv and install every pinned requirement
 #   make test           every study's unit tests, exactly as CI runs them
-#   make lint           ruff over the repository, mypy over the shared library,
+#   make lint           tools/lint.sh: ruff over the repository, mypy over the shared library,
 #                       relative Markdown links (tools/check_links.py), front-page
 #                       figures against the study folders (tools/check_glance.py)
 #                       the paper dashboard against a regeneration (tools/check_dashboard.py)
 #                       the question gate of every study from 012 (tools/check_question_gate.py),
 #                       the due register, bound defaults, data terms, the desk view's
 #                       Brier line against the committed records (tools/check_view_brier.py),
-#                       and the self-test of the detached-fetch launcher (tools/detach.sh;
-#                       skipped where no user service manager is reachable) and of
-#                       the leak scan (tools/scan.sh: git-ignored files are never
-#                       read; skipped where gitleaks is not installed)
+#                       the skill pages, the runner's own self-test, and the self-test
+#                       of the detached-fetch launcher (tools/detach.sh; skips where no
+#                       user service manager is reachable) and of the leak scan
+#                       (tools/scan.sh: git-ignored files are never read; skips where
+#                       gitleaks is not installed). The runner ends with one line,
+#                       "lint: N checks run, K skipped (names)", and a skipped check
+#                       fails the lint unless LINT_ALLOW_SKIP names it (2026-11-13;
+#                       the CI runner, which has neither tool, runs the steps one by
+#                       one with the skips documented beside them)
 #   make coverage       line coverage of the shared library (tests excluded)
 #   make reproduce      the independent reviewers' recomputation of every published
 #                       statistic from the committed result files: Study 011's
@@ -93,20 +98,7 @@ test:
 	@set -e; for d in $(SUITES); do echo "== $$d"; (cd $$d && $(PYTHON) -m pytest -q); done
 
 lint:
-	$(PYTHON) -m ruff check .
-	$(PYTHON) -m mypy
-	$(PYTHON) tools/check_links.py
-	$(PYTHON) tools/check_glance.py
-	$(PYTHON) tools/check_dashboard.py
-	$(PYTHON) tools/check_question_gate.py
-	$(PYTHON) tools/check_due.py
-	$(PYTHON) tools/check_bound_defaults.py
-	$(PYTHON) tools/check_stamp_compares.py
-	$(PYTHON) tools/check_data_terms.py
-	$(PYTHON) tools/check_view_brier.py
-	$(PYTHON) tools/check_skill_pages.py
-	bash tools/detach.sh --self-test
-	bash tools/scan.sh --self-test
+	PYTHON="$(PYTHON)" bash tools/lint.sh
 
 coverage:
 	cd qune_research && $(PYTHON) -m pytest -q --cov=qune_research --cov-config=../pyproject.toml --cov-report=term-missing

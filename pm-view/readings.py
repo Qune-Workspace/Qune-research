@@ -36,10 +36,22 @@ line themselves when they write the file (pm_lib.record_calibration_line, the
 one writer); `record-calibration` is the repair path for a file written by any
 other route (a hand edit, a copy, an older script), and its line's source says so.
 
+Since 2026-11-14 12:15Z (predictions/POST_MORTEMS.md "A figure the gate took on the desk's
+word") the four figures are not typed from the printer's line: `barrier.py` (a fetched run) and
+`fomc_calibrate.py --live` write one candidate record per leg they read against a mid to
+`data/candidates.jsonl`, `--candidate <id>` copies the figures from it, the row carries the id
+in `candidate_id`, and the gate holds the row to the record (`figures-from-tool`: same method,
+same figures, the quote's mid, computed between the quote and the row, the row's window).  A
+reading on a quote fetched from `pm_lib.FIGURES_HELD_FROM_UTC` without a candidate is refused;
+the eight earlier rows carry the column empty.  Until this date the gate held the figures to
+nothing but [0, 1]: on a scratch copy 0.123 was admitted as the reading of a leg the tool had
+read 0.560 on the same quote.
+
 Usage (from this folder):
     python readings.py add --market-id 6507380 --quote 2026-11-06T06:16:38Z --method btc_touch \\
-        --method-p 0.876 --range-lo 0.876 --range-hi 0.886 --climatology-p 0.690 \\
+        --candidate K-btc_touch-75000:down-20261106T062000Z \\
         --proposition "Bitcoin dips to 75,000 in November" --source "PM_VIEW.md 2026-11-06" [--dry-run]
+    (before 2026-11-14: --method-p 0.876 --range-lo 0.876 --range-hi 0.886 --climatology-p 0.690 in place of --candidate)
     python readings.py record-calibration --method btc_touch --source "<how the file was written>"   # repair only
 Exit 0 when the row was admitted (or would be, --dry-run); 1 when the gate refused it.
 record-calibration: exit 0 when the line was appended; 1 when the file is already
@@ -111,7 +123,8 @@ reading_id = L.reading_id  # the id rule lives with the gate that refuses a dupl
 def build_row(quote: dict[str, Any] | None, market_id: str, method: str, method_p: float, range_lo: float,
               range_hi: float, climatology_p: float | None, proposition: str, source: str,
               history: Iterable[dict[str, Any]], calibration_sha256: str | None,
-              now: datetime, existing_ids: Iterable[str] = ()) -> tuple[dict[str, Any], list[str]]:
+              now: datetime, existing_ids: Iterable[str] = (), candidate_id: str = "",
+              candidates: Iterable[dict[str, Any]] = ()) -> tuple[dict[str, Any], list[str]]:
     """The readings.csv row and the gate's refusals (empty when admitted).  `history` is
     data/calibration_history.csv as read; the gate column is computed under the method's line
     in force at `now`; `calibration_sha256` the committed calibration file's hash as read.
@@ -134,19 +147,56 @@ def build_row(quote: dict[str, Any] | None, market_id: str, method: str, method_
         "due_on": due_on, "gate": gate_col,
         "quote_fetched_utc": q.get("fetched_utc"), "quote_sha256": q.get("gamma_sha256"), "source": source,
         "window_from_utc": q.get("window_from_utc") or "",  # 2026-11-14: copied from the quote, held by window-from-rules
+        "candidate_id": candidate_id,  # 2026-11-14 12:15Z: the printer's record the four figures come from, held by figures-from-tool
     }
-    v = L.reading_row_violations(row, quote, hist, existing_ids, calibration_sha256)
+    v = L.reading_row_violations(row, quote, hist, existing_ids, calibration_sha256, candidates=candidates)
     return row, v
 
 
-def add(args: argparse.Namespace, manifest: Path, readings: Path, now: datetime) -> int:
+def figures_from_candidate(candidates: list[dict[str, Any]], candidate_id: str,
+                           args: argparse.Namespace) -> tuple[float, float, float, float | None] | str:
+    """The four figures of the named candidate (2026-11-14 12:15Z), or the reason there are none.  A figure
+    also given on the command line is kept as given, so the gate names the disagreement rather than this tool
+    silently preferring one of the two."""
+    hits = [c for c in candidates if str(c.get("id")) == candidate_id]
+    if len(hits) != 1:
+        return f"candidate {candidate_id} is {'not' if not hits else 'more than once'} on the candidates file"
+    c = hits[0]
+    try:
+        p = float(c["method_p"]) if args.method_p is None else args.method_p
+        lo = float(c["range_lo"]) if args.range_lo is None else args.range_lo
+        hi = float(c["range_hi"]) if args.range_hi is None else args.range_hi
+    except (KeyError, TypeError, ValueError) as e:
+        return f"candidate {candidate_id} carries no readable figures ({e})"
+    if args.climatology_p is not None:
+        clim: float | None = args.climatology_p
+    else:
+        clim = None if c.get("climatology_p") in (None, "") else float(c["climatology_p"])
+    return p, lo, hi, clim
+
+
+def add(args: argparse.Namespace, manifest: Path, readings: Path, now: datetime, candidates: Path | None = None) -> int:
     entries = json.loads(manifest.read_text(encoding="utf-8")) if manifest.exists() else []
     quote = find_quote(entries, args.market_id, args.quote)
     here = manifest.parent.parent
-    row, v = build_row(quote, args.market_id, args.method, args.method_p, args.range_lo, args.range_hi,
-                       args.climatology_p, args.proposition, args.source, read_csv(here / L.CALIBRATION_HISTORY),
+    cands = L.read_candidates(candidates if candidates is not None else here / L.CANDIDATES)
+    candidate_id = getattr(args, "candidate", None) or ""
+    if candidate_id:
+        figures = figures_from_candidate(cands, candidate_id, args)
+        if isinstance(figures, str):
+            print(f"REFUSED: {figures}")
+            return 1
+        method_p, range_lo, range_hi, climatology_p = figures
+    else:
+        if args.method_p is None or args.range_lo is None or args.range_hi is None:
+            print("REFUSED: give --candidate <id> (the printer's record; readings on quotes fetched from "
+                  f"{L.FIGURES_HELD_FROM_UTC} need one) or all of --method-p, --range-lo and --range-hi")
+            return 1
+        method_p, range_lo, range_hi, climatology_p = args.method_p, args.range_lo, args.range_hi, args.climatology_p
+    row, v = build_row(quote, args.market_id, args.method, method_p, range_lo, range_hi,
+                       climatology_p, args.proposition, args.source, read_csv(here / L.CALIBRATION_HISTORY),
                        calibration_sha256(args.method, here), now,
-                       existing_ids=[r["id"] for r in read_csv(readings)])
+                       existing_ids=[r["id"] for r in read_csv(readings)], candidate_id=candidate_id, candidates=cands)
     if quote is None:
         # the mid comes from the quote, so with no quote there is no mid to judge; the gate's own
         # refusal keeps its tag, and the tool adds what it looked for
@@ -171,9 +221,13 @@ def main(argv: list[str] | None = None) -> int:
     a.add_argument("--market-id", required=True)
     a.add_argument("--quote", required=True, help="the manifest entry's fetched_utc, e.g. 2026-11-06T06:16:38Z")
     a.add_argument("--method", required=True, choices=L.READING_METHODS)
-    a.add_argument("--method-p", type=float, required=True)
-    a.add_argument("--range-lo", type=float, required=True)
-    a.add_argument("--range-hi", type=float, required=True)
+    a.add_argument("--candidate", default=None,
+                   help="the printer's candidate id (barrier.py / fomc_calibrate.py --live write it, data/candidates.jsonl); "
+                        "the four figures are copied from it (2026-11-14)")
+    a.add_argument("--candidates", type=Path, default=None, help=f"the candidates file (default {L.CANDIDATES})")
+    a.add_argument("--method-p", type=float, default=None, help="with --candidate: must equal the candidate's")
+    a.add_argument("--range-lo", type=float, default=None)
+    a.add_argument("--range-hi", type=float, default=None)
     a.add_argument("--climatology-p", type=float, default=None)
     a.add_argument("--proposition", required=True)
     a.add_argument("--source", required=True, help="where the reading was published (view file and date)")
@@ -188,7 +242,7 @@ def main(argv: list[str] | None = None) -> int:
         return record_calibration(args.method, args.source, HERE, datetime.now(UTC))
     manifest = args.manifest if args.manifest is not None else HERE / "data" / "manifest.json"
     readings = args.readings if args.readings is not None else HERE / "readings.csv"
-    return add(args, manifest, readings, datetime.now(UTC))
+    return add(args, manifest, readings, datetime.now(UTC), candidates=args.candidates)
 
 
 if __name__ == "__main__":

@@ -236,6 +236,8 @@ READING_ROW_BREAKERS: dict[str, dict] = {
     # 2026-11-14 06:15Z, "A window the venue moved and the method did not": a row claiming a creation window its quote
     # does not record
     "window-from-rules": dict(window_from_utc="2026-11-05T17:17:00Z"),
+    # 2026-11-14 12:15Z, "A figure the gate took on the desk's word": a row naming a candidate no printer wrote
+    "figures-from-tool": dict(candidate_id="K-btc_touch-75000:down-20261106T062000Z"),
 }
 
 

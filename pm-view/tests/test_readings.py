@@ -315,7 +315,7 @@ def test_every_committed_reading_passes_the_gate_on_a_written_eligible_quote_of_
     # assertions, which held five columns outside the gate and its tags and nothing at admission.
     entries = json.loads((HERE / "data" / "manifest.json").read_text(encoding="utf-8"))
     rows = read("readings.csv")
-    v = L.reading_file_violations(rows, entries, read(L.CALIBRATION_HISTORY))
+    v = L.reading_file_violations(rows, entries, read(L.CALIBRATION_HISTORY), L.read_candidates(HERE / L.CANDIDATES))
     assert v == [], "\n".join(v)
     for r in rows:
         assert r["source"].strip(), f"{r['id']}: source is empty"  # free text from the desk: not a column the tool fills
@@ -332,7 +332,8 @@ FROM_ARGS = {"proposition", "method", "method_p", "range_lo", "range_hi", "clima
 ALTERED = {"id": "R-2026-11-06-fomc_bills-6507380", "made_on": "2026-11-07", "venue": "kalshi", "market_id": "6507381",
            "condition_id": "0xdead", "yes_token_id": "999", "market_mid": "0.900", "due_on": "2026-12-09", "gate": "open",
            "quote_fetched_utc": "2026-11-06T06:16:39Z", "quote_sha256": "ee" * 32, "recorded_utc": "2026-11-06T00:00:00Z",
-           "window_from_utc": "2026-11-05T17:17:00Z"}  # 2026-11-14: copied from the quote, held by window-from-rules
+           "window_from_utc": "2026-11-05T17:17:00Z",  # 2026-11-14: copied from the quote, held by window-from-rules
+           "candidate_id": "K-btc_touch-75000:down-20261106T062000Z"}  # 2026-11-14 12:15Z: names a record, held by figures-from-tool
 
 
 def test_every_column_the_tool_copies_or_sets_is_held_by_the_row_gate(tmp_path):

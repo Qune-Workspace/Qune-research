@@ -89,7 +89,15 @@ from pathlib import Path
 from typing import Any
 from zoneinfo import ZoneInfo
 
-from pm_lib import UTC_STAMP_FORMAT, parse_utc_stamp, realised_vol, touch_probability
+from pm_lib import (
+    CANDIDATES,
+    UTC_STAMP_FORMAT,
+    append_candidate,
+    candidate_record,
+    parse_utc_stamp,
+    realised_vol,
+    touch_probability,
+)
 
 HERE = Path(__file__).resolve().parent
 SERIES = "CBBTCUSD"
@@ -360,15 +368,43 @@ def parse_window_from(s: str) -> tuple[float, datetime]:
     return float(level), parse_utc_stamp(stamp, "--window-from stamp")
 
 
+def candidates_for(a: dict[str, Any], mids: dict[float, float], cal: dict[str, Any] | None, entry: dict[str, Any],
+                   at: datetime) -> list[dict[str, Any]]:
+    """One candidate record per barrier a mid was given for (2026-11-14 12:15Z, predictions/POST_MORTEMS.md
+    "A figure the gate took on the desk's word"): the figures as the report prints them, the mid they were
+    read against, the leg's window, and the inputs (the fetched series' hash, dates and count from its
+    manifest entry; the spot date; the windows and volatilities), never a value of the series."""
+    out: list[dict[str, Any]] = []
+    for r in a["barriers"]:
+        if r["barrier"] not in mids:
+            continue
+        c = climatology(cal, r["log_distance"], r["side"]) if cal is not None else None
+        p, ps = r["p_primary"], r["p_sensitivity"]
+        lo, hi = (min(p, ps), max(p, ps)) if ps is not None else (p, p)
+        opens = r.get("window_from_utc")
+        window_from = datetime.fromisoformat(opens).astimezone(UTC).strftime(UTC_STAMP_FORMAT) if opens else None
+        inputs = {"series": SERIES, "series_sha256": entry.get("sha256"), "series_fetched_utc": entry.get("fetched_utc"),
+                  "series_last_obs": entry.get("last_obs"), "series_rows": entry.get("rows"), "month": a["month"],
+                  "spot_date": a["spot_date"], "primary_window": a["primary_window"], "sigma_primary": a["sigma_primary"],
+                  "sensitivity_window": a["sensitivity_window"], "sigma_sensitivity": a["sigma_sensitivity"],
+                  "touched_on": r["touched_on"], "side": r["side"],
+                  "climatology_distance": None if c is None else c["distance"], "climatology_months": None if c is None else c["n"]}
+        out.append(candidate_record("btc_touch", f"{r['barrier']:.0f}:{r['side']}", p, lo, hi,
+                                    None if c is None else c["touch_rate"], mids[r["barrier"]], at, inputs, window_from))
+    return out
+
+
 def run(month: str, barriers: list[tuple[float, str]], mids: dict[float, float], fetcher: Fetcher | None,
         from_file: Path | None, raw_dir: Path, manifest: Path, dry_run: bool, show_level: bool,
         now: Callable[[], datetime] = lambda: datetime.now(UTC), calibration: Path | None = None,
-        window_from: dict[float, datetime] | None = None) -> int:
+        window_from: dict[float, datetime] | None = None, candidates: Path | None = None) -> int:
     at = now()
     try:
         cal = load_calibration(calibration) if calibration is not None else None
         if from_file is not None:
             rows = parse_fred_csv(from_file.read_text(encoding="utf-8"))
+            entry: dict[str, Any] = {"sha256": sha256(from_file.read_bytes()), "fetched_utc": None, "rows": len(rows),
+                                     "last_obs": rows[-1][0].isoformat() if rows else None}
             print(f"{SERIES}: read from {from_file.name} ({len(rows)} observations; nothing fetched or written)")
         else:
             assert fetcher is not None
@@ -386,6 +422,14 @@ def run(month: str, barriers: list[tuple[float, str]], mids: dict[float, float],
               f"the R2 gate is not applied")
     for ln in lines(a, mids, show_level, cal):
         print(ln)
+    # 2026-11-14 12:15Z: the figures a reading may carry are written by this tool, not typed from its lines; a run that
+    # fetched the series (not a dry run, not a re-read of a kept file) writes one candidate per barrier with a mid
+    if mids and not dry_run and from_file is None and candidates is not None:
+        for c in candidates_for(a, mids, cal, entry, at):
+            append_candidate(candidates, c)
+            print(f"  candidate {c['id']} written to {candidates.name} (readings.py add --candidate {c['id']})")
+    elif mids:
+        print(f"  no candidate written ({'dry run' if dry_run else 'series read from a file'}): a reading needs a fetched run")
     return 0
 
 
@@ -403,10 +447,13 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--window-from", action="append", default=[],
                     help="<level>=<UTC stamp>, repeatable: the quote's window_from_utc for a leg whose rules count price "
                          "action from the market's creation only (2026-11-14)")
+    ap.add_argument("--candidates", type=Path, default=None,
+                    help=f"where a fetched run writes one candidate record per barrier with a mid (default {CANDIDATES}; 2026-11-14)")
     a = ap.parse_args(argv)
     raw_dir = a.raw_dir if a.raw_dir is not None else HERE / "data" / "raw" / "fred"
     manifest = a.manifest if a.manifest is not None else HERE / "data" / "fred_manifest.json"
     calibration = a.calibration if a.calibration is not None else HERE / "data" / "calibration.json"
+    candidates = a.candidates if a.candidates is not None else HERE / CANDIDATES
     barriers = [parse_barrier(b) for b in a.barrier]
     mids = dict(parse_mid(m) for m in a.mid)
     try:
@@ -415,7 +462,7 @@ def main(argv: list[str] | None = None) -> int:
         print(f"{SERIES}: FAILED {e}")
         return 1
     return run(a.month, barriers, mids, None if a.from_file else http_get, a.from_file, raw_dir, manifest,
-               a.dry_run, a.show_level, calibration=calibration, window_from=window_from)
+               a.dry_run, a.show_level, calibration=calibration, window_from=window_from, candidates=candidates)
 
 
 if __name__ == "__main__":

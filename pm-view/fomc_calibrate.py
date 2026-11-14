@@ -437,38 +437,56 @@ def bin_frequency(cal: dict[str, Any], model: str, p_hike: float) -> dict[str, A
     return None
 
 
+def live_figures(s: Series, meetings: list[date], d: date, today: date, cal: dict[str, Any] | None) -> dict[str, Any]:
+    """The numbers behind the live lines and the candidate records, computed once (2026-11-14 12:15Z): the
+    reading, the prints it was taken from, the basis range and, per class, the primary reading and its range
+    under the historical basis.  `stop` names why the reading ends early, when it does."""
+    lag = (d - today).days
+    if lag <= 0:
+        return {"stop": f"meeting {d} is not after {today}"}
+    rd = reading(s, meetings, d, lag)
+    if rd is None:
+        return {"stop": f"no reading for {d} as of {today}: stale print, a meeting in between, or outside the bill's life"}
+    obs = {k: last_on_or_before(s[k], today) for k in ("DTB3", "DTB4WK", "EFFR")}
+    fig: dict[str, Any] = {"rd": rd, "obs": obs, "primary": cal["rules"]["R1_primary"] if cal is not None else "net"}
+    if rd["net"] is None:
+        fig["stop"] = "  the 4-week bill spans the meeting: no net reading; the view uses raw with that said"
+        return fig
+    br = basis_range(s["DTB4WK"], s["EFFR"], today)
+    if br is None:
+        fig["stop"] = f"  basis history shorter than {BASIS_LOOKBACK_OBS} observations: no range, no verdict"
+        return fig
+    dtb3, effr = obs["DTB3"][1], obs["EFFR"][1]  # type: ignore[index]
+    x_at = [implied_steps(dtb3 - effr - b, rd["content_pct"]) for b in br]
+    fig.update(br=br, x_at=x_at,
+               classes={cls: (rd[fig["primary"]][cls], *sorted(forecast(x)[cls] for x in x_at)) for cls in CLASSES})
+    return fig
+
+
 def live_lines(s: Series, meetings: list[date], d: date, today: date, cal: dict[str, Any] | None,
                mids: dict[str, float]) -> list[str]:
     """The reading for meeting ``d`` from the latest prints on or before ``today``."""
-    lag = (d - today).days
-    if lag <= 0:
-        return [f"meeting {d} is not after {today}"]
-    rd = reading(s, meetings, d, lag)
-    if rd is None:
-        return [f"no reading for {d} as of {today}: stale print, a meeting in between, or outside the bill's life"]
-    obs = {k: last_on_or_before(s[k], today) for k in ("DTB3", "DTB4WK", "EFFR")}
-    dtb3, dtb4wk, effr = (obs[k][1] for k in ("DTB3", "DTB4WK", "EFFR"))  # type: ignore[index]
-    out = [f"FOMC {d}: prints as of {today} (DTB3 {obs['DTB3'][0]}, DTB4WK {obs['DTB4WK'][0]}, EFFR {obs['EFFR'][0]}); "  # type: ignore[index]
+    fig = live_figures(s, meetings, d, today, cal)
+    if "rd" not in fig:
+        return [fig["stop"]]
+    rd, obs = fig["rd"], fig["obs"]
+    dtb3, dtb4wk, effr = (obs[k][1] for k in ("DTB3", "DTB4WK", "EFFR"))
+    out = [f"FOMC {d}: prints as of {today} (DTB3 {obs['DTB3'][0]}, DTB4WK {obs['DTB4WK'][0]}, EFFR {obs['EFFR'][0]}); "
            f"{rd['days_to_meeting']} days to the meeting; policy content of one step {100 * rd['content_pct']:.1f} bp",
            f"  raw spread (3m bill - funds) {100 * (dtb3 - effr):+.1f} bp; basis (4w bill - funds) {100 * (dtb4wk - effr):+.1f} bp; "
            f"net {100 * (dtb3 - dtb4wk):+.1f} bp",
            f"  implied steps: net {rd['x_net'] if rd['x_net'] is None else round(rd['x_net'], 3)}, raw {rd['x_raw']:.3f}"]
-    if rd["net"] is None:
-        out.append("  the 4-week bill spans the meeting: no net reading; the view uses raw with that said")
+    if "stop" in fig:
+        out.append(fig["stop"])
         return out
-    primary = cal["rules"]["R1_primary"] if cal is not None else "net"
-    br = basis_range(s["DTB4WK"], s["EFFR"], today)
-    if br is None:
-        out.append(f"  basis history shorter than {BASIS_LOOKBACK_OBS} observations: no range, no verdict")
-        return out
-    x_at = [implied_steps(dtb3 - effr - b, rd["content_pct"]) for b in br]
+    primary, br, x_at = fig["primary"], fig["br"], fig["x_at"]
     out.append(f"  basis over the last {BASIS_LOOKBACK_OBS} observations, {BASIS_PERCENTILES[0]}th-{BASIS_PERCENTILES[1]}th percentile: "
                f"{100 * br[0]:+.1f} to {100 * br[1]:+.1f} bp; the reading under those bases: steps {x_at[0]:.3f} to {x_at[1]:.3f}")
-    for cls in ("hike", "none", "cut"):
-        rng = sorted(forecast(x)[cls] for x in x_at)
-        line = f"  p_{cls}: net {rd['net'][cls]:.3f}, raw {rd['raw'][cls]:.3f}, range under the basis [{rng[0]:.3f}, {rng[1]:.3f}]"
+    for cls in CLASSES:
+        p, lo, hi = fig["classes"][cls]
+        line = f"  p_{cls}: net {rd['net'][cls]:.3f}, raw {rd['raw'][cls]:.3f}, range under the basis [{lo:.3f}, {hi:.3f}]"
         if cls in mids:
-            line += f"; market {mids[cls]:.3f}; " + live_verdict(cal, rd[primary][cls], rng[0], rng[1], mids[cls], primary)
+            line += f"; market {mids[cls]:.3f}; " + live_verdict(cal, p, lo, hi, mids[cls], primary)
         out.append(line)
     if cal is not None:
         b, r = cal["pooled_brier"], cal["rules"]
@@ -480,6 +498,33 @@ def live_lines(s: Series, meetings: list[date], d: date, today: date, cal: dict[
         if row is not None:
             out.append(f"  in the reading's own bin ({row['bin']}) the {primary} reading averaged {row['mean_p_hike']:.3f} and a hike "
                        f"followed on {row['observed_hike']:.3f} of {row['n']} meetings [reported, not a rule]")
+    return out
+
+
+def live_candidates(s: Series, meetings: list[date], d: date, today: date, cal: dict[str, Any] | None,
+                    mids: dict[str, float], raw_dir: Path, at: datetime) -> list[dict[str, Any]]:
+    """One candidate record per class a mid was given for (2026-11-14 12:15Z, predictions/POST_MORTEMS.md
+    "A figure the gate took on the desk's word"): the primary reading, the hull of the reading and its range
+    under the historical basis (the range the ledger line prints), the class's share of the calibration's
+    scored meetings as climatology, the mid, and the inputs (the four files' hashes as read, the prints'
+    dates, the as-of date, the meeting), never a value of a series.  Empty when the reading stops early."""
+    fig = live_figures(s, meetings, d, today, cal)
+    if "classes" not in fig:
+        return []
+    rd, obs = fig["rd"], fig["obs"]
+    hashes = {k: hashlib.sha256(qdata.fred_path(k, raw_dir).read_bytes()).hexdigest() for k in SERIES}
+    sample = (cal or {}).get("sample") or {}
+    n = sample.get("scored_meetings")
+    out: list[dict[str, Any]] = []
+    for cls, mid in mids.items():
+        p, lo, hi = fig["classes"][cls]
+        clim = None if not n else (sample.get("outcomes") or {}).get(cls, 0) / n
+        inputs = {"meeting": d.isoformat(), "as_of": today.isoformat(), "primary": fig["primary"],
+                  "prints": {k: obs[k][0].isoformat() for k in obs},
+                  "input_sha256": hashes, "days_to_meeting": rd["days_to_meeting"], "content_pct": rd["content_pct"],
+                  "basis_range_pct": list(fig["br"]), "basis_lookback_obs": BASIS_LOOKBACK_OBS,
+                  "climatology": None if not n else f"{cls} share of {n} scored meetings {sample.get('first_meeting')}..{sample.get('last_meeting')}"}
+        out.append(L.candidate_record(METHOD, cls, p, min(lo, p), max(hi, p), clim, mid, at, inputs))
     return out
 
 
@@ -563,6 +608,8 @@ def main(argv: list[str] | None = None) -> int:
                     help="print the reading for this meeting date from the kept download, with the calibration beside it; writes nothing")
     ap.add_argument("--today", type=date.fromisoformat, default=None, help="as-of date for --live (default: the machine clock, UTC)")
     ap.add_argument("--mid", type=parse_mid, action="append", default=[], help="market mid per class for --live, e.g. hike=0.635")
+    ap.add_argument("--candidates", type=Path, default=HERE / L.CANDIDATES,
+                    help="where --live with mids writes one candidate record per class (not with --no-write; 2026-11-14)")
     a = ap.parse_args(argv)
     raw_dir = a.from_dir if a.from_dir is not None else HERE / "data" / "raw" / "fred_rates"
     if a.live is not None:
@@ -570,8 +617,16 @@ def main(argv: list[str] | None = None) -> int:
             for k in SERIES:
                 qdata.fetch_fred(k, raw_dir, a.manifest)
         today = a.today or date.fromisoformat(qdata.utc_now()[:10])
-        for line in live_lines(load_dir(raw_dir), meeting_dates(), a.live, today, load_calibration(a.out), dict(a.mid)):
+        s, meetings, cal, mids = load_dir(raw_dir), meeting_dates(), load_calibration(a.out), dict(a.mid)
+        for line in live_lines(s, meetings, a.live, today, cal, mids):
             print(line)
+        # 2026-11-14 12:15Z: the figures a reading may carry are written by this tool, not typed from its lines
+        if mids and not a.no_write:
+            for c in live_candidates(s, meetings, a.live, today, cal, mids, raw_dir, datetime.now(UTC)):
+                L.append_candidate(a.candidates, c)
+                print(f"  candidate {c['id']} written to {a.candidates.name} (readings.py add --candidate {c['id']})")
+        elif mids:
+            print("  no candidate written (--no-write): a reading needs a written candidate")
         return 0
     return run(raw_dir, a.manifest, None if a.no_write else a.out, a.fetch)
 

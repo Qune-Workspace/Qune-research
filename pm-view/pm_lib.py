@@ -204,6 +204,7 @@ READING_COLUMNS = (
     "method", "method_p", "range_lo", "range_hi", "market_mid", "climatology_p", "due_on", "gate",
     "quote_fetched_utc", "quote_sha256", "source",
     "window_from_utc",  # 2026-11-14: the written quote's window_from_utc (creation-window leg) or empty (whole month)
+    "candidate_id",  # 2026-11-14 12:15Z: the printer's candidate record the four figures are copied from (data/candidates.jsonl)
 )
 READING_OUTCOME_COLUMNS = (
     "id", "scored_on", "kind", "y", "method_p", "market_mid", "climatology_p",
@@ -400,6 +401,14 @@ READING_TAGS = (
                                 # price action from creation only; empty for a whole-month window), copied not retyped; a
                                 # btc_touch reading on a quote fetched from RULES_WINDOW_HELD_FROM_UTC whose rules window
                                 # is unrecorded or unknown is refused
+    # 2026-11-14 12:15Z, predictions/POST_MORTEMS.md "A figure the gate took on the desk's word": the four figures
+    # (reading, range, climatology) were typed from the printer's line into readings.py's arguments and held to
+    # nothing but [0, 1]; the printer now writes a candidate record and the row names it
+    "figures-from-tool",        # candidate_id names a candidate the printer wrote (data/candidates.jsonl) for this method,
+                                # computed on the quote's mid between the quote's fetch and the row's recording, with the
+                                # row's window; method_p, range_lo, range_hi and climatology_p equal the candidate's at the
+                                # record's three decimals; a reading on a quote fetched from FIGURES_HELD_FROM_UTC with no
+                                # candidate is refused (earlier rows carry the column empty)
 )
 UTC_STAMP_FORMAT = "%Y-%m-%dT%H:%M:%SZ"  # the one format of every UTC stamp this folder writes: fetched_utc, recorded_utc, in_force_utc
 RECORDED_UTC_FORMAT = UTC_STAMP_FORMAT  # the readings gate's name for it (2026-11-09 00:15Z); parsed, never compared as text (12:15Z)
@@ -731,7 +740,8 @@ def reading_violations(method: str, method_p: float | None, range_lo: float | No
 
 
 def reading_row_violations(row: dict[str, Any], quote: dict[str, Any] | None, history: Iterable[dict[str, Any]],
-                           existing_ids: Iterable[str] = (), calibration_sha256: str | None = None) -> list[str]:
+                           existing_ids: Iterable[str] = (), calibration_sha256: str | None = None,
+                           candidates: Iterable[dict[str, Any]] = ()) -> list[str]:
     """What stops a readings.csv row, as written, from being admitted; empty when it may be.
     `row` is the row (strings, or the values readings.py is about to write); `quote` the
     data/manifest.json entry its `quote_sha256` names (None: no written quote); `history`
@@ -786,6 +796,7 @@ def reading_row_violations(row: dict[str, Any], quote: dict[str, Any] | None, hi
             out.append(reading_gate("recorded-after-quote", f"recorded_utc {recorded} is before the quote's fetch at "
                                     f"{fetched}: a reading is recorded after its quote"))
         out.extend(window_from_rules_violations(row, quote, method, parse_utc_stamp(fetched)))  # 2026-11-14 06:15Z
+        out.extend(figures_from_tool_violations(row, quote, candidates, parse_utc_stamp(fetched), recorded_at))  # 12:15Z
     clim_raw = row.get("climatology_p")
     climatology_p = None if clim_raw in (None, "") else as_float(clim_raw)
     try:
@@ -802,16 +813,18 @@ def reading_row_violations(row: dict[str, Any], quote: dict[str, Any] | None, hi
 
 
 def reading_file_violations(rows: list[dict[str, Any]], manifest: Iterable[dict[str, Any]],
-                            history: Iterable[dict[str, Any]]) -> list[str]:
+                            history: Iterable[dict[str, Any]], candidates: Iterable[dict[str, Any]] = ()) -> list[str]:
     """reading_row_violations over a whole readings record, row by row in file order (each row
     judged with the ids above it), each refusal prefixed with the row's id; the quote is found
-    by the row's record hash (gamma_sha256)."""
+    by the row's record hash (gamma_sha256); `candidates` the records of data/candidates.jsonl
+    (2026-11-14 12:15Z)."""
     quotes = {e["gamma_sha256"]: e for e in manifest if e.get("gamma_sha256")}
     hist = list(history)
+    cands = list(candidates)
     ids: list[str] = []
     out: list[str] = []
     for r in rows:
-        for v in reading_row_violations(r, quotes.get(str(r.get("quote_sha256", ""))), hist, ids):
+        for v in reading_row_violations(r, quotes.get(str(r.get("quote_sha256", ""))), hist, ids, candidates=cands):
             out.append(f"{r.get('id')}: {v}")
         ids.append(str(r.get("id", "")))
     return out
@@ -1279,6 +1292,116 @@ def window_from_rules_violations(row: dict[str, Any], quote: dict[str, Any], met
     elif window == "creation" and not want_from:
         out.append(reading_gate("window-from-rules", "the quote says the rules window opens at creation but records no "
                                 "window_from_utc: re-quote"))
+    return out
+
+
+# --- The printer's candidate record (2026-11-14 12:15Z) -------------------------------------
+#
+# predictions/POST_MORTEMS.md "A figure the gate took on the desk's word": the four figures of a
+# reading (method_p, range_lo, range_hi, climatology_p) were typed by the run from the printer's
+# line into readings.py's arguments, and the gate held them to nothing but [0, 1] and lo <= p <= hi:
+# on a scratch copy of the record, 0.123 was admitted as the touch reading of a leg the tool had
+# read 0.560 on the same quote (rc 0).  And the inputs behind a figure were not on the record: the
+# two bill readings of 6 November reproduce from the kept download only at an as-of date the row
+# does not carry (prints of 4 November; at 6 November the same tool reads 0.816, not 1.000), and
+# the download they were read from was overwritten in place by the 13 November fetch.  Now each
+# printer writes what it read as one line of CANDIDATES (the figures, the mid it read against,
+# the window, the inputs' hashes and as-of dates, the time), readings.py add copies the figures
+# from that record by id, and the row gate holds the row to it (`figures-from-tool`).
+
+CANDIDATES = "data/candidates.jsonl"
+FIGURES_HELD_FROM_UTC = "2026-11-14T12:00:00Z"  # readings on quotes fetched from here name a candidate; earlier rows carry none
+CANDIDATE_FIGURES = ("method_p", "range_lo", "range_hi", "climatology_p")
+
+
+def candidate_id(method: str, key: str, computed_at: datetime) -> str:
+    """`K-<method>-<key>-<YYYYMMDDTHHMMSSZ>`: one id per method, leg key and computation time."""
+    if not key or any(c.isspace() for c in key):
+        raise ValueError(f"candidate key {key!r} must be one word")
+    return f"K-{method}-{key}-{computed_at.astimezone(UTC).strftime('%Y%m%dT%H%M%SZ')}"
+
+
+def candidate_record(method: str, key: str, method_p: float, range_lo: float, range_hi: float,
+                     climatology_p: float | None, market_mid: float, computed_at: datetime,
+                     inputs: dict[str, Any], window_from_utc: str | None = None) -> dict[str, Any]:
+    """The line a printer writes for one leg it read against a market mid.  `key` names the leg
+    in the printer's own terms (`75000:down`, `hike`); `inputs` what the figures were computed
+    from (series hashes, as-of dates, windows), never a value of a series."""
+    if method not in READING_METHODS:
+        raise ValueError(f"candidate method must be one of {', '.join(READING_METHODS)}, not {method!r}")
+    if not (0.0 <= min(range_lo, range_hi) <= method_p <= max(range_lo, range_hi) <= 1.0):
+        raise ValueError(f"candidate range [{range_lo:.3f}, {range_hi:.3f}] must bracket the reading {method_p:.3f} inside [0, 1]")
+    if climatology_p is not None and not (0.0 <= climatology_p <= 1.0):
+        raise ValueError("candidate climatology_p is not a probability")
+    return {
+        "id": candidate_id(method, key, computed_at), "method": method, "key": key,
+        "computed_utc": computed_at.astimezone(UTC).strftime(UTC_STAMP_FORMAT),
+        "method_p": f"{method_p:.3f}", "range_lo": f"{min(range_lo, range_hi):.3f}", "range_hi": f"{max(range_lo, range_hi):.3f}",
+        "climatology_p": None if climatology_p is None else f"{climatology_p:.3f}",
+        "market_mid": market_mid, "window_from_utc": window_from_utc or "", "inputs": inputs,
+    }
+
+
+def append_candidate(path: Path, record: dict[str, Any]) -> None:
+    """One JSON line appended; the file is append-only and written by the printers alone."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a", encoding="utf-8") as fh:
+        fh.write(json.dumps(record, sort_keys=True) + "\n")
+
+
+def read_candidates(path: Path) -> list[dict[str, Any]]:
+    if not path.exists():
+        return []
+    return [json.loads(ln) for ln in path.read_text(encoding="utf-8").splitlines() if ln.strip()]
+
+
+def figures_from_tool_violations(row: dict[str, Any], quote: dict[str, Any], candidates: Iterable[dict[str, Any]],
+                                 fetched_at: datetime, recorded_at: datetime | None) -> list[str]:
+    """The `figures-from-tool` checks of a reading row against the candidates on record: the row's
+    candidate_id names a candidate of the row's method, computed on the quote's mid between the
+    quote's fetch and the row's recording, with the row's window, whose four figures the row
+    carries at three decimals.  A reading on a quote fetched from FIGURES_HELD_FROM_UTC with no
+    candidate is refused; the eight rows written before that date carry the column empty, their
+    printers wrote no record, and this sentence says so."""
+    out: list[str] = []
+    cid = str(row.get("candidate_id") or "")
+    if not cid:
+        if fetched_at >= parse_utc_stamp(FIGURES_HELD_FROM_UTC):
+            out.append(reading_gate("figures-from-tool", "no candidate_id: a reading on a quote fetched from "
+                                    f"{FIGURES_HELD_FROM_UTC} copies its figures from the candidate the printer wrote "
+                                    f"({CANDIDATES}; readings.py add --candidate <id>)"))
+        return out
+    hits = [c for c in candidates if str(c.get("id")) == cid]
+    if len(hits) != 1:
+        out.append(reading_gate("figures-from-tool", f"candidate {cid} is {'not' if not hits else 'more than once'} on "
+                                f"{CANDIDATES}: the printer writes the record the row names"))
+        return out
+    c = hits[0]
+    if str(c.get("method")) != str(row.get("method")):
+        out.append(reading_gate("figures-from-tool", f"candidate {cid} is a {c.get('method')} reading, the row a {row.get('method')} one"))
+    for col in CANDIDATE_FIGURES:
+        have, want = str(row.get(col) or ""), str(c.get(col) or "")
+        if have != want:
+            out.append(reading_gate("figures-from-tool", f"{col} {have!r} is not the candidate's {want!r}: copy the figure "
+                                    "from the record the printer wrote"))
+    qmid, cmid = as_float(quote.get("market_mid")), as_float(c.get("market_mid"))
+    if qmid is None or cmid is None or abs(qmid - cmid) > 1e-9:
+        out.append(reading_gate("figures-from-tool", f"candidate {cid} was read against mid {cmid}, the quote's is {qmid}: "
+                                "the reading was not made against this quote"))
+    if str(c.get("window_from_utc") or "") != str(row.get("window_from_utc") or ""):
+        out.append(reading_gate("figures-from-tool", f"candidate {cid} was computed with window_from_utc "
+                                f"{c.get('window_from_utc')!r}, the row carries {row.get('window_from_utc')!r}"))
+    try:
+        computed_at = parse_utc_stamp(c.get("computed_utc"), f"candidate {cid} computed_utc")
+    except ValueError as e:
+        out.append(reading_gate("figures-from-tool", f"{e}: the candidate cannot be placed between the quote and the row"))
+        return out
+    if computed_at < fetched_at:
+        out.append(reading_gate("figures-from-tool", f"candidate {cid} was computed at {c.get('computed_utc')}, before the "
+                                f"quote's fetch at {quote.get('fetched_utc')}: a reading is made on its quote"))
+    if recorded_at is not None and computed_at > recorded_at:
+        out.append(reading_gate("figures-from-tool", f"candidate {cid} was computed at {c.get('computed_utc')}, after the "
+                                f"row was recorded at {row.get('recorded_utc')}"))
     return out
 
 

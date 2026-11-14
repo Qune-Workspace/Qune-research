@@ -27,6 +27,7 @@ from __future__ import annotations
 
 import argparse
 import ast
+import shutil
 import sys
 import tempfile
 from pathlib import Path
@@ -175,10 +176,17 @@ def check(root: Path, verbose: bool = True) -> int:
             for h in hits:
                 print(f"  FAIL {h}")
         failures += len(hits)
+    # 2026-11-14: a run that found no module, or no test that patches a constant, held nothing and used
+    # to print "pass (0 modules, 0 patched constants, ...)" (research/POST_MORTEMS.md, "A check that
+    # passed over nothing"). Either count at zero is a failure of the check.
+    empty = modules == 0 or patched_total == 0
     if verbose:
-        print(f"bound defaults: {'pass' if not failures else 'FAIL'} ({modules} modules, {patched_total} patched "
+        print(f"bound defaults: {'pass' if not (failures or empty) else 'FAIL'} ({modules} modules, {patched_total} patched "
               f"constants, {failures} reached through a default)")
-    return 1 if failures else 0
+        if empty:
+            print(f"bound defaults: FAIL (universe empty: {modules} module(s) under {root}, {patched_total} patched "
+                  "constant(s) found in their tests; a check that holds nothing is not a pass)")
+    return 1 if failures or empty else 0
 
 
 # --- self-test over a built fixture -------------------------------------------------------------
@@ -239,6 +247,21 @@ def selftest() -> int:
             return 1
         if check(root, verbose=False) != 1:
             print("selftest: check() did not fail on the fixture")
+            return 1
+        # 2026-11-14: the passing module alone passes; an empty root and a module whose tests patch
+        # nothing are refused
+        shutil.rmtree(root / "research" / "002-fail")
+        if check(root, verbose=False) != 0:
+            print("selftest: the passing module alone did not pass")
+            return 1
+        (root / "research" / "001-pass" / "tests" / "test_forward.py").write_text("def test_nothing():\n    pass\n",
+                                                                                   encoding="utf-8")
+        if check(root, verbose=False) != 1:
+            print("selftest: a module whose tests patch no constant was passed")
+            return 1
+        shutil.rmtree(root / "research")
+        if check(root, verbose=False) != 1:
+            print("selftest: an empty root was passed")
             return 1
     print("bound defaults self-test: pass")
     return 0

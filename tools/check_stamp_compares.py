@@ -267,6 +267,20 @@ def check_tree(root: Path) -> tuple[list[str], int, int]:
     return hits, len(files), excluded
 
 
+def report(hits: list[str], n: int, excluded: int, root: Path) -> tuple[list[str], int]:
+    """The summary lines and exit code for a tree: 1 on any hit, and (2026-11-14) 1 when the found
+    universe is empty, which until then printed "0 comparison(s) ... over 0 module(s) (pass)" and exited 0
+    (research/POST_MORTEMS.md, "A check that passed over nothing")."""
+    lines = [f"stamp comparisons: {len(hits)} text comparison(s) of a UTC stamp over {n} module(s) "
+             f"(every .py under the tree naming a stamp, found not listed; {excluded} Study 001–011 file(s) set aside "
+             f"by the rule of 2026-10-31; names ending _utc and {', '.join(STAMP_KEYS)}; a stamp passed to a helper "
+             f"that slices or orders it counts){'' if hits or n == 0 else ' (pass)'}"]
+    if n == 0:
+        lines.append(f"stamp comparisons: FAIL (universe empty: no module naming a stamp found under {root}; "
+                     "a check over nothing is not a pass)")
+    return lines, (1 if hits or n == 0 else 0)
+
+
 FAILING = '''
 def in_force(history, at_utc):
     hit = None
@@ -402,6 +416,12 @@ def selftest() -> int:
         found, excluded = _modules(root)
         universe = sorted(p.relative_to(root).as_posix() for p in found)
         universe_ok = universe == ["pm-view/bad.py", "tools/other.py"] and excluded == 1
+        # 2026-11-14: an empty universe is refused with its own line; a found one with no hit passes
+        empty = root / "empty"
+        empty.mkdir()
+        empty_lines, empty_rc = report(*check_tree(empty), empty)
+        _, found_rc = report([], len(found), excluded, root)
+        universe_ok = universe_ok and empty_rc == 1 and any("universe empty" in ln for ln in empty_lines) and found_rc == 0
     want = ("in_force_utc", "fetched_utc or", "recorded < fetched", "max(",
             "get('end_date'", "sorted(rows, key=", "rows.sort(key=", "closedTime", "q.fetched_utc < other",
             "passed to month_of(), which slices or orders its parameter 'ts' as text")
@@ -424,11 +444,10 @@ def main() -> int:
     hits, n, excluded = check_tree(a.root)
     for h in hits:
         print(h)
-    print(f"stamp comparisons: {len(hits)} text comparison(s) of a UTC stamp over {n} module(s) "
-          f"(every .py under the tree naming a stamp, found not listed; {excluded} Study 001–011 file(s) set aside "
-          f"by the rule of 2026-10-31; names ending _utc and {', '.join(STAMP_KEYS)}; a stamp passed to a helper "
-          f"that slices or orders it counts){'' if hits else ' (pass)'}")
-    return 1 if hits else 0
+    lines, rc = report(hits, n, excluded, a.root)
+    for ln in lines:
+        print(ln)
+    return rc
 
 
 if __name__ == "__main__":

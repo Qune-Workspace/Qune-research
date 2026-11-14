@@ -17,7 +17,12 @@
 #                       "lint: N checks run, K skipped (names)", and a skipped check
 #                       fails the lint unless LINT_ALLOW_SKIP names it (2026-11-13;
 #                       the CI runner, which has neither tool, runs the steps one by
-#                       one with the skips documented beside them)
+#                       one with the skips documented beside them). Since 2026-11-14
+#                       the list also runs the --selftest of the eight Python checks
+#                       that have one, and six checks whose universe is found by
+#                       reading the tree (links, question gate, due register, bound
+#                       defaults, stamp comparisons, data terms) refuse an empty
+#                       universe instead of passing over nothing
 #   make coverage       line coverage of the shared library (tests excluded)
 #   make reproduce      the independent reviewers' recomputation of every published
 #                       statistic from the committed result files: Study 011's

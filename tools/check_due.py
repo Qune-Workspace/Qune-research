@@ -654,8 +654,17 @@ def run(root: Path, at: datetime) -> tuple[list[Item], int]:
              + release_items(root)
              + snapshot_items(root, at)
              + study013_items(root, at))
+    # 2026-11-14: a register that found no study folder at all owes nothing and used to say "pass"
+    # (every study line read "info (no folder)"); the empty universe is a failure of the check, not a
+    # clean register (research/POST_MORTEMS.md, "A check that passed over nothing").
+    studies = (*MONTH_END_STUDIES, *RELEASE_STUDIES, SNAPSHOT_STUDY)
+    found = [sid for sid in studies if study_dir(root, sid) is not None]
+    if not found:
+        items.append(Item("due register universe", "FAIL",
+                          f"no study folder under {root / 'research'} for any of {', '.join(studies)}; "
+                          "a register over nothing is not a pass"))
     overdue = sum(1 for i in items if i.status == "OVERDUE")
-    return items, (1 if overdue else 0)
+    return items, (1 if overdue or not found else 0)
 
 
 # --- self-test over a built fixture -------------------------------------------------------------
@@ -881,6 +890,13 @@ def selftest() -> int:
                         "orders": []}), encoding="utf-8")  # a record its writer would write (2026-11-10)
         items, _ = run(root, datetime(2026, 11, 5, 22, 0, tzinfo=UTC))
         assert status_of(items, "Study 007 record 2026-10") == "ok"
+        assert not [i for i in items if i.status == "FAIL"]
+
+        # 2026-11-14: a root with no study folder is refused (rc 1, one FAIL line), never passed
+        empty = Path(tmp) / "empty"
+        (empty / "research").mkdir(parents=True)
+        items, rc = run(empty, datetime(2026, 11, 5, 22, 0, tzinfo=UTC))
+        assert rc == 1 and status_of(items, "due register universe") == "FAIL", [i.line() for i in items]
     print("due register self-test: pass")
     return 0
 
@@ -904,8 +920,9 @@ def main() -> int:
     print(f"due register at {at:%Y-%m-%dT%H:%M}Z:")
     for item in items:
         print(item.line())
-    counts = {s: sum(1 for i in items if i.status == s) for s in ("DUE", "waiting", "OVERDUE")}
-    print(f"due register: {'OVERDUE' if rc else 'pass'} (due {counts['DUE']}, waiting {counts['waiting']}, overdue {counts['OVERDUE']})")
+    counts = {s: sum(1 for i in items if i.status == s) for s in ("DUE", "waiting", "OVERDUE", "FAIL")}
+    verdict = "FAIL" if counts["FAIL"] else ("OVERDUE" if rc else "pass")
+    print(f"due register: {verdict} (due {counts['DUE']}, waiting {counts['waiting']}, overdue {counts['OVERDUE']})")
     return rc
 
 

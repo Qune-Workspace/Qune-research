@@ -29,8 +29,8 @@ HEADING_RE = re.compile(r"^\s{0,3}(#{1,6})\s+(.*?)\s*#*\s*$")
 HTML_ANCHOR_RE = re.compile(r"<a\s+(?:name|id)=\"([^\"]+)\"", re.IGNORECASE)
 
 
-def tracked_files() -> list[str]:
-    out = subprocess.run(["git", "ls-files"], cwd=ROOT, check=True, capture_output=True, text=True).stdout
+def tracked_files(root: Path) -> list[str]:
+    out = subprocess.run(["git", "ls-files"], cwd=root, check=True, capture_output=True, text=True).stdout
     return [line for line in out.splitlines() if line]
 
 
@@ -79,12 +79,12 @@ def links_of(path: Path) -> list[tuple[int, str]]:
     return found
 
 
-def main() -> int:
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--out", default=None)
-    args = parser.parse_args()
-
-    files = tracked_files()
+def check(root: Path) -> tuple[list[str], int]:
+    """The report lines and exit code for the repository at `root`: 1 on any broken link or anchor,
+    and (2026-11-14) 1 when no tracked Markdown file was found, which until then reported
+    "Markdown files: 0 ... Broken: 0" and exited 0 (research/POST_MORTEMS.md, "A check that passed
+    over nothing")."""
+    files = tracked_files(root)
     tracked = set(files)
     dirs = {str(p) for f in files for p in PurePosixPath(f).parents if str(p) != "."}
     md_files = sorted(f for f in files if f.lower().endswith(".md"))
@@ -93,7 +93,7 @@ def main() -> int:
     relative = external = 0
     broken: list[str] = []
     for md in md_files:
-        for lineno, target in links_of(ROOT / md):
+        for lineno, target in links_of(root / md):
             if re.match(r"^[a-z][a-z0-9+.-]*:", target, re.IGNORECASE):
                 external += 1
                 continue
@@ -118,7 +118,7 @@ def main() -> int:
                 continue
             if anchor and norm.lower().endswith(".md") and norm in tracked:
                 if norm not in anchor_cache:
-                    anchor_cache[norm] = anchors_of(ROOT / norm)
+                    anchor_cache[norm] = anchors_of(root / norm)
                 if unquote(anchor).lower() not in anchor_cache[norm]:
                     broken.append(f"{md}:{lineno}: missing anchor #{anchor} in {norm}")
 
@@ -130,11 +130,54 @@ def main() -> int:
         f"Broken: {len(broken)}",
         *broken,
     ]
+    if not md_files:
+        lines.append(f"FAIL: universe empty (no tracked Markdown file under {root}; a check over nothing is not a pass)")
+    return lines, (1 if broken or not md_files else 0)
+
+
+def selftest() -> int:
+    """Three throwaway repositories (index only, nothing committed): a working link passes; a broken
+    one fails; a repository with no tracked Markdown is refused (2026-11-14)."""
+    import tempfile
+
+    def repo(files: dict[str, str]) -> Path:
+        d = Path(tempfile.mkdtemp(prefix="check_links_selftest_"))
+        subprocess.run(["git", "init", "-q", str(d)], check=True)
+        for name, text in files.items():
+            (d / name).parent.mkdir(parents=True, exist_ok=True)
+            (d / name).write_text(text, encoding="utf-8")
+        subprocess.run(["git", "-C", str(d), "add", "-A"], check=True)
+        return d
+
+    cases = (
+        ("a working link and anchor", {"README.md": "# Top\n\n[a](docs/a.md#part-one)\n", "docs/a.md": "# Part one\n"}, 0, "Broken: 0"),
+        ("a missing target", {"README.md": "[a](docs/missing.md)\n"}, 1, "missing target docs/missing.md"),
+        ("no tracked Markdown", {"notes.txt": "[a](docs/a.md)\n"}, 1, "universe empty"),
+    )
+    fails = 0
+    for name, files, want_rc, want_text in cases:
+        lines, rc = check(repo(files))
+        if rc != want_rc or not any(want_text in ln for ln in lines):
+            fails += 1
+            print(f"selftest FAIL: {name}: rc {rc} (want {want_rc}), lines {lines}")
+    print(f"check_links self-test: {'pass' if not fails else 'FAIL'} ({len(cases)} cases)")
+    return 1 if fails else 0
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--out", default=None)
+    parser.add_argument("--root", type=Path, default=ROOT)
+    parser.add_argument("--selftest", action="store_true", help="hold the check on three throwaway repositories")
+    args = parser.parse_args()
+    if args.selftest:
+        return selftest()
+    lines, rc = check(args.root)
     report = "\n".join(lines) + "\n"
     sys.stdout.write(report)
     if args.out:
-        (ROOT / args.out).write_text(report, encoding="utf-8")
-    return 1 if broken else 0
+        (args.root / args.out).write_text(report, encoding="utf-8")
+    return rc
 
 
 if __name__ == "__main__":

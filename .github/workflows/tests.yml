@@ -133,6 +133,14 @@ jobs:
       # a score written without the page, or a digit edited on it, passed every check).
       - name: skill pages equal their regeneration
         run: python tools/check_skill_pages.py
+      # The Python checks' own self-tests, each on a built fixture (research/POST_MORTEMS.md,
+      # 2026-11-14: until that day nothing ran them, here or in `make lint`; they hold, among
+      # other things, that a check whose found universe is empty refuses instead of passing).
+      - name: python checks hold their own self-tests
+        run: |
+          for c in links question_gate due bound_defaults stamp_compares data_terms view_brier skill_pages; do
+            python tools/check_$c.py --selftest
+          done
       # The runner behind `make lint` (tools/lint.sh) stops at the first failing
       # check naming it and ends with "lint: N checks run, K skipped (names)"; a
       # check that printed a `self-test: skipped (` line fails the lint unless

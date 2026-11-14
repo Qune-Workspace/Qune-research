@@ -145,6 +145,11 @@ def run(research_dir: Path) -> int:
     folders = sorted(p for p in research_dir.iterdir() if p.is_dir() and study_number(p) is not None)
     exit_code = 0
     print(f"question gate: {research_dir} ({len(folders)} study folders)")
+    if not folders:
+        # 2026-11-14: a gate that found no study folder held nothing; until this line it printed "pass"
+        # and exited 0 (research/POST_MORTEMS.md, "A check that passed over nothing").
+        print(f"question gate: FAIL (universe empty: no study folder under {research_dir}; a gate over nothing is not a pass)")
+        return 1
     for folder in folders:
         n = study_number(folder)
         assert n is not None
@@ -245,6 +250,11 @@ def selftest() -> int:
         if run(root) != 1:
             ok = False
             print("selftest: run() over the fixture did not exit 1")
+        empty = Path(tmp) / "empty-research"
+        empty.mkdir()
+        if run(empty) != 1:  # 2026-11-14: an empty universe is refused, not passed
+            ok = False
+            print("selftest: run() over an empty research directory did not exit 1")
         print("selftest: " + ("pass" if ok else "FAIL"))
         return 0 if ok else 1
 

@@ -107,6 +107,10 @@ def parse_verdicts(text: str) -> dict[str, str]:
 def check(files: list[tuple[str, str]], verdicts: dict[str, str]) -> list[str]:
     """files: (posix path, text). Returns failure lines; empty means pass."""
     failures: list[str] = []
+    # 2026-11-14: a tree with no tracked file beyond the verdict file gave this check nothing to read, and
+    # it passed (research/POST_MORTEMS.md, "A check that passed over nothing").
+    if not any(path != VERDICT_FILE.as_posix() for path, _ in files):
+        failures.append(f"universe empty: no tracked file other than {VERDICT_FILE} to read; a check over nothing is not a pass")
     for venue, hosts in HOSTS.items():
         verdict = verdicts.get(venue)
         if verdict is None:
@@ -151,11 +155,13 @@ def tracked_files(root: Path) -> list[tuple[str, str]]:
 def run(root: Path) -> int:
     verdict_path = root / VERDICT_FILE
     verdicts = parse_verdicts(verdict_path.read_text(encoding="utf-8")) if verdict_path.exists() else {}
-    failures = check(tracked_files(root), verdicts)
+    files = tracked_files(root)
+    failures = check(files, verdicts)
     n = len(HOSTS)
     for line in failures:
         print(f"data terms: {line}")
-    print(f"data terms: {'pass' if not failures else 'FAIL'} ({n} venues, verdicts {verdicts or 'none'})")
+    print(f"data terms: {'pass' if not failures else 'FAIL'} ({n} venues, {len(files)} tracked files read, "
+          f"verdicts {verdicts or 'none'})")
     return 1 if failures else 0
 
 
@@ -218,6 +224,14 @@ def selftest() -> int:
     half = clean + [("predictions/raw_note.txt", 'the field "asset_id" is the token id')]
     if check(half, v):
         print("selftest: a lone marker half failed")
+        ok = False
+    # 2026-11-14: no files, or the verdict file alone, is an empty universe and fails; one other file is not.
+    for files in ([], [("tools/pm_data_terms.md", "verdict lines live here")]):
+        if not any("universe empty" in f for f in check(files, v)):
+            print(f"selftest: an empty universe ({len(files)} file(s)) was passed")
+            ok = False
+    if any("universe empty" in f for f in check([("README.md", "prose")], v)):
+        print("selftest: a one-file universe was called empty")
         ok = False
     # Parsing: only the exact line form counts.
     parsed = parse_verdicts("verdict: polymarket = derived\nverdict: kalshi = neither\nverdict: manifold = maybe\n"

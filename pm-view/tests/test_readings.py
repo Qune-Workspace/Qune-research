@@ -331,7 +331,8 @@ def test_every_committed_reading_passes_the_gate_on_a_written_eligible_quote_of_
 FROM_ARGS = {"proposition", "method", "method_p", "range_lo", "range_hi", "climatology_p", "source"}
 ALTERED = {"id": "R-2026-11-06-fomc_bills-6507380", "made_on": "2026-11-07", "venue": "kalshi", "market_id": "6507381",
            "condition_id": "0xdead", "yes_token_id": "999", "market_mid": "0.900", "due_on": "2026-12-09", "gate": "open",
-           "quote_fetched_utc": "2026-11-06T06:16:39Z", "quote_sha256": "ee" * 32, "recorded_utc": "2026-11-06T00:00:00Z"}
+           "quote_fetched_utc": "2026-11-06T06:16:39Z", "quote_sha256": "ee" * 32, "recorded_utc": "2026-11-06T00:00:00Z",
+           "window_from_utc": "2026-11-05T17:17:00Z"}  # 2026-11-14: copied from the quote, held by window-from-rules
 
 
 def test_every_column_the_tool_copies_or_sets_is_held_by_the_row_gate(tmp_path):

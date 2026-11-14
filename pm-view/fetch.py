@@ -45,8 +45,10 @@ from pm_lib import (
     decode_list,
     eligibility,
     mid,
+    parse_venue_stamp,
     record_eligibility,
     rules_excerpt,
+    rules_window,
     settlement_state,
 )
 
@@ -94,6 +96,15 @@ def quote_one(market_id: str, gamma: Fetcher, book: Fetcher, at: datetime) -> di
     out["description_sha256"] = sha256(desc.encode("utf-8")) if desc else None
     out["description_chars"] = len(desc)
     out["rules_excerpt"] = rules_excerpt(row)
+    # 2026-11-14 06:15Z (predictions/POST_MORTEMS.md "A window the venue moved and the method did not"): how the
+    # market's own rules open its touch window, and the creation time when they count price action from creation only
+    out["rules_window"] = rules_window(desc)
+    out["window_from_utc"] = None
+    if out["rules_window"] == "creation":
+        try:
+            out["window_from_utc"] = parse_venue_stamp(row.get("createdAt"), "createdAt").strftime(UTC_STAMP_FORMAT)
+        except ValueError:
+            out["rules_window"] = "unknown"  # a creation window with no readable creation time cannot be read
     out["yes_token_id"] = str(tokens[0]) if tokens else None
     out["end_date"] = row.get("endDate")
     out["volume_usdc"] = as_float(row.get("volumeNum"))
@@ -145,7 +156,10 @@ def line(q: dict[str, Any]) -> str:
             f"yes_token={q['yes_token_id']} {q['eligibility']} (fetched {q['fetched_utc']}){settled}\n"
             f"    title: {q.get('question')!r}\n"
             f"    settles on ({q.get('description_chars', 0)} chars, sha256 {str(q.get('description_sha256'))[:12]}): "
-            f"{q.get('rules_excerpt')}")
+            f"{q.get('rules_excerpt')}\n"
+            f"    rules window: {q.get('rules_window')}"
+            + (f" from {q['window_from_utc']} (the market's creation; price action before it is not considered: "
+               f"barrier.py --window-from <level>={q['window_from_utc']})" if q.get("window_from_utc") else ""))
 
 
 def write_quote(q: dict[str, Any], raw_dir: Path, manifest: Path) -> None:
@@ -158,7 +172,7 @@ def write_quote(q: dict[str, Any], raw_dir: Path, manifest: Path) -> None:
     entry = {k: q.get(k) for k in ("fetched_utc", "market_id", "condition_id", "yes_token_id", "gamma_sha256",
                                    "book_sha256", "best_bid", "best_ask", "market_mid", "market_spread",
                                    "volume_usdc", "end_date", "eligibility", "question", "description_sha256",
-                                   "description_chars", "settlement")}
+                                   "description_chars", "settlement", "rules_window", "window_from_utc")}
     entry["source"] = "Polymarket Gamma /markets/<id> and CLOB /book?token_id=<yes token>"
     entries: list[dict[str, Any]] = []
     if manifest.exists():

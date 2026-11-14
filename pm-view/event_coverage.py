@@ -40,6 +40,8 @@ from datetime import UTC, date, datetime, time
 from pathlib import Path
 from typing import Any
 
+from pm_lib import rules_window
+
 HERE = Path(__file__).resolve().parent
 GAMMA_EVENTS = "https://gamma-api.polymarket.com/events?slug="
 UTC_STAMP_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
@@ -76,6 +78,8 @@ class Leg:
     uma_status: str | None
     outcome_prices: str | None
     volume: float | None
+    rules_window: str = "unknown"  # 2026-11-14: how the leg's own rules open its window (pm_lib.rules_window)
+    created: datetime | None = None
 
     @property
     def settled(self) -> bool:
@@ -116,7 +120,8 @@ def legs_of(event_body: bytes | str | list | dict) -> tuple[dict[str, Any], list
                         listed=parse_venue_time(m.get("startDate")) or parse_venue_time(m.get("createdAt")),
                         closed=bool(m.get("closed")), closed_time=parse_venue_time(m.get("closedTime")),
                         uma_status=m.get("umaResolutionStatus"), outcome_prices=m.get("outcomePrices"),
-                        volume=volume))
+                        volume=volume, rules_window=rules_window(m.get("description")),
+                        created=parse_venue_time(m.get("createdAt"))))
     return data, legs
 
 
@@ -250,6 +255,9 @@ def fetch(slug: str, fetcher: Fetcher, raw_dir: Path, events_manifest: Path, now
     entry = {"event_slug": slug, "event_id": str(event.get("id")), "fetched_utc": stamp, "bytes": len(body),
              "sha256": hashlib.sha256(body).hexdigest(), "legs": len(legs),
              "legs_settled": sum(1 for g in legs if g.settled), "raw": str(path.resolve().relative_to(root.resolve())),
+             # 2026-11-14: how many legs' rules open their window at the month's start, at the market's creation, or
+             # in words the classifier does not know (a count per word, never the text)
+             "rules_windows": {w: sum(1 for g in legs if g.rules_window == w) for w in ("month", "creation", "unknown")},
              "source": "Polymarket Gamma /events?slug=<slug>"}
     entries: list[dict[str, Any]] = []
     if events_manifest.exists():
@@ -323,7 +331,9 @@ def check(events: Path, events_manifest: Path, readings: Path, not_read: Path, m
         out(f"coverage {slug}: listing fetched {entry['fetched_utc']}, {len(legs)} legs, as of {at:%Y-%m-%dT%H:%M:%S}Z")
         for s in sorted(statuses, key=lambda s: (s.status, s.leg.question, s.leg.market_id)):
             extra = f", views while open {views_while_open(s.leg, times)}" if s.status == "settled-unread" else ""
-            out(f"  {s.status:14s} {s.leg.market_id} {s.leg.question} ({s.detail}{extra})")
+            window = f", rules window {s.leg.rules_window}" + (
+                f" from {s.leg.created:%Y-%m-%dT%H:%M:%SZ}" if s.leg.rules_window == "creation" and s.leg.created else "")
+            out(f"  {s.status:14s} {s.leg.market_id} {s.leg.question} ({s.detail}{extra}{window})")
         counts = summary(statuses)
         totals[slug] = counts
         out("  summary: " + ", ".join(f"{k} {v}" for k, v in counts.items()))

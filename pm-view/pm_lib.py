@@ -203,6 +203,7 @@ READING_COLUMNS = (
     "id", "made_on", "recorded_utc", "venue", "market_id", "condition_id", "yes_token_id", "proposition",
     "method", "method_p", "range_lo", "range_hi", "market_mid", "climatology_p", "due_on", "gate",
     "quote_fetched_utc", "quote_sha256", "source",
+    "window_from_utc",  # 2026-11-14: the written quote's window_from_utc (creation-window leg) or empty (whole month)
 )
 READING_OUTCOME_COLUMNS = (
     "id", "scored_on", "kind", "y", "method_p", "market_mid", "climatology_p",
@@ -392,6 +393,13 @@ READING_TAGS = (
     # stamp the gate reads is parsed in UTC_STAMP_FORMAT before it is compared; another format refuses the row
     "utc-stamp",                # the quote's fetched_utc, the history's in_force_utc and, since 2026-11-11 18:15Z, the
                                 # quote's scheduled end (end_date) parse
+    # 2026-11-14 06:15Z, predictions/POST_MORTEMS.md "A window the venue moved and the method did not": the market's own
+    # rules say when its touch window opens (the whole month, or the market's creation for a level the venue re-lists
+    # after it settled), and the row carries the quote's reading of them
+    "window-from-rules",        # window_from_utc is the written quote's (the market's creation time when its rules count
+                                # price action from creation only; empty for a whole-month window), copied not retyped; a
+                                # btc_touch reading on a quote fetched from RULES_WINDOW_HELD_FROM_UTC whose rules window
+                                # is unrecorded or unknown is refused
 )
 UTC_STAMP_FORMAT = "%Y-%m-%dT%H:%M:%SZ"  # the one format of every UTC stamp this folder writes: fetched_utc, recorded_utc, in_force_utc
 RECORDED_UTC_FORMAT = UTC_STAMP_FORMAT  # the readings gate's name for it (2026-11-09 00:15Z); parsed, never compared as text (12:15Z)
@@ -777,6 +785,7 @@ def reading_row_violations(row: dict[str, Any], quote: dict[str, Any] | None, hi
         if recorded_at is not None and recorded_at < parse_utc_stamp(fetched):
             out.append(reading_gate("recorded-after-quote", f"recorded_utc {recorded} is before the quote's fetch at "
                                     f"{fetched}: a reading is recorded after its quote"))
+        out.extend(window_from_rules_violations(row, quote, method, parse_utc_stamp(fetched)))  # 2026-11-14 06:15Z
     clim_raw = row.get("climatology_p")
     climatology_p = None if clim_raw in (None, "") else as_float(clim_raw)
     try:
@@ -1210,6 +1219,66 @@ def ledger_file_violations(rows: list[dict[str, Any]], manifest: Iterable[dict[s
     for i, call in enumerate(rows):
         for v in ledger_row_violations(call, quotes.get(str(call.get("quote_sha256", ""))), hist, rows[:i]):
             out.append(f"{call.get('id')}: {v}")
+    return out
+
+
+RULES_WINDOW_HELD_FROM_UTC = "2026-11-14T00:00:00Z"  # quotes fetched from here record `rules_window`; earlier ones are unheld
+
+
+def rules_window(description: object) -> str:
+    """How a touch market's own rules open its window, read from the venue's resolution text:
+    `month` (price action from the first day of the month the title names), `creation` (price
+    action from the creation of the market only: the shape the venue lists when it re-lists a
+    level after the original settled, whose text says price action before the market's creation
+    is not considered), or `unknown` (no text, text naming neither, or text naming both).
+
+    2026-11-14 06:15Z, predictions/POST_MORTEMS.md "A window the venue moved and the method did
+    not": the kept listing of 13 November held exactly four resolution texts, the two of 1
+    November and two whose window opens at creation; barrier.py scanned every leg from the first
+    of the month and read P(touch) = 1.000 for four open legs the market priced at 0.10 to 0.60.
+    The quote records this word and, for `creation`, the market's creation time; the readings
+    gate holds the row to them (`window-from-rules`)."""
+    text = " ".join(str(description or "").split()).lower()
+    if not text:
+        return "unknown"
+    creation = "from the creation of this market" in text or "before this market's creation" in text
+    month = "on the first day" in text
+    if creation and not month:
+        return "creation"
+    if month and not creation:
+        return "month"
+    return "unknown"
+
+
+def window_from_rules_violations(row: dict[str, Any], quote: dict[str, Any], method: str, fetched_at: datetime) -> list[str]:
+    """The `window-from-rules` checks of a reading row against its written quote (`fetched_at` the
+    quote's parsed fetch time): the row's window_from_utc is the quote's, copied; and a btc_touch
+    reading on a quote fetched from RULES_WINDOW_HELD_FROM_UTC needs the quote's rules window to be
+    `month` or `creation` (with a creation time for `creation`).  Quotes fetched before that date
+    carry no `rules_window`, so the three touch readings of 6 and 13 November are held on the copy
+    alone, and this sentence says so."""
+    out: list[str] = []
+    want_from = str(quote.get("window_from_utc") or "")
+    have_from = str(row.get("window_from_utc") or "")
+    if have_from != want_from:
+        out.append(reading_gate("window-from-rules", f"window_from_utc {have_from!r} is not the written quote's "
+                                f"{want_from!r}: copy it from the quote (the market's creation time when its rules count "
+                                "price action from creation only; empty for a whole-month window)"))
+    if method != "btc_touch":
+        return out
+    window = quote.get("rules_window")
+    if window is None:
+        if fetched_at >= parse_utc_stamp(RULES_WINDOW_HELD_FROM_UTC):
+            out.append(reading_gate("window-from-rules", "the quote records no rules_window: quotes fetched from "
+                                    f"{RULES_WINDOW_HELD_FROM_UTC} record how the market's rules open its touch window; "
+                                    "re-quote with fetch.py"))
+        return out
+    if window not in ("month", "creation"):
+        out.append(reading_gate("window-from-rules", f"the market's rules window is {window!r}: the touch method reads a "
+                                "window the rules must open (month or creation); decline the leg and read its text"))
+    elif window == "creation" and not want_from:
+        out.append(reading_gate("window-from-rules", "the quote says the rules window opens at creation but records no "
+                                "window_from_utc: re-quote"))
     return out
 
 

@@ -233,6 +233,9 @@ READING_ROW_BREAKERS: dict[str, dict] = {
     "recorded-after-quote": dict(recorded_utc="2026-11-06T00:00:00Z"),
     # 2026-11-09 12:15Z, "A calibration put after the quote by a space": the quote's own stamp in another format
     "utc-stamp": dict(quote=dict(QUOTE, fetched_utc="2026-11-06 06:16:38 UTC"), quote_fetched_utc="2026-11-06 06:16:38 UTC"),
+    # 2026-11-14 06:15Z, "A window the venue moved and the method did not": a row claiming a creation window its quote
+    # does not record
+    "window-from-rules": dict(window_from_utc="2026-11-05T17:17:00Z"),
 }
 
 

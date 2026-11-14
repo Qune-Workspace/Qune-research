@@ -89,7 +89,7 @@ from pathlib import Path
 from typing import Any
 from zoneinfo import ZoneInfo
 
-from pm_lib import realised_vol, touch_probability
+from pm_lib import UTC_STAMP_FORMAT, parse_utc_stamp, realised_vol, touch_probability
 
 HERE = Path(__file__).resolve().parent
 SERIES = "CBBTCUSD"
@@ -157,16 +157,29 @@ def already_touched(obs: list[tuple[date, float]], barrier: float, side: str,
 
 
 def assess(obs: list[tuple[date, float]], barriers: list[tuple[float, str]], year: int, month: int,
-           now: datetime, primary: int = PRIMARY_WINDOW, sensitivity: int = SENSITIVITY_WINDOW) -> dict[str, Any]:
+           now: datetime, primary: int = PRIMARY_WINDOW, sensitivity: int = SENSITIVITY_WINDOW,
+           window_from: dict[float, datetime] | None = None) -> dict[str, Any]:
     """The method's figures for one month's barriers.  `obs` is the parsed series in
     date order; the spot is its last row.  Refuses a series shorter than the
-    primary window plus one, or a spot after the month's end."""
+    primary window plus one, or a spot after the month's end.
+
+    `window_from` (2026-11-14 06:15Z, predictions/POST_MORTEMS.md "A window the venue moved and
+    the method did not"): per level, the time the market's own rules open its window when that
+    is later than the month's start.  The venue re-lists a level after the original settles,
+    and the re-listed market's text counts price action from its creation only; until this date
+    the tool scanned every leg from the first of the month and read P(touch) = 1.000 for four
+    open legs the market priced at 0.10 to 0.60.  A touch before the leg's own window is not a
+    touch; a window opening at or after the month's end is refused."""
     if len(obs) < primary + 1:
         raise ValueError(f"series has {len(obs)} observations; the primary window needs {primary + 1}")
     for side in (s for _, s in barriers):
         if side not in ("up", "down"):
             raise ValueError(f"barrier side must be up or down, not {side!r}")
     start, end = month_window_utc(year, month)
+    opens = window_from or {}
+    for level, at in opens.items():
+        if at >= end:
+            raise ValueError(f"the window of barrier {level:,.0f} opens at {at.isoformat()}, not before the month's end")
     spot_date, spot = obs[-1]
     spot_at = spot_time_utc(spot_date)
     if spot_at >= end:
@@ -178,8 +191,10 @@ def assess(obs: list[tuple[date, float]], barriers: list[tuple[float, str]], yea
     sigma_sens = realised_vol(closes[-(sensitivity + 1):]) if len(closes) >= sensitivity + 1 else None
     rows: list[dict[str, Any]] = []
     for level, side in barriers:
-        touched = already_touched(obs, level, side, start, end)
-        row: dict[str, Any] = {"barrier": level, "side": side, "touched_on": touched.isoformat() if touched else None}
+        opens_at = max(start, opens[level]) if level in opens else start
+        touched = already_touched(obs, level, side, opens_at, end)
+        row: dict[str, Any] = {"barrier": level, "side": side, "touched_on": touched.isoformat() if touched else None,
+                               "window_from_utc": opens_at.isoformat() if level in opens else None}
         if touched:
             row["p_primary"] = 1.0
             row["p_sensitivity"] = 1.0 if sigma_sens is not None else None
@@ -261,8 +276,10 @@ def lines(a: dict[str, Any], mids: dict[float, float], show_level: bool,
     ]
     for r in a["barriers"]:
         touched = f" TOUCHED on {r['touched_on']} (a daily close at or beyond the level)" if r["touched_on"] else ""
+        opens = (f" [window from {r['window_from_utc']}: the market's creation, price action before it not considered]"
+                 if r.get("window_from_utc") else "")
         ps = "n/a" if r["p_sensitivity"] is None else f"{r['p_sensitivity']:.3f}"
-        s = f"  barrier {r['barrier']:,.0f} {r['side']}: P(touch) primary {r['p_primary']:.3f}, sensitivity {ps}{touched}"
+        s = f"  barrier {r['barrier']:,.0f} {r['side']}: P(touch) primary {r['p_primary']:.3f}, sensitivity {ps}{opens}{touched}"
         if cal is not None:
             c = climatology(cal, r["log_distance"], r["side"])
             if c is not None:
@@ -334,9 +351,19 @@ def parse_mid(s: str) -> tuple[float, float]:
     return float(level), float(m)
 
 
+def parse_window_from(s: str) -> tuple[float, datetime]:
+    """`<level>=<UTC stamp YYYY-MM-DDTHH:MM:SSZ>`: the quote's `window_from_utc`, copied as printed by
+    fetch.py (2026-11-14 06:15Z).  The stamp is parsed, never sliced."""
+    level, sep, stamp = s.partition("=")
+    if not sep:
+        raise ValueError(f"--window-from takes <level>=<UTC stamp {UTC_STAMP_FORMAT}>, not {s!r}")
+    return float(level), parse_utc_stamp(stamp, "--window-from stamp")
+
+
 def run(month: str, barriers: list[tuple[float, str]], mids: dict[float, float], fetcher: Fetcher | None,
         from_file: Path | None, raw_dir: Path, manifest: Path, dry_run: bool, show_level: bool,
-        now: Callable[[], datetime] = lambda: datetime.now(UTC), calibration: Path | None = None) -> int:
+        now: Callable[[], datetime] = lambda: datetime.now(UTC), calibration: Path | None = None,
+        window_from: dict[float, datetime] | None = None) -> int:
     at = now()
     try:
         cal = load_calibration(calibration) if calibration is not None else None
@@ -350,7 +377,7 @@ def run(month: str, barriers: list[tuple[float, str]], mids: dict[float, float],
                   f"observations {entry['first_obs']}..{entry['last_obs']}"
                   f"{' (dry run: nothing written)' if dry_run else ''}")
         y, m = (int(x) for x in month.split("-"))
-        a = assess(rows, barriers, y, m, at)
+        a = assess(rows, barriers, y, m, at, window_from=window_from)
     except (urllib.error.URLError, OSError, ValueError, UnicodeDecodeError) as e:
         print(f"{SERIES}: FAILED {e}")
         return 1
@@ -373,14 +400,22 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--raw-dir", type=Path, default=None)
     ap.add_argument("--manifest", type=Path, default=None)
     ap.add_argument("--calibration", type=Path, default=None, help="calibrate.py's aggregates (default data/calibration.json)")
+    ap.add_argument("--window-from", action="append", default=[],
+                    help="<level>=<UTC stamp>, repeatable: the quote's window_from_utc for a leg whose rules count price "
+                         "action from the market's creation only (2026-11-14)")
     a = ap.parse_args(argv)
     raw_dir = a.raw_dir if a.raw_dir is not None else HERE / "data" / "raw" / "fred"
     manifest = a.manifest if a.manifest is not None else HERE / "data" / "fred_manifest.json"
     calibration = a.calibration if a.calibration is not None else HERE / "data" / "calibration.json"
     barriers = [parse_barrier(b) for b in a.barrier]
     mids = dict(parse_mid(m) for m in a.mid)
+    try:
+        window_from = dict(parse_window_from(w) for w in a.window_from)
+    except ValueError as e:
+        print(f"{SERIES}: FAILED {e}")
+        return 1
     return run(a.month, barriers, mids, None if a.from_file else http_get, a.from_file, raw_dir, manifest,
-               a.dry_run, a.show_level, calibration=calibration)
+               a.dry_run, a.show_level, calibration=calibration, window_from=window_from)
 
 
 if __name__ == "__main__":

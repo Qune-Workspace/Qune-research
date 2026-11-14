@@ -133,6 +133,7 @@ def build_row(quote: dict[str, Any] | None, market_id: str, method: str, method_
         "market_mid": q.get("market_mid"), "climatology_p": None if climatology_p is None else f"{climatology_p:.3f}",
         "due_on": due_on, "gate": gate_col,
         "quote_fetched_utc": q.get("fetched_utc"), "quote_sha256": q.get("gamma_sha256"), "source": source,
+        "window_from_utc": q.get("window_from_utc") or "",  # 2026-11-14: copied from the quote, held by window-from-rules
     }
     v = L.reading_row_violations(row, quote, hist, existing_ids, calibration_sha256)
     return row, v

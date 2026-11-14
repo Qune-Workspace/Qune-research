@@ -2,8 +2,12 @@
 2026-11-03 view, predictions/baseline.py::max_policy_spread) on the scheduled
 meetings since 2016, against two dumb baselines, before the reading may be a
 basis for a call on the December 2026 FOMC markets.  Fetches four FRED series
-once (raw git-ignored under data/raw/, hashed into data/fred_rates_manifest.json,
-never a value), or reads a kept download; writes aggregates only.
+into one folder per fetch (data/raw/fred_rates/<UTC time>/, git-ignored, never
+written over; hashed under that folder's name into data/fred_rates_manifest.json,
+never a value), or reads a kept download (default: the newest kept folder);
+writes aggregates only.  Until 2026-11-14 18:15Z the four files were written in
+place and the 13 November fetch replaced the bytes the 6 November readings were
+read from (predictions/POST_MORTEMS.md "A download the next fetch replaced").
 
 Why (BUILD_LOG 2026-11-05 12:15Z; the V1 miss of predictions/POST_MORTEMS.md):
 the touch method was scored against climatology on its own history on 5
@@ -78,10 +82,11 @@ PRE-SPECIFIED 2026-11-05 18:2x UTC, committed before the first run on the series
       direction of error where it is being used.
 
 Usage (from this folder):
-    python fomc_calibrate.py --fetch [--out data/fomc_calibration.json]
-    python fomc_calibrate.py --from-dir data/raw/fred_rates [--out ...]
+    python fomc_calibrate.py --fetch [--out data/fomc_calibration.json]     # a new folder data/raw/fred_rates/<UTC time>/
+    python fomc_calibrate.py [--from-dir data/raw/fred_rates/<UTC time>] [--out ...]   # default: the newest kept folder
+    python fomc_calibrate.py --live 2026-12-09 [--fetch | --from-dir <folder>] [--today <date>] --mid hike=0.885 ...
 Exit 0 when the report was written, 1 when the sample is too short (fewer than
-MIN_SCORED (24) scored meetings).
+MIN_SCORED (24) scored meetings) or no kept download exists to read.
 """
 
 from __future__ import annotations
@@ -130,6 +135,11 @@ CITATION = ("Board of Governors of the Federal Reserve System (US), DTB3, DTB4WK
             "Bank of New York, EFFR; all retrieved from FRED, Federal Reserve Bank of St. Louis")
 
 Series = dict[str, pd.Series]
+
+# One folder per fetch under RAW_ROOT, named by the fetch's UTC time in the shape barrier.py uses for
+# data/raw/fred/ (2026-11-14 18:15Z, predictions/POST_MORTEMS.md "A download the next fetch replaced").
+RAW_ROOT = HERE / "data" / "raw" / "fred_rates"
+FETCH_FOLDER_FORMAT = "%Y-%m-%dT%H%M%SZ"
 
 
 # --- inputs ----------------------------------------------------------------------------------
@@ -521,6 +531,9 @@ def live_candidates(s: Series, meetings: list[date], d: date, today: date, cal: 
         clim = None if not n else (sample.get("outcomes") or {}).get(cls, 0) / n
         inputs = {"meeting": d.isoformat(), "as_of": today.isoformat(), "primary": fig["primary"],
                   "prints": {k: obs[k][0].isoformat() for k in obs},
+                  # the kept folder the four files were read from (2026-11-14 18:15Z): with as_of and the meeting,
+                  # `--live <meeting> --today <as_of> --from-dir data/raw/fred_rates/<input_folder>` recomputes the figures
+                  "input_folder": Path(raw_dir).name,
                   "input_sha256": hashes, "days_to_meeting": rd["days_to_meeting"], "content_pct": rd["content_pct"],
                   "basis_range_pct": list(fig["br"]), "basis_lookback_obs": BASIS_LOOKBACK_OBS,
                   "climatology": None if not n else f"{cls} share of {n} scored meetings {sample.get('first_meeting')}..{sample.get('last_meeting')}"}
@@ -541,6 +554,69 @@ def load_dir(raw_dir: Path) -> Series:
     return {k: qdata.load_fred(k, raw_dir) for k in SERIES}
 
 
+# --- one folder per fetch (2026-11-14 18:15Z) ------------------------------------------------
+#
+# predictions/POST_MORTEMS.md "A download the next fetch replaced": until this date `--fetch` wrote
+# the four files in place under data/raw/fred_rates/ and the manifest entry under the file's name,
+# so the 13 November fetch replaced the bytes the two 6 November readings were read from and the
+# manifest's record of them; their hashes survive only in git (e074791).  Now each fetch writes its
+# own folder named by its UTC time, never over a kept one, the manifest keeps one entry per fetched
+# file under `<folder>/<file>`, and a run reads the newest kept folder unless told which.
+
+
+def fetch_folder(root: Path, now: datetime) -> Path:
+    """`<root>/<UTC time of the fetch>`.  A folder that already holds one of the four files is
+    refused by name: a fetch writes its own folder and never over a kept download."""
+    folder = Path(root) / now.astimezone(UTC).strftime(FETCH_FOLDER_FORMAT)
+    present = [qdata.fred_path(k, folder).name for k in SERIES if qdata.fred_path(k, folder).exists()]
+    if present:
+        raise FileExistsError(f"{folder} already holds {', '.join(present)}: a fetch writes its own folder, never over a kept one")
+    return folder
+
+
+def fetch_all(root: Path, manifest: Path, now: datetime, session: Any | None = None) -> Path:
+    """Fetch the four series into a new folder under `root` and record each file's hash in the
+    manifest under `<folder>/<file>`, so earlier fetches keep their entries.  Returns the folder."""
+    folder = fetch_folder(root, now)
+    for k in SERIES:
+        qdata.fetch_fred(k, folder, manifest, session=session, key=f"{folder.name}/{qdata.fred_path(k, folder).name}")
+    return folder
+
+
+def kept_folders(root: Path) -> list[tuple[datetime, Path]]:
+    """The kept fetches under `root`, oldest first by the time parsed from each folder's name.  A
+    folder whose name is not a fetch time, or which misses one of the four files, is not a kept
+    fetch and is left out."""
+    out: list[tuple[datetime, Path]] = []
+    root = Path(root)
+    for p in (root.iterdir() if root.is_dir() else []):
+        if not p.is_dir():
+            continue
+        try:
+            fetched = datetime.strptime(p.name, FETCH_FOLDER_FORMAT).replace(tzinfo=UTC)
+        except ValueError:
+            continue
+        if all(qdata.fred_path(k, p).exists() for k in SERIES):
+            out.append((fetched, p))
+    return sorted(out, key=lambda fp: fp[0])
+
+
+def newest_folder(root: Path) -> Path:
+    """The kept fetch to read when none is named; refused when there is none."""
+    kept = kept_folders(root)
+    if not kept:
+        raise FileNotFoundError(f"no kept download under {root} (a folder named by its fetch time holding the four series): "
+                                "run with --fetch, or name one with --from-dir")
+    return kept[-1][1]
+
+
+def manifest_entries_for(manifest: dict[str, Any] | None, folder: Path) -> dict[str, Any] | None:
+    """The manifest entries of one kept folder (`<folder>/<file>` keys), or None when it has none."""
+    prefix = f"{Path(folder).name}/"
+    found = {k: v for k, v in (manifest or {}).items() if k.startswith(prefix)}
+    return found or None
+
+
 METHOD = "fomc_bills"
 
 
@@ -552,11 +628,11 @@ def record(out: Path, raw_dir: Path, manifest: dict[str, Any] | None, now: datet
     computed; a manifest hash that disagrees is named beside it) and the file's
     sample and rules, never typed.  Prints RECORDED, or UNCHANGED when the file is
     already the method's latest line."""
-    parts = []
+    parts = [f"folder {Path(raw_dir).name}"]  # the kept fetch the inputs were read from (2026-11-14 18:15Z)
     for k in SERIES:
         path = qdata.fred_path(k, raw_dir)
         sha = hashlib.sha256(path.read_bytes()).hexdigest()
-        listed = ((manifest or {}).get(path.name) or {}).get("sha256")
+        listed = ((manifest or {}).get(f"{Path(raw_dir).name}/{path.name}") or {}).get("sha256")
         parts.append(f"{path.name} {sha[:12]}" + (f" (manifest {listed[:12]})" if listed and listed != sha else ""))
     written = json.loads(out.read_text(encoding="utf-8"))
     rules, sample = written.get("rules") or {}, written.get("sample") or {}
@@ -574,11 +650,14 @@ def record(out: Path, raw_dir: Path, manifest: dict[str, Any] | None, now: datet
     return 0
 
 
-def run(raw_dir: Path, manifest: Path, out: Path | None, fetch: bool, now: datetime | None = None) -> int:
-    if fetch:
-        for k in SERIES:
-            qdata.fetch_fred(k, raw_dir, manifest)
-    s = load_dir(raw_dir)
+def run(raw_dir: Path, manifest: Path, out: Path | None, fetch: bool, now: datetime | None = None,
+        session: Any | None = None) -> int:
+    """With `fetch`, `raw_dir` is the root the new folder is written under; otherwise it is the kept
+    folder to read.  The calibration's `inputs_manifest` is that folder's entries alone."""
+    at = now or datetime.now(UTC)
+    folder = fetch_all(raw_dir, manifest, at, session) if fetch else Path(raw_dir)
+    print(f"inputs: {folder}")
+    s = load_dir(folder)
     meetings = meeting_dates()
     rows = add_baselines(rows_for(s, meetings, PRIMARY_LAG_DAYS))
     secondary = add_baselines(rows_for(s, meetings, SECONDARY_LAG_DAYS))
@@ -586,21 +665,24 @@ def run(raw_dir: Path, manifest: Path, out: Path | None, fetch: bool, now: datet
         print(f"sample too short: {len(rows)} scored meetings, need {MIN_SCORED}")
         return 1
     man = qdata.read_manifest(manifest) if manifest.exists() else None
-    summary = summarise(rows, secondary, man)
+    summary = summarise(rows, secondary, manifest_entries_for(man, folder))
     for line in report(summary):
         print(line)
     if out is not None:
         out.parent.mkdir(parents=True, exist_ok=True)
         out.write_text(json.dumps(summary, indent=2, sort_keys=True, default=str) + "\n", encoding="utf-8")
         print(f"written {out}")
-        return record(out, raw_dir, man, now or datetime.now(UTC))
+        return record(out, folder, man, at)
     return 0
 
 
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--fetch", action="store_true", help="download the four series into --raw-dir first")
-    ap.add_argument("--from-dir", type=Path, default=None, help="kept download folder (default data/raw/fred_rates)")
+    ap.add_argument("--fetch", action="store_true",
+                    help="download the four series first, into a new folder <raw-root>/<UTC time>/ (never over a kept one)")
+    ap.add_argument("--from-dir", type=Path, default=None,
+                    help="the kept download folder to read (default: the newest kept folder under --raw-root); not with --fetch")
+    ap.add_argument("--raw-root", type=Path, default=RAW_ROOT, help=f"where the kept downloads live (default {RAW_ROOT})")
     ap.add_argument("--manifest", type=Path, default=HERE / "data" / "fred_rates_manifest.json")
     ap.add_argument("--out", type=Path, default=HERE / "data" / "fomc_calibration.json")
     ap.add_argument("--no-write", action="store_true")
@@ -611,11 +693,15 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--candidates", type=Path, default=HERE / L.CANDIDATES,
                     help="where --live with mids writes one candidate record per class (not with --no-write; 2026-11-14)")
     a = ap.parse_args(argv)
-    raw_dir = a.from_dir if a.from_dir is not None else HERE / "data" / "raw" / "fred_rates"
+    if a.fetch and a.from_dir is not None:
+        ap.error("--fetch writes its own folder under --raw-root and --from-dir reads a kept one: not both")
     if a.live is not None:
-        if a.fetch:
-            for k in SERIES:
-                qdata.fetch_fred(k, raw_dir, a.manifest)
+        try:
+            raw_dir = fetch_all(a.raw_root, a.manifest, datetime.now(UTC)) if a.fetch else (a.from_dir or newest_folder(a.raw_root))
+        except (FileNotFoundError, FileExistsError) as e:
+            print(f"REFUSED: {e}")
+            return 1
+        print(f"inputs: {raw_dir}")
         today = a.today or date.fromisoformat(qdata.utc_now()[:10])
         s, meetings, cal, mids = load_dir(raw_dir), meeting_dates(), load_calibration(a.out), dict(a.mid)
         for line in live_lines(s, meetings, a.live, today, cal, mids):
@@ -628,7 +714,12 @@ def main(argv: list[str] | None = None) -> int:
         elif mids:
             print("  no candidate written (--no-write): a reading needs a written candidate")
         return 0
-    return run(raw_dir, a.manifest, None if a.no_write else a.out, a.fetch)
+    try:
+        folder = a.raw_root if a.fetch else (a.from_dir or newest_folder(a.raw_root))
+        return run(folder, a.manifest, None if a.no_write else a.out, a.fetch)
+    except (FileNotFoundError, FileExistsError) as e:
+        print(f"REFUSED: {e}")
+        return 1
 
 
 if __name__ == "__main__":

@@ -1,5 +1,117 @@
 {
-  "fred_DFEDTARU.csv": {
+  "2026-11-05T182247Z/fred_DFEDTARU.csv": {
+    "bytes_kept": false,
+    "downloaded_at_utc": "2026-11-05T18:22:47Z",
+    "first_bar": "2008-12-16",
+    "last_bar": "2026-11-05",
+    "last_valid": "2026-11-05",
+    "note": "written in place and replaced by the next fetch before downloads were kept per fetch; hash from git bec16ab (2026-11-14 18:15Z, predictions/POST_MORTEMS.md 'A download the next fetch replaced')",
+    "overwritten_by": "2026-11-06T061722Z/fred_DFEDTARU.csv",
+    "rows": 6534,
+    "series_id": "DFEDTARU",
+    "sha256": "a2ef714ae4433162fe3748bd66b174245bfa8d095148d2ae18b457fb78780bec",
+    "source": "FRED (fredgraph.csv)",
+    "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=DFEDTARU"
+  },
+  "2026-11-05T182247Z/fred_DTB3.csv": {
+    "bytes_kept": false,
+    "downloaded_at_utc": "2026-11-05T18:22:47Z",
+    "first_bar": "1954-01-04",
+    "last_bar": "2026-11-03",
+    "last_valid": "2026-11-03",
+    "note": "written in place and replaced by the next fetch before downloads were kept per fetch; hash from git bec16ab (2026-11-14 18:15Z, predictions/POST_MORTEMS.md 'A download the next fetch replaced')",
+    "overwritten_by": "2026-11-06T061722Z/fred_DTB3.csv",
+    "rows": 19002,
+    "series_id": "DTB3",
+    "sha256": "e5fa1cb672371e23f5eb5fa45c23dc61e122b1a97cd9b3ebc641bcdaf68f45ac",
+    "source": "FRED (fredgraph.csv)",
+    "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=DTB3"
+  },
+  "2026-11-05T182247Z/fred_DTB4WK.csv": {
+    "bytes_kept": false,
+    "downloaded_at_utc": "2026-11-05T18:22:47Z",
+    "first_bar": "2001-07-31",
+    "last_bar": "2026-11-03",
+    "last_valid": "2026-11-03",
+    "note": "written in place and replaced by the next fetch before downloads were kept per fetch; hash from git bec16ab (2026-11-14 18:15Z, predictions/POST_MORTEMS.md 'A download the next fetch replaced')",
+    "overwritten_by": "2026-11-06T061722Z/fred_DTB4WK.csv",
+    "rows": 6591,
+    "series_id": "DTB4WK",
+    "sha256": "438c52665d99986f683287c055c241e265e7c528b5792545f2602330a03fc43c",
+    "source": "FRED (fredgraph.csv)",
+    "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=DTB4WK"
+  },
+  "2026-11-05T182247Z/fred_EFFR.csv": {
+    "bytes_kept": false,
+    "downloaded_at_utc": "2026-11-05T18:22:47Z",
+    "first_bar": "2000-07-03",
+    "last_bar": "2026-11-04",
+    "last_valid": "2026-11-04",
+    "note": "written in place and replaced by the next fetch before downloads were kept per fetch; hash from git bec16ab (2026-11-14 18:15Z, predictions/POST_MORTEMS.md 'A download the next fetch replaced')",
+    "overwritten_by": "2026-11-06T061722Z/fred_EFFR.csv",
+    "rows": 6873,
+    "series_id": "EFFR",
+    "sha256": "21b2c8f6bdf48c9164e7aacac070b5a252ab1895011219a516b94edfdab4826d",
+    "source": "FRED (fredgraph.csv)",
+    "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=EFFR"
+  },
+  "2026-11-06T061722Z/fred_DFEDTARU.csv": {
+    "bytes_kept": false,
+    "downloaded_at_utc": "2026-11-06T06:17:23Z",
+    "first_bar": "2008-12-16",
+    "last_bar": "2026-11-05",
+    "last_valid": "2026-11-05",
+    "note": "written in place and replaced by the next fetch before downloads were kept per fetch; hash from git e074791 (2026-11-14 18:15Z, predictions/POST_MORTEMS.md 'A download the next fetch replaced')",
+    "overwritten_by": "2026-11-13T061841Z/fred_DFEDTARU.csv",
+    "rows": 6534,
+    "series_id": "DFEDTARU",
+    "sha256": "a2ef714ae4433162fe3748bd66b174245bfa8d095148d2ae18b457fb78780bec",
+    "source": "FRED (fredgraph.csv)",
+    "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=DFEDTARU"
+  },
+  "2026-11-06T061722Z/fred_DTB3.csv": {
+    "bytes_kept": false,
+    "downloaded_at_utc": "2026-11-06T06:17:22Z",
+    "first_bar": "1954-01-04",
+    "last_bar": "2026-11-04",
+    "last_valid": "2026-11-04",
+    "note": "written in place and replaced by the next fetch before downloads were kept per fetch; hash from git e074791 (2026-11-14 18:15Z, predictions/POST_MORTEMS.md 'A download the next fetch replaced')",
+    "overwritten_by": "2026-11-13T061841Z/fred_DTB3.csv",
+    "rows": 19003,
+    "series_id": "DTB3",
+    "sha256": "582523ab614f655f19481dbab4b1cf4246ac533a95611fa9c54e2dcc551349f6",
+    "source": "FRED (fredgraph.csv)",
+    "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=DTB3"
+  },
+  "2026-11-06T061722Z/fred_DTB4WK.csv": {
+    "bytes_kept": false,
+    "downloaded_at_utc": "2026-11-06T06:17:23Z",
+    "first_bar": "2001-07-31",
+    "last_bar": "2026-11-04",
+    "last_valid": "2026-11-04",
+    "note": "written in place and replaced by the next fetch before downloads were kept per fetch; hash from git e074791 (2026-11-14 18:15Z, predictions/POST_MORTEMS.md 'A download the next fetch replaced')",
+    "overwritten_by": "2026-11-13T061841Z/fred_DTB4WK.csv",
+    "rows": 6592,
+    "series_id": "DTB4WK",
+    "sha256": "4b4e05f72cbea3f244326d70dba4ee3d6be8d52fcf2215ed19795117eda412e3",
+    "source": "FRED (fredgraph.csv)",
+    "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=DTB4WK"
+  },
+  "2026-11-06T061722Z/fred_EFFR.csv": {
+    "bytes_kept": false,
+    "downloaded_at_utc": "2026-11-06T06:17:23Z",
+    "first_bar": "2000-07-03",
+    "last_bar": "2026-11-04",
+    "last_valid": "2026-11-04",
+    "note": "written in place and replaced by the next fetch before downloads were kept per fetch; hash from git e074791 (2026-11-14 18:15Z, predictions/POST_MORTEMS.md 'A download the next fetch replaced')",
+    "overwritten_by": "2026-11-13T061841Z/fred_EFFR.csv",
+    "rows": 6873,
+    "series_id": "EFFR",
+    "sha256": "21b2c8f6bdf48c9164e7aacac070b5a252ab1895011219a516b94edfdab4826d",
+    "source": "FRED (fredgraph.csv)",
+    "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=EFFR"
+  },
+  "2026-11-13T061841Z/fred_DFEDTARU.csv": {
     "downloaded_at_utc": "2026-11-13T06:18:42Z",
     "first_bar": "2008-12-16",
     "last_bar": "2026-11-12",
@@ -10,7 +122,7 @@
     "source": "FRED (fredgraph.csv)",
     "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=DFEDTARU"
   },
-  "fred_DTB3.csv": {
+  "2026-11-13T061841Z/fred_DTB3.csv": {
     "downloaded_at_utc": "2026-11-13T06:18:41Z",
     "first_bar": "1954-01-04",
     "last_bar": "2026-11-10",
@@ -21,7 +133,7 @@
     "source": "FRED (fredgraph.csv)",
     "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=DTB3"
   },
-  "fred_DTB4WK.csv": {
+  "2026-11-13T061841Z/fred_DTB4WK.csv": {
     "downloaded_at_utc": "2026-11-13T06:18:42Z",
     "first_bar": "2001-07-31",
     "last_bar": "2026-11-10",
@@ -32,7 +144,7 @@
     "source": "FRED (fredgraph.csv)",
     "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=DTB4WK"
   },
-  "fred_EFFR.csv": {
+  "2026-11-13T061841Z/fred_EFFR.csv": {
     "downloaded_at_utc": "2026-11-13T06:18:42Z",
     "first_bar": "2000-07-03",
     "last_bar": "2026-11-10",

@@ -249,7 +249,12 @@ def fred_path(series_id: str, raw_dir: Path) -> Path:
 
 
 def fetch_fred(series_id: str, raw_dir: Path, manifest_path: Path,
-               session: requests.Session | None = None) -> pd.Series:
+               session: requests.Session | None = None, key: str | None = None) -> pd.Series:
+    """Download one FRED series into ``raw_dir`` and put its hash on the manifest under ``key``
+    (default the file's name, so a second fetch into the same folder replaces the file and its
+    entry).  A caller that keeps one folder per fetch passes ``key="<folder>/<file>"`` so the
+    manifest keeps every fetch it ever recorded (pm-view/fomc_calibrate.py since 2026-11-14 18:15Z,
+    predictions/POST_MORTEMS.md "A download the next fetch replaced")."""
     url = FRED_URL.format(series_id=series_id)
     client = session or requests
     downloaded_at = utc_now()
@@ -259,7 +264,7 @@ def fetch_fred(series_id: str, raw_dir: Path, manifest_path: Path,
     Path(raw_dir).mkdir(parents=True, exist_ok=True)
     path = fred_path(series_id, raw_dir)
     path.write_text(response.text, encoding="utf-8")
-    update_manifest(path.name, {"source": "FRED (fredgraph.csv)", "series_id": series_id, "url": url,
+    update_manifest(key or path.name, {"source": "FRED (fredgraph.csv)", "series_id": series_id, "url": url,
                                 "downloaded_at_utc": downloaded_at, "rows": int(len(series)),
                                 "first_bar": series.index[0].strftime("%Y-%m-%d"),
                                 "last_bar": series.index[-1].strftime("%Y-%m-%d"),

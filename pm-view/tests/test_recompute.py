@@ -163,17 +163,23 @@ def test_add_refuses_a_candidate_whose_figures_do_not_recompute_and_admits_one_t
     assert not (tmp_path / "r3.csv").exists()
 
 
-def test_a_method_without_a_recomputer_is_admitted_on_its_record_and_the_tool_says_so(tmp_path, capsys):
+def test_every_reading_method_has_a_recomputer_and_a_bills_candidate_naming_no_kept_folder_is_refused(tmp_path, capsys):
+    """Until 2026-11-15 06:15Z this test held that a fomc_bills candidate was admitted on its record alone and the
+    tool said "not recomputed"; on aff9c27 a bill candidate carrying a figure the printer never computed was
+    admitted at dry-run with rc 0.  Now every method in READING_METHODS has a recomputer (tests/test_recompute_bills.py
+    holds the bills one), and the record the old test admitted, naming no kept folder, is refused."""
     manifest = write_manifest(tmp_path, [QUOTE, LATE_QUOTE])
     cands = tmp_path / "data" / "candidates.jsonl"
-    bills = L.candidate_record("fomc_bills", "hike", 0.6, 0.5, 0.7, 0.23, 0.925, COMPUTED, {"meeting": "2026-12-09"})
+    bills = L.candidate_record("fomc_bills", "hike", 0.6, 0.5, 0.7, 0.23, 0.925, COMPUTED, {"meeting": "2026-12-09", "as_of": "2026-11-04"})
     L.append_candidate(cands, bills)
-    assert R.recomputer_for("fomc_bills", tmp_path) is None and R.recomputer_for("btc_touch", tmp_path) is not None
+    assert all(R.recomputer_for(m, tmp_path) is not None for m in L.READING_METHODS)
+    assert R.recomputer_for("stated", tmp_path) is None
     args = ns(quote=LATE_QUOTE["fetched_utc"], method="fomc_bills", method_p=None, range_lo=None, range_hi=None,
               climatology_p=None, candidate=bills["id"], proposition="Hike of 25 bp on 9 December")
-    assert R.add(args, manifest, tmp_path / "r.csv", LATE_NOW, candidates=cands) == 0
+    assert R.add(args, manifest, tmp_path / "r.csv", LATE_NOW, candidates=cands) == 1
     out = capsys.readouterr().out
-    assert "not recomputed: no recomputer for fomc_bills yet" in out and "ADMITTED" in out and "recomputed: the four" not in out
+    assert f"[reading:figures-recompute] candidate {bills['id']}: no kept folder (none named) under" in out
+    assert "not recomputed" not in out and not (tmp_path / "r.csv").exists()
 
 
 def test_the_library_applies_nothing_without_a_recomputer_or_a_single_candidate():

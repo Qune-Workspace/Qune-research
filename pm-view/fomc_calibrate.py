@@ -85,6 +85,8 @@ Usage (from this folder):
     python fomc_calibrate.py --fetch [--out data/fomc_calibration.json]     # a new folder data/raw/fred_rates/<UTC time>/
     python fomc_calibrate.py [--from-dir data/raw/fred_rates/<UTC time>] [--out ...]   # default: the newest kept folder
     python fomc_calibrate.py --live 2026-12-09 [--fetch | --from-dir <folder>] [--today <date>] --mid hike=0.885 ...
+    python fomc_calibrate.py --recompute K-fomc_bills-hike-<time>   # the candidate re-read from the kept folder and
+                                                                   # calibration it names; the differences printed (2026-11-15)
 Exit 0 when the report was written, 1 when the sample is too short (fewer than
 MIN_SCORED (24) scored meetings) or no kept download exists to read.
 """
@@ -511,34 +513,162 @@ def live_lines(s: Series, meetings: list[date], d: date, today: date, cal: dict[
     return out
 
 
+def file_sha256(path: Path | None) -> str | None:
+    """SHA-256 of a file as it stands; None when there is no file (the shape barrier.file_sha256 uses)."""
+    return hashlib.sha256(path.read_bytes()).hexdigest() if path is not None and path.exists() else None
+
+
+def input_hashes(raw_dir: Path) -> dict[str, str]:
+    """The four files' SHA-256 as they stand in one kept folder, by series id."""
+    return {k: hashlib.sha256(qdata.fred_path(k, raw_dir).read_bytes()).hexdigest() for k in SERIES}
+
+
+def class_figures(fig: dict[str, Any], cls: str, cal: dict[str, Any] | None) -> tuple[float, float, float, float | None]:
+    """The four figures a candidate carries for one class, from `live_figures`' answer: the primary reading, the
+    hull of the reading and its range under the historical basis, and the class's share of the calibration's
+    scored meetings (None without a calibration).  One copy for the writer and the recomputation (2026-11-15 06:15Z)."""
+    p, lo, hi = fig["classes"][cls]
+    sample = (cal or {}).get("sample") or {}
+    n = sample.get("scored_meetings")
+    clim = None if not n else (sample.get("outcomes") or {}).get(cls, 0) / n
+    return p, min(lo, p), max(hi, p), clim
+
+
 def live_candidates(s: Series, meetings: list[date], d: date, today: date, cal: dict[str, Any] | None,
-                    mids: dict[str, float], raw_dir: Path, at: datetime) -> list[dict[str, Any]]:
+                    mids: dict[str, float], raw_dir: Path, at: datetime,
+                    calibration: Path | None = None) -> list[dict[str, Any]]:
     """One candidate record per class a mid was given for (2026-11-14 12:15Z, predictions/POST_MORTEMS.md
     "A figure the gate took on the desk's word"): the primary reading, the hull of the reading and its range
     under the historical basis (the range the ledger line prints), the class's share of the calibration's
     scored meetings as climatology, the mid, and the inputs (the four files' hashes as read, the prints'
-    dates, the as-of date, the meeting), never a value of a series.  Empty when the reading stops early."""
+    dates, the as-of date, the meeting, and since 2026-11-15 06:15Z the hash of the calibration file `cal`
+    was read from, so `recompute_candidate` can hold the record to it), never a value of a series.  Empty
+    when the reading stops early."""
     fig = live_figures(s, meetings, d, today, cal)
     if "classes" not in fig:
         return []
     rd, obs = fig["rd"], fig["obs"]
-    hashes = {k: hashlib.sha256(qdata.fred_path(k, raw_dir).read_bytes()).hexdigest() for k in SERIES}
     sample = (cal or {}).get("sample") or {}
     n = sample.get("scored_meetings")
     out: list[dict[str, Any]] = []
     for cls, mid in mids.items():
-        p, lo, hi = fig["classes"][cls]
-        clim = None if not n else (sample.get("outcomes") or {}).get(cls, 0) / n
+        p, lo, hi, clim = class_figures(fig, cls, cal)
         inputs = {"meeting": d.isoformat(), "as_of": today.isoformat(), "primary": fig["primary"],
                   "prints": {k: obs[k][0].isoformat() for k in obs},
                   # the kept folder the four files were read from (2026-11-14 18:15Z): with as_of and the meeting,
-                  # `--live <meeting> --today <as_of> --from-dir data/raw/fred_rates/<input_folder>` recomputes the figures
+                  # `--live <meeting> --today <as_of> --from-dir data/raw/fred_rates/<input_folder>` recomputes the figures;
+                  # since 2026-11-15 06:15Z `recompute_candidate` does this at admission, under the calibration named here
                   "input_folder": Path(raw_dir).name,
-                  "input_sha256": hashes, "days_to_meeting": rd["days_to_meeting"], "content_pct": rd["content_pct"],
+                  "input_sha256": input_hashes(raw_dir), "calibration_sha256": file_sha256(calibration),
+                  "days_to_meeting": rd["days_to_meeting"], "content_pct": rd["content_pct"],
                   "basis_range_pct": list(fig["br"]), "basis_lookback_obs": BASIS_LOOKBACK_OBS,
                   "climatology": None if not n else f"{cls} share of {n} scored meetings {sample.get('first_meeting')}..{sample.get('last_meeting')}"}
-        out.append(L.candidate_record(METHOD, cls, p, min(lo, p), max(hi, p), clim, mid, at, inputs))
+        out.append(L.candidate_record(METHOD, cls, p, lo, hi, clim, mid, at, inputs))
     return out
+
+
+# --- a candidate held to the inputs it names (2026-11-15 06:15Z) ------------------------------------
+#
+# predictions/POST_MORTEMS.md "A record held to nothing but itself", follow-up: the 00:15Z run of
+# 15 November held a btc_touch candidate to the kept download and calibration it names and left
+# fomc_bills as its first limit, admitted on its record alone.  Shown on aff9c27 before this change,
+# on a scratch copy of the 13 November record: a bill candidate carrying 0.760 in the three figure
+# fields, and one carrying a false as-of date (2026-11-04, whose reading on the same bytes is 0.816),
+# were both ADMITTED by `readings.py add --candidate` at dry-run with rc 0, the tool printing only
+# that the row was "not recomputed".  Now the candidate is recomputed here from the kept folder, the
+# four hashes and the calibration file it names before the row is admitted.
+
+
+def kept_folder_named(root: Path, name: str) -> Path | None:
+    """The kept fetch under `root` whose folder is `name`: a folder named by its fetch time holding the
+    four series (`kept_folders`), or None.  A folder that is not a kept fetch is not read."""
+    hits = [p for _, p in kept_folders(root) if p.name == name]
+    return hits[0] if len(hits) == 1 else None
+
+
+def recompute_candidate(c: dict[str, Any], raw_root: Path, calibration: Path | None,
+                        meetings: list[date] | None = None) -> list[str]:
+    """Hold a fomc_bills candidate to its inputs: re-read the kept folder `inputs.input_folder` names under
+    `raw_root` (each of the four files' bytes must hash to `inputs.input_sha256`), the calibration file (its hash
+    must be `inputs.calibration_sha256`), re-run `live_figures` for the candidate's meeting as of its `as_of`
+    date, and compare the four figures at the record's three decimals, then the prints' dates and the days to
+    the meeting.  Returns the differences, empty when the record reproduces.  Nothing is fetched or written.
+    A calibration file other than the one named is a difference and the figures are then recomputed under the
+    candidate's recorded primary, without a climatology to compare."""
+    out: list[str] = []
+    inputs = c.get("inputs") or {}
+    if str(c.get("method")) != METHOD:
+        return [f"a {c.get('method')} candidate; this tool recomputes {METHOD} only"]
+    cls = str(c.get("key") or "")
+    if cls not in CLASSES:
+        return [f"key {c.get('key')!r} is not a {METHOD} class ({', '.join(CLASSES)}): nothing to recompute"]
+    try:
+        d, today = date.fromisoformat(str(inputs.get("meeting"))), date.fromisoformat(str(inputs.get("as_of")))
+    except ValueError:
+        return [f"inputs.meeting {inputs.get('meeting')!r} or inputs.as_of {inputs.get('as_of')!r} is not a date: nothing to recompute"]
+    name = str(inputs.get("input_folder") or "")
+    folder = kept_folder_named(raw_root, name) if name else None
+    if folder is None:
+        return [f"no kept folder {name or '(none named)'} under {raw_root} holding the four series: the bytes the figures "
+                "were read from cannot be re-read"]
+    want_hashes, have_hashes = inputs.get("input_sha256") or {}, input_hashes(folder)
+    for k in SERIES:
+        if str(want_hashes.get(k)) != have_hashes[k]:
+            out.append(f"{qdata.fred_path(k, folder).name} in {folder.name} is {have_hashes[k][:12]}, the candidate was read from "
+                       f"{str(want_hashes.get(k))[:12]}: the bytes the figures were read from cannot be re-read")
+    if out:
+        return out
+    want_cal, have_cal = inputs.get("calibration_sha256"), file_sha256(calibration)
+    same_cal = want_cal == have_cal
+    if not same_cal:
+        out.append(f"the calibration file is {str(have_cal)[:12]} and the candidate was read under {str(want_cal)[:12]}: "
+                   "the climatology cannot be re-read from it")
+    try:
+        if same_cal:
+            cal = load_calibration(calibration) if calibration is not None else None
+        else:  # another file's rules would choose another primary; the record's primary is kept, nothing else of it
+            cal = {"rules": {"R1_primary": inputs.get("primary") or "net"}} if want_cal is not None else None
+        fig = live_figures(load_dir(folder), meetings if meetings is not None else meeting_dates(), d, today, cal)
+    except (OSError, ValueError, UnicodeDecodeError, KeyError) as e:
+        return out + [f"the figures do not recompute from {folder}: {e}"]
+    if "classes" not in fig:
+        return out + [f"no reading recomputes for {d} as of {today} from {folder.name}: {fig['stop'].strip()}"]
+    if same_cal and str(inputs.get("primary")) != str(fig["primary"]):
+        out.append(f"inputs.primary {inputs.get('primary')!r} on the record, {fig['primary']!r} under the calibration it names")
+    p, lo, hi, clim = class_figures(fig, cls, cal if same_cal else None)
+    fresh = {"method_p": f"{p:.3f}", "range_lo": f"{lo:.3f}", "range_hi": f"{hi:.3f}",
+             "climatology_p": None if clim is None else f"{clim:.3f}"}
+    for col, val in fresh.items():
+        if col == "climatology_p" and not same_cal:
+            continue  # already refused above; the fresh climatology is another calibration's
+        if str(c.get(col)) != str(val):
+            out.append(f"{col} {c.get(col)!r} on the record, {val!r} recomputed from {folder.name} as of {today}")
+    prints = {k: fig["obs"][k][0].isoformat() for k in fig["obs"]}
+    if dict(inputs.get("prints") or {}) != prints:
+        out.append(f"inputs.prints {inputs.get('prints')!r} on the record, {prints!r} in the kept folder as of {today}")
+    if str(inputs.get("days_to_meeting")) != str(fig["rd"]["days_to_meeting"]):
+        out.append(f"inputs.days_to_meeting {inputs.get('days_to_meeting')!r} on the record, {fig['rd']['days_to_meeting']!r} recomputed")
+    return out
+
+
+def recompute_main(candidate_id: str, candidates: Path, raw_root: Path, calibration: Path) -> int:
+    """`--recompute <id>`: the differences printed, nothing fetched or written; exit 0 when the record
+    reproduces, 1 otherwise (the shape barrier.recompute_main uses)."""
+    hits = [c for c in L.read_candidates(candidates) if str(c.get("id")) == candidate_id]
+    if len(hits) != 1:
+        print(f"recompute {candidate_id}: {'not on' if not hits else 'more than once on'} {candidates}")
+        return 1
+    diffs = recompute_candidate(hits[0], raw_root, calibration)
+    inputs = hits[0].get("inputs") or {}
+    if not diffs:
+        print(f"recompute {candidate_id}: the four figures reproduce from {raw_root / str(inputs.get('input_folder'))} "
+              f"(DTB3 {str((inputs.get('input_sha256') or {}).get('DTB3'))[:12]}…, calibration "
+              f"{str(inputs.get('calibration_sha256'))[:12]}…) as of {inputs.get('as_of')}")
+        return 0
+    print(f"recompute {candidate_id}: DIFFERS")
+    for d_ in diffs:
+        print(f"  {d_}")
+    return 1
 
 
 def parse_mid(s: str) -> tuple[str, float]:
@@ -692,9 +822,16 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--mid", type=parse_mid, action="append", default=[], help="market mid per class for --live, e.g. hike=0.635")
     ap.add_argument("--candidates", type=Path, default=HERE / L.CANDIDATES,
                     help="where --live with mids writes one candidate record per class (not with --no-write; 2026-11-14)")
+    ap.add_argument("--recompute", metavar="CANDIDATE_ID", default=None,
+                    help="re-read the kept folder and calibration file this candidate names (--raw-root, --out) and print "
+                         "the differences in its four figures; nothing fetched or written (2026-11-15)")
     a = ap.parse_args(argv)
     if a.fetch and a.from_dir is not None:
         ap.error("--fetch writes its own folder under --raw-root and --from-dir reads a kept one: not both")
+    if a.recompute is not None:
+        if a.fetch or a.live is not None:
+            ap.error("--recompute reads what a candidate names; not with --fetch or --live")
+        return recompute_main(a.recompute, a.candidates, a.raw_root, a.out)
     if a.live is not None:
         try:
             raw_dir = fetch_all(a.raw_root, a.manifest, datetime.now(UTC)) if a.fetch else (a.from_dir or newest_folder(a.raw_root))
@@ -708,7 +845,7 @@ def main(argv: list[str] | None = None) -> int:
             print(line)
         # 2026-11-14 12:15Z: the figures a reading may carry are written by this tool, not typed from its lines
         if mids and not a.no_write:
-            for c in live_candidates(s, meetings, a.live, today, cal, mids, raw_dir, datetime.now(UTC)):
+            for c in live_candidates(s, meetings, a.live, today, cal, mids, raw_dir, datetime.now(UTC), calibration=a.out):
                 L.append_candidate(a.candidates, c)
                 print(f"  candidate {c['id']} written to {a.candidates.name} (readings.py add --candidate {c['id']})")
         elif mids:

@@ -70,6 +70,7 @@ from pathlib import Path
 from typing import Any
 
 import barrier as B
+import fomc_calibrate as F
 import pm_lib as L
 from score import append_row, read_csv
 
@@ -79,13 +80,16 @@ VENUE = L.VENUE
 
 def recomputer_for(method: str, here: Path) -> L.Recompute | None:
     """The method's recomputer (2026-11-15 00:15Z, predictions/POST_MORTEMS.md "A record held to nothing but
-    itself"), or None for a method that has none yet.  btc_touch: barrier.recompute_candidate on the kept
-    downloads under data/raw/fred/ and the committed calibration file.  fomc_bills: none yet; its candidate
-    names the folder and as-of date, and `fomc_calibrate.py --live <meeting> --today <as_of> --from-dir
-    data/raw/fred_rates/<input_folder>` is the recipe by hand (tests/test_fetch_folders.py runs it)."""
+    itself"), or None for a method that has none (none today; `add` says so when it meets one).  btc_touch:
+    barrier.recompute_candidate on the kept downloads under data/raw/fred/ and the committed calibration file.
+    fomc_bills (since 06:15Z the same day): fomc_calibrate.recompute_candidate on the kept folder under
+    data/raw/fred_rates/ the candidate names, its four hashes, its as-of date and the committed calibration file."""
     if method == "btc_touch":
         raw_dir, calibration = here / "data" / "raw" / "fred", here / L.METHOD_CALIBRATION[method][0]
         return lambda c: B.recompute_candidate(c, raw_dir, calibration)
+    if method == "fomc_bills":
+        raw_root, fomc_cal = here / "data" / "raw" / "fred_rates", here / L.METHOD_CALIBRATION[method][0]
+        return lambda c: F.recompute_candidate(c, raw_root, fomc_cal)
     return None
 
 

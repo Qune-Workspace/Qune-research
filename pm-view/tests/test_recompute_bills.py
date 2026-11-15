@@ -15,7 +15,7 @@ from pathlib import Path
 import fomc_calibrate as F
 import pm_lib as L
 import readings as R
-from test_fetch_folders import kept, sha
+from test_fetch_folders import kept, manifest_of, record, sha
 from test_readings import QUOTE, ns, write_manifest
 
 MEETING, AS_OF = "2026-12-09", "2026-11-04"
@@ -48,7 +48,8 @@ def rewrite(cands: Path, records: list[dict]) -> None:
 
 
 def recompute_argv(cid: str, cands: Path, root: Path, cal: Path) -> list[str]:
-    return ["--recompute", cid, "--candidates", str(cands), "--raw-root", str(root), "--out", str(cal)]
+    return ["--recompute", cid, "--candidates", str(cands), "--raw-root", str(root), "--out", str(cal),
+            "--manifest", str(root.parent / "m.json")]
 
 
 # --- the candidate names what it was computed from -----------------------------------------------
@@ -65,7 +66,7 @@ def test_the_candidate_names_the_calibration_it_read_and_none_when_there_was_non
     capsys.readouterr()
     assert rc == 0
     c = L.read_candidates(cands)[0]
-    assert c["inputs"]["calibration_sha256"] == sha(cal) and F.recompute_candidate(c, root, cal) == []
+    assert c["inputs"]["calibration_sha256"] == sha(cal) and F.recompute_candidate(c, root, cal, manifest=manifest_of(root)) == []
     # no calibration file: the candidate says so and carries no climatology
     cands = tmp_path / "none" / "c.jsonl"
     rc = F.main(["--live", MEETING, "--today", AS_OF, "--from-dir", str(folder), "--raw-root", str(root), "--manifest", str(tmp_path / "m.json"),
@@ -74,7 +75,7 @@ def test_the_candidate_names_the_calibration_it_read_and_none_when_there_was_non
     assert rc == 0
     c = L.read_candidates(cands)[0]
     assert c["inputs"]["calibration_sha256"] is None and c["climatology_p"] is None
-    assert F.recompute_candidate(c, root, tmp_path / "none" / "absent.json") == []
+    assert F.recompute_candidate(c, root, tmp_path / "none" / "absent.json", manifest=manifest_of(root)) == []
 
 
 # --- the figures recompute from the kept inputs, and a difference is named ------------------------
@@ -82,7 +83,7 @@ def test_the_candidate_names_the_calibration_it_read_and_none_when_there_was_non
 def test_a_candidate_reproduces_from_its_kept_inputs_and_the_cli_says_so(tmp_path, capsys):
     got, root, folder, cal, cands = kept_bills(tmp_path)
     for c in got:
-        assert F.recompute_candidate(c, root, cal) == []
+        assert F.recompute_candidate(c, root, cal, manifest=manifest_of(root)) == []
     capsys.readouterr()
     rc = F.main(recompute_argv(got[0]["id"], cands, root, cal))
     out = capsys.readouterr().out
@@ -93,7 +94,7 @@ def test_a_candidate_reproduces_from_its_kept_inputs_and_the_cli_says_so(tmp_pat
 def test_a_figure_the_printer_never_computed_is_a_difference(tmp_path, capsys):
     got, root, folder, cal, cands = kept_bills(tmp_path)
     bad = dict(got[0], method_p="0.760", range_lo="0.760", range_hi="0.760")
-    diffs = F.recompute_candidate(bad, root, cal)
+    diffs = F.recompute_candidate(bad, root, cal, manifest=manifest_of(root))
     assert [d.split(" ")[0] for d in diffs] == ["method_p", "range_lo", "range_hi"]
     assert f"method_p '0.760' on the record, '{got[0]['method_p']}' recomputed from {folder.name} as of {AS_OF}" == diffs[0]
     rewrite(cands, [bad])
@@ -108,7 +109,7 @@ def test_a_false_as_of_date_is_a_difference(tmp_path):
     was taken from are dated, so the record disagrees with the kept folder even where the figures happen to agree."""
     got, root, folder, cal, _ = kept_bills(tmp_path)
     moved = dict(got[0], inputs=dict(got[0]["inputs"], as_of="2026-11-02"))
-    diffs = F.recompute_candidate(moved, root, cal)
+    diffs = F.recompute_candidate(moved, root, cal, manifest=manifest_of(root))
     assert diffs and any(d.startswith("inputs.prints ") and "in the kept folder as of 2026-11-02" in d for d in diffs)
     assert any(d.startswith("inputs.days_to_meeting ") for d in diffs)
 
@@ -118,37 +119,44 @@ def test_a_missing_folder_changed_bytes_a_changed_calibration_and_a_wrong_key_ar
     c = got[0]
     # the folder gone, or named by a name that is not a kept fetch
     elsewhere = dict(c, inputs=dict(c["inputs"], input_folder="2026-11-20T061800Z"))
-    diffs = F.recompute_candidate(elsewhere, root, cal)
-    assert diffs == [f"no kept folder 2026-11-20T061800Z under {root} holding the four series: the bytes the figures were read from cannot be re-read"]
-    # the folder present, one file's bytes not the candidate's: nothing is recomputed from other bytes
+    diffs = F.recompute_candidate(elsewhere, root, cal, manifest=manifest_of(root))
+    assert diffs == [f"no kept folder 2026-11-20T061800Z under {root} holding the four series the manifest recorded: "
+                     "the bytes the figures were read from cannot be re-read"]
+    # the folder present with other bytes but no fetch recorded it (2026-11-15 12:15Z): not a kept fetch, and the
+    # refusal says which file the manifest never saw
     other = root / "2026-11-20T061800Z"
     shutil.copytree(folder, other)
     with (other / "fred_DTB3.csv").open("a", encoding="utf-8") as fh:
         fh.write("2026-11-10,3.99\n")
     moved = dict(c, inputs=dict(c["inputs"], input_folder=other.name))
-    diffs = F.recompute_candidate(moved, root, cal)
+    diffs = F.recompute_candidate(moved, root, cal, manifest=manifest_of(root))
+    assert len(diffs) == 1 and diffs[0].startswith(f"no kept folder {other.name} under {root} holding the four series the manifest recorded")
+    assert "fred_DTB3.csv (" in diffs[0] and "has no entry under 2026-11-20T061800Z/ on the manifest: no fetch recorded it" in diffs[0]
+    # the same folder recorded by a fetch: a kept fetch whose bytes are not the candidate's; nothing is recomputed from other bytes
+    record(root.parent / "m.json", other, "2026-11-20T06:18:01Z")
+    diffs = F.recompute_candidate(moved, root, cal, manifest=manifest_of(root))
     assert len(diffs) == 1 and diffs[0].startswith(f"fred_DTB3.csv in {other.name} is {sha(other / 'fred_DTB3.csv')[:12]}, the candidate was read from "
                                                    f"{c['inputs']['input_sha256']['DTB3'][:12]}")
     # the calibration re-written after the candidate: the climatology is another file's; the figures still recompute
     body = json.loads(cal.read_text(encoding="utf-8"))
     body["note"] = "re-written"
     cal.write_text(json.dumps(body), encoding="utf-8")
-    diffs = F.recompute_candidate(c, root, cal)
+    diffs = F.recompute_candidate(c, root, cal, manifest=manifest_of(root))
     assert len(diffs) == 1 and diffs[0].startswith(f"the calibration file is {sha(cal)[:12]} and the candidate was read under "
                                                    f"{c['inputs']['calibration_sha256'][:12]}")
     bad_under_other_cal = dict(c, method_p="0.760", range_lo="0.760", range_hi="0.760")
-    diffs = F.recompute_candidate(bad_under_other_cal, root, cal)
+    diffs = F.recompute_candidate(bad_under_other_cal, root, cal, manifest=manifest_of(root))
     assert [d.split(" ")[0] for d in diffs] == ["the", "method_p", "range_lo", "range_hi"]
     # a key that is not a class, a method that is not this one, a date that is not one
-    assert F.recompute_candidate(dict(c, key="75000:down"), root, cal)[0].startswith("key '75000:down' is not a fomc_bills class")
-    assert F.recompute_candidate(dict(c, method="btc_touch"), root, cal) == ["a btc_touch candidate; this tool recomputes fomc_bills only"]
-    assert F.recompute_candidate(dict(c, inputs=dict(c["inputs"], as_of="soon")), root, cal)[0].startswith("inputs.meeting '2026-12-09' or inputs.as_of 'soon' is not a date")
+    assert F.recompute_candidate(dict(c, key="75000:down"), root, cal, manifest=manifest_of(root))[0].startswith("key '75000:down' is not a fomc_bills class")
+    assert F.recompute_candidate(dict(c, method="btc_touch"), root, cal, manifest=manifest_of(root)) == ["a btc_touch candidate; this tool recomputes fomc_bills only"]
+    assert F.recompute_candidate(dict(c, inputs=dict(c["inputs"], as_of="soon")), root, cal, manifest=manifest_of(root))[0].startswith("inputs.meeting '2026-12-09' or inputs.as_of 'soon' is not a date")
 
 
 def test_a_reading_that_stops_early_is_a_difference(tmp_path):
     got, root, folder, cal, _ = kept_bills(tmp_path)
     late = dict(got[0], inputs=dict(got[0]["inputs"], as_of="2026-12-10"))  # the meeting is not after the as-of date
-    diffs = F.recompute_candidate(late, root, cal)
+    diffs = F.recompute_candidate(late, root, cal, manifest=manifest_of(root))
     assert diffs == [f"no reading recomputes for {date.fromisoformat(MEETING)} as of 2026-12-10 from {folder.name}: meeting 2026-12-09 is not after 2026-12-10"]
 
 
@@ -182,6 +190,9 @@ def admission(tmp_path: Path) -> tuple[list[dict], Path, Path, Path]:
     here_root = tmp_path / "data" / "raw" / "fred_rates"
     here_root.parent.mkdir(parents=True, exist_ok=True)
     shutil.move(str(root), str(here_root))
+    # ... and the fetch manifest at <here>/data/fred_rates_manifest.json (2026-11-15 12:15Z: a folder is a kept fetch
+    # only when that manifest recorded it)
+    shutil.copyfile(tmp_path / "m.json", tmp_path / "data" / "fred_rates_manifest.json")
     return got, manifest, cands, here_root
 
 

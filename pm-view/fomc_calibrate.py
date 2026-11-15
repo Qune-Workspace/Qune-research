@@ -8,6 +8,12 @@ never a value), or reads a kept download (default: the newest kept folder);
 writes aggregates only.  Until 2026-11-14 18:15Z the four files were written in
 place and the 13 November fetch replaced the bytes the 6 November readings were
 read from (predictions/POST_MORTEMS.md "A download the next fetch replaced").
+Since 2026-11-15 12:15Z a kept folder is one the manifest recorded: each of the
+four files hashes to the entry the fetch wrote under <folder>/<file>; a folder
+named like a fetch whose files are not on the manifest, or not the bytes it
+recorded, is set aside by name, never read by default, refused under --from-dir
+and refused at a candidate's recomputation (predictions/POST_MORTEMS.md "A kept
+folder held to nothing but its name").
 
 Why (BUILD_LOG 2026-11-05 12:15Z; the V1 miss of predictions/POST_MORTEMS.md):
 the touch method was scored against climatology on its own history on 5
@@ -579,22 +585,24 @@ def live_candidates(s: Series, meetings: list[date], d: date, today: date, cal: 
 # four hashes and the calibration file it names before the row is admitted.
 
 
-def kept_folder_named(root: Path, name: str) -> Path | None:
-    """The kept fetch under `root` whose folder is `name`: a folder named by its fetch time holding the
-    four series (`kept_folders`), or None.  A folder that is not a kept fetch is not read."""
-    hits = [p for _, p in kept_folders(root) if p.name == name]
+def kept_folder_named(root: Path, name: str, manifest: dict[str, Any] | None) -> Path | None:
+    """The kept fetch under `root` whose folder is `name`: a folder named by its fetch time whose four series
+    the manifest recorded (`kept_folders`), or None.  A folder that is not a kept fetch is not read."""
+    hits = [p for _, p in kept_folders(root, manifest) if p.name == name]
     return hits[0] if len(hits) == 1 else None
 
 
 def recompute_candidate(c: dict[str, Any], raw_root: Path, calibration: Path | None,
-                        meetings: list[date] | None = None) -> list[str]:
+                        meetings: list[date] | None = None, *, manifest: dict[str, Any] | None) -> list[str]:
     """Hold a fomc_bills candidate to its inputs: re-read the kept folder `inputs.input_folder` names under
-    `raw_root` (each of the four files' bytes must hash to `inputs.input_sha256`), the calibration file (its hash
-    must be `inputs.calibration_sha256`), re-run `live_figures` for the candidate's meeting as of its `as_of`
-    date, and compare the four figures at the record's three decimals, then the prints' dates and the days to
-    the meeting.  Returns the differences, empty when the record reproduces.  Nothing is fetched or written.
-    A calibration file other than the one named is a difference and the figures are then recomputed under the
-    candidate's recorded primary, without a climatology to compare."""
+    `raw_root` (a fetch the `manifest` recorded, each of the four files' bytes hashing to the fetch's entry and
+    to `inputs.input_sha256`), the calibration file (its hash must be `inputs.calibration_sha256`), re-run
+    `live_figures` for the candidate's meeting as of its `as_of` date, and compare the four figures at the
+    record's three decimals, then the prints' dates and the days to the meeting.  Returns the differences,
+    empty when the record reproduces.  Nothing is fetched or written.  A calibration file other than the one
+    named is a difference and the figures are then recomputed under the candidate's recorded primary, without
+    a climatology to compare.  `manifest` is the loaded fetch manifest (2026-11-15 12:15Z): without it no
+    folder is a kept fetch."""
     out: list[str] = []
     inputs = c.get("inputs") or {}
     if str(c.get("method")) != METHOD:
@@ -607,10 +615,12 @@ def recompute_candidate(c: dict[str, Any], raw_root: Path, calibration: Path | N
     except ValueError:
         return [f"inputs.meeting {inputs.get('meeting')!r} or inputs.as_of {inputs.get('as_of')!r} is not a date: nothing to recompute"]
     name = str(inputs.get("input_folder") or "")
-    folder = kept_folder_named(raw_root, name) if name else None
+    folder = kept_folder_named(raw_root, name, manifest) if name else None
     if folder is None:
-        return [f"no kept folder {name or '(none named)'} under {raw_root} holding the four series: the bytes the figures "
-                "were read from cannot be re-read"]
+        aside = [why for p, why in unrecorded_folders(raw_root, manifest) if p.name == name]
+        return [f"no kept folder {name or '(none named)'} under {raw_root} holding the four series the manifest recorded: "
+                "the bytes the figures were read from cannot be re-read"
+                + (f" ({'; '.join(aside[0])})" if aside else "")]
     want_hashes, have_hashes = inputs.get("input_sha256") or {}, input_hashes(folder)
     for k in SERIES:
         if str(want_hashes.get(k)) != have_hashes[k]:
@@ -651,14 +661,14 @@ def recompute_candidate(c: dict[str, Any], raw_root: Path, calibration: Path | N
     return out
 
 
-def recompute_main(candidate_id: str, candidates: Path, raw_root: Path, calibration: Path) -> int:
+def recompute_main(candidate_id: str, candidates: Path, raw_root: Path, calibration: Path, manifest: Path) -> int:
     """`--recompute <id>`: the differences printed, nothing fetched or written; exit 0 when the record
     reproduces, 1 otherwise (the shape barrier.recompute_main uses)."""
     hits = [c for c in L.read_candidates(candidates) if str(c.get("id")) == candidate_id]
     if len(hits) != 1:
         print(f"recompute {candidate_id}: {'not on' if not hits else 'more than once on'} {candidates}")
         return 1
-    diffs = recompute_candidate(hits[0], raw_root, calibration)
+    diffs = recompute_candidate(hits[0], raw_root, calibration, manifest=qdata.read_manifest(manifest))
     inputs = hits[0].get("inputs") or {}
     if not diffs:
         print(f"recompute {candidate_id}: the four figures reproduce from {raw_root / str(inputs.get('input_folder'))} "
@@ -691,7 +701,9 @@ def load_dir(raw_dir: Path) -> Series:
 # so the 13 November fetch replaced the bytes the two 6 November readings were read from and the
 # manifest's record of them; their hashes survive only in git (e074791).  Now each fetch writes its
 # own folder named by its UTC time, never over a kept one, the manifest keeps one entry per fetched
-# file under `<folder>/<file>`, and a run reads the newest kept folder unless told which.
+# file under `<folder>/<file>`, and a run reads the newest kept folder unless told which.  Since
+# 2026-11-15 12:15Z "kept" means recorded: the folder's four files hash to the manifest's entries
+# (`folder_record_violations`); a folder named like a fetch that no fetch recorded is set aside.
 
 
 def fetch_folder(root: Path, now: datetime) -> Path:
@@ -713,10 +725,35 @@ def fetch_all(root: Path, manifest: Path, now: datetime, session: Any | None = N
     return folder
 
 
-def kept_folders(root: Path) -> list[tuple[datetime, Path]]:
-    """The kept fetches under `root`, oldest first by the time parsed from each folder's name.  A
-    folder whose name is not a fetch time, or which misses one of the four files, is not a kept
-    fetch and is left out."""
+class UnrecordedFolder(FileNotFoundError):
+    """A folder named like a fetch whose files are not the ones the manifest recorded (2026-11-15 12:15Z,
+    predictions/POST_MORTEMS.md "A kept folder held to nothing but its name")."""
+
+
+def folder_record_violations(folder: Path, manifest: dict[str, Any] | None) -> list[str]:
+    """Why `folder` is not the fetch the manifest recorded: a file missing, no entry under `<folder>/<file>`
+    (the key `fetch_all` writes), or bytes that do not hash to the entry's `sha256`.  Empty when every one
+    of the four files is the one the fetch wrote.  Until 2026-11-15 12:15Z a folder named by a fetch time
+    holding four files of the right names was a kept fetch whatever the files held, so an edited or
+    half-written folder newer by name was read by default and a candidate reproduced from it."""
+    out: list[str] = []
+    folder = Path(folder)
+    for k in SERIES:
+        path = qdata.fred_path(k, folder)
+        if not path.exists():
+            out.append(f"{path.name} missing")
+            continue
+        entry = (manifest or {}).get(f"{folder.name}/{path.name}") or {}
+        have = hashlib.sha256(path.read_bytes()).hexdigest()
+        if not entry:
+            out.append(f"{path.name} ({have[:12]}) has no entry under {folder.name}/ on the manifest: no fetch recorded it")
+        elif str(entry.get("sha256")) != have:
+            out.append(f"{path.name} is {have[:12]}, the fetch recorded {str(entry.get('sha256'))[:12]}")
+    return out
+
+
+def fetch_time_folders(root: Path) -> list[tuple[datetime, Path]]:
+    """Every folder under `root` named by a fetch time, oldest first, whatever it holds."""
     out: list[tuple[datetime, Path]] = []
     root = Path(root)
     for p in (root.iterdir() if root.is_dir() else []):
@@ -726,18 +763,59 @@ def kept_folders(root: Path) -> list[tuple[datetime, Path]]:
             fetched = datetime.strptime(p.name, FETCH_FOLDER_FORMAT).replace(tzinfo=UTC)
         except ValueError:
             continue
-        if all(qdata.fred_path(k, p).exists() for k in SERIES):
-            out.append((fetched, p))
+        out.append((fetched, p))
     return sorted(out, key=lambda fp: fp[0])
 
 
-def newest_folder(root: Path) -> Path:
-    """The kept fetch to read when none is named; refused when there is none."""
-    kept = kept_folders(root)
+def kept_folders(root: Path, manifest: dict[str, Any] | None) -> list[tuple[datetime, Path]]:
+    """The kept fetches under `root`, oldest first by the time parsed from each folder's name: a folder
+    named by a fetch time whose four files are the ones the manifest recorded (`folder_record_violations`
+    empty).  A folder whose name is not a fetch time is left out; one named like a fetch that the manifest
+    did not record, or whose bytes are not the recorded ones, is set aside (`unrecorded_folders`)."""
+    return [(t, p) for t, p in fetch_time_folders(root) if not folder_record_violations(p, manifest)]
+
+
+def unrecorded_folders(root: Path, manifest: dict[str, Any] | None) -> list[tuple[Path, list[str]]]:
+    """The folders under `root` named by a fetch time that are not kept fetches, with why, oldest first."""
+    out: list[tuple[Path, list[str]]] = []
+    for _, p in fetch_time_folders(root):
+        why = folder_record_violations(p, manifest)
+        if why:
+            out.append((p, why))
+    return out
+
+
+def set_aside_lines(root: Path, manifest: dict[str, Any] | None) -> list[str]:
+    """One line per unrecorded folder under `root`, for a run to print beside the folder it reads."""
+    return [f"set aside: {p.name} is not a kept fetch ({'; '.join(why)})" for p, why in unrecorded_folders(root, manifest)]
+
+
+def newest_folder(root: Path, manifest: dict[str, Any] | None) -> Path:
+    """The kept fetch to read when none is named; refused when there is none, naming any folder set aside."""
+    kept = kept_folders(root, manifest)
     if not kept:
-        raise FileNotFoundError(f"no kept download under {root} (a folder named by its fetch time holding the four series): "
-                                "run with --fetch, or name one with --from-dir")
+        aside = set_aside_lines(root, manifest)
+        raise FileNotFoundError(f"no kept download under {root} (a folder named by its fetch time whose four series the "
+                                "manifest recorded): run with --fetch, or name one with --from-dir"
+                                + ("".join(f"\n  {line}" for line in aside) if aside else ""))
     return kept[-1][1]
+
+
+def named_folder(folder: Path, manifest: dict[str, Any] | None) -> Path:
+    """The folder `--from-dir` names, held to the manifest before it is read; refused by name otherwise."""
+    why = folder_record_violations(folder, manifest)
+    if why:
+        raise UnrecordedFolder(f"{folder} is not a kept fetch: {'; '.join(why)}")
+    return Path(folder)
+
+
+def chosen_folder(root: Path, manifest_path: Path, from_dir: Path | None, fetch: bool) -> Path:
+    """The folder a run reads: fetched now (`fetch_all` writes it and records it; the record is then read back
+    and held like any other), named by `--from-dir` (held to the manifest), or the newest kept fetch."""
+    if fetch:
+        return named_folder(fetch_all(root, manifest_path, datetime.now(UTC)), qdata.read_manifest(manifest_path))
+    man = qdata.read_manifest(manifest_path)
+    return named_folder(from_dir, man) if from_dir is not None else newest_folder(root, man)
 
 
 def manifest_entries_for(manifest: dict[str, Any] | None, folder: Path) -> dict[str, Any] | None:
@@ -831,14 +909,16 @@ def main(argv: list[str] | None = None) -> int:
     if a.recompute is not None:
         if a.fetch or a.live is not None:
             ap.error("--recompute reads what a candidate names; not with --fetch or --live")
-        return recompute_main(a.recompute, a.candidates, a.raw_root, a.out)
+        return recompute_main(a.recompute, a.candidates, a.raw_root, a.out, a.manifest)
     if a.live is not None:
         try:
-            raw_dir = fetch_all(a.raw_root, a.manifest, datetime.now(UTC)) if a.fetch else (a.from_dir or newest_folder(a.raw_root))
+            raw_dir = chosen_folder(a.raw_root, a.manifest, a.from_dir, a.fetch)
         except (FileNotFoundError, FileExistsError) as e:
             print(f"REFUSED: {e}")
             return 1
         print(f"inputs: {raw_dir}")
+        for line in set_aside_lines(a.raw_root, qdata.read_manifest(a.manifest)):
+            print(line)
         today = a.today or date.fromisoformat(qdata.utc_now()[:10])
         s, meetings, cal, mids = load_dir(raw_dir), meeting_dates(), load_calibration(a.out), dict(a.mid)
         for line in live_lines(s, meetings, a.live, today, cal, mids):
@@ -852,7 +932,9 @@ def main(argv: list[str] | None = None) -> int:
             print("  no candidate written (--no-write): a reading needs a written candidate")
         return 0
     try:
-        folder = a.raw_root if a.fetch else (a.from_dir or newest_folder(a.raw_root))
+        folder = a.raw_root if a.fetch else chosen_folder(a.raw_root, a.manifest, a.from_dir, False)
+        for line in set_aside_lines(a.raw_root, qdata.read_manifest(a.manifest)):
+            print(line)
         return run(folder, a.manifest, None if a.no_write else a.out, a.fetch)
     except (FileNotFoundError, FileExistsError) as e:
         print(f"REFUSED: {e}")

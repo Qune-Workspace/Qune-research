@@ -83,13 +83,16 @@ def recomputer_for(method: str, here: Path) -> L.Recompute | None:
     itself"), or None for a method that has none (none today; `add` says so when it meets one).  btc_touch:
     barrier.recompute_candidate on the kept downloads under data/raw/fred/ and the committed calibration file.
     fomc_bills (since 06:15Z the same day): fomc_calibrate.recompute_candidate on the kept folder under
-    data/raw/fred_rates/ the candidate names, its four hashes, its as-of date and the committed calibration file."""
+    data/raw/fred_rates/ the candidate names, its four hashes, its as-of date and the committed calibration file;
+    since 12:15Z the folder is a kept fetch only when data/fred_rates_manifest.json recorded its four files
+    (predictions/POST_MORTEMS.md "A kept folder held to nothing but its name"), the manifest read at the admission."""
     if method == "btc_touch":
         raw_dir, calibration = here / "data" / "raw" / "fred", here / L.METHOD_CALIBRATION[method][0]
         return lambda c: B.recompute_candidate(c, raw_dir, calibration)
     if method == "fomc_bills":
         raw_root, fomc_cal = here / "data" / "raw" / "fred_rates", here / L.METHOD_CALIBRATION[method][0]
-        return lambda c: F.recompute_candidate(c, raw_root, fomc_cal)
+        fetches = here / "data" / "fred_rates_manifest.json"
+        return lambda c: F.recompute_candidate(c, raw_root, fomc_cal, manifest=F.qdata.read_manifest(fetches))
     return None
 
 

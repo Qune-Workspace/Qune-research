@@ -50,13 +50,29 @@ def sha(p: Path) -> str:
     return hashlib.sha256(p.read_bytes()).hexdigest()
 
 
+def record(manifest: Path, folder: Path, fetched_at: str = "2026-11-13T06:18:42Z") -> dict:
+    """Put a folder on a manifest as `fetch_all` would have: one entry per file under `<folder>/<file>` with
+    its SHA-256 (2026-11-15 12:15Z: a folder is a kept fetch only when the manifest recorded it)."""
+    for k in F.SERIES:
+        p = folder / f"fred_{k}.csv"
+        F.qdata.update_manifest(f"{folder.name}/{p.name}", {"series_id": k, "sha256": sha(p), "downloaded_at_utc": fetched_at,
+                                                             "source": "test fixture"}, manifest)
+    return json.loads(manifest.read_text(encoding="utf-8"))
+
+
+def manifest_of(root: Path) -> dict:
+    """The manifest `kept` wrote beside a root (`<tmp_path>/m.json`), loaded."""
+    return F.qdata.read_manifest(root.parent / "m.json")
+
+
 def kept(tmp_path: Path, name: str = "2026-11-13T061841Z") -> tuple[Path, Path, list]:
-    """A synthetic history kept as one fetch folder under a root."""
+    """A synthetic history kept as one fetch folder under a root, recorded on `<tmp_path>/m.json`."""
     meetings, raw_dir, _ = synthetic_history(tmp_path)
     root = tmp_path / "fred_rates"
     root.mkdir()
     folder = root / name
     shutil.move(str(raw_dir), str(folder))
+    record(tmp_path / "m.json", folder)
     return root, folder, meetings
 
 
@@ -79,7 +95,7 @@ def test_a_fetch_writes_its_own_folder_and_the_next_fetch_leaves_it_untouched(tm
     assert len(m) == 8 and all(m[k] == v for k, v in first_manifest.items()), "the first fetch's entries are untouched"
     assert all(m[f"2026-11-13T061841Z/fred_{k}.csv"]["last_bar"] == "2026-11-10" for k in F.SERIES)
     assert all(m[f"2026-11-13T061841Z/fred_{k}.csv"]["sha256"] != first_hashes[f"fred_{k}.csv"] for k in F.SERIES)
-    assert F.kept_folders(root) == [(T1.replace(microsecond=0), first), (T2.replace(microsecond=0), second)]
+    assert F.kept_folders(root, m) == [(T1.replace(microsecond=0), first), (T2.replace(microsecond=0), second)]
     assert F.manifest_entries_for(m, first) == first_manifest and F.manifest_entries_for(m, tmp_path / "nowhere") is None
 
 
@@ -95,7 +111,7 @@ def test_a_fetch_never_writes_over_a_kept_folder(tmp_path):
     else:
         raise AssertionError("a second fetch at the same time wrote over the kept folder")
     assert {p.name: sha(p) for p in (root / "2026-11-06T061722Z").iterdir()} == before
-    assert len(json.loads(manifest.read_text(encoding="utf-8"))) == 4
+    assert len([k for k in json.loads(manifest.read_text(encoding="utf-8")) if k.startswith("2026-11-06T061722Z/")]) == 4
 
 
 # --- the run reads the newest kept folder unless told which -----------------------------------
@@ -104,18 +120,19 @@ def test_the_default_input_is_the_newest_kept_folder_by_parsed_time_and_none_is_
     root, newest, _ = kept(tmp_path, "2026-11-13T061841Z")
     older = root / "2026-11-06T061722Z"
     shutil.copytree(newest, older)
+    man = record(tmp_path / "m.json", older, "2026-11-06T06:17:23Z")   # a copy is a kept fetch only once recorded
     (root / "explore-2026-11-30").mkdir()                       # not a fetch time
     (root / "explore-2026-11-30" / "fred_DTB3.csv").write_text("x", encoding="utf-8")
     (root / "2026-11-20T061800Z").mkdir()                        # a fetch time, but the folder is incomplete
     (root / "2026-11-20T061800Z" / "fred_DTB3.csv").write_text("x", encoding="utf-8")
     (root / "fred_DTB3.csv").write_text("x", encoding="utf-8")   # a file in place, the old layout
-    assert [p for _, p in F.kept_folders(root)] == [older, newest]
-    assert F.newest_folder(root) == newest
+    assert [p for _, p in F.kept_folders(root, man)] == [older, newest]
+    assert F.newest_folder(root, man) == newest
     empty = tmp_path / "empty"
     empty.mkdir()
     for root_ in (empty, tmp_path / "absent"):
         try:
-            F.newest_folder(root_)
+            F.newest_folder(root_, man)
         except FileNotFoundError as e:
             assert str(root_) in str(e) and "--fetch" in str(e) and "--from-dir" in str(e)
         else:

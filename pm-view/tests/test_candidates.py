@@ -179,25 +179,37 @@ def test_a_reading_on_a_quote_fetched_from_the_held_from_date_needs_a_candidate(
 
 def test_add_copies_the_figures_from_the_candidate_and_names_it_on_the_row(tmp_path, capsys):
     manifest = write_manifest(tmp_path, [QUOTE, LATE_QUOTE])
-    cands = tmp_path / "data" / "candidates.jsonl"
-    c = candidate(computed_at=datetime(2026, 11, 20, 6, 20, tzinfo=UTC))
-    L.append_candidate(cands, c)
+    # 2026-11-15 00:15Z: the candidate is held to its kept inputs at admission, so the record is a fetched run's
+    # own (series kept under data/raw/fred/, the calibration file it read put on record), not a line typed here
+    data = tmp_path / "data"
+    cal = data / "calibration.json"
+    cal.write_text(json.dumps(calibration(False)))
+    assert R.record_calibration("btc_touch", "test", tmp_path, datetime(2026, 11, 5, 12, 1, tzinfo=UTC)) == 0
+    cands = data / "candidates.jsonl"
+    body = csv_text(series(120)).encode()
+    rc = B.run("2026-11", [(75_000.0, "down")], {75_000.0: 0.925}, lambda url: body, None, data / "raw" / "fred",
+               data / "fred_manifest.json", dry_run=False, show_level=False,
+               now=lambda: datetime(2026, 11, 20, 6, 20, tzinfo=UTC), calibration=cal, candidates=cands)
+    assert rc == 0
+    capsys.readouterr()
+    c = L.read_candidates(cands)[0]
     readings = tmp_path / "readings.csv"
     args = ns(quote=LATE_QUOTE["fetched_utc"], method_p=None, range_lo=None, range_hi=None, climatology_p=None, candidate=c["id"])
     assert R.add(args, manifest, readings, LATE_NOW, candidates=cands) == 0
     out = capsys.readouterr().out
-    assert "ADMITTED R-2026-11-20-btc_touch-6507380: method_p=0.876 range=[0.876, 0.886]" in out
+    assert f"ADMITTED R-2026-11-20-btc_touch-6507380: method_p={c['method_p']} range=[{c['range_lo']}, {c['range_hi']}]" in out
     with readings.open(newline="", encoding="utf-8") as fh:
         rows = list(csv.DictReader(fh))
     assert tuple(rows[0]) == L.READING_COLUMNS and rows[0]["candidate_id"] == c["id"]
-    assert (rows[0]["method_p"], rows[0]["range_lo"], rows[0]["range_hi"], rows[0]["climatology_p"]) == ("0.876", "0.876", "0.886", "0.690")
+    assert (rows[0]["method_p"], rows[0]["range_lo"], rows[0]["range_hi"], rows[0]["climatology_p"]) == \
+        (c["method_p"], c["range_lo"], c["range_hi"], c["climatology_p"])
     assert L.reading_file_violations(rows, [QUOTE, LATE_QUOTE], history(tmp_path), L.read_candidates(cands)) == []
     # a figure typed beside the candidate is held to it, not preferred
     args = ns(market_id="6507380", quote=LATE_QUOTE["fetched_utc"], method_p=0.123, range_lo=None, range_hi=None,
               climatology_p=None, candidate=c["id"], proposition="p2")
     assert R.add(args, manifest, tmp_path / "r2.csv", LATE_NOW, candidates=cands) == 1
     out = capsys.readouterr().out
-    assert "[reading:figures-from-tool]" in out and "method_p '0.123' is not the candidate's '0.876'" in out
+    assert "[reading:figures-from-tool]" in out and f"method_p '0.123' is not the candidate's '{c['method_p']}'" in out
     # no candidate on a late quote: refused by the gate; a typed set of figures on a late quote: refused by the gate
     args = ns(quote=LATE_QUOTE["fetched_utc"], method_p=0.876, range_lo=0.876, range_hi=0.886, climatology_p=0.690)
     assert R.add(args, manifest, tmp_path / "r3.csv", LATE_NOW, candidates=cands) == 1

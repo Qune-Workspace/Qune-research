@@ -69,11 +69,24 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+import barrier as B
 import pm_lib as L
 from score import append_row, read_csv
 
 HERE = Path(__file__).resolve().parent
 VENUE = L.VENUE
+
+
+def recomputer_for(method: str, here: Path) -> L.Recompute | None:
+    """The method's recomputer (2026-11-15 00:15Z, predictions/POST_MORTEMS.md "A record held to nothing but
+    itself"), or None for a method that has none yet.  btc_touch: barrier.recompute_candidate on the kept
+    downloads under data/raw/fred/ and the committed calibration file.  fomc_bills: none yet; its candidate
+    names the folder and as-of date, and `fomc_calibrate.py --live <meeting> --today <as_of> --from-dir
+    data/raw/fred_rates/<input_folder>` is the recipe by hand (tests/test_fetch_folders.py runs it)."""
+    if method == "btc_touch":
+        raw_dir, calibration = here / "data" / "raw" / "fred", here / L.METHOD_CALIBRATION[method][0]
+        return lambda c: B.recompute_candidate(c, raw_dir, calibration)
+    return None
 
 
 def calibration_r2(method: str, here: Path = HERE) -> bool | None:
@@ -124,7 +137,7 @@ def build_row(quote: dict[str, Any] | None, market_id: str, method: str, method_
               range_hi: float, climatology_p: float | None, proposition: str, source: str,
               history: Iterable[dict[str, Any]], calibration_sha256: str | None,
               now: datetime, existing_ids: Iterable[str] = (), candidate_id: str = "",
-              candidates: Iterable[dict[str, Any]] = ()) -> tuple[dict[str, Any], list[str]]:
+              candidates: Iterable[dict[str, Any]] = (), recompute: L.Recompute | None = None) -> tuple[dict[str, Any], list[str]]:
     """The readings.csv row and the gate's refusals (empty when admitted).  `history` is
     data/calibration_history.csv as read; the gate column is computed under the method's line
     in force at `now`; `calibration_sha256` the committed calibration file's hash as read.
@@ -149,7 +162,8 @@ def build_row(quote: dict[str, Any] | None, market_id: str, method: str, method_
         "window_from_utc": q.get("window_from_utc") or "",  # 2026-11-14: copied from the quote, held by window-from-rules
         "candidate_id": candidate_id,  # 2026-11-14 12:15Z: the printer's record the four figures come from, held by figures-from-tool
     }
-    v = L.reading_row_violations(row, quote, hist, existing_ids, calibration_sha256, candidates=candidates)
+    v = L.reading_row_violations(row, quote, hist, existing_ids, calibration_sha256, candidates=candidates,
+                                 recompute=recompute)
     return row, v
 
 
@@ -193,10 +207,17 @@ def add(args: argparse.Namespace, manifest: Path, readings: Path, now: datetime,
                   f"{L.FIGURES_HELD_FROM_UTC} need one) or all of --method-p, --range-lo and --range-hi")
             return 1
         method_p, range_lo, range_hi, climatology_p = args.method_p, args.range_lo, args.range_hi, args.climatology_p
+    # 2026-11-15 00:15Z: the candidate is held to the kept inputs it names, by the method's own tool, before the row
+    # is admitted; a method without a recomputer is admitted on the record alone, and the line below says so
+    recompute = recomputer_for(args.method, here)
+    if candidate_id and recompute is None:
+        print(f"not recomputed: no recomputer for {args.method} yet; the row is held to the candidate's record, "
+              "not the record to its inputs (readings.recomputer_for names the recipe by hand)")
     row, v = build_row(quote, args.market_id, args.method, method_p, range_lo, range_hi,
                        climatology_p, args.proposition, args.source, read_csv(here / L.CALIBRATION_HISTORY),
                        calibration_sha256(args.method, here), now,
-                       existing_ids=[r["id"] for r in read_csv(readings)], candidate_id=candidate_id, candidates=cands)
+                       existing_ids=[r["id"] for r in read_csv(readings)], candidate_id=candidate_id, candidates=cands,
+                       recompute=recompute)
     if quote is None:
         # the mid comes from the quote, so with no quote there is no mid to judge; the gate's own
         # refusal keeps its tag, and the tool adds what it looked for
@@ -209,6 +230,8 @@ def add(args: argparse.Namespace, manifest: Path, readings: Path, now: datetime,
     print(f"{'DRY RUN ' if args.dry_run else ''}ADMITTED {row['id']}: method_p={row['method_p']} "
           f"range=[{row['range_lo']}, {row['range_hi']}] market_mid={row['market_mid']} "
           f"climatology_p={row['climatology_p']} due_on={row['due_on']} gate={row['gate']}")
+    if candidate_id and recompute is not None:
+        print(f"  recomputed: the four figures of {candidate_id} reproduce from the kept inputs it names")
     if not args.dry_run:
         append_row(readings, L.READING_COLUMNS, row)
     return 0

@@ -26,6 +26,7 @@ written, every column held to its source) is driven the same way as the ledger's
 """
 import re
 from collections.abc import Callable
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pm_lib as L
@@ -217,7 +218,8 @@ READING_HISTORY = (CALIBRATION_LINE,)
 
 
 def emitted_reading_row(quote: dict | None = QUOTE, existing_ids: tuple = (), history: tuple = READING_HISTORY,
-                        calibration_sha256: str | None = None, **kw) -> set[str]:
+                        calibration_sha256: str | None = None, candidates: tuple = (), recompute: Callable | None = None,
+                        **kw) -> set[str]:
     row = dict(id="R-2026-11-06-btc_touch-6507380", made_on="2026-11-06", recorded_utc="2026-11-06T18:30:00Z",
                venue="polymarket", market_id="6507380", condition_id=QUOTE["condition_id"],
                yes_token_id=QUOTE["yes_token_id"], proposition="p", method="btc_touch", method_p="0.876",
@@ -225,8 +227,14 @@ def emitted_reading_row(quote: dict | None = QUOTE, existing_ids: tuple = (), hi
                gate="calibrated;method-departure;touch-below", quote_fetched_utc=QUOTE["fetched_utc"],
                quote_sha256=QUOTE["gamma_sha256"], source="s")
     row.update(kw)
-    return L.reading_tags(" ".join(L.reading_row_violations(row, quote, history, existing_ids, calibration_sha256)))
+    return L.reading_tags(" ".join(L.reading_row_violations(row, quote, history, existing_ids, calibration_sha256,
+                                                            candidates=candidates, recompute=recompute)))
 
+
+# a candidate the printer could have written for the clean row above: same method, figures, mid and window, computed
+# between the quote's fetch (06:16:38Z) and the row's recording (18:30Z)
+CLEAN_CANDIDATE = L.candidate_record("btc_touch", "75000:down", 0.876, 0.876, 0.886, 0.690, 0.925,
+                                     datetime(2026, 11, 6, 6, 20, tzinfo=UTC), {"series": "CBBTCUSD"})
 
 READING_ROW_BREAKERS: dict[str, dict] = {
     "id-rule": dict(venue="kalshi"),
@@ -238,6 +246,10 @@ READING_ROW_BREAKERS: dict[str, dict] = {
     "window-from-rules": dict(window_from_utc="2026-11-05T17:17:00Z"),
     # 2026-11-14 12:15Z, "A figure the gate took on the desk's word": a row naming a candidate no printer wrote
     "figures-from-tool": dict(candidate_id="K-btc_touch-75000:down-20261106T062000Z"),
+    # 2026-11-15 00:15Z, "A record held to nothing but itself": a row naming a well-formed candidate whose figures the
+    # method's own tool cannot reproduce from the inputs the candidate names
+    "figures-recompute": dict(candidate_id=CLEAN_CANDIDATE["id"], candidates=(CLEAN_CANDIDATE,),
+                              recompute=lambda c: ["method_p '0.876' on the record, '0.560' recomputed"]),
 }
 
 

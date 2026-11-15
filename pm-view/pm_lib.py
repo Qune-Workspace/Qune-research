@@ -36,7 +36,7 @@ import hashlib
 import json
 import math
 import re
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import Any
@@ -409,6 +409,13 @@ READING_TAGS = (
                                 # row's window; method_p, range_lo, range_hi and climatology_p equal the candidate's at the
                                 # record's three decimals; a reading on a quote fetched from FIGURES_HELD_FROM_UTC with no
                                 # candidate is refused (earlier rows carry the column empty)
+    # 2026-11-15 00:15Z, predictions/POST_MORTEMS.md "A record held to nothing but itself": the row was held to the
+    # candidate and the candidate to nothing; on 6b7a0b4 a candidate line carrying a figure the printer never computed
+    # was admitted with rc 0. The method's own tool now recomputes the figures from the kept inputs the candidate names
+    "figures-recompute",        # the four figures recompute from the inputs the candidate names (the kept download whose
+                                # hash it carries, the calibration file whose hash it carries, its month, leg and window);
+                                # a difference, a missing download or a changed calibration refuses the row; a method
+                                # with no recomputer yet (fomc_bills) is admitted and readings.py says so
 )
 UTC_STAMP_FORMAT = "%Y-%m-%dT%H:%M:%SZ"  # the one format of every UTC stamp this folder writes: fetched_utc, recorded_utc, in_force_utc
 RECORDED_UTC_FORMAT = UTC_STAMP_FORMAT  # the readings gate's name for it (2026-11-09 00:15Z); parsed, never compared as text (12:15Z)
@@ -741,7 +748,7 @@ def reading_violations(method: str, method_p: float | None, range_lo: float | No
 
 def reading_row_violations(row: dict[str, Any], quote: dict[str, Any] | None, history: Iterable[dict[str, Any]],
                            existing_ids: Iterable[str] = (), calibration_sha256: str | None = None,
-                           candidates: Iterable[dict[str, Any]] = ()) -> list[str]:
+                           candidates: Iterable[dict[str, Any]] = (), recompute: Recompute | None = None) -> list[str]:
     """What stops a readings.csv row, as written, from being admitted; empty when it may be.
     `row` is the row (strings, or the values readings.py is about to write); `quote` the
     data/manifest.json entry its `quote_sha256` names (None: no written quote); `history`
@@ -796,7 +803,9 @@ def reading_row_violations(row: dict[str, Any], quote: dict[str, Any] | None, hi
             out.append(reading_gate("recorded-after-quote", f"recorded_utc {recorded} is before the quote's fetch at "
                                     f"{fetched}: a reading is recorded after its quote"))
         out.extend(window_from_rules_violations(row, quote, method, parse_utc_stamp(fetched)))  # 2026-11-14 06:15Z
-        out.extend(figures_from_tool_violations(row, quote, candidates, parse_utc_stamp(fetched), recorded_at))  # 12:15Z
+        cands = list(candidates)
+        out.extend(figures_from_tool_violations(row, quote, cands, parse_utc_stamp(fetched), recorded_at))  # 12:15Z
+        out.extend(figures_recompute_violations(row, cands, recompute))  # 2026-11-15 00:15Z, at admission only
     clim_raw = row.get("climatology_p")
     climatology_p = None if clim_raw in (None, "") else as_float(clim_raw)
     try:
@@ -1353,6 +1362,31 @@ def read_candidates(path: Path) -> list[dict[str, Any]]:
     if not path.exists():
         return []
     return [json.loads(ln) for ln in path.read_text(encoding="utf-8").splitlines() if ln.strip()]
+
+
+# A method's recomputer (2026-11-15 00:15Z, predictions/POST_MORTEMS.md "A record held to nothing but itself"): given a
+# candidate record, re-reads the kept inputs the record names and returns the differences between the record's four
+# figures and a fresh computation (empty: the figures reproduce), or None when the method has no recomputer yet.  The
+# tools own their recomputers (barrier.recompute_candidate); this library only applies the answer at admission.
+Recompute = Callable[[dict[str, Any]], list[str] | None]
+
+
+def figures_recompute_violations(row: dict[str, Any], candidates: Iterable[dict[str, Any]],
+                                 recompute: Recompute | None) -> list[str]:
+    """The `figures-recompute` check: the candidate the row names is handed to the method's recomputer and
+    every difference it reports refuses the row.  Nothing is checked without a recomputer (the committed-file
+    tests run where the kept inputs are not), without a candidate_id, or when the id does not name exactly
+    one candidate (figures_from_tool_violations refuses that already)."""
+    if recompute is None:
+        return []
+    cid = str(row.get("candidate_id") or "")
+    hits = [c for c in candidates if str(c.get("id")) == cid]
+    if not cid or len(hits) != 1:
+        return []
+    diffs = recompute(hits[0])
+    if diffs is None:
+        return []
+    return [reading_gate("figures-recompute", f"candidate {cid}: {d}") for d in diffs]
 
 
 def figures_from_tool_violations(row: dict[str, Any], quote: dict[str, Any], candidates: Iterable[dict[str, Any]],

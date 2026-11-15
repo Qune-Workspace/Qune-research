@@ -368,19 +368,32 @@ def parse_window_from(s: str) -> tuple[float, datetime]:
     return float(level), parse_utc_stamp(stamp, "--window-from stamp")
 
 
+def figures_for(r: dict[str, Any], cal: dict[str, Any] | None) -> tuple[float, float, float, dict[str, Any] | None]:
+    """The four figures of one barrier row as the candidate carries them: the primary reading, the hull of the
+    primary and the sensitivity, and the calibration's climatology row (None without a calibration).  One
+    copy, used by the candidate writer and by the recomputation that holds a candidate to its inputs."""
+    c = climatology(cal, r["log_distance"], r["side"]) if cal is not None else None
+    p, ps = r["p_primary"], r["p_sensitivity"]
+    lo, hi = (min(p, ps), max(p, ps)) if ps is not None else (p, p)
+    return p, lo, hi, c
+
+
+def file_sha256(path: Path | None) -> str | None:
+    return sha256(path.read_bytes()) if path is not None and path.exists() else None
+
+
 def candidates_for(a: dict[str, Any], mids: dict[float, float], cal: dict[str, Any] | None, entry: dict[str, Any],
-                   at: datetime) -> list[dict[str, Any]]:
+                   at: datetime, calibration_sha256: str | None = None) -> list[dict[str, Any]]:
     """One candidate record per barrier a mid was given for (2026-11-14 12:15Z, predictions/POST_MORTEMS.md
     "A figure the gate took on the desk's word"): the figures as the report prints them, the mid they were
     read against, the leg's window, and the inputs (the fetched series' hash, dates and count from its
-    manifest entry; the spot date; the windows and volatilities), never a value of the series."""
+    manifest entry; the spot date; the windows and volatilities; since 2026-11-15 the hash of the calibration
+    file the climatology was read from), never a value of the series."""
     out: list[dict[str, Any]] = []
     for r in a["barriers"]:
         if r["barrier"] not in mids:
             continue
-        c = climatology(cal, r["log_distance"], r["side"]) if cal is not None else None
-        p, ps = r["p_primary"], r["p_sensitivity"]
-        lo, hi = (min(p, ps), max(p, ps)) if ps is not None else (p, p)
+        p, lo, hi, c = figures_for(r, cal)
         opens = r.get("window_from_utc")
         window_from = datetime.fromisoformat(opens).astimezone(UTC).strftime(UTC_STAMP_FORMAT) if opens else None
         inputs = {"series": SERIES, "series_sha256": entry.get("sha256"), "series_fetched_utc": entry.get("fetched_utc"),
@@ -388,9 +401,75 @@ def candidates_for(a: dict[str, Any], mids: dict[float, float], cal: dict[str, A
                   "spot_date": a["spot_date"], "primary_window": a["primary_window"], "sigma_primary": a["sigma_primary"],
                   "sensitivity_window": a["sensitivity_window"], "sigma_sensitivity": a["sigma_sensitivity"],
                   "touched_on": r["touched_on"], "side": r["side"],
-                  "climatology_distance": None if c is None else c["distance"], "climatology_months": None if c is None else c["n"]}
+                  "climatology_distance": None if c is None else c["distance"], "climatology_months": None if c is None else c["n"],
+                  # 2026-11-15 00:15Z: what the figures recompute from (predictions/POST_MORTEMS.md "A record held to
+                  # nothing but itself"): the kept download under data/raw/fred/<fetch time>/ whose bytes hash to
+                  # series_sha256 and the calibration file whose bytes hash to calibration_sha256 (None: none was read)
+                  "calibration_sha256": calibration_sha256}
         out.append(candidate_record("btc_touch", f"{r['barrier']:.0f}:{r['side']}", p, lo, hi,
                                     None if c is None else c["touch_rate"], mids[r["barrier"]], at, inputs, window_from))
+    return out
+
+
+def kept_series(raw_dir: Path, sha: str) -> Path | None:
+    """The kept download under raw_dir/<fetch time>/<SERIES>.csv whose bytes hash to `sha`, or None.  The
+    file is found by its bytes, never by the time in its folder's name, so a record names what it was read
+    from even if a folder were renamed."""
+    if not raw_dir.exists():
+        return None
+    for p in sorted(raw_dir.glob(f"*/{SERIES}.csv")):
+        if sha256(p.read_bytes()) == sha:
+            return p
+    return None
+
+
+def recompute_candidate(c: dict[str, Any], raw_dir: Path, calibration: Path | None) -> list[str]:
+    """Hold a btc_touch candidate to its inputs (2026-11-15 00:15Z, predictions/POST_MORTEMS.md "A record held
+    to nothing but itself"): re-read the kept download the candidate's `series_sha256` names, the calibration file
+    (its hash must be the candidate's `calibration_sha256`), re-run `assess` on the candidate's month, leg and
+    window, and compare the four figures at the record's three decimals.  Returns the differences, empty when
+    the record reproduces.  Nothing is fetched or written."""
+    out: list[str] = []
+    inputs = c.get("inputs") or {}
+    try:
+        level_s, _, side = str(c.get("key", "")).partition(":")
+        level = float(level_s)
+        y, m = (int(x) for x in str(inputs.get("month", "")).split("-"))
+    except ValueError:
+        return [f"key {c.get('key')!r} or month {inputs.get('month')!r} is not a btc_touch leg: nothing to recompute"]
+    sha = str(inputs.get("series_sha256") or "")
+    path = kept_series(raw_dir, sha) if sha else None
+    if path is None:
+        return [f"no kept download under {raw_dir} has sha256 {sha[:12] or '(none named)'}: the bytes the figures were "
+                "read from cannot be re-read"]
+    want_cal = inputs.get("calibration_sha256")
+    have_cal = file_sha256(calibration)
+    if want_cal != have_cal:
+        out.append(f"the calibration file is {str(have_cal)[:12]} and the candidate was read under {str(want_cal)[:12]}: "
+                   "the climatology cannot be re-read from it")
+    try:
+        cal = load_calibration(calibration) if calibration is not None and want_cal == have_cal else None
+        rows = parse_fred_csv(path.read_text(encoding="utf-8"))
+        at = parse_utc_stamp(str(c.get("computed_utc")), "computed_utc")
+        opens = str(c.get("window_from_utc") or "")
+        window_from = {level: parse_utc_stamp(opens, "window_from_utc")} if opens else None
+        a = assess(rows, [(level, side)], y, m, at, window_from=window_from)
+    except (OSError, ValueError, UnicodeDecodeError) as e:
+        return out + [f"the figures do not recompute from {path}: {e}"]
+    r = a["barriers"][0]
+    p, lo, hi, clim = figures_for(r, cal)
+    fresh = {"method_p": f"{p:.3f}", "range_lo": f"{lo:.3f}", "range_hi": f"{hi:.3f}",
+             "climatology_p": None if clim is None else f"{clim['touch_rate']:.3f}"}
+    for col, val in fresh.items():
+        have = c.get(col)
+        if col == "climatology_p" and want_cal != have_cal:
+            continue  # already refused above; the fresh climatology is another calibration's
+        if str(have) != str(val):
+            out.append(f"{col} {have!r} on the record, {val!r} recomputed from {path.parent.name}/{path.name}")
+    for k in ("spot_date", "series_last_obs"):
+        want = a["spot_date"] if k == "spot_date" else rows[-1][0].isoformat()
+        if str(inputs.get(k)) != want:
+            out.append(f"inputs.{k} {inputs.get(k)!r} on the record, {want!r} in the kept download")
     return out
 
 
@@ -425,7 +504,7 @@ def run(month: str, barriers: list[tuple[float, str]], mids: dict[float, float],
     # 2026-11-14 12:15Z: the figures a reading may carry are written by this tool, not typed from its lines; a run that
     # fetched the series (not a dry run, not a re-read of a kept file) writes one candidate per barrier with a mid
     if mids and not dry_run and from_file is None and candidates is not None:
-        for c in candidates_for(a, mids, cal, entry, at):
+        for c in candidates_for(a, mids, cal, entry, at, file_sha256(calibration) if cal is not None else None):
             append_candidate(candidates, c)
             print(f"  candidate {c['id']} written to {candidates.name} (readings.py add --candidate {c['id']})")
     elif mids:
@@ -433,10 +512,37 @@ def run(month: str, barriers: list[tuple[float, str]], mids: dict[float, float],
     return 0
 
 
+def recompute_main(candidate_id: str, candidates: Path, raw_dir: Path, calibration: Path) -> int:
+    """`--recompute <id>`: the candidate's figures held to the kept inputs it names; prints the differences.
+    Exit 0 when the record reproduces, 1 when it does not or cannot be re-read.  Writes nothing."""
+    from pm_lib import read_candidates
+    hits = [c for c in read_candidates(candidates) if str(c.get("id")) == candidate_id]
+    if len(hits) != 1:
+        print(f"recompute {candidate_id}: {'not' if not hits else 'more than once'} on {candidates}")
+        return 1
+    if hits[0].get("method") != "btc_touch":
+        print(f"recompute {candidate_id}: a {hits[0].get('method')} candidate; this tool recomputes btc_touch only")
+        return 1
+    diffs = recompute_candidate(hits[0], raw_dir, calibration)
+    if diffs:
+        print(f"recompute {candidate_id}: DIFFERS")
+        for d in diffs:
+            print(f"  {d}")
+        return 1
+    sha = str(hits[0]["inputs"].get("series_sha256", ""))
+    path = kept_series(raw_dir, sha)
+    print(f"recompute {candidate_id}: the four figures reproduce from {path} (sha256 {sha[:12]}) under calibration "
+          f"{str(hits[0]['inputs'].get('calibration_sha256'))[:12]}")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--month", required=True, help="YYYY-MM, the Eastern-time month the market names")
-    ap.add_argument("--barrier", action="append", required=True, help="<level>:<up|down>, repeatable")
+    ap.add_argument("--month", default=None, help="YYYY-MM, the Eastern-time month the market names")
+    ap.add_argument("--barrier", action="append", default=[], help="<level>:<up|down>, repeatable")
+    ap.add_argument("--recompute", default=None, metavar="CANDIDATE_ID",
+                    help="hold a candidate on data/candidates.jsonl to the kept inputs it names and print the differences; "
+                         "no fetch, nothing written (2026-11-15)")
     ap.add_argument("--mid", action="append", default=[], help="<level>:<market mid>, repeatable")
     ap.add_argument("--from-file", type=Path, default=None)
     ap.add_argument("--dry-run", action="store_true")
@@ -454,6 +560,11 @@ def main(argv: list[str] | None = None) -> int:
     manifest = a.manifest if a.manifest is not None else HERE / "data" / "fred_manifest.json"
     calibration = a.calibration if a.calibration is not None else HERE / "data" / "calibration.json"
     candidates = a.candidates if a.candidates is not None else HERE / CANDIDATES
+    if a.recompute:
+        return recompute_main(a.recompute, candidates, raw_dir, calibration)
+    if not a.month or not a.barrier:
+        print(f"{SERIES}: FAILED --month and at least one --barrier are needed (or --recompute <candidate id>)")
+        return 2
     barriers = [parse_barrier(b) for b in a.barrier]
     mids = dict(parse_mid(m) for m in a.mid)
     try:

@@ -60,7 +60,8 @@ STUDIES := research/001-slope-duration-switch \
            research/009-pooled-forward-duration-timing \
            research/010-factor-momentum-french-us \
            research/011-industry-momentum-french-us \
-           research/013-polymarket-calibration-forward
+           research/013-polymarket-calibration-forward \
+           research/014-polymarket-spread-at-horizon
 SUITES  := $(STUDIES) qune_research desk-view pm-view
 
 # review_recompute.py scripts that ran from the committed outputs alone until

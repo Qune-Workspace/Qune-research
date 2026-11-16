@@ -1,0 +1,47 @@
+Power first for Study 014: the longshot spread premium at the horizon (tools/power_pm014.py)
+counts from tools/power_pm013.txt (Study 013's clean rows: UMA resolved, order book, volume >= 10,000 USDC; one scheduled day in five, 2026-08-01 to 2026-10-31, scaled to the window); no spread, bid, ask, mid or outcome read
+published effect: arXiv:2604.24366v2 SF1, median quoted spread ~400 bps of mid central [0.4, 0.6] vs 1,300-1,800 bps below 0.10 (600-market pre-registered panel, 2026-02-28 to 2026-03-27); smaller end in log units ln(1300/400) = 1.179
+sd bounds (Popoviciu; spread in [0.001, 0.1], mid inside the bin): longshot 3.454, central 2.505; MDE = K * sqrt(sd1^2/n1 + sd2^2/n2), K = 2.842 (programme) and 2.486 (one-sided 5%); upper bounds on the MDE
+
+  window unit       clean n longshot share central share       n1       n2 | MDE K=2.842  ratio MDE K=2.486  ratio
+     4 w markets     38,983           0.10          0.02    3,898      780 |       0.300   0.25       0.262   0.22
+     4 w markets     38,983           0.10          0.05    3,898    1,949 |       0.225   0.19       0.197   0.17
+     4 w markets     38,983           0.10          0.10    3,898    3,898 |       0.194   0.16       0.170   0.14
+     4 w markets     38,983           0.25          0.02    9,746      780 |       0.274   0.23       0.239   0.20
+     4 w markets     38,983           0.25          0.05    9,746    1,949 |       0.189   0.16       0.166   0.14
+     4 w markets     38,983           0.25          0.10    9,746    3,898 |       0.151   0.13       0.132   0.11
+     4 w markets     38,983           0.50          0.02   19,492      780 |       0.265   0.22       0.231   0.20
+     4 w markets     38,983           0.50          0.05   19,492    1,949 |       0.176   0.15       0.154   0.13
+     4 w markets     38,983           0.50          0.10   19,492    3,898 |       0.134   0.11       0.117   0.10
+     4 w events      22,347           0.10          0.02    2,235      447 |       0.396   0.34       0.346   0.29
+     4 w events      22,347           0.10          0.05    2,235    1,117 |       0.297   0.25       0.260   0.22
+     4 w events      22,347           0.10          0.10    2,235    2,235 |       0.257   0.22       0.224   0.19
+     4 w events      22,347           0.25          0.02    5,587      447 |       0.361   0.31       0.316   0.27
+     4 w events      22,347           0.25          0.05    5,587    1,117 |       0.250   0.21       0.219   0.19
+     4 w events      22,347           0.25          0.10    5,587    2,235 |       0.200   0.17       0.175   0.15
+     4 w events      22,347           0.50          0.02   11,174      447 |       0.349   0.30       0.306   0.26
+     4 w events      22,347           0.50          0.05   11,174    1,117 |       0.232   0.20       0.203   0.17
+     4 w events      22,347           0.50          0.10   11,174    2,235 |       0.177   0.15       0.155   0.13
+     8 w markets     77,967           0.10          0.02    7,797    1,559 |       0.212   0.18       0.185   0.16
+     8 w markets     77,967           0.10          0.05    7,797    3,898 |       0.159   0.14       0.139   0.12
+     8 w markets     77,967           0.10          0.10    7,797    7,797 |       0.137   0.12       0.120   0.10
+     8 w markets     77,967           0.25          0.02   19,492    1,559 |       0.194   0.16       0.169   0.14
+     8 w markets     77,967           0.25          0.05   19,492    3,898 |       0.134   0.11       0.117   0.10
+     8 w markets     77,967           0.25          0.10   19,492    7,797 |       0.107   0.09       0.094   0.08
+     8 w markets     77,967           0.50          0.02   38,984    1,559 |       0.187   0.16       0.164   0.14
+     8 w markets     77,967           0.50          0.05   38,984    3,898 |       0.124   0.11       0.109   0.09
+     8 w markets     77,967           0.50          0.10   38,984    7,797 |       0.095   0.08       0.083   0.07
+     8 w events      44,694           0.10          0.02    4,469      894 |       0.280   0.24       0.245   0.21
+     8 w events      44,694           0.10          0.05    4,469    2,235 |       0.210   0.18       0.184   0.16
+     8 w events      44,694           0.10          0.10    4,469    4,469 |       0.181   0.15       0.159   0.13
+     8 w events      44,694           0.25          0.02   11,174      894 |       0.256   0.22       0.224   0.19
+     8 w events      44,694           0.25          0.05   11,174    2,235 |       0.177   0.15       0.155   0.13
+     8 w events      44,694           0.25          0.10   11,174    4,469 |       0.141   0.12       0.124   0.10
+     8 w events      44,694           0.50          0.02   22,347      894 |       0.247   0.21       0.216   0.18
+     8 w events      44,694           0.50          0.05   22,347    2,235 |       0.164   0.14       0.144   0.12
+     8 w events      44,694           0.50          0.10   22,347    4,469 |       0.125   0.11       0.109   0.09
+decision row: 8 w, events (the conservative unit), longshot share 0.10, central share 0.02 (the thinnest bins on the grid)
+
+cross-check on the kept snapshot research/013-polymarket-calibration-forward/data/raw/snapshots/2026-11-16/records.jsonl (fields read: enableOrderBook, outcomes, endDate, volumeNum, eventIds; never read: bestBid, bestAsk, spread, lastTradePrice, outcomePrices, umaResolutionStatus):
+  rows 162,998; order book 162,944; binary 162,944; scheduled end unreadable or missing 375; end in [2026-11-17, 2026-12-30) 95,839; of those already at the volume floor 891 markets in 484 events
+  a lower bound on the window's clean count: markets listed after this snapshot, and markets that reach the floor later, are not in it; a market that resolves before its scheduled end is counted under its scheduled day here and under its closedTime in the study

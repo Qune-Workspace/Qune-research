@@ -223,3 +223,96 @@ def test_add_refuses_a_candidate_whose_figures_do_not_recompute_and_admits_one_t
     out = capsys.readouterr().out
     assert "[reading:figures-recompute]" in out and "no kept folder" in out
     assert not (tmp_path / "r3.csv").exists()
+
+
+# --- the meeting list is an input the record names (2026-11-16 12:15Z) ------------------------------
+#
+# predictions/POST_MORTEMS.md "A sample held by nothing but the file that listed it": on 1aac328, on a
+# scratch worktree, the 2019 meetings cut from tools/fomc_statement_dates_2016_2026-09.txt gave a
+# calibration on 66 meetings (net Brier 0.2650 where the committed file reads 0.2983 on 74) that was
+# RECORDED with a source line naming the four series and no list, a candidate under it carried a
+# climatology of 0.258 (17 of 66) and recomputed with rc 0 under the cut list and under the restored one,
+# and a meeting typed in between made the recomputation blame "stale print, a meeting in between, or
+# outside the bill's life" from the folder.  Now the list is on the calibration, its history line and
+# every candidate, and compared before any figure is.
+
+def cut_dates(tmp_path: Path, drop_prefix: str = "2019", add: str = "") -> Path:
+    """A copy of the committed dates file with the lines starting `drop_prefix` cut and `add` appended."""
+    kept_lines = [ln for ln in F.DATES_FILE.read_text(encoding="utf-8").splitlines(keepends=True) if not ln.startswith(drop_prefix)]
+    out = tmp_path / f"dates_{drop_prefix or 'all'}_{len(add)}.txt"
+    out.write_text("".join(kept_lines) + add, encoding="utf-8")
+    return out
+
+
+def test_the_candidate_names_the_meeting_list_and_a_changed_list_is_a_difference(tmp_path):
+    got, root, folder, cal, _ = kept_bills(tmp_path)
+    rec = F.meetings_record()
+    assert rec["dates_file"] == "tools/fomc_statement_dates_2016_2026-09.txt" and rec["count"] == len(F.meeting_dates()) == 87
+    assert rec["dates_sha256"] == sha(F.DATES_FILE) and rec["extra_meetings"] == ["2026-10-28", "2026-12-09"]
+    assert all(c["inputs"]["meetings"] == rec for c in got)
+    man = manifest_of(root)
+    assert F.recompute_candidate(got[0], root, cal, manifest=man) == []
+    # the 2019 meetings cut from a copy of the file: refused by name, before any figure is compared
+    cut = cut_dates(tmp_path)
+    assert len(F.meeting_dates(cut)) == 79
+    diffs = F.recompute_candidate(got[0], root, cal, manifest=man, dates_path=cut)
+    assert len(diffs) == 1 and diffs[0].startswith(f"the meeting list is {sha(cut)[:12]} + ['2026-10-28', '2026-12-09'] (79 meetings), "
+                                                   f"the record was made under {rec['dates_sha256'][:12]}")
+    assert diffs[0].endswith("(87): the meetings cannot be re-read")
+    # a meeting typed in between the as-of date and the meeting: the same refusal, not the folder's
+    typed = cut_dates(tmp_path, drop_prefix="", add="20261125\n")
+    diffs = F.recompute_candidate(got[0], root, cal, manifest=man, dates_path=typed)
+    assert len(diffs) == 1 and diffs[0].startswith("the meeting list is") and "stale print" not in diffs[0]
+    # one extra date fewer, the file unchanged: refused too (the count and the extras are both compared)
+    diffs = F.recompute_candidate(got[0], root, cal, manifest=man, extra=(date(2026, 10, 28),))
+    assert len(diffs) == 1 and "+ ['2026-10-28'] (86 meetings)" in diffs[0]
+
+
+def test_a_candidate_naming_no_meeting_list_is_refused_by_the_recomputation_and_at_admission(tmp_path, capsys):
+    got, manifest, cands, root = admission(tmp_path)
+    c = got[0]
+    unnamed = dict(c, inputs={k: v for k, v in c["inputs"].items() if k != "meetings"})
+    diffs = F.recompute_candidate(unnamed, root, tmp_path / "data" / "fomc_calibration.json", manifest=F.qdata.read_manifest(tmp_path / "data" / "fred_rates_manifest.json"))
+    assert diffs == ["the record names no meeting list (inputs.meetings): the meetings the reading was made on cannot be re-read"]
+    later = datetime(2026, 11, 20, 6, 20, 1, tzinfo=UTC)
+    unnamed.update(id=L.candidate_id("fomc_bills", "hike", later), computed_utc=later.strftime(L.UTC_STAMP_FORMAT))
+    L.append_candidate(cands, unnamed)
+    args = ns(quote=LATE_QUOTE["fetched_utc"], market_id=LATE_QUOTE["market_id"], method="fomc_bills", method_p=None, range_lo=None,
+              range_hi=None, climatology_p=None, candidate=unnamed["id"], proposition="Hike of 25 bp on 9 December")
+    assert R.add(args, manifest, tmp_path / "r1.csv", LATE_NOW, candidates=cands) == 1
+    out = capsys.readouterr().out
+    assert f"[reading:figures-recompute] candidate {unnamed['id']}: the record names no meeting list" in out
+    assert not (tmp_path / "r1.csv").exists()
+
+
+def test_the_calibration_names_its_meeting_list_and_a_climatology_from_another_sample_is_a_difference(tmp_path, capsys):
+    # the committed list: the calibration and its history line carry it
+    got, root, folder, cal, _ = kept_bills(tmp_path)
+    written = json.loads(cal.read_text(encoding="utf-8"))
+    assert written["inputs_meetings"] == F.meetings_record()
+    history = (cal.parent / "calibration_history.csv").read_text(encoding="utf-8")
+    assert f"meetings {sha(F.DATES_FILE)[:12]} + 2 extra (87 dates); " in history and "meetings unnamed" not in history
+    # the 2019 meetings cut: the calibration run on the cut list names the cut list, with fewer meetings scored
+    cut = cut_dates(tmp_path)
+    cal2 = tmp_path / "cut" / "fomc_calibration.json"
+    assert F.run(folder, tmp_path / "m.json", cal2, fetch=False, now=datetime(2026, 11, 5, 12, 2, tzinfo=UTC), dates_path=cut) == 0
+    out = capsys.readouterr().out
+    assert f"meetings: 79 dates, {cut} {sha(cut)[:12]} + ['2026-10-28', '2026-12-09']" in out
+    w2 = json.loads(cal2.read_text(encoding="utf-8"))
+    assert w2["inputs_meetings"]["dates_sha256"] == sha(cut) and w2["inputs_meetings"]["count"] == 79
+    assert w2["sample"]["scored_meetings"] < written["sample"]["scored_meetings"]
+    assert f"meetings {sha(cut)[:12]} + 2 extra (79 dates); " in (cal2.parent / "calibration_history.csv").read_text(encoding="utf-8")
+    # a candidate read on the committed list under the cut calibration: its climatology is another sample's
+    meetings = F.meeting_dates()
+    cands = [c for c in F.live_candidates(F.load_dir(folder), meetings, date.fromisoformat(MEETING), date.fromisoformat(AS_OF),
+                                           F.load_calibration(cal2), {"hike": 0.635}, folder, COMPUTED, calibration=cal2)]
+    assert cands[0]["inputs"]["meetings"] == F.meetings_record() and cands[0]["inputs"]["calibration_sha256"] == sha(cal2)
+    diffs = F.recompute_candidate(cands[0], root, cal2, manifest=manifest_of(root))
+    assert any(d.startswith(f"the calibration file was built on meeting list {sha(cut)[:12]} (79 meetings), the candidate was read under "
+                            f"{sha(F.DATES_FILE)[:12]} (87): its climatology is another sample's") for d in diffs)
+    # a calibration written before this date names no list: nothing is compared against it, and the candidate still recomputes
+    body = json.loads(cal.read_text(encoding="utf-8"))
+    del body["inputs_meetings"]
+    cal.write_text(json.dumps(body, sort_keys=True), encoding="utf-8")
+    old = dict(got[0], inputs=dict(got[0]["inputs"], calibration_sha256=sha(cal)))
+    assert F.recompute_candidate(old, root, cal, manifest=manifest_of(root)) == []

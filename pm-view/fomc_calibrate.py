@@ -164,6 +164,34 @@ def meeting_dates(path: Path = DATES_FILE, extra: Iterable[date] = EXTRA_MEETING
     return sorted(out)
 
 
+def meetings_record(path: Path = DATES_FILE, extra: Iterable[date] = EXTRA_MEETINGS) -> dict[str, Any]:
+    """The meeting list as an input on record (2026-11-16 12:15Z, predictions/POST_MORTEMS.md "A sample held
+    by nothing but the file that listed it"): the dates file by its path under the repository and the SHA-256
+    of its bytes, the extra dates of the pre-specification as ISO strings, and the count of meetings the two
+    give.  Written into the calibration (`inputs_meetings`), its history line and every candidate
+    (`inputs.meetings`), and compared at `recompute_candidate`; before this date the meetings were the one
+    input of the reading and its calibration that no record named."""
+    try:
+        shown = str(path.relative_to(ROOT))
+    except ValueError:
+        shown = str(path)
+    return {"dates_file": shown, "dates_sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+            "extra_meetings": [d.isoformat() for d in sorted(set(extra))], "count": len(meeting_dates(path, extra))}
+
+
+def meetings_differ(want: Any, have: dict[str, Any]) -> str | None:
+    """Why a recorded meeting list `want` is not the list `have` in hand, or None when they agree: the file's
+    hash, the extra dates and the count are compared; a record carrying no list is named as such."""
+    if not isinstance(want, dict):
+        return "the record names no meeting list (inputs.meetings): the meetings the reading was made on cannot be re-read"
+    if (str(want.get("dates_sha256")) != have["dates_sha256"] or list(want.get("extra_meetings") or []) != have["extra_meetings"]
+            or str(want.get("count")) != str(have["count"])):
+        return (f"the meeting list is {have['dates_sha256'][:12]} + {have['extra_meetings']} ({have['count']} meetings), "
+                f"the record was made under {str(want.get('dates_sha256'))[:12]} + {want.get('extra_meetings')} "
+                f"({want.get('count')}): the meetings cannot be re-read")
+    return None
+
+
 def last_on_or_before(series: pd.Series, d: date) -> tuple[date, float] | None:
     s = series.dropna()
     s = s.loc[: pd.Timestamp(d)]
@@ -329,7 +357,8 @@ def apply_rules(s: dict[str, Any]) -> dict[str, Any]:
             "R3_observed_minus_predicted": err}
 
 
-def summarise(rows: list[dict[str, Any]], secondary: list[dict[str, Any]], manifest: dict[str, Any] | None) -> dict[str, Any]:
+def summarise(rows: list[dict[str, Any]], secondary: list[dict[str, Any]], manifest: dict[str, Any] | None,
+              meetings_rec: dict[str, Any] | None = None) -> dict[str, Any]:
     s: dict[str, Any] = {
         "spec": {"primary_lag_days": PRIMARY_LAG_DAYS, "secondary_lag_days": SECONDARY_LAG_DAYS, "bill_days": BILL_DAYS,
                  "basis_bill_days": BASIS_BILL_DAYS, "step": STEP, "move_threshold": MOVE_THRESHOLD,
@@ -359,6 +388,8 @@ def summarise(rows: list[dict[str, Any]], secondary: list[dict[str, Any]], manif
                    "a move between scheduled meetings enters only through the level it left behind",
                    "sample = scheduled meetings 2016-2026 with twelve earlier sample meetings; no earlier history"],
         "inputs_manifest": manifest,
+        # the fifth input (2026-11-16 12:15Z): the meeting list the sample was drawn from, by hash and count
+        "inputs_meetings": meetings_rec,
     }
     s["rules"] = apply_rules(s)
     return s
@@ -542,7 +573,7 @@ def class_figures(fig: dict[str, Any], cls: str, cal: dict[str, Any] | None) -> 
 
 def live_candidates(s: Series, meetings: list[date], d: date, today: date, cal: dict[str, Any] | None,
                     mids: dict[str, float], raw_dir: Path, at: datetime,
-                    calibration: Path | None = None) -> list[dict[str, Any]]:
+                    calibration: Path | None = None, meetings_rec: dict[str, Any] | None = None) -> list[dict[str, Any]]:
     """One candidate record per class a mid was given for (2026-11-14 12:15Z, predictions/POST_MORTEMS.md
     "A figure the gate took on the desk's word"): the primary reading, the hull of the reading and its range
     under the historical basis (the range the ledger line prints), the class's share of the calibration's
@@ -556,11 +587,13 @@ def live_candidates(s: Series, meetings: list[date], d: date, today: date, cal: 
     rd, obs = fig["rd"], fig["obs"]
     sample = (cal or {}).get("sample") or {}
     n = sample.get("scored_meetings")
+    # the meeting list the reading was made on (2026-11-16 12:15Z): the committed file by hash plus the extra dates
+    rec = meetings_rec if meetings_rec is not None else meetings_record()
     out: list[dict[str, Any]] = []
     for cls, mid in mids.items():
         p, lo, hi, clim = class_figures(fig, cls, cal)
         inputs = {"meeting": d.isoformat(), "as_of": today.isoformat(), "primary": fig["primary"],
-                  "prints": {k: obs[k][0].isoformat() for k in obs},
+                  "prints": {k: obs[k][0].isoformat() for k in obs}, "meetings": rec,
                   # the kept folder the four files were read from (2026-11-14 18:15Z): with as_of and the meeting,
                   # `--live <meeting> --today <as_of> --from-dir data/raw/fred_rates/<input_folder>` recomputes the figures;
                   # since 2026-11-15 06:15Z `recompute_candidate` does this at admission, under the calibration named here
@@ -593,7 +626,8 @@ def kept_folder_named(root: Path, name: str, manifest: dict[str, Any] | None) ->
 
 
 def recompute_candidate(c: dict[str, Any], raw_root: Path, calibration: Path | None,
-                        meetings: list[date] | None = None, *, manifest: dict[str, Any] | None) -> list[str]:
+                        meetings: list[date] | None = None, *, manifest: dict[str, Any] | None,
+                        dates_path: Path = DATES_FILE, extra: Iterable[date] = EXTRA_MEETINGS) -> list[str]:
     """Hold a fomc_bills candidate to its inputs: re-read the kept folder `inputs.input_folder` names under
     `raw_root` (a fetch the `manifest` recorded, each of the four files' bytes hashing to the fetch's entry and
     to `inputs.input_sha256`), the calibration file (its hash must be `inputs.calibration_sha256`), re-run
@@ -602,7 +636,10 @@ def recompute_candidate(c: dict[str, Any], raw_root: Path, calibration: Path | N
     empty when the record reproduces.  Nothing is fetched or written.  A calibration file other than the one
     named is a difference and the figures are then recomputed under the candidate's recorded primary, without
     a climatology to compare.  `manifest` is the loaded fetch manifest (2026-11-15 12:15Z): without it no
-    folder is a kept fetch."""
+    folder is a kept fetch.  The meeting list (2026-11-16 12:15Z): the record's `inputs.meetings` must be the
+    list in hand (`dates_path` by hash, `extra`, count), a record naming none is a difference, and the
+    calibration file's own `inputs_meetings`, when it carries one, must be the same list, so a climatology
+    drawn from one sample is never held beside a reading made on another."""
     out: list[str] = []
     inputs = c.get("inputs") or {}
     if str(c.get("method")) != METHOD:
@@ -628,6 +665,10 @@ def recompute_candidate(c: dict[str, Any], raw_root: Path, calibration: Path | N
                        f"{str(want_hashes.get(k))[:12]}: the bytes the figures were read from cannot be re-read")
     if out:
         return out
+    have_meetings = meetings_record(dates_path, extra)
+    why = meetings_differ(inputs.get("meetings"), have_meetings)
+    if why is not None:
+        return [why]
     want_cal, have_cal = inputs.get("calibration_sha256"), file_sha256(calibration)
     same_cal = want_cal == have_cal
     if not same_cal:
@@ -636,9 +677,14 @@ def recompute_candidate(c: dict[str, Any], raw_root: Path, calibration: Path | N
     try:
         if same_cal:
             cal = load_calibration(calibration) if calibration is not None else None
+            cal_meetings = (cal or {}).get("inputs_meetings")
+            if cal_meetings is not None and meetings_differ(cal_meetings, have_meetings) is not None:
+                out.append(f"the calibration file was built on meeting list {str(cal_meetings.get('dates_sha256'))[:12]} "
+                           f"({cal_meetings.get('count')} meetings), the candidate was read under {have_meetings['dates_sha256'][:12]} "
+                           f"({have_meetings['count']}): its climatology is another sample's")
         else:  # another file's rules would choose another primary; the record's primary is kept, nothing else of it
             cal = {"rules": {"R1_primary": inputs.get("primary") or "net"}} if want_cal is not None else None
-        fig = live_figures(load_dir(folder), meetings if meetings is not None else meeting_dates(), d, today, cal)
+        fig = live_figures(load_dir(folder), meetings if meetings is not None else meeting_dates(dates_path, extra), d, today, cal)
     except (OSError, ValueError, UnicodeDecodeError, KeyError) as e:
         return out + [f"the figures do not recompute from {folder}: {e}"]
     if "classes" not in fig:
@@ -673,7 +719,8 @@ def recompute_main(candidate_id: str, candidates: Path, raw_root: Path, calibrat
     if not diffs:
         print(f"recompute {candidate_id}: the four figures reproduce from {raw_root / str(inputs.get('input_folder'))} "
               f"(DTB3 {str((inputs.get('input_sha256') or {}).get('DTB3'))[:12]}…, calibration "
-              f"{str(inputs.get('calibration_sha256'))[:12]}…) as of {inputs.get('as_of')}")
+              f"{str(inputs.get('calibration_sha256'))[:12]}…, meetings {str((inputs.get('meetings') or {}).get('dates_sha256'))[:12]}… "
+              f"+ {(inputs.get('meetings') or {}).get('extra_meetings')}) as of {inputs.get('as_of')}")
         return 0
     print(f"recompute {candidate_id}: DIFFERS")
     for d_ in diffs:
@@ -845,6 +892,10 @@ def record(out: Path, raw_dir: Path, manifest: dict[str, Any] | None, now: datet
     written = json.loads(out.read_text(encoding="utf-8"))
     rules, sample = written.get("rules") or {}, written.get("sample") or {}
     err = rules.get("R3_observed_minus_predicted")
+    # the meeting list the sample was drawn from, read back from the file as written (2026-11-16 12:15Z)
+    mr = written.get("inputs_meetings") or {}
+    parts.append(f"meetings {str(mr.get('dates_sha256'))[:12]} + {len(mr.get('extra_meetings') or [])} extra ({mr.get('count')} dates)"
+                 if mr else "meetings unnamed")
     source = (f"fomc_calibrate.py: {', '.join(parts)}; {sample.get('scored_meetings')} scored meetings, "
               f"last {sample.get('last_meeting')}; R1 {rules.get('R1_primary')}, R2 {str(L.method_gate(METHOD, written)).lower()}, "
               f"R3 {rules.get('R3_live_bin_sign')} {'n/a' if err is None else f'{err:+.4f}'}")
@@ -859,21 +910,24 @@ def record(out: Path, raw_dir: Path, manifest: dict[str, Any] | None, now: datet
 
 
 def run(raw_dir: Path, manifest: Path, out: Path | None, fetch: bool, now: datetime | None = None,
-        session: Any | None = None) -> int:
+        session: Any | None = None, dates_path: Path = DATES_FILE) -> int:
     """With `fetch`, `raw_dir` is the root the new folder is written under; otherwise it is the kept
-    folder to read.  The calibration's `inputs_manifest` is that folder's entries alone."""
+    folder to read.  The calibration's `inputs_manifest` is that folder's entries alone; its
+    `inputs_meetings` the meeting list read from `dates_path` plus EXTRA_MEETINGS, by hash and count."""
     at = now or datetime.now(UTC)
     folder = fetch_all(raw_dir, manifest, at, session) if fetch else Path(raw_dir)
     print(f"inputs: {folder}")
     s = load_dir(folder)
-    meetings = meeting_dates()
+    meetings_rec = meetings_record(dates_path)
+    print(f"meetings: {meetings_rec['count']} dates, {meetings_rec['dates_file']} {meetings_rec['dates_sha256'][:12]} + {meetings_rec['extra_meetings']}")
+    meetings = meeting_dates(dates_path)
     rows = add_baselines(rows_for(s, meetings, PRIMARY_LAG_DAYS))
     secondary = add_baselines(rows_for(s, meetings, SECONDARY_LAG_DAYS))
     if len(rows) < MIN_SCORED:
         print(f"sample too short: {len(rows)} scored meetings, need {MIN_SCORED}")
         return 1
     man = qdata.read_manifest(manifest) if manifest.exists() else None
-    summary = summarise(rows, secondary, manifest_entries_for(man, folder))
+    summary = summarise(rows, secondary, manifest_entries_for(man, folder), meetings_rec)
     for line in report(summary):
         print(line)
     if out is not None:
@@ -921,11 +975,19 @@ def main(argv: list[str] | None = None) -> int:
             print(line)
         today = a.today or date.fromisoformat(qdata.utc_now()[:10])
         s, meetings, cal, mids = load_dir(raw_dir), meeting_dates(), load_calibration(a.out), dict(a.mid)
+        rec = meetings_record()  # the list the reading is made on, named on every candidate (2026-11-16 12:15Z)
+        print(f"meetings: {rec['count']} dates, {rec['dates_file']} {rec['dates_sha256'][:12]} + {rec['extra_meetings']}")
+        cal_meetings = (cal or {}).get("inputs_meetings")
+        if cal_meetings is None:
+            print("  the calibration file names no meeting list (written before 2026-11-16); its sample is held to this list by git alone")
+        elif meetings_differ(cal_meetings, rec) is not None:
+            print(f"  WARNING: the calibration file was built on meeting list {str(cal_meetings.get('dates_sha256'))[:12]} "
+                  f"({cal_meetings.get('count')} meetings), not this one: a candidate under it will not recompute")
         for line in live_lines(s, meetings, a.live, today, cal, mids):
             print(line)
         # 2026-11-14 12:15Z: the figures a reading may carry are written by this tool, not typed from its lines
         if mids and not a.no_write:
-            for c in live_candidates(s, meetings, a.live, today, cal, mids, raw_dir, datetime.now(UTC), calibration=a.out):
+            for c in live_candidates(s, meetings, a.live, today, cal, mids, raw_dir, datetime.now(UTC), calibration=a.out, meetings_rec=rec):
                 L.append_candidate(a.candidates, c)
                 print(f"  candidate {c['id']} written to {a.candidates.name} (readings.py add --candidate {c['id']})")
         elif mids:

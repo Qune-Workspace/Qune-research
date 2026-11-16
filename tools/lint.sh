@@ -53,6 +53,7 @@ stamp-compares|$PYTHON tools/check_stamp_compares.py
 data-terms|$PYTHON tools/check_data_terms.py
 view-brier|$PYTHON tools/check_view_brier.py
 skill-pages|$PYTHON tools/check_skill_pages.py
+manifest-history|$PYTHON tools/check_manifest_history.py
 links-selftest|$PYTHON tools/check_links.py --selftest
 question-gate-selftest|$PYTHON tools/check_question_gate.py --selftest
 due-selftest|$PYTHON tools/check_due.py --selftest
@@ -61,6 +62,7 @@ stamp-compares-selftest|$PYTHON tools/check_stamp_compares.py --selftest
 data-terms-selftest|$PYTHON tools/check_data_terms.py --selftest
 view-brier-selftest|$PYTHON tools/check_view_brier.py --selftest
 skill-pages-selftest|$PYTHON tools/check_skill_pages.py --selftest
+manifest-history-selftest|$PYTHON tools/check_manifest_history.py --selftest
 lint-runner|bash tools/lint.sh --self-test
 detach|bash tools/detach.sh --self-test
 scan|bash tools/scan.sh --self-test

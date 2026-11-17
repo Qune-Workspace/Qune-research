@@ -1,0 +1,7 @@
+# Direct dependencies of Study 014's code: src/ uses numpy and the standard library; charts/make_charts.py
+# (§14 step 9) draws through qune_research/style.py, so matplotlib is pinned here at the shared library's
+# version (Study 013's file left it to the library's pin, which CI does not install for a study job).
+# pytest is pinned to the version the tests were run with (the same pin as qune_research).
+numpy==2.5.4
+matplotlib==3.11.2
+pytest==9.1.1

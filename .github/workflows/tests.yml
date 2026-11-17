@@ -32,6 +32,7 @@ jobs:
           - research/010-factor-momentum-french-us
           - research/011-industry-momentum-french-us
           - research/013-polymarket-calibration-forward
+          - research/014-polymarket-spread-at-horizon
           - qune_research
           - desk-view
           - pm-view

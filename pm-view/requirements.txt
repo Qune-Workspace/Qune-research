@@ -1,0 +1,9 @@
+# Direct dependencies of the prediction-market view: the modules use numpy and pandas, and fetch.py reads
+# through qune_research/data.py, which uses pandas and requests. pytest is pinned to the version the tests
+# were run with (the same pins as qune_research). This file did not exist from the day pm-view entered the
+# CI matrix (32edffb, 3 Nov 2026) until 2026-11-17: the job's install step read a missing file and the job
+# was red on every push in between (research/POST_MORTEMS.md, 2026-11-17).
+numpy==2.5.4
+pandas==3.0.6
+requests==2.34.2
+pytest==9.1.1

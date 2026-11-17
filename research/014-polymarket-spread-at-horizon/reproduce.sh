@@ -3,6 +3,8 @@
 #
 #   ./reproduce.sh --test     the synthetic-row tests of §6.5 (no network, no data)
 #   ./reproduce.sh --run      §14 step 6, once: the analysis run -> results/run/ (aggregates only)
+#   ./reproduce.sh --charts   §14 step 9: the two charts from results/run/summary.json only
+#                             (before the run, or after a halt: says so, writes nothing, exit 0)
 #
 # --run repeats the first two refusals of src/run.py's docstring (no non-empty APPROVED, §14
 # step 4; results/run/ exists, the run executes once) and stops there; src/run.py holds the
@@ -16,10 +18,11 @@ if [ -z "${PYTHON:-}" ]; then
   if [ -x ../../.venv/bin/python ]; then PYTHON=../../.venv/bin/python; else PYTHON=python3; fi
 fi
 
-usage() { echo "usage: $0 --test | --run" >&2; exit 2; }
+usage() { echo "usage: $0 --test | --run | --charts" >&2; exit 2; }
 [ $# -eq 1 ] || usage
 case "$1" in
   --test) exec "$PYTHON" -m pytest -q ;;
+  --charts) exec "$PYTHON" charts/make_charts.py ;;
   --run) ;;
   *) usage ;;
 esac

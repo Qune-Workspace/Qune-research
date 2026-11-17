@@ -5,4 +5,9 @@
 numpy==2.5.4
 statsmodels==0.15.0
 pytest==9.1.1
-# charts/make_charts.py (§14 step 12) draws through qune_research/style.py, whose matplotlib pin is the shared library's.
+# charts/make_charts.py (§14 step 12) draws through qune_research/style.py, so matplotlib is pinned here at
+# the shared library's version. Until 2026-11-17 this file left it to the library's pin, which the CI job for
+# this study does not install: tests/test_charts.py could not import the style module there, and the job was
+# red from the commit that added the chart step (c473037, 3 Nov) to the one that added this line
+# (research/POST_MORTEMS.md, 2026-11-17).
+matplotlib==3.11.2

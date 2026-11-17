@@ -16,7 +16,14 @@ difference of the two bin means. SE_cl (§9.3) is the cluster sandwich times
 G / (G - 1); SE_ordinary the homoskedastic OLS error; the clustered bootstrap
 (2,000 resamples of clusters, `default_rng(14)`) drops a resample with an empty
 bin and reports the interval as not available above 1 percent dropped.
-No fit (§9.3): an empty decision bin, fewer than two clusters, or SE_cl of 0.
+No fit (§9.3): an empty decision bin, fewer than two clusters, or SE_cl of 0 (a
+sandwich that is zero in exact arithmetic comes out at about 1e-16 in floats, so
+"0" is read as at most SE_TOL times max(1, |Delta-hat|); code review 2026-11-17).
+
+Decimal comparisons: "q below the tick" (the tick-floored flag) is decided on q
+and the tick rounded to the nine places of §6.3, because 0.06 - 0.05 is below
+0.01 in floats and a quote exactly one tick wide is not floored (code review
+2026-11-17, must-fix 3). s itself keeps max(q, tick) / mid as §6.2 writes it.
 """
 
 from __future__ import annotations
@@ -49,7 +56,9 @@ BOOTSTRAP_SEED = 14
 BOOTSTRAP_MAX_DROPPED_SHARE = 0.01
 WALD_Z = 1.96
 MIN_CELL = 10  # §9.6: a decile cell or split with fewer markets reports its count only (`derived` verdict)
-DECILE_EDGES = tuple(i / 10 for i in range(11))  # §9.6: ten bins of mid, the last closed
+# §9.6: ten bins of mid, the last closed; labelled on the range Study 013's p can take, [0.01, 0.99] (its §6.3)
+DECILE_EDGES = (0.01, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.99)
+SE_TOL = 1e-12  # §9.3 "SE_cl is 0": at most SE_TOL * max(1, |Delta-hat|) in floats
 WA26_SLOPE = 1.112  # [WA26] b, for the compression at a price (§9.6 secondary reading)
 CR26_COMPRESSION_POINTS = (5.9, 7.3)  # [CR26] interior bins, probability points
 LOW_POWER_LABEL = "(low-power check: the minimum detectable effect exceeds the pass bar, half the published premium)"
@@ -99,7 +108,7 @@ def quote_variables(bid: float, ask: float, tick_raw: float | None, null_tick: f
     tick_null = tick_raw is None or not math.isfinite(tick_raw) or tick_raw <= 0
     tick = null_tick if tick_null else float(tick_raw)  # type: ignore[arg-type]
     tick_below = (not tick_null) and tick < NULL_TICK
-    floored = q < tick
+    floored = round(q, ROUND_PLACES) < round(tick, ROUND_PLACES)  # decimal comparison: one tick wide is not floored
     s = max(q, tick) / mid
     return Quote(mid=mid, q=q, tick=tick, tick_null=tick_null, tick_below=tick_below, locked=(q == 0.0),
                  floored=floored, s=s, ln_s=math.log(s), half_points=100.0 * q / 2.0)
@@ -121,6 +130,8 @@ class Fit:
     n_longshot: int
     n_central: int
     G: int
+    G_longshot: int  # §9.6: G in each decision bin (a cluster can sit in both)
+    G_central: int
     fitted: bool
     no_fit_reason: str | None
     alpha: float
@@ -135,9 +146,10 @@ class Fit:
         return dict(self.__dict__)
 
 
-def _no_fit(n: int, n1: int, n0: int, g: int, reason: str, sd1: float = float("nan"), sd0: float = float("nan")) -> Fit:
+def _no_fit(n: int, n1: int, n0: int, g: int, g1: int, g0: int, reason: str,
+            sd1: float = float("nan"), sd0: float = float("nan")) -> Fit:
     nan = float("nan")
-    return Fit(n, n1, n0, g, False, reason, nan, nan, nan, nan, nan, sd1, sd0)
+    return Fit(n, n1, n0, g, g1, g0, False, reason, nan, nan, nan, nan, nan, sd1, sd0)
 
 
 def _design(L: Array) -> tuple[Array, Array]:
@@ -154,12 +166,14 @@ def fit_delta(ln_s: Array, L: Array, clusters: Array) -> Fit:
     n = int(y.size)
     n1, n0 = int(np.sum(L == 1)), int(np.sum(L == 0))
     G = int(np.unique(g).size) if n else 0
+    G1 = int(np.unique(g[L == 1]).size) if n1 else 0
+    G0 = int(np.unique(g[L == 0]).size) if n0 else 0
     sd1 = float(np.std(y[L == 1], ddof=1)) if n1 > 1 else float("nan")
     sd0 = float(np.std(y[L == 0], ddof=1)) if n0 > 1 else float("nan")
     if n1 == 0 or n0 == 0:
-        return _no_fit(n, n1, n0, G, "empty decision bin", sd1, sd0)
+        return _no_fit(n, n1, n0, G, G1, G0, "empty decision bin", sd1, sd0)
     if G < 2:
-        return _no_fit(n, n1, n0, G, "fewer than two clusters", sd1, sd0)
+        return _no_fit(n, n1, n0, G, G1, G0, "fewer than two clusters", sd1, sd0)
     X, xtx_inv = _design(L)
     beta = xtx_inv @ (X.T @ y)
     e = y - X @ beta
@@ -175,10 +189,10 @@ def fit_delta(ln_s: Array, L: Array, clusters: Array) -> Fit:
         se_ord = float(np.sqrt(sigma2 * xtx_inv[1, 1]))
     else:
         se_ord = float("nan")
-    if not (se_cl > 0) or not math.isfinite(se_cl):
-        return _no_fit(n, n1, n0, G, "SE_cl is 0", sd1, sd0)
     delta = float(beta[1])
-    return Fit(n, n1, n0, G, True, None, float(beta[0]), delta, se_cl, se_ord, delta / se_cl, sd1, sd0)
+    if not math.isfinite(se_cl) or se_cl <= SE_TOL * max(1.0, abs(delta)):
+        return _no_fit(n, n1, n0, G, G1, G0, "SE_cl is 0", sd1, sd0)
+    return Fit(n, n1, n0, G, G1, G0, True, None, float(beta[0]), delta, se_cl, se_ord, delta / se_cl, sd1, sd0)
 
 
 def hc0_se_delta(ln_s: Array, L: Array) -> float:
@@ -222,11 +236,21 @@ def cluster_bootstrap(ln_s: Array, L: Array, clusters: Array, resamples: int = B
             dropped += 1
             continue
         out.append(float(ys[Ls == 1].mean() - ys[Ls == 0].mean()))
-    available = dropped <= BOOTSTRAP_MAX_DROPPED_SHARE * resamples and len(out) >= 2
-    if not available:
+    if not bootstrap_available(dropped, resamples, len(out)):
         return Bootstrap(float("nan"), float("nan"), resamples, dropped, False)
     lo, hi = np.percentile(np.array(out), [2.5, 97.5])
     return Bootstrap(float(lo), float(hi), resamples, dropped, True)
+
+
+def bootstrap_available(dropped: int, resamples: int, kept: int) -> bool:
+    """§9.3: the interval is not available when more than 1 percent of the resamples were dropped (exactly 1 percent
+    is available); it also needs two kept resamples to have percentiles."""
+    return dropped <= BOOTSTRAP_MAX_DROPPED_SHARE * resamples and kept >= 2
+
+
+def low_power(ratio: float) -> bool:
+    """§8, §9.5: the label when the recomputed ratio for M1 exceeds 0.50 (0.50 itself is not above)."""
+    return bool(math.isfinite(ratio) and ratio > LOW_POWER_RATIO)
 
 
 def power(se_cl: float) -> dict[str, float]:
@@ -277,6 +301,16 @@ def headline(m1: Fit, m1_crit: dict[str, bool], m1a_row: str, low_power: bool) -
     else:
         text = "supported in one forward window (W: resolution time in [2026-11-04, 2026-12-30))"
     return f"{text} {LOW_POWER_LABEL}" if low_power else text
+
+
+def verdict_rows(fits_w: dict[str, Fit], crit: dict[str, dict[str, bool]], low_power: bool) -> dict[str, str]:
+    """§9.5: the headline for M1 and the companions' rows for M1a and M1b; every row carries the low-power label
+    when it applies ("every row adds ...")."""
+    companions = {t: companion_row(fits_w[t], crit[t]) for t in ("M1a", "M1b")}
+    out = {"M1": headline(fits_w["M1"], crit["M1"], companions["M1a"], low_power)}
+    for t, row in companions.items():
+        out[t] = f"{row} {LOW_POWER_LABEL}" if low_power else row
+    return out
 
 
 def wa26_compression_points(mid: float) -> float:

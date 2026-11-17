@@ -4,11 +4,11 @@
 #   ./reproduce.sh --test     the synthetic-row tests of §6.5 (no network, no data)
 #   ./reproduce.sh --run      §14 step 6, once: the analysis run -> results/run/ (aggregates only)
 #
-# --run refuses without a non-empty file named APPROVED in this folder (§14 step 4), when
-# results/run/ already exists (it runs once) and when trials.md has no analysis-run row
-# (§14 step 5). The checks are repeated in src/run.py, which also refuses when Study 013's
-# data step has not written its manifest, when its sample file is off its recorded SHA-256,
-# and when a snapshot is off the hash logged on its day. Nothing here fetches anything.
+# --run repeats the first two refusals of src/run.py's docstring (no non-empty APPROVED, §14
+# step 4; results/run/ exists, the run executes once) and stops there; src/run.py holds the
+# full order (Study 013's report and manifest, the stop flag, the trials.md analysis-run row,
+# the sample file's SHA-256, every snapshot's logged hash before any row is read). Nothing
+# here fetches anything.
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")"
 
@@ -32,10 +32,7 @@ fi
 echo "approval on record: $(head -n 1 APPROVED)"
 if [ -e results/run ]; then
   echo "refused: results/run already exists; the analysis run is executed once (§14 step 6)." >&2
-  exit 1
-fi
-if ! grep -q "^| Analysis run logged (§14 step 5)" trials.md; then
-  echo "refused: trials.md has no analysis-run row; it is logged before the run (§14 step 5)." >&2
+  if [ -e results/run/started.txt ]; then echo "  $(cat results/run/started.txt)" >&2; fi
   exit 1
 fi
 

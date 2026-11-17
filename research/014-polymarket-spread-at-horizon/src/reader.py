@@ -6,15 +6,18 @@ What it reads, and nothing else:
   `results/data_manifest.json` (`sample_jsonl_sha256`), projected to the nine
   sample fields of §5.1 (`SAMPLE_FIELDS`); the token field of a sample row is
   never read.
-- Study 013's data-step report, three keys only (`DATA_STEP_KEYS`): whether the
+- Study 013's data-step report, three keys (`DATA_STEP_KEYS`): whether the
   step stopped for a gap amendment, whether it halted, whether its §6.2
-  price-field check passed.
+  price-field check passed; and a fourth, optional key (`DATA_STEP_OPTIONAL_KEYS`):
+  the dated amendment a re-run was made under, None when absent (§16, 2026-11-17).
 - The snapshot-of-record row of each sampled market, eight fields (`RECORD_FIELDS`,
-  §5.3), after the snapshot's `records.jsonl` has been hashed against its line in
-  Study 013's `paper-log/snapshots.csv`; a mismatch or a missing file refuses with
-  nothing read (`SnapshotHashMismatch`).
+  §5.3), after **every** snapshot the run will touch has been hashed against its
+  line in Study 013's `paper-log/snapshots.csv` (`verify_snapshots`); a mismatch
+  or a missing file refuses with nothing read (`SnapshotHashMismatch`). The
+  readers take the verified table and refuse a day that is not in it.
 - From earlier snapshots, for the moved-end count of §9.6: `id` and `endDate` only
-  (`END_FIELDS`), after the same hash check.
+  (`END_FIELDS`), from the same verified table; a logged day with no file is
+  'missing' in that table and skipped (the count is descriptive).
 
 `project` is the one place a snapshot row's fields are taken; it refuses any
 field outside the list it is given, and every list is a module constant that the
@@ -34,7 +37,10 @@ SAMPLE_FIELDS = ("trial", "market", "cluster", "price", "snapshot", "realised_ho
 RECORD_FIELDS = ("id", "bestBid", "bestAsk", "orderPriceMinTickSize", "liquidityNum", "feesEnabled", "endDate", "eventIds")
 END_FIELDS = ("id", "endDate")
 DATA_STEP_KEYS = ("stopped_for_amendment", "halted", "price_field_check")
+DATA_STEP_OPTIONAL_KEYS = ("amendment",)  # §16 (2026-11-17): the dated amendment a Study 013 re-run was made under
 SAMPLE_HASH_KEY = "sample_jsonl_sha256"
+MISSING = "missing"  # a logged snapshot day with no records file (the moved-end scan skips it and says so)
+FIXED_FOLLOWED_EVENTS = frozenset({"1292829", "770450"})  # §6.3: the two events the desk's weekly view follows
 
 
 class Refusal(Exception):
@@ -93,7 +99,8 @@ def as_float(v: object) -> float | None:
 
 
 def read_data_step(report_json: Path) -> dict:
-    """The three keys of Study 013's data-step report (§5.1, §5.4); `price_field_pass` is the check's `pass` flag."""
+    """The three keys of Study 013's data-step report (§5.1, §5.4) and the optional `amendment` (§16, 2026-11-17);
+    `price_field_pass` is the check's `pass` flag."""
     if not report_json.exists():
         raise Refusal(f"Study 013's data-step report {report_json.name} is missing: its data step has not run (§14 step 3)")
     d = json.loads(report_json.read_text(encoding="utf-8"))
@@ -101,10 +108,12 @@ def read_data_step(report_json: Path) -> dict:
     if missing:
         raise Refusal(f"Study 013's data-step report lacks {missing}; the three keys of §5.1 are required")
     pfc = d["price_field_check"]
+    amendment = d.get("amendment")
     return {
         "stopped_for_amendment": bool(d["stopped_for_amendment"]),
         "halted": bool(d["halted"]),
         "price_field_pass": bool(pfc.get("pass")) if isinstance(pfc, dict) else bool(pfc),
+        "amendment": str(amendment) if amendment else None,
     }
 
 
@@ -143,9 +152,13 @@ def read_snapshot_log(log_csv: Path) -> dict[dt.date, str]:
     return out
 
 
+def records_path(snapshot_root: Path, day: dt.date) -> Path:
+    return snapshot_root / day.isoformat() / "records.jsonl"
+
+
 def verify_records(snapshot_root: Path, day: dt.date, logged_sha: str) -> tuple[Path, str]:
     """Hash a snapshot's records file against the log line of its day before any row is read; returns (path, hash)."""
-    path = snapshot_root / day.isoformat() / "records.jsonl"
+    path = records_path(snapshot_root, day)
     if not path.exists():
         raise SnapshotHashMismatch(f"snapshot {day.isoformat()} is logged but {path.name} is missing; refused, nothing read")
     h = sha256_file(path)
@@ -157,6 +170,25 @@ def verify_records(snapshot_root: Path, day: dt.date, logged_sha: str) -> tuple[
     return path, h
 
 
+def verify_snapshots(snapshot_root: Path, log: dict[dt.date, str], days: Iterable[dt.date], *,
+                     allow_missing: bool = False) -> dict[str, str]:
+    """§5.1: every snapshot the run will read, hashed against its logged line **before any row of any of them is read**.
+
+    Returns snapshot date iso -> verified hash. A day the log does not list is a refusal (Study 013 could not have
+    chosen it). A logged day with no file is a refusal unless `allow_missing` (the moved-end scan's earlier days), in
+    which case it is MISSING in the table and the readers skip it."""
+    out: dict[str, str] = {}
+    for day in sorted(set(days)):
+        if day not in log:
+            raise Refusal(f"sample rows name snapshot {day.isoformat()}, which Study 013's snapshot log does not list")
+        if allow_missing and not records_path(snapshot_root, day).exists():
+            out[day.isoformat()] = MISSING
+            continue
+        _, h = verify_records(snapshot_root, day, log[day])
+        out[day.isoformat()] = h
+    return out
+
+
 def _iter_rows(path: Path) -> Iterable[dict]:
     with open(path, encoding="utf-8") as f:
         for line in f:
@@ -164,58 +196,60 @@ def _iter_rows(path: Path) -> Iterable[dict]:
                 yield json.loads(line)
 
 
-def read_record_rows(snapshot_root: Path, log: dict[dt.date, str], wanted: dict[dt.date, set[str]]) -> tuple[dict[tuple[str, str], dict], dict[str, str]]:
+def _verified_path(snapshot_root: Path, verified: dict[str, str], day: dt.date) -> Path:
+    h = verified.get(day.isoformat())
+    if h is None or h == MISSING:
+        raise Refusal(f"snapshot {day.isoformat()} was not verified before reading (§5.1); refused, nothing read")
+    return records_path(snapshot_root, day)
+
+
+def read_record_rows(snapshot_root: Path, verified: dict[str, str], wanted: dict[dt.date, set[str]]) -> dict[tuple[str, str], dict]:
     """The snapshot-of-record rows: for each date, the eight fields of §5.3 for every wanted id.
 
-    Returns ((snapshot date iso, id) -> projected row, snapshot date iso -> verified hash). A snapshot named on a
-    sample row but absent from the log is a refusal (Study 013 could not have chosen it)."""
+    Returns (snapshot date iso, id) -> projected row. Every wanted day must be in `verified` (from `verify_snapshots`);
+    the hashes are checked there, before this function reads a row of any day."""
+    paths = {day: _verified_path(snapshot_root, verified, day) for day in sorted(wanted)}  # every day checked first
     rows: dict[tuple[str, str], dict] = {}
-    hashes: dict[str, str] = {}
-    for day in sorted(wanted):
-        if day not in log:
-            raise Refusal(f"sample rows name snapshot {day.isoformat()}, which Study 013's snapshot log does not list")
-        path, h = verify_records(snapshot_root, day, log[day])
-        hashes[day.isoformat()] = h
+    for day, path in paths.items():
         ids = wanted[day]
         for r in _iter_rows(path):
             rid = str(r.get("id"))
             if rid in ids:
                 rows[(day.isoformat(), rid)] = project(r, RECORD_FIELDS)
-    return rows, hashes
+    return rows
 
 
-def first_end_dates(snapshot_root: Path, log: dict[dt.date, str], ids: set[str], from_day: dt.date, to_day: dt.date) -> tuple[dict[str, object], dict[str, str]]:
+def first_end_dates(snapshot_root: Path, verified: dict[str, str], ids: set[str], from_day: dt.date, to_day: dt.date) -> dict[str, object]:
     """§9.6 moved-end count: for each id, `endDate` on the first snapshot dated in [from_day, to_day] that lists it.
 
-    Reads `id` and `endDate` only, each snapshot verified first; a snapshot in the range with no file is skipped and
-    named in the returned hashes as 'missing' (the count is descriptive and the gap is reported, not hidden)."""
+    Reads `id` and `endDate` only, from days in `verified` (hashed before any read); a day marked MISSING is skipped
+    (the count is descriptive and the gap is reported by the caller, not hidden)."""
     found: dict[str, object] = {}
-    hashes: dict[str, str] = {}
     remaining = set(ids)
-    for day in sorted(d for d in log if from_day <= d <= to_day):
+    days = sorted(dt.date.fromisoformat(d) for d in verified)
+    for day in days:
+        if not from_day <= day <= to_day:
+            continue
         if not remaining:
             break
-        path = snapshot_root / day.isoformat() / "records.jsonl"
-        if not path.exists():
-            hashes[day.isoformat()] = "missing"
+        if verified[day.isoformat()] == MISSING:
             continue
-        path, h = verify_records(snapshot_root, day, log[day])
-        hashes[day.isoformat()] = h
-        for r in _iter_rows(path):
+        for r in _iter_rows(records_path(snapshot_root, day)):
             rid = str(r.get("id"))
             if rid in remaining:
                 found[rid] = project(r, END_FIELDS)["endDate"]
                 remaining.discard(rid)
-    return found, hashes
+    return found
 
 
-def read_followed_events(events_csv: Path, before: dt.date) -> tuple[set[str], set[str]]:
+def read_followed_events(events_csv: Path, run_date: dt.date) -> tuple[set[str], set[str]]:
     """The desk's followed events (§6.3): (the two ids fixed in the pre-registration, every other id with a
-    `followed_from` date before `before`). Both sets are strings; a row with an unreadable date is counted as followed."""
-    fixed = {"1292829", "770450"}
+    `followed_from` date on or before `run_date`). Both sets are strings; a row with an unreadable date is counted
+    as followed. A missing file is a refusal: it is committed, so its absence means a wrong path."""
+    fixed = set(FIXED_FOLLOWED_EVENTS)
     later: set[str] = set()
     if not events_csv.exists():
-        return fixed, later
+        raise Refusal(f"the desk's followed-events file {events_csv} is missing; the §6.3 exclusion cannot be applied")
     with open(events_csv, newline="", encoding="utf-8") as f:
         for r in csv.DictReader(f):
             eid = str(r.get("event_id", "")).strip()
@@ -226,6 +260,6 @@ def read_followed_events(events_csv: Path, before: dt.date) -> tuple[set[str], s
             except ValueError:
                 later.add(eid)
                 continue
-            if since < before:
+            if since <= run_date:  # the desk may read books on the morning of the run (code review, should-fix 3)
                 later.add(eid)
     return fixed, later

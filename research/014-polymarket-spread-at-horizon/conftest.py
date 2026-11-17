@@ -1,5 +1,6 @@
-"""Make the study folder importable as the package root for pytest, so that
-``import collector`` works (the convention of Studies 009-011)."""
+"""Make the study folder importable as the package root for pytest, so that ``from src import ...`` and
+``from tests import ...`` resolve from any working directory (this study has no collector; the convention
+is Studies 009–013's)."""
 import sys
 from pathlib import Path
 

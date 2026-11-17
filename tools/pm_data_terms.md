@@ -84,6 +84,7 @@ The venue's terms page had been tried on 2026-11-01 00:05–05:08 UTC (the desk'
 | Date (UTC) | Study | Document | Observed | Verdict |
 |---|---|---|---|---|
 | 2026-11-02 12:24:19 | 013 | `https://polymarket.com/tos`, HTTP 200, 577,173 bytes, SHA-256 `19076bd1fba9585312f9b46a8ee4f64f319fe267677fb48af5c1ae831f84ea2d` | "Effective as of August 11, 2026": the same effective date as the 2026-11-01 read; the saved copy is under `tools/data/raw/pm-terms-2026-11-02/` (git-ignored) | `derived`, unchanged |
+| 2026-11-17 00:17:56 | 014 | `https://polymarket.com/tos`, HTTP 200, 506,478 bytes, SHA-256 `73eebc97af33e04074b704d922035e2a0013b82b673ac3c61fd5e70ff15b9cd5` | "Effective as of August 11, 2026" (twice in the page): the same effective date as the 2026-11-01 and 2026-11-02 reads; the page's byte count differs from the 2 November copy (a changed page shell, not a changed effective date, by the date string alone; the terms text was not diffed); the saved copy is under `tools/data/raw/pm-terms-2026-11-17/` (git-ignored, `SHA256SUMS` beside it) | `derived`, unchanged |
 
 ## Price series for the Bitcoin barrier markets (2026-11-04)
 

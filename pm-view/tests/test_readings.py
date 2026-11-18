@@ -395,3 +395,24 @@ def test_committed_reading_ids_are_unique_and_outcomes_refer_to_readings():
     out = [r["id"] for r in read("readings_outcomes.csv")]
     assert len(out) == len(set(out)), "readings_outcomes.csv: an id scored twice"
     assert set(out) <= set(ids), "readings_outcomes.csv: an id with no reading"
+
+
+def test_a_committed_row_keeps_the_gate_column_of_its_day_under_the_dated_at_bound_rule():
+    # 2026-11-18 12:15Z (predictions/POST_MORTEMS.md "A gate opened by the method's ceiling"): the 13 November hike
+    # row, net 1.000 in [1.000, 1.000] against 0.885, R2 true, carries `open`; it stays right as written because the
+    # rule is dated by recorded_utc, and a row recorded after the date with the same figures is refused
+    from datetime import timedelta
+    line = {"method": "fomc_bills", "in_force_utc": "2026-11-05T18:29:17Z", "sha256": "ab" * 32, "r2": "true", "source": "s"}
+    before = L.AT_BOUND_SINCE - timedelta(seconds=1)
+    def judged(gate_col: str, at) -> list[str]:
+        return L.reading_violations("fomc_bills", 1.0, 1.0, 1.0, 0.885, 0.230, QUOTE, "2026-11-13", "2026-12-09",
+                                    gate_col=gate_col, calibration=line, at=at)
+    assert not any("[reading:gate-column]" in x for x in judged("open", before))
+    assert any("[reading:gate-column]" in x and "'at-bound'" in x for x in judged("open", L.AT_BOUND_SINCE))
+    assert any("[reading:gate-column]" in x for x in judged("open", None))  # judged now: the rule applies
+    assert not any("[reading:gate-column]" in x for x in judged("at-bound", L.AT_BOUND_SINCE))
+    assert any("[reading:gate-column]" in x for x in judged("at-bound", before))  # the column of a later day on an earlier row
+    # the committed record as it stands: the 13 November row is judged under its recorded_utc (the file test above)
+    rows = read("readings.csv")
+    r = next(x for x in rows if x["id"] == "R-2026-11-13-fomc_bills-3215008")
+    assert r["gate"] == "open" and L.parse_utc_stamp(r["recorded_utc"]) < L.AT_BOUND_SINCE

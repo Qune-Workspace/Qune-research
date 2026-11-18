@@ -257,3 +257,41 @@ def test_live_figures_refuse_a_meeting_the_list_does_not_reach():
     assert "stop" in fig and "not on the meeting list (last listed 2026-12-09)" in fig["stop"] and "classes" not in fig
     fig = F.live_figures(s, listed + [date(2027, 1, 27)], date(2027, 1, 27), date(2026, 12, 11), None)
     assert "classes" in fig and fig["rd"]["days_to_meeting"] == 47
+
+
+def test_live_verdict_refuses_a_reading_at_its_bound_as_the_gate_does():
+    # 2026-11-18 12:15Z (predictions/POST_MORTEMS.md "A gate opened by the method's ceiling"): the 13 November case,
+    # net 1.000 in [1.000, 1.000] against 0.885 under R2 true, was printed as a call candidate and recorded `open`;
+    # implied_steps clips at one step, so the reading says the side, not how far
+    import pm_lib as L
+    cal = {"rules": {"R1_primary": "net", "R2_basis_for_a_call": True},
+           "live_bin": {"net": {"n": 4, "observed_minus_predicted": -0.32}}}
+    gated = {**cal, "rules": {**cal["rules"], "R2_basis_for_a_call": False}}
+    assert F.live_verdict(cal, 1.0, 1.0, 1.0, 0.885).startswith("no call: the net reading 1.000 is at its bound")
+    assert "at-bound" in " ".join(L.method_violations("fomc_bills", 1.0, 1.0, 1.0, 0.885, True))
+    assert F.live_verdict(cal, 0.0, 0.0, 0.0, 0.30).startswith("no call: the net reading 0.000 is at its bound")
+    assert F.live_verdict(cal, 1.0, 0.585, 1.0, 0.50).startswith("no call: the net reading 1.000 is at its bound")
+    assert F.live_verdict(cal, 1.0, 1.0, 1.0, 0.885, "raw").startswith("no call: the raw reading 1.000 is at its bound")
+    # the missing file and R2 still come first; the bound comes before the range and the threshold
+    assert F.live_verdict(gated, 1.0, 1.0, 1.0, 0.885).startswith("no call: the reading does not beat")
+    assert F.live_verdict(None, 1.0, 1.0, 1.0, 0.885).startswith("no call: no calibration")
+    # the printer and the gate agree on every bound point against the grid, as the grid test holds them inside it
+    grid = [x / 20 for x in range(1, 20)]
+    for p, lo, hi in ((1.0, 1.0, 1.0), (0.0, 0.0, 0.0), (1.0, 0.5, 1.0), (0.0, 0.0, 0.5)):
+        for mid in grid:
+            assert not F.live_verdict(cal, p, lo, hi, mid).startswith("call candidate"), (p, lo, hi, mid)
+            assert L.method_violations("fomc_bills", p, lo, hi, mid, True) != [], (p, lo, hi, mid)
+    # a reading just inside the bound is judged by the range and the threshold as before
+    assert F.live_verdict(cal, 0.999, 0.6, 1.0, 0.45).startswith("call candidate")
+
+
+def test_bound_frequency_counts_the_meetings_whose_reading_sat_at_the_bound():
+    # 2026-11-18 12:15Z: the figure the view prints beside a clipped reading, from the scored rows
+    rows = [{"y": "hike", "net": {"hike": 1.0, "none": 0.0, "cut": 0.0}},
+            {"y": "none", "net": {"hike": 1.0, "none": 0.0, "cut": 0.0}},
+            {"y": "hike", "net": {"hike": 0.6, "none": 0.4, "cut": 0.0}},
+            {"y": "cut", "net": None}]
+    assert F.bound_frequency(rows, "net", "hike", 1.0) == {"bound": 1.0, "n": 2, "hits": 1}
+    assert F.bound_frequency(rows, "net", "none", 0.0) == {"bound": 0.0, "n": 2, "hits": 1}
+    assert F.bound_frequency(rows, "net", "cut", 0.0) == {"bound": 0.0, "n": 3, "hits": 0}
+    assert F.bound_frequency(rows, "net", "hike", 0.0) == {"bound": 0.0, "n": 0, "hits": 0}

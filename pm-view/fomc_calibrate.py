@@ -486,6 +486,14 @@ def live_verdict(cal: dict[str, Any] | None, p_primary: float, range_lo: float, 
     rules = cal["rules"]
     if not rules["R2_basis_for_a_call"]:
         return "no call: the reading does not beat its baselines on its own history (R2)"
+    if p_primary in (0.0, 1.0):
+        # 2026-11-18 12:15Z (predictions/POST_MORTEMS.md "A gate opened by the method's ceiling"): implied_steps clips
+        # at one step, so a reading of 1.000 (or 0.000) says the bills price at least a full step (or none) and
+        # nothing about how surely; the 13 November 1.000 against 0.885 opened the gate on that clip while a hike
+        # followed 12 of the 14 meetings the net reading sat at 1.000.  Same answer as pm_lib.method_violations.
+        return (f"no call: the {primary} reading {p_primary:.3f} is at its bound (the bills price at least one full step, "
+                "or none): it says the side, not how far, and the gate measures no departure from it; the frequency in "
+                "the reading's own bin is printed below as information, and a call needs a stated basis naming it")
     lo, hi = sorted((range_lo, range_hi))
     if lo <= market_mid <= hi:
         return f"no call: the market mid {market_mid:.3f} lies inside the reading's range under the historical basis [{lo:.3f}, {hi:.3f}]"
@@ -577,7 +585,30 @@ def live_lines(s: Series, meetings: list[date], d: date, today: date, cal: dict[
         if row is not None:
             out.append(f"  in the reading's own bin ({row['bin']}) the {primary} reading averaged {row['mean_p_hike']:.3f} and a hike "
                        f"followed on {row['observed_hike']:.3f} of {row['n']} meetings [reported, not a rule]")
+    # 2026-11-18 12:15Z (predictions/POST_MORTEMS.md "A gate opened by the method's ceiling"): beside a reading at
+    # its bound, what followed on the scored meetings whose reading sat at the same bound; the bin above mixes
+    # clipped and unclipped readings.  From the download in hand, for the classes a mid was given for.
+    bound_rows: list[dict[str, Any]] | None = None
+    for cls in CLASSES:
+        p = rd[primary][cls]
+        if cls in mids and p in (0.0, 1.0):
+            if bound_rows is None:
+                bound_rows = add_baselines(rows_for(s, meetings, PRIMARY_LAG_DAYS))
+            bf = bound_frequency(bound_rows, primary, cls, p)
+            out.append(f"  the {primary} reading of {cls} is at its bound {p:.3f}: on the {bf['n']} scored meetings of this download "
+                       f"whose {primary} reading of {cls} sat at {p:.3f}, {cls} followed on {bf['hits']} "
+                       f"({bf['hits'] / bf['n']:.3f}) [reported, not a rule; a bound reading is never a basis for a call]"
+                       if bf["n"] else f"  the {primary} reading of {cls} is at its bound {p:.3f}: no scored meeting of this download "
+                                       f"had its {primary} reading of {cls} there [reported, not a rule]")
     return out
+
+
+def bound_frequency(rows: list[dict[str, Any]], model: str, cls: str, bound: float) -> dict[str, Any]:
+    """What followed on the scored meetings whose `model` reading of `cls` sat exactly at `bound` (0.0 or
+    1.0): their count and how many resolved as `cls`.  A clipped reading says the side and not how far, so
+    this frequency, not the reading, is what the record says about a reading at the bound (2026-11-18 12:15Z)."""
+    at = [r for r in rows if r.get(model) is not None and r[model][cls] == bound]
+    return {"bound": bound, "n": len(at), "hits": sum(1 for r in at if r["y"] == cls)}
 
 
 def file_sha256(path: Path | None) -> str | None:

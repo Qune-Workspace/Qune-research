@@ -228,3 +228,23 @@ def test_run_reports_a_failed_fetch_and_a_short_series_as_a_refusal(tmp_path, ca
                dry_run=True, show_level=False, now=lambda: NOW)
     assert rc == 1 and "primary window needs 31" in capsys.readouterr().out
     assert not (tmp_path / "m.json").exists()
+
+
+def test_departure_verdict_refuses_a_reading_at_its_bound_as_the_gate_does():
+    # 2026-11-18 12:15Z (predictions/POST_MORTEMS.md "A gate opened by the method's ceiling"): a touch probability of
+    # 1.000 (a level already reached on the daily series) or 0.000 says the side, not how far; the one copy of the
+    # rule is pm_lib.method_violations and this printer gives the same answer
+    import pm_lib as L
+    cal = calibration(True)
+    assert B.departure_verdict(1.0, 1.0, 0.85, cal).startswith("no call: the reading is at its bound")
+    assert B.departure_verdict(1.0, 0.9, 0.85, cal).startswith("no call: the reading is at its bound")
+    assert B.departure_verdict(0.0, 0.0, 0.05, cal).startswith("no call: the reading is at its bound")
+    assert B.departure_verdict(1.0, 1.0, 0.85, calibration(False)).startswith("no call: the method does not beat")
+    assert B.departure_verdict(1.0, 1.0, 0.85, None).startswith("no call: no calibration file")
+    grid = [x / 20 for x in range(1, 20)]
+    for p, s in ((1.0, 1.0), (1.0, 0.9), (0.0, 0.0), (0.0, 0.1)):
+        for mid in grid:
+            assert not B.departure_verdict(p, s, mid, cal).endswith("a call needs a basis sentence"), (p, s, mid)
+            assert L.method_violations("btc_touch", p, min(p, s), max(p, s), mid, True) != [], (p, s, mid)
+    # just inside the bound the printer judges as before
+    assert B.departure_verdict(0.999, 0.99, 0.65, cal).endswith("a call needs a basis sentence")

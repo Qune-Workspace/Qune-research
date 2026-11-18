@@ -84,6 +84,9 @@ BREAKERS: dict[str, dict] = {
     "method-departure": dict(method_p=0.52, range_lo=0.50, range_hi=0.54, market_mid=0.45, desk_p=0.60),
     "desk-side": dict(desk_p=0.30),
     "made-on-quote-day": dict(made_on="2026-11-07"),
+    # 2026-11-18 12:15Z, "A gate opened by the method's ceiling": the 13 November shape, a reading at 1.000 in
+    # [1.000, 1.000]; judged now (no `at`), so the dated rule applies
+    "at-bound": dict(method_p=1.0, range_lo=1.0, range_hi=1.0),
 }
 
 

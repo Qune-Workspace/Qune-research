@@ -352,3 +352,38 @@ def test_quote_day_parses_and_the_timing_rule_names_a_bad_stamp():
     assert "no fetch time on record" in v
     [v] = L.quote_timing_violations("2026-11-06", "2026-11-07T06:20:45Z")
     assert "read after the call was made" in v
+
+
+def test_method_violations_refuse_a_reading_at_its_bound_from_the_dated_rule_on():
+    # 2026-11-18 12:15Z (predictions/POST_MORTEMS.md "A gate opened by the method's ceiling"): the 13 November row,
+    # net 1.000 in [1.000, 1.000] against 0.885 under R2 true, read `open`; a reading at its bound says the side,
+    # not how far.  The rule is dated: a row judged at a time before AT_BOUND_SINCE keeps the gate of its day.
+    from datetime import timedelta
+    before = L.AT_BOUND_SINCE - timedelta(seconds=1)
+    assert L.method_violations("fomc_bills", 1.0, 1.0, 1.0, 0.885, True, at=before) == []
+    assert L.gate_column("fomc_bills", 1.0, 1.0, 1.0, 0.885, True, at=before) == "open"
+    now = L.method_violations("fomc_bills", 1.0, 1.0, 1.0, 0.885, True)
+    assert len(now) == 1 and now[0].startswith("[gate:at-bound] the fomc_bills reading 1.000 is at its bound")
+    assert L.gate_column("fomc_bills", 1.0, 1.0, 1.0, 0.885, True) == "at-bound"
+    assert L.gate_column("fomc_bills", 1.0, 1.0, 1.0, 0.885, True, at=L.AT_BOUND_SINCE) == "at-bound"
+    # the floor too, and a bound reading whose range is not a point (the 6 November shape, market far below it)
+    assert L.gate_column("fomc_bills", 0.0, 0.0, 0.0, 0.30, True) == "at-bound"
+    assert L.gate_column("fomc_bills", 1.0, 0.585, 1.0, 0.50, True) == "at-bound"
+    # a reading inside (0, 1) is untouched by the rule on either side of the date
+    assert L.method_violations("fomc_bills", 0.99, 0.60, 1.00, 0.45, True, desk_p=0.90, at=before) == []
+    assert L.method_violations("fomc_bills", 0.99, 0.60, 1.00, 0.45, True, desk_p=0.90) == []
+    # the other refusals still accumulate beside it, in the README order
+    assert L.gate_column("btc_touch", 1.0, 1.0, 1.0, 0.95, True) == "at-bound;method-departure"
+    assert L.gate_column("btc_touch", 0.0, 0.0, 0.0, 0.05, True) == "at-bound;method-departure;touch-below"
+    # R2 false and a bound reading: both refusals, the calibration first
+    v = L.method_violations("btc_touch", 1.0, 1.0, 1.0, 0.50, False)
+    assert [L.GATE_TAG_RE.search(x).group(1) for x in v] == ["calibrated", "at-bound"]
+    # the call gate threads the time through: a ledger candidate judged now is refused, one at the quote's day before
+    # the rule is judged as the gate then read
+    tags_now = L.gate_tags(" ".join(L.call_violations(0.99, 0.885, "the market's 0.885 is missing x", "upper bound 4.25% on 2026-12-09",
+                                                      method="fomc_bills", method_p=1.0, range_lo=1.0, range_hi=1.0, r2=True)))
+    assert tags_now == {"at-bound"}
+    tags_then = L.gate_tags(" ".join(L.call_violations(0.99, 0.885, "the market's 0.885 is missing x", "upper bound 4.25% on 2026-12-09",
+                                                       method="fomc_bills", method_p=1.0, range_lo=1.0, range_hi=1.0, r2=True, at=before)))
+    assert tags_then == set()
+    assert L.at_bound_rule_applies(None) and L.at_bound_rule_applies(L.AT_BOUND_SINCE) and not L.at_bound_rule_applies(before)

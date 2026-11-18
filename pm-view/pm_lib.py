@@ -116,8 +116,22 @@ GATE_TAGS = (
     # stamp the gate reads is parsed in UTC_STAMP_FORMAT before it is compared; another format refuses the row
     "utc-stamp",                # the quote's fetched_utc, the admission time, the history's in_force_utc and, since
                                 # 2026-11-11 18:15Z, the quote's scheduled end (end_date) parse
+    # 2026-11-18 12:15Z (predictions/POST_MORTEMS.md "A gate opened by the method's ceiling"): a method reading at
+    # 0.000 or 1.000 is clipped; it says the side and not how far, so the departure measured from it is the
+    # market's own distance from certainty, not a disagreement.  Dated: rows recorded or quoted before
+    # AT_BOUND_SINCE are judged as they were written (the 13 November `open`), as a calibration line is.
+    "at-bound",                 # a method reading at its bound (0.000 or 1.000) is never a basis for a call
 )
 GATE_TAG_RE = re.compile(r"\[gate:([a-z-]+)\]")
+# the rule above applies to rows recorded (readings) or quoted (calls) from this time on; before it, a row carries
+# the gate column the gate gave on its day, and the committed-file tests judge it under that rule, never today's
+AT_BOUND_SINCE = datetime(2026, 11, 18, 12, 35, tzinfo=UTC)
+
+
+def at_bound_rule_applies(at: datetime | None) -> bool:
+    """Whether the `at-bound` rule judges a row: always for a row judged now (`at` None); for a row with
+    a time, only from AT_BOUND_SINCE on, so a row written under the earlier gate keeps its column."""
+    return at is None or at >= AT_BOUND_SINCE
 
 
 def gate(tag: str, reason: str) -> str:
@@ -636,11 +650,13 @@ def record_calibration_line(history_path: Path, method: str, calibration_path: P
 
 
 def gate_column(method: str, method_p: float | None, range_lo: float | None, range_hi: float | None,
-                market_mid: float | None, r2: bool | None) -> str:
-    """The readings.csv `gate` column: the call gate's refusal tags for the numbers, sorted, or `open`."""
+                market_mid: float | None, r2: bool | None, at: datetime | None = None) -> str:
+    """The readings.csv `gate` column: the call gate's refusal tags for the numbers, sorted, or `open`.
+    `at` is the row's recorded_utc when a committed row is judged (the dated `at-bound` rule), None for a row
+    judged now."""
     if market_mid is None:
         return ""
-    tags = gate_tags(" ".join(method_violations(method, method_p, range_lo, range_hi, market_mid, r2)))
+    tags = gate_tags(" ".join(method_violations(method, method_p, range_lo, range_hi, market_mid, r2, at=at)))
     return ";".join(sorted(tags)) or "open"
 READING_TAG_RE = re.compile(r"\[reading:([a-z-]+)\]")
 
@@ -667,10 +683,12 @@ def reading_violations(method: str, method_p: float | None, range_lo: float | No
                        made_on: str, due_on: str, market_id: str = "",
                        existing_ids: Iterable[str] = (), gate_col: str | None = None,
                        calibration: dict[str, Any] | None = None,
-                       calibration_sha256: str | None = None) -> list[str]:
+                       calibration_sha256: str | None = None, at: datetime | None = None) -> list[str]:
     """What stops a reading row from being admitted to readings.csv; empty when it may be.
     Each reason carries its `[reading:<tag>]` (READING_TAGS; the same tag sits beside the
-    rule in README.md rule 5).
+    rule in README.md rule 5).  `at` (2026-11-18 12:15Z) is the row's recorded_utc when a
+    committed row is judged, so the gate column is held under the dated `at-bound` rule of
+    its day; None judges a row now.
 
     1. the method is one with a calibration file (READING_METHODS; `stated` has no reading);
     2. the reading and its range are probabilities in [0, 1] with lo <= p <= hi;
@@ -700,10 +718,10 @@ def reading_violations(method: str, method_p: float | None, range_lo: float | No
                                     f"{CALIBRATION_HISTORY}: the file was written by a route that did not record it; "
                                     "put it on record (readings.py record-calibration) before a reading is "
                                     "admitted under it"))
-        want = gate_column(method, method_p, range_lo, range_hi, market_mid, history_r2(calibration))
+        want = gate_column(method, method_p, range_lo, range_hi, market_mid, history_r2(calibration), at=at)
         if want and gate_col != want:
             out.append(reading_gate("gate-column", f"gate column {gate_col!r} is not the call gate's {want!r} under the "
-                                    "calibration in force when the row was recorded"))
+                                    "calibration and the gate rules in force when the row was recorded"))
     if method not in READING_METHODS:
         out.append(reading_gate("from-a-method",
                                 f"method must be one of {', '.join(READING_METHODS)}: a reading comes from a method"))
@@ -817,7 +835,7 @@ def reading_row_violations(row: dict[str, Any], quote: dict[str, Any] | None, hi
                                   as_float(row.get("range_hi")), as_float(row.get("market_mid")), climatology_p, quote,
                                   made_on, str(row.get("due_on", "")), market_id=market_id, existing_ids=existing_ids,
                                   gate_col=str(row.get("gate", "")), calibration=calibration,
-                                  calibration_sha256=calibration_sha256))
+                                  calibration_sha256=calibration_sha256, at=recorded_at))
     return out
 
 
@@ -992,7 +1010,8 @@ def method_gate(method: str, calibration: dict[str, Any] | None) -> bool | None:
 
 
 def method_violations(method: str, method_p: float | None, range_lo: float | None, range_hi: float | None,
-                      market_mid: float, r2: bool | None, desk_p: float | None = None) -> list[str]:
+                      market_mid: float, r2: bool | None, desk_p: float | None = None,
+                      at: datetime | None = None) -> list[str]:
     """The method gate of README rule 2, in the order the reasons are checked,
     on the numbers a ledger row carries; empty when the method may be a basis
     for a call.  The one copy of the rule: barrier.departure_verdict and
@@ -1007,6 +1026,15 @@ def method_violations(method: str, method_p: float | None, range_lo: float | Non
        range the ledger carries is the hull of the reading and its range under
        the method's own uncertainty: the historical basis for the bills, the
        primary-to-sensitivity window for the touch formula);
+    4a. (2026-11-18 12:15Z, dated by `at`, see at_bound_rule_applies) the
+       reading is not at its bound: a reading of 0.000 or 1.000 is clipped
+       (the bills price at least a full step, or none; a touch certain or
+       impossible on the daily series) and says the side, not how far, so the
+       departure measured from it is the market's distance from certainty,
+       not a disagreement; the 13 November `open` on a 1.000 against 0.885
+       was that, while a hike followed 12 of the 14 meetings the net reading
+       sat at 1.000 (predictions/POST_MORTEMS.md "A gate opened by the
+       method's ceiling");
     5. the market mid lies outside the range (inside: covered, never a call);
     6. for BELOW_MARKET_NEVER methods the reading is above the market;
     7. the reading departs from the mid by at least MIN_DEPARTURE;
@@ -1033,6 +1061,11 @@ def method_violations(method: str, method_p: float | None, range_lo: float | Non
         out.append(gate("range-brackets", f"the range [{range_lo:.3f}, {range_hi:.3f}] must bracket the method "
                                           f"reading {method_p:.3f} inside [0, 1]"))
         return out
+    if at_bound_rule_applies(at) and method_p in (0.0, 1.0):
+        out.append(gate("at-bound", f"the {method} reading {method_p:.3f} is at its bound: it says the side, not how "
+                                    "far, so the gate measures no departure from it; the view reports the outcome "
+                                    "frequency on the readings at this bound with its count beside the market, and a "
+                                    "call on this market needs a stated basis naming it"))
     if range_lo <= market_mid <= range_hi:
         out.append(gate("range", f"the market mid {market_mid:.3f} lies inside the reading's range "
                                  f"[{range_lo:.3f}, {range_hi:.3f}]: no call"))
@@ -1050,8 +1083,11 @@ def call_violations(desk_p: float, market_mid: float, basis: str, settles_on: st
                     proposition: str = "", method: str | None = None, method_p: float | None = None,
                     range_lo: float | None = None, range_hi: float | None = None,
                     r2: bool | None = None, made_on: str | None = None,
-                    quote_fetched_utc: str | None = None) -> list[str]:
-    """What stops a draft call from being logged; empty when it may be.
+                    quote_fetched_utc: str | None = None, at: datetime | None = None) -> list[str]:
+    """What stops a draft call from being logged; empty when it may be.  `at` (2026-11-18 12:15Z)
+    is the quote's fetch time when a ledger row is judged, the moment a call is judged under
+    (as the calibration line is), so the dated `at-bound` rule applies to rows quoted from its
+    date on; None judges a candidate now.
 
     `settles_on` (added 2026-11-04 after the first view described two touch
     markets as price-level markets from their titles, predictions/POST_MORTEMS.md)
@@ -1082,7 +1118,7 @@ def call_violations(desk_p: float, market_mid: float, basis: str, settles_on: st
     if method is None:
         out.append(gate("method-named", f"method must be stated: one of {', '.join(METHODS)}"))
     else:
-        out.extend(method_violations(method, method_p, range_lo, range_hi, market_mid, r2, desk_p))
+        out.extend(method_violations(method, method_p, range_lo, range_hi, market_mid, r2, desk_p, at=at))
     if made_on is not None:
         out.extend(quote_timing_violations(made_on, quote_fetched_utc))
     return out
@@ -1226,7 +1262,8 @@ def ledger_row_violations(call: dict[str, Any], quote: dict[str, Any] | None,
     r2 = history_r2(at_quote)
     out.extend(call_violations(desk_p, mid_row, str(call.get("basis", "")), str(call.get("settles_on", "")),
                                str(call.get("proposition", "")), method, method_p, lo, hi, r2,
-                               made_on=str(call.get("made_on", "")), quote_fetched_utc=fetched))
+                               made_on=str(call.get("made_on", "")), quote_fetched_utc=fetched,
+                               at=parse_utc_stamp(fetched)))  # 2026-11-18 12:15Z: judged at the quote (at-bound)
     return out
 
 

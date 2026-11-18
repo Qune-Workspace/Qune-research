@@ -347,6 +347,12 @@ def departure_verdict(p_primary: float, p_sensitivity: float | None, market_mid:
     if not cal["rules"]["R2_method_is_a_basis_for_a_call"]:
         return ("no call: the method does not beat its climatological baseline on its own history "
                 "(calibrate.py R2); the reading is reported beside the market only")
+    if p_primary in (0.0, 1.0):
+        # 2026-11-18 12:15Z (predictions/POST_MORTEMS.md "A gate opened by the method's ceiling"): a reading at its
+        # bound (a touch certain or impossible on the daily series) says the side, not how far; the one copy of the
+        # rule is pm_lib.method_violations and the grid and bound tests hold this printer to it.
+        return ("no call: the reading is at its bound (a touch certain or impossible on the daily series): it says the "
+                "side, not how far, and the gate measures no departure from it")
     dep = p_primary - market_mid
     if dep <= 0:
         return ("no call: the reading is below the market, the direction of the one-minute gap the daily-close "

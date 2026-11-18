@@ -57,6 +57,20 @@ research/POST_MORTEMS.md "thresholds before data", tools/check_question_gate.py)
   on 2026-11-04 was an assumption about the one-minute gap, never measured,
   and the measurable part of the bias runs the other way; the net sign against
   a Binance one-minute touch is unknown.  The basis sentence says so.
+  CORRECTED 2026-11-18 06:15Z (predictions/POST_MORTEMS.md "Three touches read
+  below an outcome that could only be YES"): the 0.108 compared a continuous-path
+  formula with a once-a-day outcome, which sees fewer touches than the path did;
+  with the barrier moved for daily monitoring (Broadie, Glasserman and Kou 1997;
+  `calibrate.py --monitoring daily`, post hoc, not the calibration in force) the
+  same rows over-read by 0.043, and the pooled Brier difference against
+  climatology is -0.0042 [-0.0210, +0.0121] where the run in force has +0.0024
+  [-0.0146, +0.0191]: R2 fails under both, R1 stays 30.  So about six tenths
+  of the "measurable part" was the mismatch of monitoring, not the formula;
+  the remainder is an over-read on the matched outcome, larger on down barriers
+  (the series drifted up over 2016-2026 and the formula has no drift).  The
+  three settled November legs that the method "read below their outcome" were
+  all YES because a touch market can only settle early as YES; that count is
+  not a direction of error and is never written as one (README rule 5).
 
 Data terms (tools/pm_data_terms.md, verdict fred-cbbtcusd = derived): the raw
 download stays under data/raw/fred/<UTC time>/ (git-ignored); data/fred_manifest.json
@@ -307,9 +321,10 @@ def lines(a: dict[str, Any], mids: dict[float, float], show_level: bool,
                    + (f"; R3 observed - predicted in the 0.5-0.9 bins {r3['observed_minus_predicted']:+.3f} on its own outcome"
                       if r3 else ""))
     out.append("  basis: the figure is a continuous-path touch probability under zero drift; on its own outcome (daily "
-               "Coinbase closes) it over-reads a touch (calibrate.py R3), while a Binance one-minute extreme is reached more "
-               "often than a daily close and the two venues' prices differ by a basis of their own: the net sign of its "
-               "error against the market's rule is not known")
+               "Coinbase closes) it over-reads a touch (calibrate.py R3; about six tenths of that over-read is the daily "
+               "outcome seeing fewer touches than the path, calibrate.py --monitoring daily, 2026-11-18), while a Binance "
+               "one-minute extreme is reached more often than a daily close and the two venues' prices differ by a basis "
+               "of their own: the net sign of its error against the market's rule is not known")
     out.append(f"  source: {CITATION}")
     return out
 

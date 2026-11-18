@@ -144,3 +144,47 @@ def test_a_run_without_out_writes_no_file_and_no_line(tmp_path):
     src.write_text("observation_date,CBBTCUSD\n" + "".join(f"{d.isoformat()},{v:.2f}\n" for d, v in obs), encoding="utf-8")
     assert C.run(src, None) == 0
     assert sorted(p.name for p in tmp_path.iterdir()) == ["CBBTCUSD.csv"]
+
+
+def test_monitoring_shift_is_zero_for_continuous_and_bgk_for_daily():
+    # 2026-11-18 06:15Z (predictions/POST_MORTEMS.md "Three touches read below an outcome that could only be YES"):
+    # the pre-specified run compares a continuous-path formula with a once-a-day outcome; the shift makes the
+    # formula read the barrier a daily close can reach (Broadie, Glasserman and Kou 1997), nothing else changes
+    assert C.monitoring_shift(0.37, "continuous") == 0.0
+    assert C.monitoring_shift(0.37, "daily") == pytest.approx(0.5826 * 0.37 * math.sqrt(1 / 365))
+    with pytest.raises(ValueError):
+        C.monitoring_shift(0.37, "hourly")
+
+
+def test_daily_monitoring_lowers_every_prediction_by_the_shifted_barrier_and_leaves_the_outcome_alone():
+    obs = flat_series(date(2024, 1, 1), date(2024, 12, 31))
+    cont = C.rows_for(obs)
+    daily = C.rows_for(obs, monitoring="daily")
+    assert C.rows_for(obs, monitoring="continuous") == cont  # the default is the pre-specified run, unchanged
+    assert len(daily) == len(cont) > 0
+    for a, b in zip(cont, daily, strict=True):
+        assert (a["month"], a["distance"], a["side"], a["y"], a["horizon_days"]) == (b["month"], b["distance"], b["side"], b["y"], b["horizon_days"])
+        assert b["p30"] < a["p30"] and b["p90"] < a["p90"]
+    r = next(r for r in daily if r["month"] == "2024-05" and r["distance"] == 0.10 and r["side"] == "down")
+    i = C.evaluation_index(obs, 2024, 5)
+    spot = obs[i][1]
+    s30 = L.realised_vol([v for _, v in obs[: i + 1]][-31:])
+    shifted = spot * math.exp(-(0.10 + C.monitoring_shift(s30, "daily")))
+    assert r["p30"] == pytest.approx(L.touch_probability(spot, shifted, s30, r["horizon_days"]))
+
+
+def test_a_shifted_run_names_its_monitoring_and_is_refused_with_out(tmp_path, capsys):
+    obs = flat_series(date(2023, 1, 1), date(2024, 12, 31))
+    src = tmp_path / "CBBTCUSD.csv"
+    src.write_text("observation_date,CBBTCUSD\n" + "".join(f"{d.isoformat()},{v:.2f}\n" for d, v in obs), encoding="utf-8")
+    rows = C.add_baseline(C.rows_for(obs, monitoring="daily"))
+    s = C.summarise(rows, [], monitoring="daily")
+    assert s["spec"]["monitoring"] == "daily" and "Broadie" in s["spec"]["monitoring_shift"]
+    assert "monitoring" not in C.summarise(C.add_baseline(C.rows_for(obs)), [])["spec"]  # the file in force keeps its shape
+    assert "POST HOC" in C.report(s)[0]
+    out = tmp_path / "data" / "calibration.json"
+    assert C.run(src, out, monitoring="daily") == 1
+    assert "REFUSED --monitoring daily with --out" in capsys.readouterr().out
+    assert not out.exists() and not out.parent.exists()
+    assert C.run(src, None, monitoring="daily") == 0
+    assert C.main(["--from-file", str(src), "--monitoring", "daily"]) == 0

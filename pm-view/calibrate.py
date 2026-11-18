@@ -93,6 +93,27 @@ SENSITIVITY_WINDOW = B.SENSITIVITY_WINDOW
 CALL_THRESHOLD = B.CALL_THRESHOLD
 DISTANCES = (0.025, 0.05, 0.10, 0.15, 0.20)
 SIDES = ("up", "down")
+# Monitoring of the outcome (added 2026-11-18 06:15Z, predictions/POST_MORTEMS.md "Three touches read below an
+# outcome that could only be YES").  The formula is the touch probability of a continuously watched path; the
+# outcome above is a DAILY close, which sees fewer touches than the path did.  Broadie, Glasserman and Kou
+# (Mathematical Finance 7(4), 1997, 325-349) show that a barrier watched every dt is, to first order, a
+# continuous barrier moved away from the spot by beta * sigma * sqrt(dt), beta = -zeta(1/2) / sqrt(2 pi).
+# "continuous" is the pre-specified run of 2026-11-05 (no shift; the calibration in force).  "daily" applies
+# the shift with the same window's sigma and dt = one day, so the formula is scored against the outcome it can
+# model; it is post hoc here, is reported as such, and cannot be written with --out (run() refuses).
+MONITORING = ("continuous", "daily")
+BGK_BETA = 0.5826
+MONITORING_DT_DAYS = 1.0
+
+
+def monitoring_shift(sigma: float, monitoring: str, days_per_year: int = 365) -> float:
+    """Log distance added to a barrier so the continuous formula reads a barrier watched once a day;
+    0 for continuous monitoring.  ValueError on a monitoring not in MONITORING."""
+    if monitoring not in MONITORING:
+        raise ValueError(f"monitoring {monitoring!r} is not one of {MONITORING}")
+    if monitoring == "continuous":
+        return 0.0
+    return BGK_BETA * sigma * math.sqrt(MONITORING_DT_DAYS / days_per_year)
 MIN_BASELINE_MONTHS = 12
 SECONDARY_DAY = 5
 BOOT = 2000
@@ -135,10 +156,13 @@ def touched_after(obs: list[tuple[date, float]], i: int, barrier: float, side: s
 
 
 def rows_for(obs: list[tuple[date, float]], min_day: int = 1,
-             primary: int = PRIMARY_WINDOW, sensitivity: int = SENSITIVITY_WINDOW) -> list[dict[str, Any]]:
+             primary: int = PRIMARY_WINDOW, sensitivity: int = SENSITIVITY_WINDOW,
+             monitoring: str = "continuous") -> list[dict[str, Any]]:
     """One row per (sample month, distance, side): the two predictions and the outcome.
     A month without an evaluation observation or without `sensitivity + 1`
-    observations before it is skipped.  No level is kept in a row."""
+    observations before it is skipped.  No level is kept in a row.  With
+    monitoring "daily" each prediction reads the barrier moved away from the spot
+    by monitoring_shift(its own window's sigma); the outcome is unchanged."""
     out: list[dict[str, Any]] = []
     for y, m in months_in(obs):
         i = evaluation_index(obs, y, m, min_day)
@@ -150,13 +174,15 @@ def rows_for(obs: list[tuple[date, float]], min_day: int = 1,
         closes = [v for _, v in obs[: i + 1]]
         s30 = realised_vol(closes[-(primary + 1):])
         s90 = realised_vol(closes[-(sensitivity + 1):])
+        shift30, shift90 = monitoring_shift(s30, monitoring), monitoring_shift(s90, monitoring)
         for dist in DISTANCES:
             for side in SIDES:
-                level = spot * math.exp(dist if side == "up" else -dist)
+                sign = 1.0 if side == "up" else -1.0
+                level = spot * math.exp(sign * dist)
                 out.append({
                     "month": f"{y:04d}-{m:02d}", "distance": dist, "side": side, "horizon_days": horizon,
-                    "p30": touch_probability(spot, level, s30, horizon),
-                    "p90": touch_probability(spot, level, s90, horizon),
+                    "p30": touch_probability(spot, spot * math.exp(sign * (dist + shift30)), s30, horizon),
+                    "p90": touch_probability(spot, spot * math.exp(sign * (dist + shift90)), s90, horizon),
                     "y": touched_after(obs, i, level, side, end),
                 })
     return out
@@ -220,8 +246,11 @@ def bootstrap_diff(rows: list[dict[str, Any]], a: str, b: str, draws: int = BOOT
     return {"point": point, "lo": draws_out[int(0.025 * draws)], "hi": draws_out[int(0.975 * draws) - 1]}
 
 
-def summarise(rows: list[dict[str, Any]], secondary: list[dict[str, Any]]) -> dict[str, Any]:
+def summarise(rows: list[dict[str, Any]], secondary: list[dict[str, Any]],
+              monitoring: str = "continuous") -> dict[str, Any]:
     """The aggregates: nothing in here is a level, a date-level pair or a row."""
+    if monitoring not in MONITORING:
+        raise ValueError(f"monitoring {monitoring!r} is not one of {MONITORING}")
     months = sorted({r["month"] for r in rows})
     per: list[dict[str, Any]] = []
     for dist in DISTANCES:
@@ -264,7 +293,13 @@ def summarise(rows: list[dict[str, Any]], secondary: list[dict[str, Any]]) -> di
         "spec": {"distances": list(DISTANCES), "primary_window": PRIMARY_WINDOW, "sensitivity_window": SENSITIVITY_WINDOW,
                  "min_baseline_months": MIN_BASELINE_MONTHS, "secondary_day": SECONDARY_DAY, "bootstrap_draws": BOOT, "seed": SEED,
                  "outcome": "a later daily close inside the month at or beyond the barrier (the method's own outcome; "
-                            "the daily-close vs one-minute-extreme gap is not measurable here)"},
+                            "the daily-close vs one-minute-extreme gap is not measurable here)",
+                 # the two keys below appear only on a shifted run, so the pre-specified run's file is byte-identical
+                 # to the one in force (data/calibration.json, 2026-11-05)
+                 **({} if monitoring == "continuous" else {
+                     "monitoring": monitoring,
+                     "monitoring_shift": f"barrier moved away from the spot by {BGK_BETA} * sigma * sqrt({MONITORING_DT_DAYS:g}/365) "
+                                         "per window (Broadie, Glasserman and Kou 1997); post hoc, 2026-11-18"})},
         "pooled": pooled, "per_barrier": per, "reliability30": rel30, "reliability90": rel90,
         "boot_30_minus_90": d30_90, "boot_primary_minus_base": dprim_base,
         "rules": {"R1_primary_window": r1_primary, "R2_method_is_a_basis_for_a_call": r2_method_is_a_basis, "R3_mid_bins": r3},
@@ -274,8 +309,11 @@ def summarise(rows: list[dict[str, Any]], secondary: list[dict[str, Any]]) -> di
 
 def report(s: dict[str, Any]) -> list[str]:
     p = s["pooled"]
+    mon = s["spec"].get("monitoring", "continuous")
     out = [
-        f"{s['series']} calibration of the touch method on daily closes: {p['months']} months {p['first_month']}..{p['last_month']}, "
+        f"{s['series']} calibration of the touch method on daily closes"
+        f"{'' if mon == 'continuous' else ' (formula shifted for daily monitoring; POST HOC, not the calibration in force)'}: "
+        f"{p['months']} months {p['first_month']}..{p['last_month']}, "
         f"{p['n']} month-barrier rows (distances {s['spec']['distances']}, both sides), baseline needs {s['spec']['min_baseline_months']} earlier months",
         f"  pooled Brier: 30-obs window {p['brier30']:.4f}; 90-obs window {p['brier90']:.4f}; climatology {p['brier_base']:.4f}",
         f"  |p30 - p90| >= {CALL_THRESHOLD:.2f} in {p['disagreement_share']:.1%} of rows; |p30 - climatology| >= {CALL_THRESHOLD:.2f} in {p['departure_share_30_vs_base']:.1%}",
@@ -331,15 +369,22 @@ def record(out: Path, input_name: str, input_sha256: str, now: datetime) -> int:
     return 0
 
 
-def run(from_file: Path, out: Path | None, now: datetime | None = None) -> int:
+def run(from_file: Path, out: Path | None, now: datetime | None = None, monitoring: str = "continuous") -> int:
+    if monitoring not in MONITORING:
+        print(f"{B.SERIES}: REFUSED monitoring {monitoring!r} is not one of {MONITORING}")
+        return 1
+    if monitoring != "continuous" and out is not None:
+        print(f"{B.SERIES}: REFUSED --monitoring {monitoring} with --out: the shifted calibration is post hoc "
+              "(2026-11-18) and goes into force only under a dated pre-specification; nothing written")
+        return 1
     raw = from_file.read_bytes()
     obs = B.parse_fred_csv(raw.decode("utf-8"))
-    rows = add_baseline(rows_for(obs))
+    rows = add_baseline(rows_for(obs, monitoring=monitoring))
     if not rows:
         print(f"{B.SERIES}: FAILED the series is too short for a scored month")
         return 1
-    secondary = add_baseline(rows_for(obs, min_day=SECONDARY_DAY))
-    s = summarise(rows, secondary)
+    secondary = add_baseline(rows_for(obs, min_day=SECONDARY_DAY, monitoring=monitoring))
+    s = summarise(rows, secondary, monitoring=monitoring)
     s["read_from"] = from_file.name
     s["observations"] = len(obs)
     s["last_obs"] = obs[-1][0].isoformat()
@@ -357,8 +402,11 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--from-file", type=Path, required=True, help="a kept FRED download (git-ignored)")
     ap.add_argument("--out", type=Path, default=None, help="aggregates json (default: none written)")
+    ap.add_argument("--monitoring", choices=MONITORING, default="continuous",
+                    help="'continuous' is the pre-specified run; 'daily' shifts the barrier for a once-a-day outcome "
+                         "(post hoc, 2026-11-18; refused with --out)")
     a = ap.parse_args(argv)
-    return run(a.from_file, a.out)
+    return run(a.from_file, a.out, monitoring=a.monitoring)
 
 
 if __name__ == "__main__":

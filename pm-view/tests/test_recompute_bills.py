@@ -260,7 +260,7 @@ def test_the_candidate_names_the_meeting_list_and_a_changed_list_is_a_difference
                                                    f"the record was made under {rec['dates_sha256'][:12]}")
     assert diffs[0].endswith("(87): the meetings cannot be re-read")
     # a meeting typed in between the as-of date and the meeting: the same refusal, not the folder's
-    typed = cut_dates(tmp_path, drop_prefix="", add="20261125\n")
+    typed = cut_dates(tmp_path, drop_prefix="zz", add="20261125\n")
     diffs = F.recompute_candidate(got[0], root, cal, manifest=man, dates_path=typed)
     assert len(diffs) == 1 and diffs[0].startswith("the meeting list is") and "stale print" not in diffs[0]
     # one extra date fewer, the file unchanged: refused too (the count and the extras are both compared)
@@ -316,3 +316,43 @@ def test_the_calibration_names_its_meeting_list_and_a_climatology_from_another_s
     cal.write_text(json.dumps(body, sort_keys=True), encoding="utf-8")
     old = dict(got[0], inputs=dict(got[0]["inputs"], calibration_sha256=sha(cal)))
     assert F.recompute_candidate(old, root, cal, manifest=manifest_of(root)) == []
+
+
+# 2026-11-18 00:15Z (predictions/POST_MORTEMS.md, follow-up to "A sample held by nothing but the file that listed
+# it"): the source check of the dates file against the Fed's pages (tools/fomc_calendar.py --check: 85 of 85 dates
+# the same) found the 2027 calendar published and the list ending at 2026-12-09, and the rule above bound every
+# record to the whole file's hash, so the first extension would have made every candidate and the calibration's
+# own list unreadable.  A record now carries `through` and `dates_digest`, and a list that carries the same
+# dates through `through` is the record's list.
+
+def test_a_list_extended_past_the_record_is_the_same_list_and_a_date_before_its_end_is_not(tmp_path):
+    got, root, folder, cal, _ = kept_bills(tmp_path)
+    rec = F.meetings_record()
+    assert rec["through"] == "2026-12-09" and rec["dates_digest"] == F.dates_digest(F.meeting_dates())
+    assert all(c["inputs"]["meetings"]["through"] == "2026-12-09" for c in got)
+    man = manifest_of(root)
+    # the eight 2027 dates the Fed's calendar lists (read 2026-11-18, tentative) appended: the record reproduces
+    extended = cut_dates(tmp_path, drop_prefix="zz", add="20270127\n20270317\n20270428\n20270609\n20270728\n20270915\n20271027\n20271117\n")
+    assert len(F.meeting_dates(extended)) == 95 and sha(extended) != rec["dates_sha256"]
+    assert F.recompute_candidate(got[0], root, cal, manifest=man, dates_path=extended) == []
+    # the calibration's own list, written under the shorter file, is the extended list's through its last date
+    written = json.loads(cal.read_text(encoding="utf-8"))
+    have = F.meetings_record(extended)
+    assert F.meetings_differ(written["inputs_meetings"], have, F.meeting_dates(extended)) is None
+    # a 2019 date cut, or a date typed in before the record's last meeting: not the same list, extension or not
+    cut_and_extended = cut_dates(tmp_path, drop_prefix="20190130", add="20270127\n")
+    diffs = F.recompute_candidate(got[0], root, cal, manifest=man, dates_path=cut_and_extended)
+    assert len(diffs) == 1 and diffs[0].startswith("the meeting list is") and diffs[0].endswith("(87): the meetings cannot be re-read")
+    typed = cut_dates(tmp_path, drop_prefix="zz", add="20261125\n20270127\n")
+    diffs = F.recompute_candidate(got[0], root, cal, manifest=man, dates_path=typed)
+    assert len(diffs) == 1 and diffs[0].startswith("the meeting list is")
+    # a record without the two fields (written between 16 and 18 November) keeps the whole-file rule
+    old = dict(got[0], inputs=dict(got[0]["inputs"], meetings={k: v for k, v in rec.items() if k not in ("through", "dates_digest")}))
+    assert F.recompute_candidate(old, root, cal, manifest=man) == []
+    diffs = F.recompute_candidate(old, root, cal, manifest=man, dates_path=extended)
+    assert len(diffs) == 1 and diffs[0].startswith("the meeting list is")
+    # the digest is of the dates alone: the same dates under another header are the same list
+    reheaded = tmp_path / "reheaded.txt"
+    reheaded.write_text("# another header\n" + "\n".join(d.strftime("%Y%m%d") for d in F.meeting_dates() if d not in F.EXTRA_MEETINGS) + "\n",
+                        encoding="utf-8")
+    assert sha(reheaded) != rec["dates_sha256"] and F.recompute_candidate(got[0], root, cal, manifest=man, dates_path=reheaded) == []

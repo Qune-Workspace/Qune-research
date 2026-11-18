@@ -175,21 +175,47 @@ def meetings_record(path: Path = DATES_FILE, extra: Iterable[date] = EXTRA_MEETI
         shown = str(path.relative_to(ROOT))
     except ValueError:
         shown = str(path)
+    dates = meeting_dates(path, extra)
+    # 2026-11-18 00:15Z (predictions/POST_MORTEMS.md, follow-up to "A sample held by nothing but the file that
+    # listed it"): the list must grow (the Fed's 2027 calendar is published; this file ends at 2026-09 and the
+    # extras at 2026-12-09), and a whole-file hash would make every record unreadable at the first extension.
+    # `through` and `dates_digest` bind a record to the dates it was made on, so a later list that carries the
+    # same dates through `through` is the same list, and a date moved, cut or typed in before it is not.
     return {"dates_file": shown, "dates_sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
-            "extra_meetings": [d.isoformat() for d in sorted(set(extra))], "count": len(meeting_dates(path, extra))}
+            "extra_meetings": [d.isoformat() for d in sorted(set(extra))], "count": len(dates),
+            "through": dates[-1].isoformat() if dates else None, "dates_digest": dates_digest(dates)}
 
 
-def meetings_differ(want: Any, have: dict[str, Any]) -> str | None:
-    """Why a recorded meeting list `want` is not the list `have` in hand, or None when they agree: the file's
-    hash, the extra dates and the count are compared; a record carrying no list is named as such."""
+def dates_digest(dates: Iterable[date], through: date | None = None) -> str:
+    """SHA-256 of the sorted unique ISO dates on or before `through` (all of them when None), one a line."""
+    kept = sorted({d for d in dates if through is None or d <= through})
+    return hashlib.sha256("\n".join(d.isoformat() for d in kept).encode("utf-8")).hexdigest()
+
+
+def meetings_differ(want: Any, have: dict[str, Any], dates: Iterable[date] | None = None) -> str | None:
+    """Why a recorded meeting list `want` is not the list `have` in hand, or None when they agree.  They agree
+    when the file's hash, the extra dates and the count are equal, or (2026-11-18 00:15Z) when the record
+    carries `through` and `dates_digest` and the `dates` in hand on or before `through` digest to it: a list
+    extended past the record's last meeting is the record's list; a date cut, moved or typed in before it is
+    not.  A record carrying no list is named as such."""
     if not isinstance(want, dict):
         return "the record names no meeting list (inputs.meetings): the meetings the reading was made on cannot be re-read"
-    if (str(want.get("dates_sha256")) != have["dates_sha256"] or list(want.get("extra_meetings") or []) != have["extra_meetings"]
-            or str(want.get("count")) != str(have["count"])):
-        return (f"the meeting list is {have['dates_sha256'][:12]} + {have['extra_meetings']} ({have['count']} meetings), "
-                f"the record was made under {str(want.get('dates_sha256'))[:12]} + {want.get('extra_meetings')} "
-                f"({want.get('count')}): the meetings cannot be re-read")
-    return None
+    same_file = (str(want.get("dates_sha256")) == have["dates_sha256"] and list(want.get("extra_meetings") or []) == have["extra_meetings"]
+                 and str(want.get("count")) == str(have["count"]))
+    if same_file:
+        return None
+    if dates is not None and want.get("through") and want.get("dates_digest"):
+        try:
+            through: date | None = date.fromisoformat(str(want["through"]))
+        except ValueError:
+            through = None
+        if through is not None:
+            prefix = sorted({d for d in dates if d <= through})
+            if len(prefix) == int(want.get("count") or -1) and dates_digest(prefix) == str(want["dates_digest"]):
+                return None
+    return (f"the meeting list is {have['dates_sha256'][:12]} + {have['extra_meetings']} ({have['count']} meetings), "
+            f"the record was made under {str(want.get('dates_sha256'))[:12]} + {want.get('extra_meetings')} "
+            f"({want.get('count')}): the meetings cannot be re-read")
 
 
 def last_on_or_before(series: pd.Series, d: date) -> tuple[date, float] | None:
@@ -493,6 +519,10 @@ def live_figures(s: Series, meetings: list[date], d: date, today: date, cal: dic
     lag = (d - today).days
     if lag <= 0:
         return {"stop": f"meeting {d} is not after {today}"}
+    if d not in meetings:  # 2026-11-18 00:15Z: "a meeting in between" cannot be checked past the list's last date
+        last = max(meetings).isoformat() if meetings else "none"
+        return {"stop": f"meeting {d} is not on the meeting list (last listed {last}): no reading is made for an unlisted meeting; "
+                        "extend the list from the Fed's calendar first (tools/fomc_calendar.py --check)"}
     rd = reading(s, meetings, d, lag)
     if rd is None:
         return {"stop": f"no reading for {d} as of {today}: stale print, a meeting in between, or outside the bill's life"}
@@ -666,7 +696,8 @@ def recompute_candidate(c: dict[str, Any], raw_root: Path, calibration: Path | N
     if out:
         return out
     have_meetings = meetings_record(dates_path, extra)
-    why = meetings_differ(inputs.get("meetings"), have_meetings)
+    in_hand = list(meetings) if meetings is not None else meeting_dates(dates_path, extra)
+    why = meetings_differ(inputs.get("meetings"), have_meetings, in_hand)
     if why is not None:
         return [why]
     want_cal, have_cal = inputs.get("calibration_sha256"), file_sha256(calibration)
@@ -678,13 +709,13 @@ def recompute_candidate(c: dict[str, Any], raw_root: Path, calibration: Path | N
         if same_cal:
             cal = load_calibration(calibration) if calibration is not None else None
             cal_meetings = (cal or {}).get("inputs_meetings")
-            if cal_meetings is not None and meetings_differ(cal_meetings, have_meetings) is not None:
+            if cal_meetings is not None and meetings_differ(cal_meetings, have_meetings, in_hand) is not None:
                 out.append(f"the calibration file was built on meeting list {str(cal_meetings.get('dates_sha256'))[:12]} "
                            f"({cal_meetings.get('count')} meetings), the candidate was read under {have_meetings['dates_sha256'][:12]} "
                            f"({have_meetings['count']}): its climatology is another sample's")
         else:  # another file's rules would choose another primary; the record's primary is kept, nothing else of it
             cal = {"rules": {"R1_primary": inputs.get("primary") or "net"}} if want_cal is not None else None
-        fig = live_figures(load_dir(folder), meetings if meetings is not None else meeting_dates(dates_path, extra), d, today, cal)
+        fig = live_figures(load_dir(folder), in_hand, d, today, cal)
     except (OSError, ValueError, UnicodeDecodeError, KeyError) as e:
         return out + [f"the figures do not recompute from {folder}: {e}"]
     if "classes" not in fig:
@@ -980,7 +1011,7 @@ def main(argv: list[str] | None = None) -> int:
         cal_meetings = (cal or {}).get("inputs_meetings")
         if cal_meetings is None:
             print("  the calibration file names no meeting list (written before 2026-11-16); its sample is held to this list by git alone")
-        elif meetings_differ(cal_meetings, rec) is not None:
+        elif meetings_differ(cal_meetings, rec, meetings) is not None:
             print(f"  WARNING: the calibration file was built on meeting list {str(cal_meetings.get('dates_sha256'))[:12]} "
                   f"({cal_meetings.get('count')} meetings), not this one: a candidate under it will not recompute")
         for line in live_lines(s, meetings, a.live, today, cal, mids):

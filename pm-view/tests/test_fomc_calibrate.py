@@ -246,3 +246,14 @@ def test_live_verdict_agrees_with_the_ledger_gate_on_a_grid():
                         assert printed == gate, (r2, p, lo, hi, mid)
                         checked += 1
     assert checked > 10_000
+
+
+def test_live_figures_refuse_a_meeting_the_list_does_not_reach():
+    # 2026-11-18 00:15Z: "a meeting in between" cannot be checked past the list's last date (the 2027 calendar
+    # puts 21 days between its October and November meetings), so an unlisted meeting gets no reading
+    s = constant_set(last=date(2027, 12, 31))
+    listed = [date(2026, 10, 28), date(2026, 12, 9)]
+    fig = F.live_figures(s, listed, date(2027, 1, 27), date(2026, 12, 11), None)
+    assert "stop" in fig and "not on the meeting list (last listed 2026-12-09)" in fig["stop"] and "classes" not in fig
+    fig = F.live_figures(s, listed + [date(2027, 1, 27)], date(2027, 1, 27), date(2026, 12, 11), None)
+    assert "classes" in fig and fig["rd"]["days_to_meeting"] == 47

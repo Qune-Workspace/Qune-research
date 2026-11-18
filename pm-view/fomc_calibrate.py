@@ -90,7 +90,7 @@ PRE-SPECIFIED 2026-11-05 18:2x UTC, committed before the first run on the series
 Usage (from this folder):
     python fomc_calibrate.py --fetch [--out data/fomc_calibration.json]     # a new folder data/raw/fred_rates/<UTC time>/
     python fomc_calibrate.py [--from-dir data/raw/fred_rates/<UTC time>] [--out ...]   # default: the newest kept folder
-    python fomc_calibrate.py --live 2026-12-09 [--fetch | --from-dir <folder>] [--today <date>] --mid hike=0.885 ...
+    python fomc_calibrate.py --live 2026-12-09 [--fetch | --from-dir <folder>] [--today <date>] --mid hike=3215008:0.885+3215009:0.0915 --mid none=0.019 ...
     python fomc_calibrate.py --recompute K-fomc_bills-hike-<time>   # the candidate re-read from the kept folder and
                                                                    # calibration it names; the differences printed (2026-11-15)
 Exit 0 when the report was written, 1 when the sample is too short (fewer than
@@ -107,7 +107,7 @@ import sys
 from collections.abc import Iterable
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
-from typing import Any
+from typing import Any, NamedTuple
 
 import pandas as pd
 
@@ -138,6 +138,34 @@ LIVE_BIN_LOW, LIVE_BIN_HIGH = 0.4, 0.8
 BOOT = 2000
 SEED = 20261105
 CLASSES = ("hike", "none", "cut")
+# A class is the sum of its legs (2026-11-18 18:15Z, predictions/POST_MORTEMS.md "A class of three read against
+# a leg of five"): the method's `hike` is any hike (outcome(): any move of at least MOVE_THRESHOLD; a 50 or 75 bp
+# move scores as one step), and the December event lists two legs for it (25 bp; 50 bp or more) and two for
+# `cut`.  The 13 November view compared the 1.000 reading with the 25 bp leg's 0.885 while the 50 bp leg sat at
+# 0.0915 one row down, so the class was priced at 0.9765 and the "+0.115 departure" was 0.0235.  A mid for a
+# class in SPLIT_CLASSES is given as its legs, `<market id>:<mid>+<market id>:<mid>`, and the printer writes the
+# sum and the legs on the line and on the candidate; a bare figure for such a class is refused before anything
+# is read or written.  `none` is one leg and may be given bare.
+SPLIT_CLASSES = ("hike", "cut")
+
+
+class ClassMid(NamedTuple):
+    """A class's market probability: the sum over the legs that settle YES for it, each (market id, mid);
+    `legs` is empty when the figure was given bare."""
+    mid: float
+    legs: tuple[tuple[str, float], ...]
+
+
+def split_class_refusals(mids: Iterable[tuple[str, ClassMid]]) -> list[str]:
+    """Why `--live` refuses the mids given: a class the event splits across legs given as one figure."""
+    return [f"REFUSED: --mid {cls}= must name the legs it sums (<market id>:<mid>+<market id>:<mid>): the method's {cls} "
+            f"class is any {cls} and the event lists more than one leg for it (2026-11-18 18:15Z, predictions/POST_MORTEMS.md "
+            f"\"A class of three read against a leg of five\")"
+            for cls, cm in mids if cls in SPLIT_CLASSES and not cm.legs]
+
+
+def legs_text(legs: tuple[tuple[str, float], ...]) -> str:
+    return " + ".join(f"{i} {m:.4f}" for i, m in legs)
 MODELS = ("net", "raw", "climatology", "persistence")
 CITATION = ("Board of Governors of the Federal Reserve System (US), DTB3, DTB4WK, DFEDTARU; Federal Reserve "
             "Bank of New York, EFFR; all retrieved from FRED, Federal Reserve Bank of St. Louis")
@@ -551,8 +579,9 @@ def live_figures(s: Series, meetings: list[date], d: date, today: date, cal: dic
 
 
 def live_lines(s: Series, meetings: list[date], d: date, today: date, cal: dict[str, Any] | None,
-               mids: dict[str, float]) -> list[str]:
-    """The reading for meeting ``d`` from the latest prints on or before ``today``."""
+               mids: dict[str, float], legs: dict[str, tuple[tuple[str, float], ...]] | None = None) -> list[str]:
+    """The reading for meeting ``d`` from the latest prints on or before ``today``.  `legs` (2026-11-18 18:15Z):
+    per class, the (market id, mid) legs whose sum the class's mid is; printed beside the mid."""
     fig = live_figures(s, meetings, d, today, cal)
     if "rd" not in fig:
         return [fig["stop"]]
@@ -573,7 +602,9 @@ def live_lines(s: Series, meetings: list[date], d: date, today: date, cal: dict[
         p, lo, hi = fig["classes"][cls]
         line = f"  p_{cls}: net {rd['net'][cls]:.3f}, raw {rd['raw'][cls]:.3f}, range under the basis [{lo:.3f}, {hi:.3f}]"
         if cls in mids:
-            line += f"; market {mids[cls]:.3f}; " + live_verdict(cal, p, lo, hi, mids[cls], primary)
+            cls_legs = (legs or {}).get(cls, ())
+            summed = f" = {legs_text(cls_legs)} (the class is the sum of its legs)" if cls_legs else ""
+            line += f"; market {mids[cls]:.3f}{summed}; " + live_verdict(cal, p, lo, hi, mids[cls], primary)
         out.append(line)
     if cal is not None:
         b, r = cal["pooled_brier"], cal["rules"]
@@ -634,7 +665,8 @@ def class_figures(fig: dict[str, Any], cls: str, cal: dict[str, Any] | None) -> 
 
 def live_candidates(s: Series, meetings: list[date], d: date, today: date, cal: dict[str, Any] | None,
                     mids: dict[str, float], raw_dir: Path, at: datetime,
-                    calibration: Path | None = None, meetings_rec: dict[str, Any] | None = None) -> list[dict[str, Any]]:
+                    calibration: Path | None = None, meetings_rec: dict[str, Any] | None = None,
+                    legs: dict[str, tuple[tuple[str, float], ...]] | None = None) -> list[dict[str, Any]]:
     """One candidate record per class a mid was given for (2026-11-14 12:15Z, predictions/POST_MORTEMS.md
     "A figure the gate took on the desk's word"): the primary reading, the hull of the reading and its range
     under the historical basis (the range the ledger line prints), the class's share of the calibration's
@@ -662,7 +694,9 @@ def live_candidates(s: Series, meetings: list[date], d: date, today: date, cal: 
                   "input_sha256": input_hashes(raw_dir), "calibration_sha256": file_sha256(calibration),
                   "days_to_meeting": rd["days_to_meeting"], "content_pct": rd["content_pct"],
                   "basis_range_pct": list(fig["br"]), "basis_lookback_obs": BASIS_LOOKBACK_OBS,
-                  "climatology": None if not n else f"{cls} share of {n} scored meetings {sample.get('first_meeting')}..{sample.get('last_meeting')}"}
+                  "climatology": None if not n else f"{cls} share of {n} scored meetings {sample.get('first_meeting')}..{sample.get('last_meeting')}",
+                  # the legs the class's mid sums (2026-11-18 18:15Z): market id and mid per leg, in the order given
+                  "legs": [{"market_id": i, "mid": m} for i, m in (legs or {}).get(cls, ())]}
         out.append(L.candidate_record(METHOD, cls, p, lo, hi, clim, mid, at, inputs))
     return out
 
@@ -790,11 +824,25 @@ def recompute_main(candidate_id: str, candidates: Path, raw_root: Path, calibrat
     return 1
 
 
-def parse_mid(s: str) -> tuple[str, float]:
+def parse_mid(s: str) -> tuple[str, ClassMid]:
+    """`hike=0.635` (a bare figure) or `hike=3215008:0.885+3215009:0.0915` (the legs summed; 2026-11-18 18:15Z)."""
     cls, _, v = s.partition("=")
     if cls not in CLASSES:
         raise argparse.ArgumentTypeError(f"mid class must be one of {CLASSES}")
-    return cls, float(v)
+    if ":" not in v:
+        return cls, ClassMid(float(v), ())
+    legs: list[tuple[str, float]] = []
+    for part in v.split("+"):
+        market_id, _, mid = part.partition(":")
+        if not market_id.isdigit() or not mid:
+            raise argparse.ArgumentTypeError(f"a leg is <market id>:<mid>, not {part!r}")
+        legs.append((market_id, float(mid)))
+    if len({i for i, _ in legs}) != len(legs):
+        raise argparse.ArgumentTypeError(f"a leg is given twice in {s!r}")
+    total = round(sum(m for _, m in legs), 6)
+    if not 0.0 <= total <= 1.0:
+        raise argparse.ArgumentTypeError(f"the legs of {cls} sum to {total}, not a probability")
+    return cls, ClassMid(total, tuple(legs))
 
 
 # --- entry point ---------------------------------------------------------------------------
@@ -1013,7 +1061,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--live", type=date.fromisoformat, default=None,
                     help="print the reading for this meeting date from the kept download, with the calibration beside it; writes nothing")
     ap.add_argument("--today", type=date.fromisoformat, default=None, help="as-of date for --live (default: the machine clock, UTC)")
-    ap.add_argument("--mid", type=parse_mid, action="append", default=[], help="market mid per class for --live, e.g. hike=0.635")
+    ap.add_argument("--mid", type=parse_mid, action="append", default=[], help="market mid per class for --live: hike and cut as their legs summed, e.g. hike=3215008:0.885+3215009:0.0915; none may be bare, e.g. none=0.019")
     ap.add_argument("--candidates", type=Path, default=HERE / L.CANDIDATES,
                     help="where --live with mids writes one candidate record per class (not with --no-write; 2026-11-14)")
     ap.add_argument("--recompute", metavar="CANDIDATE_ID", default=None,
@@ -1027,6 +1075,10 @@ def main(argv: list[str] | None = None) -> int:
             ap.error("--recompute reads what a candidate names; not with --fetch or --live")
         return recompute_main(a.recompute, a.candidates, a.raw_root, a.out, a.manifest)
     if a.live is not None:
+        for line in split_class_refusals(a.mid):  # 2026-11-18 18:15Z: before any fetch, read or write
+            print(line)
+        if split_class_refusals(a.mid):
+            return 1
         try:
             raw_dir = chosen_folder(a.raw_root, a.manifest, a.from_dir, a.fetch)
         except (FileNotFoundError, FileExistsError) as e:
@@ -1036,7 +1088,9 @@ def main(argv: list[str] | None = None) -> int:
         for line in set_aside_lines(a.raw_root, qdata.read_manifest(a.manifest)):
             print(line)
         today = a.today or date.fromisoformat(qdata.utc_now()[:10])
-        s, meetings, cal, mids = load_dir(raw_dir), meeting_dates(), load_calibration(a.out), dict(a.mid)
+        s, meetings, cal = load_dir(raw_dir), meeting_dates(), load_calibration(a.out)
+        mids = {cls: cm.mid for cls, cm in a.mid}
+        legs = {cls: cm.legs for cls, cm in a.mid if cm.legs}
         rec = meetings_record()  # the list the reading is made on, named on every candidate (2026-11-16 12:15Z)
         print(f"meetings: {rec['count']} dates, {rec['dates_file']} {rec['dates_sha256'][:12]} + {rec['extra_meetings']}")
         cal_meetings = (cal or {}).get("inputs_meetings")
@@ -1045,11 +1099,12 @@ def main(argv: list[str] | None = None) -> int:
         elif meetings_differ(cal_meetings, rec, meetings) is not None:
             print(f"  WARNING: the calibration file was built on meeting list {str(cal_meetings.get('dates_sha256'))[:12]} "
                   f"({cal_meetings.get('count')} meetings), not this one: a candidate under it will not recompute")
-        for line in live_lines(s, meetings, a.live, today, cal, mids):
+        for line in live_lines(s, meetings, a.live, today, cal, mids, legs):
             print(line)
         # 2026-11-14 12:15Z: the figures a reading may carry are written by this tool, not typed from its lines
         if mids and not a.no_write:
-            for c in live_candidates(s, meetings, a.live, today, cal, mids, raw_dir, datetime.now(UTC), calibration=a.out, meetings_rec=rec):
+            for c in live_candidates(s, meetings, a.live, today, cal, mids, raw_dir, datetime.now(UTC), calibration=a.out, meetings_rec=rec,
+                                     legs=legs):
                 L.append_candidate(a.candidates, c)
                 print(f"  candidate {c['id']} written to {a.candidates.name} (readings.py add --candidate {c['id']})")
         elif mids:

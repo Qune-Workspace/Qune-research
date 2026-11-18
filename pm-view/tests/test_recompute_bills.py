@@ -62,7 +62,7 @@ def test_the_candidate_names_the_calibration_it_read_and_none_when_there_was_non
     # the CLI passes the calibration file it read to the writer
     cands = tmp_path / "cli" / "c.jsonl"
     rc = F.main(["--live", MEETING, "--today", AS_OF, "--from-dir", str(folder), "--raw-root", str(root), "--manifest", str(tmp_path / "m.json"),
-                 "--out", str(cal), "--candidates", str(cands), "--mid", "hike=0.635"])
+                 "--out", str(cal), "--candidates", str(cands), "--mid", "hike=3215008:0.635"])
     capsys.readouterr()
     assert rc == 0
     c = L.read_candidates(cands)[0]
@@ -70,7 +70,7 @@ def test_the_candidate_names_the_calibration_it_read_and_none_when_there_was_non
     # no calibration file: the candidate says so and carries no climatology
     cands = tmp_path / "none" / "c.jsonl"
     rc = F.main(["--live", MEETING, "--today", AS_OF, "--from-dir", str(folder), "--raw-root", str(root), "--manifest", str(tmp_path / "m.json"),
-                 "--out", str(tmp_path / "none" / "absent.json"), "--candidates", str(cands), "--mid", "hike=0.6"])
+                 "--out", str(tmp_path / "none" / "absent.json"), "--candidates", str(cands), "--mid", "hike=3215008:0.6"])
     capsys.readouterr()
     assert rc == 0
     c = L.read_candidates(cands)[0]
@@ -356,3 +356,44 @@ def test_a_list_extended_past_the_record_is_the_same_list_and_a_date_before_its_
     reheaded.write_text("# another header\n" + "\n".join(d.strftime("%Y%m%d") for d in F.meeting_dates() if d not in F.EXTRA_MEETINGS) + "\n",
                         encoding="utf-8")
     assert sha(reheaded) != rec["dates_sha256"] and F.recompute_candidate(got[0], root, cal, manifest=man, dates_path=reheaded) == []
+
+
+# --- a class is the sum of its legs (2026-11-18 18:15Z, predictions/POST_MORTEMS.md "A class of three read
+# against a leg of five"): the method's hike is any hike; the event lists a 25 bp leg and a 50 bp or more leg.
+def test_a_split_class_given_as_one_figure_is_refused_before_anything_is_read_or_written(tmp_path: Path, capsys) -> None:
+    got, root, folder, cal, cands = kept_bills(tmp_path)
+    capsys.readouterr()  # the fixture's own lines
+    before = L.read_candidates(cands)
+    for cls in F.SPLIT_CLASSES:
+        rc = F.main(["--live", MEETING, "--today", AS_OF, "--from-dir", str(folder), "--raw-root", str(root),
+                     "--manifest", str(tmp_path / "m.json"), "--out", str(cal), "--candidates", str(cands), "--mid", f"{cls}=0.635"])
+        out = capsys.readouterr().out
+        assert rc == 1 and out.startswith(f"REFUSED: --mid {cls}= must name the legs it sums") and "inputs:" not in out
+    assert L.read_candidates(cands) == before
+    # `none` is one leg and may be given bare
+    rc = F.main(["--live", MEETING, "--today", AS_OF, "--from-dir", str(folder), "--raw-root", str(root),
+                 "--manifest", str(tmp_path / "m.json"), "--out", str(cal), "--candidates", str(cands), "--mid", "none=0.325"])
+    assert rc == 0 and capsys.readouterr().out.startswith("inputs:")
+
+
+def test_the_legs_are_summed_on_the_line_and_carried_on_the_candidate(tmp_path: Path, capsys) -> None:
+    got, root, folder, cal, cands = kept_bills(tmp_path)
+    capsys.readouterr()  # the fixture's own lines
+    n = len(L.read_candidates(cands))
+    rc = F.main(["--live", MEETING, "--today", AS_OF, "--from-dir", str(folder), "--raw-root", str(root),
+                 "--manifest", str(tmp_path / "m.json"), "--out", str(cal), "--candidates", str(cands),
+                 "--mid", "hike=3215008:0.885+3215009:0.0915", "--mid", "none=0.019"])
+    out = capsys.readouterr().out
+    assert rc == 0
+    hike_line = next(ln for ln in out.splitlines() if ln.startswith("  p_hike:"))
+    assert "; market 0.977 = 3215008 0.8850 + 3215009 0.0915 (the class is the sum of its legs); " in hike_line
+    none_line = next(ln for ln in out.splitlines() if ln.startswith("  p_none:"))
+    assert "; market 0.019; " in none_line and "sum of its legs" not in none_line
+    new = L.read_candidates(cands)[n:]
+    by = {c["key"]: c for c in new}
+    assert set(by) == {"hike", "none"}
+    assert by["hike"]["market_mid"] == 0.9765 and by["hike"]["inputs"]["legs"] == [{"market_id": "3215008", "mid": 0.885},
+                                                                                  {"market_id": "3215009", "mid": 0.0915}]
+    assert by["none"]["market_mid"] == 0.019 and by["none"]["inputs"]["legs"] == []
+    # the record still reproduces from the kept inputs it names: the legs are an input the figures do not depend on
+    assert all(F.recompute_candidate(c, root, cal, manifest=manifest_of(root)) == [] for c in new)

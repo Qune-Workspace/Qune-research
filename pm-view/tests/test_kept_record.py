@@ -40,7 +40,7 @@ def edited_copy(folder: Path, name: str = EDITED, by: float = -0.60) -> Path:
 
 
 def live_argv(root: Path, cal: Path, cands: Path, *extra: str) -> list[str]:
-    return ["--live", MEETING, "--today", AS_OF, "--mid", "hike=0.635", "--raw-root", str(root), "--manifest", str(root.parent / "m.json"),
+    return ["--live", MEETING, "--today", AS_OF, "--mid", "hike=3215008:0.635", "--raw-root", str(root), "--manifest", str(root.parent / "m.json"),
             "--out", str(cal), "--candidates", str(cands), *extra]
 
 

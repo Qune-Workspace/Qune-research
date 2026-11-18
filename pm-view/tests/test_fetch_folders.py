@@ -138,7 +138,7 @@ def test_the_default_input_is_the_newest_kept_folder_by_parsed_time_and_none_is_
         else:
             raise AssertionError(f"{root_} gave a folder")
         # main refuses by name on both paths, writes nothing, exit 1
-        rc = F.main(["--live", "2026-12-09", "--today", "2026-11-04", "--mid", "hike=0.6", "--raw-root", str(root_),
+        rc = F.main(["--live", "2026-12-09", "--today", "2026-11-04", "--mid", "hike=3215008:0.6", "--raw-root", str(root_),
                      "--manifest", str(tmp_path / "m.json"), "--out", str(tmp_path / "cal.json"),
                      "--candidates", str(tmp_path / "c.jsonl")])
         out = capsys.readouterr().out
@@ -175,7 +175,7 @@ def test_a_candidate_names_its_input_folder_and_the_figures_recompute_from_it(tm
     shutil.copytree(folder, other_root / folder.name)
     cands = tmp_path / "c.jsonl"
     rc = F.main(["--live", "2026-12-09", "--today", got[0]["inputs"]["as_of"], "--from-dir", str(other_root / folder.name),
-                 "--mid", "hike=0.635", "--mid", "none=0.325", "--manifest", str(manifest), "--out", str(out),
+                 "--mid", "hike=3215008:0.635", "--mid", "none=0.325", "--manifest", str(manifest), "--out", str(out),
                  "--candidates", str(cands)])
     assert rc == 0 and capsys.readouterr().out.startswith(f"inputs: {other_root / folder.name}\n")
     again = L.read_candidates(cands)

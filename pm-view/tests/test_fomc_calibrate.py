@@ -221,7 +221,12 @@ def test_live_verdict_order_gate_range_then_threshold():
     assert F.bin_frequency({"reliability": {"net": []}}, "net", 0.5) is None
     with pytest.raises(argparse.ArgumentTypeError):
         F.parse_mid("up=0.5")
-    assert F.parse_mid("hike=0.635") == ("hike", 0.635)
+    assert F.parse_mid("hike=0.635") == ("hike", F.ClassMid(0.635, ()))
+    # 2026-11-18 18:15Z: a class the event splits across legs is given as its legs, summed
+    assert F.parse_mid("hike=3215008:0.885+3215009:0.0915") == ("hike", F.ClassMid(0.9765, (("3215008", 0.885), ("3215009", 0.0915))))
+    for bad in ("hike=3215008:0.885+3215008:0.1", "hike=abc:0.5", "hike=3215008:", "hike=3215008:0.7+3215009:0.6"):
+        with pytest.raises(argparse.ArgumentTypeError):
+            F.parse_mid(bad)
 
 
 def test_live_verdict_agrees_with_the_ledger_gate_on_a_grid():
